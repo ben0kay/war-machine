@@ -9,6 +9,23 @@
 
 **WE0 and WE1 are implemented and Awaiting Validation.** Sky3D 2.1 is installed and enabled. `WORLD/testworld.tscn` is the project main scene, with independently saved Terrain3D landscape, world-owned materials, wind grass, C# exploration and Sky3D time controls. See [WE0_WE1_VALIDATION.md](WE0_WE1_VALIDATION.md) for source audit, checks, known limits and local acceptance. WE2–WE8 remain Planned. No later phase was implemented.
 
+## Atmosphere direction — persistent eerie mist (applies to every remaining phase)
+
+**Art-direction decision (2026-10-25):** The wilderness should feel **noticeably misty most of the time**, with a cold, desaturated, eerie mood. This is a defining baseline, not merely an occasional storm condition. Future large machines should be able to emerge gradually from the fog, but **no machine, enemy, combat or gameplay work belongs in the WE phases**.
+
+**Visual rules Codex must preserve:**
+- Keep **nearby terrain and vegetation readable**. Depth builds gradually: nearby detail → softened middle distance → recognizable, low-contrast silhouettes → obscured far background. Avoid an opaque grey wall, uniform flat tint, obvious abrupt clipping, or a purely short draw distance hidden by fog.
+- Prefer blue-grey/neutral damp haze, with believable changes under dawn/day/overcast/evening lighting. Fog should react coherently to Sky3D time of day, not wash out its moving sunlight and shadows.
+- Maintain atmosphere **by default**, while allowing less mist for clear spells and more for heavy-fog events. The default can vary subtly by day/time/region; it should not regularly become a pristine, completely clear sunny landscape.
+- Use **sky/distance fog first** and add **small local/ground-hugging fog pockets** (Godot volumetric fog / FogVolume3D, after a performance test) only when they materially improve valleys, clearings, cave mouths and silhouette reveals. Do not blindly stack two full-screen fog solutions.
+- Make fog parameters **data-driven and editable**, preferably through existing `ENVIRONMENT/Configuration/EnvironmentMaster.tres` / `EnvironmentConfig.cs` and a thin coordinator when needed: enabled, baseline density, start/falloff distances, tint, time-of-day modulation and quality tier. Do **not** add a dedicated per-frame C# fog updater unless changes truly require it.
+- **Atmosphere is not streaming:** terrain/foliage LOD and region culling must still work with clear air, moving cameras and changes in fog. Distant mountain forms should not abruptly vanish at the same distance fog obscures them.
+- **Future visual goal only:** distant ridges, tree groups, rocks and an occasional *non-gameplay* large silhouette can serve as references for gradual reveal. Do not add a robot or NPC in these phases. A later robot should be partly visible as a moving outline before its full detail appears.
+
+**Confirmed current starting point:** `ENVIRONMENT/Sky/WildernessSky.tscn` already has `SkyDome.fog_density = 0.01`, and Sky3D owns the `WorldEnvironment`. This is **not proof** that the result is currently misty enough on the target PC; inspect it visually first. Preserve the working WE0/WE1 architecture and tune the existing fog instead of replacing Sky3D.
+
+**Sequencing:** **WE2 establishes a deliberately misty default** while refining landforms; WE3 tests fog-aware distance presentation, WE4 validates trees/foliage fading into mist, WE5 implements/polishes local and time-responsive fog, WE6 adds heavier/clearer weather variations, and WE7–WE8 assess exploration readability and performance in the mist. These are proposed changes to future phase scope, **not authorization to implement WE2 or anything beyond**.
+
 ## Confirmed baseline and current repository audit
 
 The checked-in project is **Godot 4.7-featured C#/.NET, Forward+, Direct3D 12 and Jolt Physics** (per `project.godot`; local runtime compatibility is still unverified).
@@ -37,10 +54,10 @@ Play `testworld.tscn` and **see smooth hills/valleys, naturally blended grassy s
 | --- | --- | --- | --- |
 | **WE0** | Verify Terrain3D demo, Sky3D installation/API and one-scene design | Regular Chat + Copilot (Codex may include quick audit in WE1) | Awaiting Validation |
 | **WE1** | **Build playable `WORLD/testworld.tscn`: demo-quality terrain, grass/rock, wind-moving grass, Sky3D moving sun** | **Codex / ChatGPT Work** | **Awaiting Validation** |
-| **WE2** | Refine terrain geography, materials and deterministic authoring workflow | Codex / ChatGPT Work | Planned |
-| **WE3** | Validate long-distance views, terrain/foliage LOD and scoped streaming | Codex / ChatGPT Work | Planned |
+| **WE2** | Refine geography/materials **and establish the default misty Sky3D look** | Codex / ChatGPT Work | Planned |
+| **WE3** | Validate distance views, silhouette fade, LOD and scoped streaming | Codex / ChatGPT Work | Planned |
 | **WE4** | Expand vegetation into varied forests, rocks and coherent wind | Codex / ChatGPT Work | Planned |
-| **WE5** | Polish existing Sky3D day/night, atmospheric fog, light and exposure | Codex / ChatGPT Work | Planned |
+| **WE5** | Polish persistent mist, local fog pockets, Sky3D light and exposure | Codex / ChatGPT Work | Planned |
 | **WE6** | Add rain, weather changes, wetness and environmental audio | Codex / ChatGPT Work | Planned |
 | **WE7** | Add caves, landmarks and memorable exploration routes | Codex / ChatGPT Work | Planned |
 | **WE8** | Profile, tune quality tiers, decide whether to promote testworld | Copilot + Codex / ChatGPT Work | Planned |
@@ -113,35 +130,35 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 
 ## WE2 — Geographic composition and terrain authoring
 
-**Objective:** Refine the first testworld landscape into a more convincing and varied wilderness with intentional sightlines, better terrain authoring tools and material composition.
+**Objective:** Refine the first testworld landscape into believable wilderness, and **establish noticeably misty conditions as the default appearance** using the existing Sky3D fog rather than waiting for WE5.
 
 - **Dependencies:** WE1 working, saved `testworld.tscn` with basic terrain/grass/rock and Sky3D sun.
-- **Scope:** Mountains, ridges, valleys, slopes, clearings, optional drainage line and a small palette of grounded terrain materials; assess the best hybrid of procedural starting shape and manual sculpting.
+- **Scope:** Mountains, ridges, valleys, slopes, clearings, optional drainage line and grounded terrain materials; tune **Sky3D's already-present distance fog** for a permanently atmospheric blue-grey / neutral mist baseline, with adjustable density and an easy clear-vs-misty comparison. Assess hybrid procedural/hand sculpting.
 - **Out of scope:** Infinite terrain, full voxel destruction, detailed caves, complex hydrology or AI encounters.
 - **Owning files:** `WORLD/Generation/`, `WORLD/Terrain/`, world config, terrain data and `ASSETS/Terrain/` if introduced.
-- **Approach:** Extend the simple, saved WE1 landscape. Develop optional deterministic noise/heightmap presets **only if they help**; hand-adjust features to make distinct locations. Use slope/altitude/mask rules as placement inputs, not independent competing world generators. Keep terrain authoring reproducible where feasible.
-- **Data/config:** Preserve author edits separate from generator defaults; expose seed, scale, heights, slope thresholds and material masks. Do not re-generate destructively over manual work.
-- **Performance:** Generation/terrain imports are event- or editor-driven, not perpetual frame work. Measure collision/terrain memory versus extent and texture choices.
-- **Pass criteria:** The world has recognizable landforms, traversable routes and non-repeating sightlines; terrain saves accurately and renders at near/far viewpoints.
+- **Approach:** Extend the saved WE1 landscape without destructively rebaking it. Develop optional deterministic noise/heightmap presets **only if they help**; hand-adjust features to make distinct locations. Use slope/altitude/mask rules as placement inputs. Before adding any new fog node, inspect `ENVIRONMENT/Sky/WildernessSky.tscn` (`fog_density = 0.01`) and the actual installed Sky3D inspector/API; tune existing fog and lighting together. Retain Sky3D as sole sky/environment owner. Provide an intentional misty default and an optional debug comparison toggle.
+- **Data/config:** Preserve author edits separately from generator defaults; expose seed, scale, heights, slope thresholds and material masks. Add/tune modest baseline fog settings in the existing environment master config where practical; use clear ownership and a minimal event-driven bridge, not duplicated fog state. Do not re-generate destructively over manual work.
+- **Performance:** Generation/terrain imports are event- or editor-driven, not perpetual frame work. Fog changes should apply on config/time-state changes without introducing an always-running C# loop. Measure terrain memory and fog-enabled vs fog-disabled GPU cost on target PC; no FPS claims without measurement.
+- **Pass criteria:** The world has recognizable landforms and traversable routes; it launches into **clearly perceptible, eerie mist by default** without hiding nearby grass/rock details. At least one hill/ridge softens into the distance while remaining a recognizable silhouette. The sun still moves/illuminates terrain, fog can be compared to a clearer setting, and terrain/atmosphere settings persist across restart. Human visual validation is required.
 - **Assistant:** **Codex / ChatGPT Work** for terrain tools/asset integration; **Regular Chat** can refine geography rules, documentation and material choices.
 
 ## WE3 — Distance, LOD and world loading proof
 
-**Objective:** Establish believable long-distance scenery before filling the map with expensive content.
+**Objective:** Establish believable long-distance scenery that fades **naturally into the persistent mist** before filling the map with expensive content.
 
 - **Dependencies:** WE1–WE2 world and enough geometry to inspect distance.
-- **Scope:** Inspect existing Terrain3D LOD/visibility before adding custom streaming; introduce lightweight distant mountains/tree silhouettes as needed; tune culling, shadow ranges and region activation boundaries. Instrument camera movement and pop-in.
+- **Scope:** Inspect existing Terrain3D LOD/visibility before adding custom streaming; introduce lightweight distant mountains/tree silhouettes as needed; tune culling, shadow ranges and region activation boundaries **in both default-mist and temporarily clear-air modes**. Instrument camera movement and pop-in.
 - **Out of scope:** A fully generic world-partition engine, infinite world, enemy simulation or a custom render backend.
 - **Owning files:** `WORLD/Streaming/`, `WORLD/Terrain/`, `DEBUG/` and world settings, **only if** a real gap requires these systems.
 - **Approach:** First exploit built-in terrain LOD, mesh LOD and visibility ranges. Add a region-scoped streamer for **separate objects and detail** only when profiling demonstrates a need; visual distant scenery must not vanish when interactive detail unloads.
 - **Data/config:** View distance, detail radius, region size, per-frame load/unload budget, transition and shadow-distance settings.
 - **Performance:** Wake on player movement/crossing region thresholds, not full scans every frame. Hysteresis avoids reload thrashing; unload or sleep distant content; bound work per frame. Measure hitch length and memory.
-- **Pass criteria:** Movement across multiple regions gives stable terrain and distant silhouettes, acceptable loading hitch/popping and documented profiler results.
+- **Pass criteria:** Movement across multiple regions gives stable terrain and **gradual fog-softened silhouettes** with no sharp fog/LOD seam, acceptable loading hitch/popping and documented profiler results. Repeat the test with fog reduced to ensure mist is not masking broken LOD/culling.
 - **Assistant:** **Codex / ChatGPT Work** for streaming architecture; **Copilot** for local frame captures. Do not optimize without an observed bottleneck.
 
 ## WE4 — Vegetation, instancing and wind
 
-**Objective:** Expand WE1's small patch of moving grass into a dense, natural-looking forest with scalable rendering and coherent wind.
+**Objective:** Expand WE1's moving grass into a dense, natural-looking forest with scalable rendering, coherent wind and **trees progressively disappearing into baseline mist**.
 
 - **Dependencies:** WE1 grass/rock proof, WE2 placement masks and WE3 visibility strategy.
 - **Scope:** A small consistent library of trees, saplings, bushes, ferns, grass, logs and rocks; deterministic clustered placement using altitude/slope/moisture rules; instance batching/LOD; shared wind for suitable foliage.
@@ -150,21 +167,21 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 - **Approach:** Use multi-instance rendering where appropriate, separate large interactable trees from decorative instances only if necessary, vary scale/orientation without losing asset coherence; use shader/vertex wind driven by a few shared signals.
 - **Data/config:** Plant density by region, placement seed, slope/altitude masks, wind strength, LOD transition distance, shadow quality and instance budget.
 - **Performance:** Placement on chunk creation/config changes; remove on unload. Shader wind may remain continuous in active views; **no per-plant `_Process`**. Profile foliage overdraw, shadows and instance counts.
-- **Pass criteria:** Dense woodland reads convincingly up close and far away; motion looks coherent; unload/reload keeps placements stable; measurable density/quality switches work.
+- **Pass criteria:** Nearby woodland stays richly readable, mid-distance trunks/canopy soften, and distant groups become silhouettes that dissolve into the mist rather than abruptly pop out; motion looks coherent; unload/reload keeps placement stable; measurable density/quality switches work.
 - **Assistant:** **Codex / ChatGPT Work**, due to batching/shader/streaming integration; **Regular Chat** can author placement rules and config proposals.
 
 ## WE5 — Sky, sunlight, fog and atmospheric depth
 
-**Objective:** Polish and deepen WE1's already-working Sky3D day/night and lighting into a cohesive, damp wilderness atmosphere.
+**Objective:** Polish WE2's misty baseline into a convincing, **usually foggy** day/night atmosphere, with optional localized low-lying fog and coherent light/exposure.
 
 - **Dependencies:** WE1 Sky3D moving-sun proof, WE2 terrain and ideally WE4 foliage for real-world visual testing.
-- **Scope:** Refine Sky3D's sky/time/clouds and existing moving sunlight; add coherent lighting/exposure, height/distance fog and localized mist pockets. Sun movement itself belongs to **WE1**, not WE5.
+- **Scope:** Refine Sky3D sky/time/clouds and existing moving sunlight; preserve a misty default, add adjustable fog colour/distance/density and restrained time-of-day modulation, coherent lighting/exposure, and optional valley/cave-mouth **local fog volumes** only when visuals and profiling justify them. Sun movement itself belongs to WE1; baseline mist begins in WE2.
 - **Out of scope:** Custom global illumination renderer, stacking multiple independent sky systems or full weather simulation.
 - **Owning files:** `ENVIRONMENT/Lighting/`, `ENVIRONMENT/Atmosphere/`, environment config, world integration nodes.
-- **Approach:** Retain **WE1's single Sky3D source of truth** for sun/time/sky and add one coordinator for fog/exposure. Leverage Forward+ and builtin volumetric fog where useful; test fog in forests, open valleys and caves to avoid excessive flat haze.
-- **Data/config:** Time, sun orientation, shadow distance, cloud coverage, atmosphere density, fog height/distance and per-quality defaults.
-- **Performance:** Shared global controls; update sun only at needed cadence or when adjusted. Static fog should not force scripts to poll when unchanged. Measure GPU cost of volumetrics and shadows.
-- **Pass criteria:** Convincing morning/overcast/evening looks; distant landscape retains shape; coherent light and fog in **testworld**, with safe quality reductions.
+- **Approach:** Retain **Sky3D as the single WorldEnvironment/sun/time owner** and extend the existing ENVIRONMENT master config/sky bridge where appropriate. Sky3D's screen-space atmospheric distance fog should provide the broad haze. Test optional Godot volumetric fog/FogVolume3D locally, avoiding overlapping heavy global fog and excessive light scattering. Use density variation and suitable depth cues, not opaque flat-grey overlays. Fog modulation follows Sky3D time/weather state at a justified cadence.
+- **Data/config:** Time, sun orientation, shadow distance, clouds and **baseline mist settings** (default on, density, start/end, cold-neutral tint, subtle morning/evening modifiers, local fog toggle and quality limits), grouped under ENVIRONMENT master config.
+- **Performance:** Shared global controls; update sun only at needed cadence or when adjusted. Static fog **must not** force scripts to poll while unchanged. Local volumes wake/load by nearby scene/region state and sleep/unload afterward. Measure GPU cost of volumetric fog and shadows; ensure a low-cost fallback retains the eerie depth.
+- **Pass criteria:** **Normal gameplay remains visibly misty** at morning, midday, overcast and evening, while retaining terrain and foliage readability. Distant hills/tree groups fade progressively; closer shapes stay identifiable; moving sun/clouds still affect atmosphere. Fog can be dialled back or intensified without broken lighting, duplication or needless idle work. Localized pockets are optional and must be accepted visually/performance-wise.
 - **Assistant:** **Codex / ChatGPT Work** for shader/addon/editor integration; **Regular Chat** can choose visual targets and document tweakable controls.
 
 ## WE6 — Weather, precipitation, wind variation and ambience
@@ -172,27 +189,27 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 **Objective:** Progress seamlessly from a calm forest to rain and storm conditions without wasteful idle effects.
 
 - **Dependencies:** WE4 shared wind and foliage response, WE5 sky/fog/light ownership.
-- **Scope:** Presets or controls for clear, cloudy, light/heavy rain, fog and storm; controlled wind gusts, localized rain around camera, lightning/thunder and environmental ambience; subtle wet-surface cues if feasible.
+- **Scope:** Presets or controls for clearer spells, normal **misty default**, cloudy/rainy/heavy-fog/storm conditions; controlled wind gusts, localized rain around camera, lightning/thunder and environmental ambience; subtle wet-surface cues if feasible.
 - **Out of scope:** Global water simulation, complex indoor precipitation physics, snow/blizzards unless requested, disaster destruction or survival penalties.
 - **Owning files:** `ENVIRONMENT/Weather/`, `ENVIRONMENT/Audio/`, `FX/`, vegetation wind inputs and a centralized environment config.
-- **Approach:** Prefer a small C# weather coordinator controlling built-in particles/sound/lighting/fog. Evaluate available weather addons **only** if they do not duplicate ownership. Keep weather independent of terrain layout and save/display state through explicit API.
+- **Approach:** Prefer a small C# weather coordinator controlling particles/sound/lighting/fog through **the existing Sky3D/ENVIRONMENT owner**. Weather transitions modify a shared baseline-mist value; rain and storm presets can temporarily deepen fog without reverting every clear-weather transition to fog-free bright air. Evaluate addons only if they avoid duplicate environment ownership.
 - **Data/config:** Weather intensities, transition duration, rain spawn volume, fog/wind coupling, lightning frequency, audio levels and quality limits.
 - **Performance:** Weather disabled means particle emission and splash callbacks **stop** after any intended fade. Conditions change via signals/config triggers; no hidden per-frame inactive system. Limit localized effects to visible/nearby region.
-- **Pass criteria:** Toggle rain 0 → heavy → 0 → heavy and observe transitions, sound, cloud/fog/wind response; demonstrate inactive emitters sleep; profile storm versus clear cost and verify relaunch/reload.
+- **Pass criteria:** Toggle rain 0 → heavy → 0 → heavy and observe transitions, sound, cloud/fog/wind response; returning to ordinary weather restores the **persistent misty baseline**, not an unintended completely clear world. Heavy-fog visibility remains navigable; inactive emitters sleep; profile storm versus normal-mist cost.
 - **Assistant:** **Codex / ChatGPT Work** for multi-effect integration; **Copilot** for local inactive/active profiler tests.
 
 ## WE7 — Caves, landmarks and environmental composition
 
-**Objective:** Make exploring the landscape rewarding even with no enemies or survival loop.
+**Objective:** Make exploring the **misty** landscape rewarding with glimpses, partial reveals and recognizable landmarks — still with no enemies or survival loop.
 
 - **Dependencies:** WE2 world shape, WE3 region visibility and WE5–WE6 ambience.
-- **Scope:** One well-integrated cave entrance/interior, recognizable rock formation or ruin, a few exploration routes and point-of-interest dressing; optional atmospheric cues like dripping water or distant thunder.
+- **Scope:** One well-integrated cave entrance/interior, recognizable rock formation or ruin, a few exploration routes and point-of-interest dressing deliberately staged for **fog-obscured approaches and gradual reveal**; optional atmospheric cues like dripping water or distant thunder. No robot silhouette object is required.
 - **Out of scope:** Combat arenas, dungeon loot, quests, machines, mining or universal terrain carving.
 - **Owning files:** `WORLD/PointsOfInterest/`, cave mesh assets under `ASSETS/`, relevant world placement/streaming and environment volume controls.
 - **Approach:** Use Terrain3D holes or suitable transitions with separate 3D cave meshes, not a voxel-world rewrite. Blend terrain/cave materials; verify collision, camera navigation and fog/light transitions. Ensure location identifiers stay stable.
 - **Data/config:** World-space POI coordinates/ids, cave entrance transforms, visibility/load radii and local atmosphere overrides.
 - **Performance:** Stream POI detail by distance, keep interiors dormant when unvisited, disable hidden effects, and watch cave occlusion/shadow costs.
-- **Pass criteria:** Player can identify a landmark, travel there, enter/exit a cave and return without holes, clipping, navigation blocks, lost state or severe frame spikes.
+- **Pass criteria:** Player can pick out a distinctive large shape through mist, approach until details emerge, locate a route, enter/exit a cave and return without holes, clipping, navigation blocks, disorienting permanent whiteout or severe frame spikes. No enemy or robotic actor is required.
 - **Assistant:** **Codex / ChatGPT Work** for scene and terrain integration; **Regular Chat** for level-design notes and asset shortlist.
 
 ## WE8 — Environment acceptance and performance polish
@@ -200,13 +217,13 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 **Objective:** Prove the environment is ready to serve as a foundation before considering mechanics.
 
 - **Dependencies:** WE1–WE7 integrated to the degree requested/accepted.
-- **Scope:** Practical target-PC quality profiles, frame time/memory/streaming tests, camera traversal checks, terrain/foliage/fog blending, audio mood, edge-case region tests and documentation reconciliation.
+- **Scope:** Practical target-PC quality profiles, frame time/memory/streaming tests, camera traversal checks, **persistent-mist readability and silhouette/fog blending** across time/weather, audio mood, edge-case region tests and documentation reconciliation.
 - **Out of scope:** Robots, enemy navigation, weapons, crafting, hunger, base building and networking.
 - **Owning files:** Existing subsystem configs, `DEBUG/`, owning folder docs, this plan, and targeted fixes to measured bottlenecks.
 - **Approach:** Establish repeatable traversal/viewpoints, baseline near/mid/far screenshots or descriptions, quality-tier comparisons and capture actual CPU/GPU profiler data. Fix issues based on evidence.
 - **Data/config:** Named performance presets and documented hardware/settings, not hardcoded assumptions that all PCs match.
 - **Performance:** Explicit tests for idle, start/stop, load/unload, reactivation, high density, rainy/storm conditions, cave transitions and distant views. No “optimized” claims without measurements.
-- **Pass criteria:** **testworld.tscn** launches directly, feels atmospheric and worth exploring, retains authored content, shows meaningful distant scenery and meets an **agreed** frame-time target on the owner's PC. Decide with the user whether to promote/rename this same working scene or instantiate its reusable systems under a new `WorldRoot.tscn`; do not rebuild from scratch. User visual acceptance is required to mark Accepted.
+- **Pass criteria:** **testworld.tscn** launches directly into a predominantly misty, eerie wilderness that still feels worth exploring; nearby textures remain legible, distant forms reveal naturally through fog, time/weather changes remain coherent, authored content persists and target-PC performance meets an **agreed** frame-time budget. Decide with the user whether to promote/rename this same working scene or instantiate its reusable systems under a new `WorldRoot.tscn`; do not rebuild from scratch. User visual acceptance is required to mark Accepted.
 - **Assistant:** **Copilot** for repeatable local profiling/tests, **Codex / ChatGPT Work** for measured multi-system fixes and **Regular Chat** to summarize results/re-plan.
 
 ## Shared handoff and execution rules
@@ -228,4 +245,4 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 - Whether custom terrain and region streaming are genuinely needed beyond addons/built-in LOD.
 - Which assets and material style best communicate believable rugged wilderness.
 
-**Environment milestone:** A player launches **`WORLD/testworld.tscn`**, explores varied smooth terrain with convincing vegetation and wind, watches Sky3D's moving sun over distant hills, experiences later fog/rain changes and eventually visits a cave or landmark — **with no robot or survival mechanics required**.
+**Environment milestone:** A player launches **`WORLD/testworld.tscn`** into a **usually misty, eerie forested wilderness**: textured hills and vegetation remain readable up close, distant ridges and tree silhouettes melt into blue-grey fog, the Sky3D sun moves through changing haze, and later rain and cave/landmark exploration deepen the atmosphere — **with no robot, enemy or survival mechanics required**.

@@ -5,7 +5,7 @@
 
 ## Game vision
 
-**War Machine** begins as a **3D wilderness to explore**: vast-feeling forests, steep mountains and rocky valleys, caves, abandoned places, shifting weather, damp foliage and distant atmospheric scenery. It should feel isolated, immersive and believable without requiring photorealistic models or AAA production values.
+**War Machine** begins as a **3D wilderness to explore**: vast-feeling forests, steep mountains and rocky valleys, caves, abandoned places, shifting weather, damp foliage and distant atmospheric scenery. **The world is deliberately misty much of the time**—cold, eerie blue-grey depth, with close detail staying clear while distant trees and large forms emerge gradually as silhouettes. It should feel isolated, immersive and believable without requiring photorealistic models or AAA production values.
 
 The atmosphere takes loose inspiration from wilderness sci-fi thrillers featuring soldiers and alien machines, but the world, fiction and designs should be original. The long-term possibility of dangerous mechanical enemies, survival, stealth, combat or even zombies remains open. **None of those systems are needed for the initial environment-focused project.**
 
@@ -14,7 +14,7 @@ The first question is not “is there enough gameplay?” It is: **is walking th
 ### Design pillars
 
 - **Explore first, survival later.** Movement, terrain, long views, environmental variation, weather, sound and landmarks come before enemy encounters or crafting.
-- **The landscape is the protagonist.** A coherent forested valley with convincing wind and mist matters more than individually spectacular assets.
+- **The landscape is the protagonist.** A coherent forested valley with convincing wind and **persistent atmospheric mist** matters more than individually spectacular assets. Mist is a signature mood, not only a rare weather event; future machines should emerge gradually from it.
 - **Large-feeling but manageable.** Build a persistent, finite, expandable world with a mixture of procedural generation and authored detail.
 - **Natural terrain, not a universal voxel sandbox.** Smooth mountains and sculptable ground; caves can be separate geometry. The player does not need to dig or rebuild the entire world. Limited explosion damage may be explored much later.
 - **Visual consistency over complexity.** Reusable rocks, trees, foliage and materials can convey scale and realism when composed well.
@@ -36,7 +36,7 @@ The world should combine:
 - **Geography:** ranges, ridgelines, valleys, clearings, cliffs, water corridors and traversable routes.
 - **Terrain materials:** soil, rock, grass, mud and other appropriate surfaces, blended naturally.
 - **Vegetation:** forests, trees, shrubs, grass, ferns, fallen logs, small rocks and regional variation.
-- **Atmosphere:** lighting, sky, moving clouds, wind, rain, fog, mist, storms and suitable ambient sound.
+- **Atmosphere:** lighting, sky, moving clouds, wind, rain, **misty-by-default distance fog**, occasional denser low-lying fog, storms and suitable ambient sound. Near terrain should remain readable while the distance turns to silhouettes.
 - **Places:** cave entrances and interiors, notable formations, isolated structures and recognizable landmarks.
 - **Persistence:** stable seeds and stored authored changes, allowing procedural tools to help create a world without endlessly reshuffling it.
 
