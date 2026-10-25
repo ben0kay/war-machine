@@ -25,11 +25,11 @@ The first question is not “is there enough gameplay?” It is: **is walking th
 
 The repository was initialized as a **Godot 4 C#/.NET** project. Its checked-in `project.godot` indicates Godot **4.7** project features, **Forward+** rendering, **Direct3D 12** for Windows and **Jolt Physics**. Actual engine/addon installations must be verified in the project; the config is not proof of compatibility.
 
-**Terrain3D** is the intended first terrain addon to evaluate and integrate. **Sky3D** is a possible sky/day-night foundation. Neither should be assumed installed, enabled or working until inspected and validated. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
+**Terrain3D** is checked into `addons/terrain_3d` (v1.0.2) with its demo assets. **Sky3D** is the preferred first sky/day-night addon, but must be verified from checked-in files and editor state before use. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
 
 ## World philosophy
 
-Build **one real playable world scene**, not disconnected test environments whose features later need to be reassembled. Small test scenes can assist diagnosis, but every accepted system must be integrated and validated in the main world.
+Build **one real playable world scene**, not disconnected feature demos whose systems later need reassembly. The initial environment scene is deliberately named **`WORLD/testworld.tscn`**; despite the name, it is the reusable playable foundation, with any later promotion into a main world handled deliberately. Every accepted system should be integrated and validated there.
 
 The world should combine:
 
