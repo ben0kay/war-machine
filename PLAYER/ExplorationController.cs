@@ -3,6 +3,7 @@ using Godot;
 
 public partial class ExplorationController : Node3D
 {
+    public event System.Action<Vector3>? ViewPositionChanged;
     [Export] public PlayerConfig Settings { get; set; } = null!;
     private Camera3D _camera = null!;
     private float _pitch;
@@ -11,6 +12,7 @@ public partial class ExplorationController : Node3D
     // Cache the camera and apply the reusable player configuration.
     public override void _Ready()
     {
+        SetNotifyTransform(true);
         _camera = GetNode<Camera3D>("Camera3D");
         _camera.Fov = Settings.FieldOfView; _camera.Far = Settings.FarDistance;
         Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -42,6 +44,14 @@ public partial class ExplorationController : Node3D
         { SetPhysicsProcess(false); return; }
         float speed = Settings.MoveSpeed * (Input.IsPhysicalKeyPressed(Key.Shift) ? Settings.BoostMultiplier : 1f);
         GlobalPosition += direction.Normalized() * speed * (float)delta;
+    }
+
+    // =========================================================
+    // Notify nearby detail only when the explorer transform actually changes, including teleports.
+    public override void _Notification(int what)
+    {
+        if (what == NotificationTransformChanged && IsInsideTree())
+            ViewPositionChanged?.Invoke(GlobalPosition);
     }
 
     // =========================================================

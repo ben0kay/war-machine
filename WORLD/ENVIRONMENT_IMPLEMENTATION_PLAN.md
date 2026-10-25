@@ -9,6 +9,10 @@
 
 **WE0 and WE1 are implemented and Awaiting Validation.** Sky3D 2.1 is installed and enabled. `WORLD/testworld.tscn` is the project main scene, with independently saved Terrain3D landscape, world-owned materials, wind grass, C# exploration and Sky3D time controls. See [WE0_WE1_VALIDATION.md](WE0_WE1_VALIDATION.md) for source audit, checks, known limits and local acceptance. WE2–WE8 remain Planned. No later phase was implemented.
 
+## Authorized grass/mist refinement — implemented, awaiting target-PC acceptance
+
+The follow-up request replaces the sparse crossed cards with the included demo's ribbon GPU approach, adds VEGETATION master quality/density/height/range controls, preserves saved terrain data, and applies EnvironmentMaster fog density 0.025 / start 0m / end 200m. C# build and integration/lifecycle checks passed; software Vulkan captures verify rendering and wind movement. See `../VEGETATION/Validation/README.md` for evidence, measured render counters and outstanding target-GPU profiling. This is a scoped refinement, not authorization for the remaining WE2 geography or later phases.
+
 ## Atmosphere direction — persistent eerie mist (applies to every remaining phase)
 
 **Art-direction decision (2026-10-25):** The wilderness should feel **noticeably misty most of the time**, with a cold, desaturated, eerie mood. This is a defining baseline, not merely an occasional storm condition. Future large machines should be able to emerge gradually from the fog, but **no machine, enemy, combat or gameplay work belongs in the WE phases**.
@@ -22,7 +26,7 @@
 - **Atmosphere is not streaming:** terrain/foliage LOD and region culling must still work with clear air, moving cameras and changes in fog. Distant mountain forms should not abruptly vanish at the same distance fog obscures them.
 - **Future visual goal only:** distant ridges, tree groups, rocks and an occasional *non-gameplay* large silhouette can serve as references for gradual reveal. Do not add a robot or NPC in these phases. A later robot should be partly visible as a moving outline before its full detail appears.
 
-**Confirmed current starting point:** `ENVIRONMENT/Sky/WildernessSky.tscn` already has `SkyDome.fog_density = 0.01`, and Sky3D owns the `WorldEnvironment`. This is **not proof** that the result is currently misty enough on the target PC; inspect it visually first. Preserve the working WE0/WE1 architecture and tune the existing fog instead of replacing Sky3D.
+**Confirmed current starting point:** `ENVIRONMENT/Sky/WildernessSky.tscn` now has `SkyDome.fog_density = 0.025` and `fog_end = 200`, exposed via EnvironmentMaster, and Sky3D owns the `WorldEnvironment`. This is **not proof** that the result is currently misty enough on the target PC; inspect it visually first. Preserve the working WE0/WE1 architecture and tune the existing fog instead of replacing Sky3D.
 
 **Sequencing:** **WE2 establishes a deliberately misty default** while refining landforms; WE3 tests fog-aware distance presentation, WE4 validates trees/foliage fading into mist, WE5 implements/polishes local and time-responsive fog, WE6 adds heavier/clearer weather variations, and WE7–WE8 assess exploration readability and performance in the mist. These are proposed changes to future phase scope, **not authorization to implement WE2 or anything beyond**.
 

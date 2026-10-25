@@ -6,7 +6,8 @@
 [ext_resource type="ShaderMaterial" path="res://WORLD/Terrain/GrassMaterial.tres" id="grass_material"]
 
 [sub_resource type="Terrain3DMeshAsset" id="grass"]
-name = "WindGrass"
+name = "LegacyBakedGrass"
+enabled = false
 generated_type = 1
 generated_faces = 3
 generated_size = Vector2(0.85, 0.9)

@@ -131,7 +131,9 @@ sun_azimuth = -1.9766359
 sun_altitude = -1.6111549
 moon_azimuth = -0.80569494
 moon_altitude = -2.7480938
-fog_density = 0.01
+fog_density = 0.025
+fog_start = 0.0
+fog_end = 200.0
 wind_speed = 7.0
 wind_direction = 1.5708
 

@@ -2,6 +2,10 @@
 
 **State: Awaiting Validation.** Implementation and headless checks passed. User visual acceptance, target-PC frame timing and the configured Godot 4.7 / Windows D3D12 runtime are pending. Job commit: the commit that introduces this file (`git log -1 --format=%H -- WORLD/WE0_WE1_VALIDATION.md`). One implementation commit is used.
 
+## Subsequent grass/mist refinement
+
+The original grass implementation described below is superseded by the demo-ribbon particle adaptation and closer EnvironmentMaster mist. Historical test counts remain here for the first job only. Current implementation, captures and tests: `../VEGETATION/Validation/README.md`. Original saved terrain/authoring data remains unchanged.
+
 ## WE0 audit
 
 - Terrain3D 1.0.2: Linux/Windows binaries exist, minimum declared Godot 4.4. Linux native extension successfully loads in Godot 4.5.1.

@@ -5,7 +5,6 @@ public partial class SkyController : Node
 {
     [Export] public EnvironmentConfig Settings { get; set; } = null!;
     [Export] public Node Sky { get; set; } = null!;
-    [Export] public ShaderMaterial GrassMaterial { get; set; } = null!;
     private bool _paused, _preview;
 
     // =========================================================
@@ -16,11 +15,22 @@ public partial class SkyController : Node
         Sky.Set("minutes_per_day", Mathf.Max(1, Settings.DayLengthMinutes));
         Sky.Set("update_interval", Mathf.Max(0.016f, Settings.UpdateInterval));
         Sky.Set("editor_time_enabled", false);
-        GrassMaterial.SetShaderParameter("wind_direction", Settings.WindDirection.Normalized());
-        GrassMaterial.SetShaderParameter("wind_strength", Settings.GrassWindStrength);
-        GrassMaterial.SetShaderParameter("wind_speed", Settings.GrassWindSpeed);
+        ApplyMist();
         SetPaused(Settings.StartPaused);
         SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // Set the existing SkyDome fog once; explicit calls can reapply edited config without polling.
+    public void ApplyMist()
+    {
+        var dome = Sky.GetNode<Node>("SkyDome");
+        dome.Set("fog_visible", Settings.FogEnabled);
+        dome.Set("fog_density", Mathf.Max(0, Settings.FogDensity));
+        float start = Mathf.Max(0, Settings.FogStart);
+        dome.Set("fog_start", start);
+        dome.Set("fog_end", Mathf.Max(start + 1, Settings.FogEnd));
+        dome.Set("fog_falloff", Mathf.Max(0, Settings.FogFalloff));
     }
 
     // =========================================================

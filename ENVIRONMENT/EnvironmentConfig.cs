@@ -10,8 +10,14 @@ public partial class EnvironmentConfig : Resource
     [Export] public float PreviewDayMinutes { get; set; } = 1f;
     [Export] public float UpdateInterval { get; set; } = 0.1f;
     [Export] public bool StartPaused { get; set; }
+    [ExportGroup("Sky3D Mist")]
+    [Export] public bool FogEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,0.1,0.001")] public float FogDensity { get; set; } = 0.025f;
+    [Export(PropertyHint.Range, "0,500,1")] public float FogStart { get; set; } = 0f;
+    [Export(PropertyHint.Range, "1,2000,1")] public float FogEnd { get; set; } = 200f;
+    [Export(PropertyHint.Range, "0,50,0.1")] public float FogFalloff { get; set; } = 3f;
     [ExportGroup("Shared Wind")]
     [Export] public Vector2 WindDirection { get; set; } = new(1, 0.4f);
-    [Export] public float GrassWindStrength { get; set; } = 0.22f;
-    [Export] public float GrassWindSpeed { get; set; } = 1.4f;
+    [Export] public float GrassWindStrength { get; set; } = 1f;
+    [Export] public float GrassWindSpeed { get; set; } = 0.025f;
 }
