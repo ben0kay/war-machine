@@ -1,0 +1,5 @@
+# Sky3D integration
+
+`WildernessSky.tscn` contains the actual installed Sky3D scripts and shader. SunLight/MoonLight are explicitly serialized children; SkyDome and TimeOfDay reference the installed addon APIs. This scene is reused by the world.
+
+`SkyController.cs` changes `current_time`, `minutes_per_day`, `update_interval` and `game_time_enabled` through Godot's dynamic API, because Sky3D is GDScript. All project-owned runtime code remains C#. No third-party source modifications are required.

@@ -1,0 +1,36 @@
+[gd_scene load_steps=10 format=3]
+[ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
+[ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
+[ext_resource type="Terrain3DAssets" path="res://WORLD/Terrain/TerrainAssets.tres" id="4"]
+[ext_resource type="PackedScene" path="res://PLAYER/Explorer.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://ENVIRONMENT/Sky/WildernessSky.tscn" id="6"]
+[ext_resource type="Script" path="res://ENVIRONMENT/Sky/SkyController.cs" id="7"]
+[ext_resource type="Resource" path="res://ENVIRONMENT/Configuration/EnvironmentMaster.tres" id="8"]
+[ext_resource type="ShaderMaterial" path="res://WORLD/Terrain/GrassMaterial.tres" id="9"]
+[node name="TestWorld" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+[node name="Terrain3D" type="Terrain3D" parent="."]
+region_size = 1024
+data_directory = "res://WORLD/Terrain/Data"
+material = ExtResource("3")
+assets = ExtResource("4")
+[node name="Explorer" parent="." instance=ExtResource("5")]
+position = Vector3(512, 100, 620)
+[node name="Sky3D" parent="." instance=ExtResource("6")]
+[node name="Environment" type="Node" parent="." node_paths=PackedStringArray("Sky")]
+script = ExtResource("7")
+Settings = ExtResource("8")
+Sky = NodePath("../Sky3D")
+GrassMaterial = ExtResource("9")
+[node name="Controls" type="CanvasLayer" parent="."]
+[node name="Help" type="Label" parent="Controls"]
+offset_left = 18.0
+offset_top = 18.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+text = "WASD fly · QE / Space vertical · Shift boost · Esc mouse
+P pause sun · F8 accelerated day preview"
+mouse_filter = 2

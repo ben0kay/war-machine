@@ -25,7 +25,7 @@ The first question is not “is there enough gameplay?” It is: **is walking th
 
 The repository was initialized as a **Godot 4 C#/.NET** project. Its checked-in `project.godot` indicates Godot **4.7** project features, **Forward+** rendering, **Direct3D 12** for Windows and **Jolt Physics**. Actual engine/addon installations must be verified in the project; the config is not proof of compatibility.
 
-**Terrain3D** is checked into `addons/terrain_3d` (v1.0.2) with its demo assets. **Sky3D** is the preferred first sky/day-night addon, but must be verified from checked-in files and editor state before use. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
+**Terrain3D** is checked into `addons/terrain_3d` (v1.0.2) with its demo assets. **Sky3D 2.1** is installed and integrated as the sky/day-night owner. The playable entry is `WORLD/testworld.tscn`: saved valley terrain, slope-blended cliff/grass, shared GPU wind grass and reusable free-flight exploration. C# build and headless integration checks passed under Godot 4.5.1 .NET; visual/performance acceptance and the configured local 4.7/D3D12 runtime remain pending. See `WORLD/WE0_WE1_VALIDATION.md`. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
 
 ## World philosophy
 

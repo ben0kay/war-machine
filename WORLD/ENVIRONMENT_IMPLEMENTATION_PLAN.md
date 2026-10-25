@@ -5,17 +5,21 @@
 > **Owner:** `WORLD/` (cross-system dependencies may later live in `VEGETATION/`, `ENVIRONMENT/`, `PLAYER/` and `DEBUG/`).  
 > **Guidance:** [Root game overview](../README.md) · [CodePreferences](../CodePreferences.md) · [WORLD ownership](README.md)
 
+## Current implementation status — 2026-10-25
+
+**WE0 and WE1 are implemented and Awaiting Validation.** Sky3D 2.1 is installed and enabled. `WORLD/testworld.tscn` is the project main scene, with independently saved Terrain3D landscape, world-owned materials, wind grass, C# exploration and Sky3D time controls. See [WE0_WE1_VALIDATION.md](WE0_WE1_VALIDATION.md) for source audit, checks, known limits and local acceptance. WE2–WE8 remain Planned. No later phase was implemented.
+
 ## Confirmed baseline and current repository audit
 
 The checked-in project is **Godot 4.7-featured C#/.NET, Forward+, Direct3D 12 and Jolt Physics** (per `project.godot`; local runtime compatibility is still unverified).
 
-**Confirmed on GitHub `main` at plan revision:**
+**Confirmed by the WE0/WE1 source and headless audit:**
 - `addons/terrain_3d/` contains **Terrain3D 1.0.2** (`plugin.cfg`) plus binaries/editor assets.
 - `demo/Demo.tscn` is the *visually rich reference*: `demo/data/assets.tres` defines **Cliff** and **Grass** textures and foliage assets; the scene enables the terrain **autoshader** with `auto_base_texture`, `auto_overlay_texture`, `auto_slope`, macro variation and texture detiling. Terrain data lives under `res://demo/data`.
 - `demo/CodeGeneratedDemo.tscn` + `demo/src/CodeGenerated.gd` demonstrate seeded-noise-style heightmap generation/import and instance placement. **Its simpler procedural textures are not a substitute for the polished main demo material settings.**
 - `demo/components/Environment.tscn` provides a **static** procedural sky and directional sunlight, which must not also control the sky in our Sky3D world.
 - `demo/src/DemoScene.gd` includes a conditional *Sky3D editor integration example*, referencing `res://addons/sky_3d/src/Sky3D.gd`, but **that reference does not mean the addon is installed**.
-- **Sky3D and the other plugin mentioned by the owner are not yet visible in the inspected `main` addons directory.** Codex must re-check after the owner's push before integrating either; never fabricate their API or scenes. Preserve the extra plugin if present, but do not add it to the scope without identifying its role.
+- **Sky3D 2.1 is installed, enabled and integrated.** Its source API and headless moving-sun behaviour were verified. Only Terrain3D and Sky3D addon folders are present; no third plugin was found. Runtime/visual acceptance on the owner's configured engine remains pending.
 
 ### Revised scene decision
 
@@ -31,8 +35,8 @@ Play `testworld.tscn` and **see smooth hills/valleys, naturally blended grassy s
 
 | Phase | Goal | Recommended lead | Status |
 | --- | --- | --- | --- |
-| **WE0** | Verify Terrain3D demo, Sky3D installation/API and one-scene design | Regular Chat + Copilot (Codex may include quick audit in WE1) | Planned |
-| **WE1** | **Build playable `WORLD/testworld.tscn`: demo-quality terrain, grass/rock, wind-moving grass, Sky3D moving sun** | **Codex / ChatGPT Work** | **Planned — next proposed Codex task** |
+| **WE0** | Verify Terrain3D demo, Sky3D installation/API and one-scene design | Regular Chat + Copilot (Codex may include quick audit in WE1) | Awaiting Validation |
+| **WE1** | **Build playable `WORLD/testworld.tscn`: demo-quality terrain, grass/rock, wind-moving grass, Sky3D moving sun** | **Codex / ChatGPT Work** | **Awaiting Validation** |
 | **WE2** | Refine terrain geography, materials and deterministic authoring workflow | Codex / ChatGPT Work | Planned |
 | **WE3** | Validate long-distance views, terrain/foliage LOD and scoped streaming | Codex / ChatGPT Work | Planned |
 | **WE4** | Expand vegetation into varied forests, rocks and coherent wind | Codex / ChatGPT Work | Planned |
@@ -41,7 +45,7 @@ Play `testworld.tscn` and **see smooth hills/valleys, naturally blended grassy s
 | **WE7** | Add caves, landmarks and memorable exploration routes | Codex / ChatGPT Work | Planned |
 | **WE8** | Profile, tune quality tiers, decide whether to promote testworld | Copilot + Codex / ChatGPT Work | Planned |
 
-All phases are **Planned**. No code implementation is being authorized by this documentation update. **Status vocabulary:** Planned → In Progress → Implemented → Awaiting Validation → Accepted. Advance phases only on explicit instruction; building/pushing something is not proof it was tested or accepted.
+WE0/WE1 are implemented with automated checks, awaiting local visual/performance acceptance. WE2–WE8 remain **Planned**. **Status vocabulary:** Planned → In Progress → Implemented → Awaiting Validation → Accepted. Advance phases only on explicit instruction; building/pushing something is not proof it was tested or accepted.
 
 ## WE0 — Quick compatibility and demo audit
 
@@ -105,7 +109,7 @@ All phases are **Planned**. No code implementation is being authorized by this d
 - Saved terrain/materials and placement persist across restart; original `demo/` remains unchanged.
 - Record what was automated versus inspected visually, CPU/GPU baseline if measured, known hardware/renderer issues and any pending local visual validation.
 
-**Recommended assistant:** **Codex / ChatGPT Work** for multi-file editor/addon/C# integration; **Copilot** can run Godot locally, compile and inspect visual/performance results. **This phase is still Planned until the user explicitly says to implement WE1.**
+**Recommended assistant:** **Codex / ChatGPT Work** for multi-file editor/addon/C# integration; **Copilot** can run Godot locally, compile and inspect visual/performance results. **Implemented by the authorized WE0/WE1 job; Awaiting Validation.**
 
 ## WE2 — Geographic composition and terrain authoring
 
@@ -218,7 +222,7 @@ All phases are **Planned**. No code implementation is being authorized by this d
 
 ## Things to decide during the audit, not beforehand
 
-- Terrain3D 1.0.2 is checked in; verify its local/editor runtime and the **not-yet-visible Sky3D addon**, plus the other plugin's identity/version.
+- Terrain3D 1.0.2 and Sky3D 2.1 are verified from source and headless integration; complete the local/editor visual checks in WE0_WE1_VALIDATION.md. No third addon folder was found.
 - Target GPU/RAM and expected frame time at desired view distance.
 - First-person vs third-person camera (a basic controller is sufficient for WE1).
 - Whether custom terrain and region streaming are genuinely needed beyond addons/built-in LOD.

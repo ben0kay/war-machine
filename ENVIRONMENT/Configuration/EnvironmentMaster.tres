@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnvironmentConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ENVIRONMENT/EnvironmentConfig.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+StartHour = 9.0
+DayLengthMinutes = 24.0
+PreviewDayMinutes = 1.0
+UpdateInterval = 0.1
+StartPaused = false
+WindDirection = Vector2(1, 0.4)
+GrassWindStrength = 0.22
+GrassWindSpeed = 1.4
