@@ -26,3 +26,6 @@ This is a **non-combat environment encounter** to validate scale, silhouette, mo
 New folders/materials/scripts are created **only when their phase is authorized**. Major folder README and master config resources follow CodePreferences. Keep C# runtime logic readable, modular, inspector-exposed and dormant when inactive. Engine/addon source remains untouched.
 
 **Next proposed phase:** RM0 architecture/data model, followed by RM1 robotic silhouette. Implement **only** a phase the owner explicitly selects.
+## Before Codex starts
+
+The implementation plan includes **cross-phase modularity and performance guardrails**: idempotent actor activation/deactivation with event cleanup; event-driven proximity wake/sleep with hysteresis; one shared gait update and foot-target caching; cached procedural mesh resources and stable VisualRoot/SensorSocket transforms; separate logical sensor vs transparent beam (no full-world target scans); and bounded raycasts / shader overdraw. These are constraints on RM0–RM5, **not additional phases**. The root entity scene stays minimal; no generic entity manager, premature navigation system or new debug UI is required.
