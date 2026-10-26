@@ -1,0 +1,12 @@
+[gd_resource type="ShaderMaterial" load_steps=5 format=3]
+[ext_resource type="Shader" path="res://WORLD/Content/Caves/Shaders/CaveHillside.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://demo/assets/textures/rock023_alb_ht.png" id="2"]
+[ext_resource type="Texture2D" path="res://demo/assets/textures/rock023_nrm_rgh.png" id="3"]
+[ext_resource type="Texture2D" path="res://demo/assets/textures/ground037_alb_ht.png" id="4"]
+[resource]
+shader = ExtResource("1")
+shader_parameter/cliff_albedo = ExtResource("2")
+shader_parameter/cliff_normal = ExtResource("3")
+shader_parameter/ground_albedo = ExtResource("4")
+shader_parameter/texture_scale = 0.25
+shader_parameter/normal_strength = 1.0

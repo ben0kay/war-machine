@@ -30,6 +30,9 @@ public partial class CaveSettings : Resource
     [Export] public float BranchLength { get; set; } = 75;
     [Export] public float BranchDescent { get; set; } = 12;
     [Export] public float JunctionLength { get; set; } = 14;
+    [ExportGroup("Exterior hillside material")]
+    [Export] public float ExteriorTextureScale { get; set; } = 0.25f;
+    [Export] public float ExteriorNormalStrength { get; set; } = 1;
     [ExportGroup("Lighting")]
     [Export] public float LightEnergy { get; set; } = 2;
     [Export] public Color LightColor { get; set; } = new(0.35f, 0.65f, 1);

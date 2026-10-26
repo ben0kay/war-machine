@@ -72,7 +72,10 @@ public partial class WildernessCave : Node3D
         for (int branch = 1; branch < _passages.Count; branch++) BuildPassage(inside, _passages[branch], true);
         BuildJunction(inside, main, _passages[1], _passages[2], noise);
         AddSolid("Tunnel", inside.Finish());
-        BuildEntrance(data, centers, rings, profile, material, noise);
+        var exterior = (ShaderMaterial)GD.Load<ShaderMaterial>("res://WORLD/Content/Caves/Configuration/CaveExterior.tres").Duplicate();
+        exterior.SetShaderParameter("texture_scale", Mathf.Clamp(Settings.ExteriorTextureScale, 0.05f, 2));
+        exterior.SetShaderParameter("normal_strength", Mathf.Clamp(Settings.ExteriorNormalStrength, 0, 1));
+        BuildEntrance(data, centers, rings, profile, exterior, noise);
         for (int p = 0; p < _passages.Count; p++)
         {
             var passage = _passages[p]; int step = passage.Centers.Length / 4;

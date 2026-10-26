@@ -43,3 +43,11 @@ New CaveMaster parameters: DescentDepth 30, MaximumGrade 0.35, CorridorWanderDeg
 Naturally covered branches skip terrain embedding altogether. For the main approach, the existing bounded entrance-support pass only edits cells that still need roof cover (plus the doorway hole); deeper cells keep the original terrain. Underground geometry is just passage floor/walls/ceiling and collision, with the existing shared-port fork and terminal caps. No surrounding rock volumes, separate underground terrain, global rebake or saved-region write. Surface support still handles shallow approaches/low terrain where required.
 
 Checks: source/resource review, bounded representative descent calculations and whitespace. Local build/render/walking are pending because Godot/.NET are unavailable. Check descending grade from the mouth to junction/both branches, roof intersections/daylight, entrance join, collisions and shelter. No new runtime cave callbacks; all route/cover sampling happens once at startup.
+
+## Exterior hillside material
+
+The entrance apron now uses its own `Configuration/CaveExterior.tres` / `Shaders/CaveHillside.gdshader`, sharing the same packed rock023 albedo/normal and ground037 albedo as `WORLD/Terrain/TerrainAssets.tres`. Only BuildEntrance receives this material: the approved interior retains its previous stone material/scale.
+
+Default exterior texture scale is 0.25 instead of the interior stone's 0.8, giving roughly 3.2× larger visible rock features. Sharper world-space triplanar weights preserve block detail instead of blending projections broadly. Normal strength 1.0 and terrain-like roughness/cool macro tint replace the smoother moss/wet stone finish; upward ledges blend the terrain ground texture. This approximates the hillside appearance on an arbitrary mesh, not the entire Terrain3D material pipeline.
+
+`CaveMaster` owns ExteriorTextureScale and ExteriorNormalStrength (spawn-time values). No cave shape, descent, noise, floor, junction, collision or terrain texture settings change in this revision. Resource/source checks only; visual colour/scale match remains pending local acceptance because Godot/.NET are unavailable here.

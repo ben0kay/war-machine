@@ -6,6 +6,10 @@
 >
 > **Project rules:** [Root README](../README.md) · [CodePreferences](../CodePreferences.md) · [ENTITIES ownership](README.md). This plan is separate from the environment-only [WE roadmap](../WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md).
 
+## Current art direction — 2026-10-26
+
+Owner superseded the provisional quadruped with an original heavy **two-legged** cyan scanner: reinforced articulated legs/feet, broad armour, and two cyan-lit components flanking the head. Implemented in RobotMeshBuilder/RobotMaster with alternating biped gait and forward knee directions. Generic scene inheritance, patrol/sensing and head-emitted beam are preserved. MechanicalLegs still supports future four-legged art. Historical RM1 four-leg requirements below describe the earlier prototype; this paragraph is the current artwork contract. Build/render/gait/pod-clearance acceptance is pending locally. Cave exterior also receives a hillside-specific material in the same authorized job; interior and cave generation are unchanged.
+
 ## Phases at a glance
 
 | Phase | Goal | Recommended assistant | Status |

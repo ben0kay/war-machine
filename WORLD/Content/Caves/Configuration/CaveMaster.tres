@@ -27,3 +27,5 @@ MaximumGrade = 0.35
 CorridorWanderDegrees = 35.0
 CorridorVerticalNoise = 0.5
 MinimumRoofCover = 3.0
+ExteriorTextureScale = 0.25
+ExteriorNormalStrength = 1.0

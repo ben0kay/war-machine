@@ -40,14 +40,15 @@ public partial class RobotController : EntityCore
             else body = RobotMeshBuilder.Build(VisualRoot, s);
             HeadPivot = body.GetNode<Node3D>("HeadPivot");
             SensorSocket = HeadPivot.GetNode<Node3D>("SensorSocket");
-            var hips = new Node3D[4]; var offsets = new Vector3[4];
-            for (int i = 0; i < 4; i++)
+            int legCount = RobotMeshBuilder.LegNames.Length;
+            var hips = new Node3D[legCount]; var offsets = new Vector3[legCount]; var bends = new Vector3[legCount];
+            for (int i = 0; i < legCount; i++)
             {
                 hips[i] = body.GetNode<Node3D>(RobotMeshBuilder.LegNames[i] + "Hip");
-                offsets[i] = hips[i].Position;
+                offsets[i] = hips[i].Position; bends[i] = Vector3.Forward;
             }
             _legs = new MechanicalLegs(VisualRoot, body, hips, offsets, s.HipHeight,
-                Mathf.Max(0.1f, s.UpperLegLength), Mathf.Max(0.1f, s.LowerLegLength), s.StanceWidth)
+                Mathf.Max(0.1f, s.UpperLegLength), Mathf.Max(0.1f, s.LowerLegLength), s.StanceWidth, bends)
             {
                 StrideLength = s.StrideLength, CyclesPerSecond = s.GaitSpeed, Lift = s.LegLift,
                 StanceFraction = s.StanceFraction, Bob = s.BodyBob, PitchDegrees = s.BodyPitchDegrees, SettleSeconds = s.SettleSeconds
