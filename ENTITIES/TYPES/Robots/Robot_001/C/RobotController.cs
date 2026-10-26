@@ -1,4 +1,4 @@
-// Robot_001 art assembly and explicit gait preview only. Patrol and scanning are later phases.
+// Thin robot coordinator: shared patrol, shared logical sensing, independent cone VFX and optional gait.
 using Godot;
 
 public partial class RobotController : EntityCore
@@ -9,6 +9,15 @@ public partial class RobotController : EntityCore
     public Node3D SensorSocket { get; private set; } = null!;
     private MechanicalLegs? _legs;
     private VisibleOnScreenNotifier3D _visibility = null!;
+    public event System.Action<string>? StageChanged;
+    public string Stage { get; private set; } = "Idle";
+    public PatrolController Patrol => _patrol;
+    private PatrolController _patrol = null!;
+    private ScanSensor _sensor = null!;
+    private ScanBeam _beam = null!;
+    private Timer _stageTimer = null!;
+    private bool _encounter, _hiddenWasActive;
+    private float _scanElapsed;
     private float _motionSpeed;
     private bool _preview, _relevant = true, _built;
 
@@ -49,12 +58,41 @@ public partial class RobotController : EntityCore
             collision.Position = Vector3.Up * height * 0.5f;
             _visibility = new VisibleOnScreenNotifier3D { Aabb = new Aabb(new Vector3(-7, 0, -7) * scale, new Vector3(14, 13, 14) * scale) };
             AddChild(_visibility);
+            _patrol = new PatrolController { Name = "Patrol" }; AddChild(_patrol);
+            _sensor = new ScanSensor { Name = "ScanSensor" }; AddChild(_sensor);
+            _beam = GD.Load<PackedScene>("res://ENTITIES/TYPES/Robots/Shared/Scanning/ScanBeam.tscn").Instantiate<ScanBeam>();
+            SensorSocket.AddChild(_beam);
+            _beam.Scale = Vector3.One / Mathf.Max(0.001f, SensorSocket.GlobalBasis.X.Length());
+            _beam.Configure(s.Sensor.Range, s.Sensor.FullAngleDegrees, s.SensorColor, s.BeamOpacity, s.BeamBrightness, s.LineSpeed);
+            _stageTimer = new Timer { Name = "EncounterStage", OneShot = true }; AddChild(_stageTimer);
             _preview = s.PreviewWalking; _built = true;
         }
         _visibility.ScreenEntered += OnScreenEntered; _visibility.ScreenExited += OnScreenExited;
-        VisibilityChanged += RefreshProcessing;
+        VisibilityChanged += OnVisibilityChanged;
+        _patrol.SpeedChanged += SetMotionSpeed;
+        _patrol.WalkingStarted += OnWalking;
+        _patrol.Arrived += OnArrived;
+        _patrol.ReadyToDepart += BeginScan;
+        _stageTimer.Timeout += OnStageTimeout;
         base._Ready();
     }
+
+    // =========================================================
+    // Inject the route, optional height sampler and explicit target; scene paths stay in the world owner.
+    public void InitializeEncounter(Vector3[] route, System.Func<Vector3, Vector3>? groundTarget, Node3D? candidate)
+    {
+        _preview = false;
+        _legs!.ResolveFootTarget = groundTarget; _legs.ResetPose();
+        _patrol.Initialize(this, RuntimeRobotSettings.Patrol, route);
+        _sensor.Initialize(this, SensorSocket, RuntimeRobotSettings.Sensor);
+        if (candidate != null) _sensor.RegisterCandidate(candidate);
+        _encounter = true;
+        if (IsActive && RuntimeRobotSettings.EncounterEnabled) _patrol.StartPatrol();
+    }
+
+    // =========================================================
+    // Nonvisual candidates are explicitly registered, independently of beam visibility.
+    public ScanSensor Sensor => _sensor;
 
     // =========================================================
     // Debug treadmill preview changes only the rig, never the physics root position.
@@ -80,7 +118,10 @@ public partial class RobotController : EntityCore
     // =========================================================
     // Relevance can also be controlled explicitly by later distance integration.
     public void SetVisualRelevant(bool relevant)
-    { _relevant = relevant; RefreshProcessing(); }
+    {
+        if (relevant && !_relevant && IsActive && VisualRoot.IsInsideTree()) _legs?.ResetPose();
+        _relevant = relevant; RefreshProcessing();
+    }
 
     // =========================================================
     // Head rotation is independent of the body and clamped to the configured hardware limit.
@@ -94,24 +135,104 @@ public partial class RobotController : EntityCore
     // Single active callback drives every leg; stopped, hidden or irrelevant art does no animation work.
     public override void _Process(double delta)
     {
-        _legs?.Tick((float)delta, _preview ? 1 : _motionSpeed / 2, _preview);
+        float dt = (float)delta;
+        if (_relevant && IsVisibleInTree() && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)))
+            _legs?.Tick(dt, _preview ? 1 : _motionSpeed / 2, _preview);
+        if (Stage == "Scanning")
+        {
+            _scanElapsed += dt;
+            var s = RuntimeRobotSettings;
+            float yaw = Mathf.Sin(_scanElapsed * Mathf.Tau * s.SweepCyclesPerSecond - Mathf.Pi * 0.5f) * s.SweepDegrees * 0.5f;
+            SetHeadYaw(yaw);
+            HeadPivot.Rotation = new Vector3(Mathf.DegToRad(s.ScanPitchDegrees), HeadPivot.Rotation.Y, 0);
+        }
+        else if (Stage == "Recovering")
+        {
+            float fraction = (float)(_stageTimer.TimeLeft / Mathf.Max(0.01f, RuntimeRobotSettings.RecoverySeconds));
+            HeadPivot.Rotation = _recoveryRotation * fraction;
+        }
+        RefreshProcessing();
+    }
+
+    private Vector3 _recoveryRotation;
+
+    // =========================================================
+    // Arrival is owned by generic patrol; the robot only reports the visual encounter stage.
+    private void OnArrived(int waypoint) => SetStage("Settling");
+
+    // =========================================================
+    // Patrol's finished dwell requests a scan; pausing here preserves the current waypoint.
+    private void BeginScan()
+    {
+        if (!IsActive || !_encounter) return;
+        _patrol.PausePatrol(); _scanElapsed = 0;
+        SetHeadYaw(-RuntimeRobotSettings.SweepDegrees * 0.5f);
+        HeadPivot.Rotation = new Vector3(Mathf.DegToRad(RuntimeRobotSettings.ScanPitchDegrees), HeadPivot.Rotation.Y, 0);
+        _beam.SetScanning(true); _sensor.StartScan(); SetStage("Scanning");
+        _stageTimer.Start(Mathf.Max(0.1f, RuntimeRobotSettings.ScanSeconds)); RefreshProcessing();
+    }
+
+    // =========================================================
+    // One bounded timer owns scan/recovery durations; no duplicate subscriptions on each cycle.
+    private void OnStageTimeout()
+    {
+        if (Stage == "Scanning")
+        {
+            _beam.SetScanning(false); _sensor.StopScan();
+            _recoveryRotation = HeadPivot.Rotation; SetStage("Recovering");
+            _stageTimer.Start(Mathf.Max(0.01f, RuntimeRobotSettings.RecoverySeconds));
+        }
+        else if (Stage == "Recovering")
+        {
+            HeadPivot.Rotation = Vector3.Zero; SetStage("Walking"); _patrol.ResumePatrol();
+        }
         RefreshProcessing();
     }
 
     // =========================================================
+    // Keep the coordinator's status event-driven rather than maintaining a polling debug UI.
+    private void SetStage(string stage)
+    { if (Stage != stage) { Stage = stage; StageChanged?.Invoke(stage); } }
+
+    // =========================================================
+    // Generic motion events drive the gait; patrol never touches robot limbs.
+    private void OnWalking() { HeadPivot.Rotation = Vector3.Zero; SetStage("Walking"); }
+
+    // =========================================================
     // Activation resumes a valid stance; no timers or external subscriptions are needed.
-    protected override void OnActivated() { _legs?.ResetPose(); RefreshProcessing(); }
+    protected override void OnActivated()
+    {
+        _legs?.ResetPose();
+        if (_encounter && RuntimeRobotSettings.EncounterEnabled)
+        {
+            if (_patrol.State == PatrolController.PatrolState.Stopped) _patrol.StartPatrol();
+            else if (_patrol.State == PatrolController.PatrolState.Paused) _patrol.ResumePatrol();
+        }
+        RefreshProcessing();
+    }
 
     // =========================================================
     // Hard disable freezes a settled neutral rig immediately and sleeps without a fade callback.
-    protected override void OnDeactivated() { _legs?.ResetPose(); SetProcess(false); }
+    protected override void OnDeactivated()
+    {
+        _stageTimer.Stop(); _beam.SetScanning(false); _sensor.StopScan();
+        if (VisualRoot.IsInsideTree()) _legs?.ResetPose();
+        // Interrupted scans restart as a normal departure; there is no stale timer or visible beam.
+        if (Stage == "Scanning" || Stage == "Recovering") SetStage("Paused");
+        SetProcess(false);
+    }
 
     // =========================================================
     // Release local signal connections before a possible remove/re-add cycle.
     protected override void OnEntityExitTree()
     {
         _visibility.ScreenEntered -= OnScreenEntered; _visibility.ScreenExited -= OnScreenExited;
-        VisibilityChanged -= RefreshProcessing;
+        VisibilityChanged -= OnVisibilityChanged;
+        _patrol.SpeedChanged -= SetMotionSpeed;
+        _patrol.WalkingStarted -= OnWalking; _patrol.Arrived -= OnArrived;
+        _patrol.ReadyToDepart -= BeginScan; _stageTimer.Timeout -= OnStageTimeout;
+        _stageTimer.Stop(); _beam.SetScanning(false); _sensor.StopScan();
+        _encounter = false;
     }
 
     // =========================================================
@@ -123,7 +244,16 @@ public partial class RobotController : EntityCore
     private void OnScreenExited() => SetVisualRelevant(false);
 
     // =========================================================
-    // Wake only for requested motion/preview or the short settling interval.
-    private void RefreshProcessing() => SetProcess(IsActive && _relevant && IsVisibleInTree()
-        && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)));
+    // Hide/show respects explicit actor lifecycle and cancels active encounter work immediately.
+    private void OnVisibilityChanged()
+    {
+        if (!IsVisibleInTree()) { _hiddenWasActive = IsActive; Deactivate(); }
+        else if (_hiddenWasActive) { _hiddenWasActive = false; Activate(); }
+        RefreshProcessing();
+    }
+
+    // =========================================================
+    // Logical head sweep runs during scans; gait alone is visibility-gated.
+    private void RefreshProcessing() => SetProcess(IsActive && (Stage == "Scanning" || Stage == "Recovering"
+        || (_relevant && IsVisibleInTree() && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)))));
 }

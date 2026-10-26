@@ -15,12 +15,12 @@
 
 ## Art and later phases
 
-Physics movement changes the actor root. Art/animation changes `VisualRoot`. RM1 will define `VisualRoot/BodyRoot`, `HeadPivot`, `SensorSocket` (local forward -Z), and named leg pivots in Robot_001's rig; they are not mandatory empty nodes in every entity. Inject typed socket references into later components, preserving them when replacing generated art with a GLB.
+Physics movement changes the actor root. Art/animation changes `VisualRoot`. RM1 defines `VisualRoot/BodyRoot`, `HeadPivot`, `SensorSocket` (local forward -Z), and named leg pivots in Robot_001's rig; they are not mandatory empty nodes in every entity. Inject typed socket references into later components, preserving them when replacing generated art with a GLB.
 
-No patrol, gait, sensor, beam, relevance controller, registry or manager exists yet. RM4 can subscribe to explorer ViewPositionChanged with an initial check and distinct wake/sleep radii; no unused distance settings or polling are added now.
+RM2 adds optional [Movement](Movement/README.md), RM3 adds optional [Sensing](Sensing/README.md), and robot-only gait/beam stay under TYPES/Robots/Shared. RM4 world relevance subscribes to explorer ViewPositionChanged with an initial check and distinct wake/sleep radii. None of those capabilities is mandatory on this base; no global registry/manager is introduced.
 
 ## Cost and validation handoff
 
 Wake: Ready with StartActive, or an explicit Activate call. Sleep: Deactivate or scene exit. The base has no Process/PhysicsProcess overrides, timers, input handlers or queries, even while active. Only optional future capabilities request active callbacks. This is a source-level design claim, not measured profiling.
 
-Validation performed: source review, scene/resource path checks, `git diff --check`. This environment has no dotnet or Godot executable, so compilation and scene instantiation remain **Awaiting Validation**. Locally run `dotnet build war-machine.csproj`, then briefly instantiate two Entity scenes: verify independent RuntimeSettings, repeated Activate/Deactivate emits once per transition, zero velocity/processing when disabled, never-active cleanup, remove/re-add and QueueFree without errors. Verify TestWorld still opens; no world files were edited. No extended visual/performance testing is needed for this nonvisual phase.
+Validation performed: source review, scene/resource path checks, `git diff --check`. This environment has no dotnet or Godot executable, so compilation and scene instantiation remain **Awaiting Validation**. Locally run `dotnet build war-machine.csproj`, then briefly instantiate two Entity scenes: verify independent RuntimeSettings, repeated Activate/Deactivate emits once per transition, zero velocity/processing when disabled, never-active cleanup, remove/re-add and QueueFree without errors. Verify TestWorld still opens; RM0 itself made no world edits (RM4 now adds a world-owned encounter). No extended visual/performance testing is needed for this nonvisual phase.

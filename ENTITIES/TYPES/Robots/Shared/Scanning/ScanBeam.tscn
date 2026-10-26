@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Robots/Shared/Scanning/ScanBeam.cs" id="1"]
+[node name="ScanBeam" type="Node3D"]
+visible = false
+script = ExtResource("1")

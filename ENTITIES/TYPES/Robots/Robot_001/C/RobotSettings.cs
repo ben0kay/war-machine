@@ -26,6 +26,22 @@ public partial class RobotSettings : Resource
     [Export] public float SettleSeconds { get; set; } = 0.4f;
     [ExportGroup("Head")]
     [Export] public float HeadYawLimitDegrees { get; set; } = 60;
+    [ExportGroup("Patrol")]
+    [Export] public PatrolSettings Patrol { get; set; } = new();
+    [ExportGroup("Scanning")]
+    [Export] public ScanSensorSettings Sensor { get; set; } = new();
+    [Export] public float ScanSeconds { get; set; } = 6;
+    [Export] public float RecoverySeconds { get; set; } = 0.8f;
+    [Export] public float SweepDegrees { get; set; } = 120;
+    [Export] public float SweepCyclesPerSecond { get; set; } = 0.16f;
+    [Export] public float ScanPitchDegrees { get; set; } = -25;
+    [Export] public float BeamOpacity { get; set; } = 0.12f;
+    [Export] public float BeamBrightness { get; set; } = 1.2f;
+    [Export] public float LineSpeed { get; set; } = 0.8f;
+    [ExportGroup("Relevance")]
+    [Export] public bool EncounterEnabled { get; set; } = true;
+    [Export] public float WakeDistance { get; set; } = 180;
+    [Export] public float SleepDistance { get; set; } = 240;
     [ExportGroup("Preview")]
     [Export] public bool PreviewWalking { get; set; }
 }

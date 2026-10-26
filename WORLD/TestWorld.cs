@@ -50,6 +50,7 @@ public partial class TestWorld : Node3D
         GetNode<TreePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);
         foreach (var child in GetNode("Content").GetChildren())
             if (child is ContentScatter scatter) scatter.Initialize(terrain, (ExplorationController)explorer, Settings);
+        GetNode<RobotEncounter>("RobotEncounter").Initialize(terrain, (ExplorationController)explorer, Settings);
         SetProcess(false); SetPhysicsProcess(false);
     }
 }

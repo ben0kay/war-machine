@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://WORLD/RobotEncounter.cs" id="1"]
+[ext_resource type="PackedScene" path="res://ENTITIES/TYPES/Robots/Robot_001/Robot_001.tscn" id="2"]
+
+[node name="RobotEncounter" type="Node3D" node_paths=PackedStringArray("Robot", "RouteMarkers")]
+script = ExtResource("1")
+Robot = NodePath("Robot_001")
+RouteMarkers = NodePath("Route")
+
+[node name="Route" type="Node3D" parent="."]
+[node name="NorthWest" type="Marker3D" parent="Route"]
+position = Vector3(-10, 0, -7)
+[node name="NorthEast" type="Marker3D" parent="Route"]
+position = Vector3(10, 0, -7)
+[node name="SouthEast" type="Marker3D" parent="Route"]
+position = Vector3(10, 0, 7)
+[node name="SouthWest" type="Marker3D" parent="Route"]
+position = Vector3(-10, 0, 7)
+
+[node name="Robot_001" parent="." instance=ExtResource("2")]

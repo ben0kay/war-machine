@@ -1,7 +1,43 @@
-[gd_resource type="Resource" script_class="RobotSettings" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="RobotSettings" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://ENTITIES/TYPES/Robots/Robot_001/C/RobotSettings.cs" id="1"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Movement/PatrolSettings.cs" id="2"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Sensing/ScanSensorSettings.cs" id="3"]
+
+[sub_resource type="Resource" id="Patrol"]
+script = ExtResource("2")
+Speed = 2.0
+Acceleration = 2.0
+Braking = 3.0
+TurnDegreesPerSecond = 45.0
+ArrivalRadius = 0.6
+SettleSeconds = 0.6
+WaitSeconds = 1.5
+Loop = true
+
+[sub_resource type="Resource" id="Sensor"]
+script = ExtResource("3")
+Enabled = true
+Range = 45.0
+FullAngleDegrees = 35.0
+IntervalSeconds = 0.2
+RequireLineOfSight = true
+RaysPerTick = 2
+CollisionMask = 1
 
 [resource]
 script = ExtResource("1")
+Patrol = SubResource("Patrol")
+Sensor = SubResource("Sensor")
 PreviewWalking = false
+ScanSeconds = 6.0
+RecoverySeconds = 0.8
+SweepDegrees = 120.0
+SweepCyclesPerSecond = 0.16
+ScanPitchDegrees = -25.0
+BeamOpacity = 0.12
+BeamBrightness = 1.2
+LineSpeed = 0.8
+EncounterEnabled = true
+WakeDistance = 180.0
+SleepDistance = 240.0
