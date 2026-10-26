@@ -1,5 +1,8 @@
 # Organic terrain-embedded cave
 
+**Next cave expansion plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — CV0–CV5 for underground ravines, asymmetric chambers, entrance hillside geology and performance. All phases are planned; this is not implementation authorization.
+
+
 **Location remains `WORLD/Content/Caves/`.** Main-world entrance defaults to 48m east / 28m north of spawn; look for CAVE. `C/CaveSettings.cs` and `Configuration/CaveMaster.tres` own authoring values. No separate WORLD/Caves folder was introduced.
 
 ## Shape and entrance
