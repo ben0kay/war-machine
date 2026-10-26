@@ -11,3 +11,9 @@ Only walking/turning enables PhysicsProcess. Arrival clears velocity and uses on
 Kinematic gravity/floor snap and real horizontal speed are used. This is a direct flat-meadow route, not obstacle avoidance/navigation. Place reachable paths; it will not find a way around walls. No global manager or pathfinding framework is introduced.
 
 Validation: source/lifecycle review and resource checks only; local `dotnet build war-machine.csproj` and a short two-cycle world check are pending because Godot/.NET are unavailable here. Check no sliding after stop, paused dwell remainder, disable/re-enable, and no repeated scan before departure.
+
+### Patrol/grounding correction — 2026-10-26
+
+Owner reported scanning without visible forward travel followed by falling through terrain. Patrol now records wait completion before invoking ReadyToDepart, so scan pause/resume advances to the next waypoint even if Timer.TimeLeft still reports a tiny positive value during timeout. Robot passes its injected terrain sampler to locomotion as well as visual feet. While walking, locomotion samples current/next/actual x/z and restores the body to the sampled ground height; it does not rely on viewer-centred Terrain3D collision coverage for vertical support. Ordinary actors without a sampler retain gravity. Missing terrain pauses safely. Stationary/disabled states do no grounding polling. Horizontal MoveAndSlide collision is preserved.
+
+Source and whitespace checks only; no Godot/.NET runtime available here. Local check pending: observe departure after a scan, multiple waypoints and no sinking, including when the viewer flies away/returns. This fix has not been rendered or runtime-tested here.

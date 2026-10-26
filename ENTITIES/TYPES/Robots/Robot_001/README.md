@@ -35,3 +35,9 @@ Source/lifecycle review, scene/resource reference checks, numerical cone/IK sani
 Locally: run `dotnet build war-machine.csproj`; run F5 and watch two walk/scan cycles. Check feet/joints, independent head, cone sides/bands/depth/fog, no floor clipping, F6 movement and existing controls. Disable/re-enable while walking and scanning; walk/fly past 240m and return below 180m. Check no stale beam/timer or repeated arrivals. Briefly duplicate the encounter at a clear route with another master. No extensive test suite is required.
 
 The cone has no exact ground footprint, raymarched volume or terrain-conforming projection; transparent foliage ordering and final art quality require user feedback. No terrain/vegetation/weather source settings were changed.
+
+### Patrol/grounding correction — 2026-10-26
+
+Owner reported scanning without visible forward travel followed by falling through terrain. Patrol now records wait completion before invoking ReadyToDepart, so scan pause/resume advances to the next waypoint even if Timer.TimeLeft still reports a tiny positive value during timeout. Robot passes its injected terrain sampler to locomotion as well as visual feet. While walking, locomotion samples current/next/actual x/z and restores the body to the sampled ground height; it does not rely on viewer-centred Terrain3D collision coverage for vertical support. Ordinary actors without a sampler retain gravity. Missing terrain pauses safely. Stationary/disabled states do no grounding polling. Horizontal MoveAndSlide collision is preserved.
+
+Source and whitespace checks only; no Godot/.NET runtime available here. Local check pending: observe departure after a scan, multiple waypoints and no sinking, including when the viewer flies away/returns. This fix has not been rendered or runtime-tested here.

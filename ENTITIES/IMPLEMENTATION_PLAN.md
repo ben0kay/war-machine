@@ -195,6 +195,10 @@ Implemented Robot_001 inherited scene, RobotSettings/master, cached primitive ar
 - **Pass:** Launch F5 → locate walker → observe at least two complete patrol/scan cycles; see sensor sweep through mist and fade appropriately behind terrain/trees where practical; move around in F6 first-person; disable/re-enable without stale beam or missing controls; add a second scene instance as a reuse smoke test **without editing shared scripts**. Codex runs basic compile/checks; user performs visual/FPS acceptance.
 - **Assistant:** Codex for multi-scene end-to-end integration, Copilot for local and screenshot verification.
 
+### Reported patrol/grounding fix — 2026-10-26
+
+User observed stationary scanning then a fall through ground. Corrected completed-wait resume using explicit completion state rather than trusting timer TimeLeft during timeout. Injected the existing terrain-height function into generic locomotion for active body support (not only visual feet); keeps horizontal collision and stops on missing height. No polling while stationary/disabled. Source checks only; runtime confirmation still pending.
+
 ### RM2–RM4 implementation handoff — 2026-10-26
 
 Authorized as one job after pushing RM0/RM1. Implemented:

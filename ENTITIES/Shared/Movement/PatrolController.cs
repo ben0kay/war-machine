@@ -20,7 +20,8 @@ public partial class PatrolController : Node
     private PatrolState _resumeState;
     private double _remaining;
     private float _speed, _lastReported = -1;
-    private bool _initialized, _resumeOnActivate;
+    private bool _initialized, _resumeOnActivate, _waitCompleted;
+    private Func<Vector3, Vector3>? _groundTarget;
 
     // =========================================================
     // No processing until a caller injects an actor and cached world-space route.
@@ -28,10 +29,11 @@ public partial class PatrolController : Node
 
     // =========================================================
     // Reinitialization replaces subscriptions once; route points are copied rather than searched each frame.
-    public void Initialize(EntityCore actor, PatrolSettings settings, Vector3[] route)
+    public void Initialize(EntityCore actor, PatrolSettings settings, Vector3[] route, Func<Vector3, Vector3>? groundTarget = null)
     {
         if (_initialized) { StopPatrol(); _actor.ActiveChanged -= OnActorActiveChanged; }
         _actor = actor; _settings = (PatrolSettings)settings.Duplicate(true); _route = (Vector3[])route.Clone();
+        _groundTarget = groundTarget; _waitCompleted = false;
         _actor.FloorSnapLength = 0.5f;
         if (_timer == null)
         {
@@ -67,6 +69,7 @@ public partial class PatrolController : Node
         if (!_initialized || !_actor.IsActive || State != PatrolState.Paused) return;
         State = _resumeState;
         if (State == PatrolState.Walking) { SetPhysicsProcess(true); WalkingStarted?.Invoke(); }
+        else if (State == PatrolState.Waiting && _waitCompleted) NextWaypoint();
         else if (_remaining > 0) _timer.Start(_remaining);
         else if (State == PatrolState.Waiting) NextWaypoint();
         else AdvancePhase();
@@ -87,6 +90,8 @@ public partial class PatrolController : Node
     {
         if (!_actor.IsActive || State != PatrolState.Walking) return;
         float dt = (float)delta;
+        // Terrain3D collision follows the viewer. A distant actor must not depend on its collision patch.
+        if (_groundTarget != null && !GroundActor()) return;
         Vector3 offset = _route[WaypointIndex] - _actor.GlobalPosition; offset.Y = 0;
         float distance = offset.Length();
         if (distance <= Mathf.Max(0.05f, _settings.ArrivalRadius))
@@ -104,11 +109,36 @@ public partial class PatrolController : Node
         desired *= Mathf.Max(0, (-_actor.GlobalBasis.Z).Dot(direction));
         _speed = Mathf.MoveToward(_speed, desired, (desired < _speed ? braking : Mathf.Max(0.1f, _settings.Acceleration)) * dt);
         Vector3 horizontal = direction * Mathf.Min(_speed, distance / Mathf.Max(dt, 0.001f));
-        _actor.Velocity = new Vector3(horizontal.X, _actor.IsOnFloor() ? -0.1f : _actor.Velocity.Y - _settings.Gravity * dt, horizontal.Z);
+        float vertical = _actor.IsOnFloor() ? -0.1f : _actor.Velocity.Y - _settings.Gravity * dt;
+        if (_groundTarget != null)
+        {
+            Vector3 nextGround = _groundTarget(_actor.GlobalPosition + horizontal * dt);
+            if (!float.IsFinite(nextGround.Y)) { MissingGround(); return; }
+            vertical = (nextGround.Y - _actor.GlobalPosition.Y) / Mathf.Max(dt, 0.001f);
+        }
+        _actor.Velocity = new Vector3(horizontal.X, vertical, horizontal.Z);
         _actor.MoveAndSlide();
+        if (_groundTarget != null && !GroundActor()) return;
         ReportSpeed(new Vector2(_actor.GetRealVelocity().X, _actor.GetRealVelocity().Z).Length());
         Moved?.Invoke();
     }
+
+    // =========================================================
+    // Explicit height support keeps a terrain actor grounded even when dynamic physics coverage moves away.
+    private bool GroundActor()
+    {
+        Vector3 position = _actor.GlobalPosition;
+        Vector3 ground = _groundTarget!(position);
+        if (!float.IsFinite(ground.Y)) { MissingGround(); return false; }
+        position.Y = ground.Y; _actor.GlobalPosition = position;
+        _actor.Velocity = new Vector3(_actor.Velocity.X, 0, _actor.Velocity.Z);
+        return true;
+    }
+
+    // =========================================================
+    // Missing saved terrain pauses safely instead of integrating gravity into an endless fall.
+    private void MissingGround()
+    { PausePatrol(); GD.PushWarning("Patrol paused: no finite terrain height at actor/next step."); }
 
     // =========================================================
     // One timer owns both stationary phases; no waiting physics callback remains enabled.
@@ -125,6 +155,9 @@ public partial class PatrolController : Node
         }
         else if (State == PatrolState.Waiting)
         {
+            // Timer.TimeLeft may still contain a tiny positive remainder inside its timeout callback.
+            // Record completion before listeners pause us for scanning, rather than replaying this wait.
+            _waitCompleted = true;
             ReadyToDepart?.Invoke();
             if (State == PatrolState.Waiting) NextWaypoint();
         }
@@ -144,7 +177,7 @@ public partial class PatrolController : Node
 
     // =========================================================
     // Wake only for the moving phase; arrival always shuts this callback down.
-    private void BeginWalking() { State = PatrolState.Walking; SetPhysicsProcess(true); WalkingStarted?.Invoke(); }
+    private void BeginWalking() { _waitCompleted = false; State = PatrolState.Walking; SetPhysicsProcess(true); WalkingStarted?.Invoke(); }
 
     // =========================================================
     // Publish actual speed only when changed; zero always settles the visual gait.

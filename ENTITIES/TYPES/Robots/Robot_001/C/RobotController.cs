@@ -83,7 +83,7 @@ public partial class RobotController : EntityCore
     {
         _preview = false;
         _legs!.ResolveFootTarget = groundTarget; _legs.ResetPose();
-        _patrol.Initialize(this, RuntimeRobotSettings.Patrol, route);
+        _patrol.Initialize(this, RuntimeRobotSettings.Patrol, route, groundTarget);
         _sensor.Initialize(this, SensorSocket, RuntimeRobotSettings.Sensor);
         if (candidate != null) _sensor.RegisterCandidate(candidate);
         _encounter = true;
