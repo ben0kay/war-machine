@@ -102,6 +102,8 @@
 
 These would make your main 2km landscape richer and are useful follow-up **WE2/WE7** ideas, not automatic cave scope:
 
+**These now have a dedicated [WORLD surface implementation plan](../../SURFACE_IMPLEMENTATION_PLAN.md) (SF0–SF5).** Cave CV3 remains responsible only for the localized entrance geology; the separate surface plan handles the wider hillside and forest surface.
+
 | Surface feature | Why it helps | Implementation direction |
 | --- | --- | --- |
 | **Erosion gullies & dry streambeds** | Hillsides feel shaped by drainage instead of continuous smooth noise | Seeded drainage paths in the world terrain authoring stage, shallow cut/height masks and slope texture blending |
