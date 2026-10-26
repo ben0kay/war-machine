@@ -1,26 +1,29 @@
-# Procedural trees — first visual pass
+# Procedural trees — layered canopy preview
 
-- `C/TreeGenerator.cs`: deterministic, low-poly oak trunks, tapered branches and **hundreds of individual pointed leaves** in two mesh surfaces (wood + shader-driven leaf polygons).
-- `C/TreeSettings.cs`: editable resource settings for size, crown, density, slope, patch noise, clearing, distance and seed. Can accept imported Mesh resources later.
-- `C/TreePlacement.cs`: samples the existing Terrain3D **height map**; groups trees into chunked MultiMesh instances; streams on explorer chunk transitions.
-- `Configuration/TreeMaster.tres`: all current tree tuning in Godot's Inspector.
-- `Shaders/LeafWind.gdshader`: shared vertex shader for independent leaf-tip flutter and coherent breeze using EnvironmentMaster wind direction. No leaf scripts/physics.
-- `Artwork/`: future authored `.glb` tree models; no model art is bundled with this pass.
+The trees in `WORLD/testworld.tscn` use deterministic C# meshes and saved Terrain3D heights. This is replaceable preview artwork, with no collision, harvesting, gameplay simulation or terrain/save mutation.
 
-## Try in testworld
+- `C/`: generator, settings and chunk placement.
+- `Configuration/TreeMaster.tres`: editable shape, density, leaf budget, GPU wind, quality and distances.
+- `Shaders/LeafWind.gdshader`: shared, compilation-checked leaf-tip flutter. Zero wind strength/speed bypasses the wind branch without an invalid processor return.
+- `Artwork/`: future authored models.
+- `Validation/`: checks, rendered evidence and remaining target-PC profiling.
 
-Open `WORLD/testworld.tscn` (F5 runs it as the main world). The `Trees` node gets the terrain and explorer after they initialize, and a seeded forest appears immediately on suitable slopes. Use `WORLD/Vegetation/Trees/Configuration/TreeMaster.tres` to tune leaves per cluster, length/width, wind strength, speed, flutter and overall forest density, then restart. Wind direction and shared environment wind strength come from `ENVIRONMENT/Configuration/EnvironmentMaster.tres`. To hot-reapply via code call `GetNode<TreePlacement>("Trees").ApplySettings()`.
+## Tree fixes
 
-To swap in authored meshes later, add imported **Mesh** resources to `TreeMaster.tres -> ImportedMeshes`. Those meshes replace the C# generators without changing placement, chunk culling or settings. A `.glb` containing a complete scene may need its constituent meshes exposed or extracted first; scene-based interactive trees require a separate near-player system.
+Smaller **folded** leaves are attached along connected fine sprigs, supported by secondary twigs and lower main branches. Inner and outer crown clusters form fuller layers without opaque canopy balls. TreeMaster controls leaf size, twigs, inner canopy fullness and a hard per-variant leaf budget. Four seeded variants share two material surfaces each. Wind remains on the GPU with fixed attachment bases and moving tips; no per-leaf nodes, scripts or physics.
 
-## Runtime and limits
+A cheaper generated far mesh retains a stable subset of leaves and coarser leaf silhouettes. Native Forward+ geometry ranges blend near/far levels around 110m and fade the outer range around 240m, with configurable margins. Distant shadows default off. MultiMesh roots are local to a chunk anchor so native range culling measures the correct world position; near/far levels share identical root transforms. Wind culling margin avoids clipping leaf tips. Chunk cache retention reduces boundary reload thrashing and covers the camera's movement inside a chunk.
 
-Tree placement is deterministic from seed and chunk position. Each chunk samples terrain once when loaded; nearby chunks are tracked while moving and discarded when distant. Instances are batched by mesh variant using `MultiMeshInstance3D`. There is **no per-tree Node, collision, interaction or save mutation**. Leaf movement is entirely GPU vertex shading, using UV.y attachment weights; no per-leaf Nodes, particles or per-frame C# updates. Those can come later, in their own authorized phase. Do not use this visual-only tree renderer for harvesting yet.
+## Configuration / model replacement
 
-Activity: world initialization, crossing a chunk boundary, explicit settings changes, or a terrain height-map change. Sleep: standing still or disabled. Remaining cost: normal native rendering, shadows and culling for visible instances; no idle C# tick. Each generated oak now contains hundreds of separate **opaque leaf diamonds** rather than solid green polyhedra. The canopy is still an intentionally stylized no-texture preview, not photorealistic leaf art. GPU wind continues while the trees are visible; idle **CPU** cost is zero. Imported Mesh overrides keep their own materials and do not automatically receive the generated-tree wind shader. High densities, shadows and leaf counts can be GPU expensive; measure on the target PC.
+Edit TreeMaster and relaunch, or call `GetNode<TreePlacement>("Trees").ApplySettings()`. Shared wind direction/strength comes from EnvironmentMaster at settings application. Density=0 or Enabled=false removes both mesh levels. Height-map changes coalesce into an explicit rebuild; tree placement never regenerates saved terrain.
 
-## Local validation (awaiting)
+Add Mesh resources to ImportedMeshes to replace the generator. Imported materials remain untouched; they do not automatically receive procedural wind or generated LOD. Imported meshes still use native outer range fading. A full .glb scene may need its Mesh resources extracted; interactive scene trees require a separate future system.
 
-Run `dotnet build`, `godot --headless --editor --path . --import`, and `godot --headless --path . --quit-after 180` with a Godot .NET editor. The project declares 4.7 features while its .csproj pins the 4.5.1 SDK. Check natural canopy openness, sunlight through leaves, wind sway, zero-strength static leaves, seed-stable appearance, tree bases at terrain height, dense/empty forest patches, clear spawn space, uphill placement, distance streaming, reproducible tree positions after restart, and no movement work while stationary. Turn `Enabled` off or set `Density` to 0 and confirm all tree instances disappear; restore and confirm they return. Validate imported-mesh override separately.
+## Performance / status
 
-**Status: Individual-leaf wind refinement implemented, awaiting local compilation/visual/performance validation.** No phase status in `WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md` advances because this is a separate authorized tree preview ahead of WE4.
+Activation: world initialization, explorer chunk crossing, explicit settings application and terrain-height changes. Sleep: no tree `_Process` or `_PhysicsProcess`; stationary and sub-chunk movement do not rebuild batches. Off removes all instances. Active GPU wind, native culling/fading and enabled shadows remain rendering costs. The visible FPS counter is a separate, throttled diagnostic.
+
+Native range fades temporarily overlap mesh levels. More detailed near foliage costs more geometry than the old sparse trees; no FPS improvement is claimed. Leaf budget, far sampling, render range and shadows are tunable. Trees remain stylized, untextured preview art rather than final oak models. Imported mesh support is preserved.
+
+**Implemented and validated under Godot 4.5.1 .NET, including software Vulkan renders. Target-PC visual/performance acceptance remains pending.** See [validation](Validation/README.md). This separate requested refinement does not advance WE4 or any other environment-plan phase.

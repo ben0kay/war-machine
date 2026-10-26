@@ -13,6 +13,10 @@
 
 The follow-up request replaces the sparse crossed cards with the included demo's ribbon GPU approach, adds VEGETATION master quality/density/height/range controls, preserves saved terrain data, and applies EnvironmentMaster fog density 0.025 / start 0m / end 200m. C# build and integration/lifecycle checks passed; software Vulkan captures verify rendering and wind movement. See `../VEGETATION/Validation/README.md` for evidence, measured render counters and outstanding target-GPU profiling. This is a scoped refinement, not authorization for the remaining WE2 geography or later phases.
 
+## Scoped tree / exploration fixes
+
+The requested tree refinement fixes leaf shader compilation, replaces oversized diamonds with budgeted folded leaves on connected twig layers, and adds generated far meshes plus native Forward+ range fades. TestWorld also includes a throttled top-left FPS overlay and arrows / Ctrl-down / RMB-up aliases. These changes preserve saved terrain, grass, mist, sun and existing controls. See `Vegetation/Trees/Validation/README.md` for validation and target-PC checks. This work does not mark WE2–WE8 implemented or accepted.
+
 ## Atmosphere direction — persistent eerie mist (applies to every remaining phase)
 
 **Art-direction decision (2026-10-25):** The wilderness should feel **noticeably misty most of the time**, with a cold, desaturated, eerie mood. This is a defining baseline, not merely an occasional storm condition. Future large machines should be able to emerge gradually from the fog, but **no machine, enemy, combat or gameplay work belongs in the WE phases**.

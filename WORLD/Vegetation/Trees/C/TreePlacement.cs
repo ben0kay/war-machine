@@ -11,8 +11,13 @@ public partial class TreePlacement : Node3D
     private ExplorationController _explorer = null!;
     private WorldConfig _world = null!;
     private FastNoiseLite _forest = null!;
-    private Mesh[] _meshes = System.Array.Empty<Mesh>();
-    private readonly Dictionary<Vector2I, List<MultiMeshInstance3D>> _active = new();
+    private Mesh[] _meshes = System.Array.Empty<Mesh>(), _farMeshes = System.Array.Empty<Mesh>();
+    private sealed class TreeChunk
+    {
+        public readonly List<MultiMeshInstance3D> Nodes = new();
+        public int TreeCount;
+    }
+    private readonly Dictionary<Vector2I, TreeChunk> _active = new();
     private Vector2I _center = new(int.MinValue, int.MinValue);
     private int _chunkSize, _chunkCount;
     private bool _initialized, _refreshQueued;
@@ -37,9 +42,9 @@ public partial class TreePlacement : Node3D
     public void ApplySettings()
     {
         foreach (var chunk in _active.Values)
-            foreach (var instance in chunk) { RemoveChild(instance); instance.QueueFree(); }
+            foreach (var instance in chunk.Nodes) { RemoveChild(instance); instance.QueueFree(); }
         _active.Clear(); _center = new Vector2I(int.MinValue, int.MinValue); ActiveTrees = 0;
-        _meshes = System.Array.Empty<Mesh>();
+        _meshes = _farMeshes = System.Array.Empty<Mesh>();
         if (!_initialized || Settings == null || !Settings.Enabled || Settings.Density <= 0) return;
 
         _chunkSize = Mathf.Clamp(Settings.ChunkSize, 32, 192);
@@ -62,7 +67,13 @@ public partial class TreePlacement : Node3D
             foliage.SetShaderParameter("flutter_strength", Mathf.Max(0f, Settings.LeafFlutter));
             int count = Mathf.Clamp(Settings.Variants, 1, 12);
             _meshes = new Mesh[count];
-            for (int i = 0; i < count; i++) _meshes[i] = TreeGenerator.CreateOak(Settings, i, bark, foliage);
+            if (Settings.UseGeneratedLod) _farMeshes = new Mesh[count];
+            for (int i = 0; i < count; i++)
+            {
+                _meshes[i] = TreeGenerator.CreateOak(Settings, i, bark, foliage);
+                if (_farMeshes.Length > 0)
+                    _farMeshes[i] = TreeGenerator.CreateOak(Settings, i, bark, foliage, Mathf.Clamp(Settings.FarLeafStride, 2, 8));
+            }
         }
         OnViewMoved(_explorer.GlobalPosition);
     }
@@ -76,26 +87,29 @@ public partial class TreePlacement : Node3D
         if (next == _center) return;
         _center = next;
         float distance = Mathf.Clamp(Settings.RenderDistance, 64f, 512f);
-        int radius = Mathf.CeilToInt((distance + _chunkSize) / _chunkSize);
+        int radius = Mathf.CeilToInt((distance + _chunkSize * 1.5f) / _chunkSize);
         var wanted = new HashSet<Vector2I>();
-        var cameraXZ = new Vector2(position.X, position.Z);
+        var chunkCenter = new Vector2((next.X + 0.5f) * _chunkSize, (next.Y + 0.5f) * _chunkSize);
         for (int x = next.X - radius; x <= next.X + radius; x++)
             for (int z = next.Y - radius; z <= next.Y + radius; z++)
             {
                 if (x < 0 || z < 0 || x >= _chunkCount || z >= _chunkCount) continue;
                 var key = new Vector2I(x, z);
-                if (cameraXZ.DistanceTo(new Vector2((x + 0.5f) * _chunkSize, (z + 0.5f) * _chunkSize))
-                    <= distance + _chunkSize * 0.75f) wanted.Add(key);
+                if (chunkCenter.DistanceTo(new Vector2((x + 0.5f) * _chunkSize, (z + 0.5f) * _chunkSize))
+                    <= distance + _chunkSize * 1.5f) wanted.Add(key);
             }
         var remove = new List<Vector2I>();
-        foreach (var key in _active.Keys) if (!wanted.Contains(key)) remove.Add(key);
+        // Retain one extra cache ring so nudging across a boundary does not rebuild the same trees.
+        foreach (var key in _active.Keys)
+            if (!wanted.Contains(key) && chunkCenter.DistanceTo(new Vector2((key.X + 0.5f) * _chunkSize, (key.Y + 0.5f) * _chunkSize))
+                > distance + _chunkSize * 2.5f) remove.Add(key);
         foreach (var key in remove)
         {
-            foreach (var instance in _active[key])
+            foreach (var instance in _active[key].Nodes)
             {
-                ActiveTrees -= instance.Multimesh.InstanceCount;
                 RemoveChild(instance); instance.QueueFree();
             }
+            ActiveTrees -= _active[key].TreeCount;
             _active.Remove(key);
         }
         foreach (var key in wanted)
@@ -136,24 +150,48 @@ public partial class TreePlacement : Node3D
                 bins[variant].Add(new Transform3D(basis, new Vector3(x, height - 0.1f, z)));
             }
 
-        var children = new List<MultiMeshInstance3D>();
+        var chunk = new TreeChunk();
         for (int i = 0; i < bins.Length; i++)
         {
             if (bins[i].Count == 0) continue;
-            var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = _meshes[i] };
-            multi.InstanceCount = bins[i].Count;
-            for (int j = 0; j < bins[i].Count; j++) multi.SetInstanceTransform(j, bins[i][j]);
-            var node = new MultiMeshInstance3D
-            {
-                Name = $"Oak_{key.X}_{key.Y}_{i}", Multimesh = multi,
-                CastShadow = Settings.CastShadows
-                    ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off
-            };
-            AddChild(node);
-            children.Add(node);
-            ActiveTrees += bins[i].Count;
+            float distance = Mathf.Clamp(Settings.RenderDistance, 64, 512);
+            float margin = Mathf.Min(distance * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4, 48));
+            float lod = Mathf.Clamp(Settings.LodDistance, 32, distance - margin);
+            bool hasLod = _farMeshes.Length == _meshes.Length;
+            float averageHeight = 0;
+            foreach (var transform in bins[i]) averageHeight += transform.Origin.Y;
+            var anchor = new Vector3((key.X + 0.5f) * _chunkSize, averageHeight / bins[i].Count, (key.Y + 0.5f) * _chunkSize);
+            chunk.Nodes.Add(CreateBatch($"Oak_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor, 0, hasLod ? lod : distance, margin, Settings.CastShadows));
+            if (hasLod)
+                chunk.Nodes.Add(CreateBatch($"Oak_{key.X}_{key.Y}_{i}_Far", _farMeshes[i], bins[i], anchor, lod, distance, margin,
+                    Settings.CastShadows && Settings.FarCastShadows));
+            chunk.TreeCount += bins[i].Count;
         }
-        _active.Add(key, children);
+        ActiveTrees += chunk.TreeCount;
+        _active.Add(key, chunk);
+    }
+
+    // =========================================================
+    // Native Forward+ range fades/LOD and culling need no C# frame callbacks; roots/transforms are shared by both levels.
+    private MultiMeshInstance3D CreateBatch(string name, Mesh mesh, List<Transform3D> transforms, Vector3 anchor, float begin, float end, float margin, bool shadows)
+    {
+        var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh };
+        multi.InstanceCount = transforms.Count;
+        for (int j = 0; j < transforms.Count; j++)
+        {
+            var transform = transforms[j]; transform.Origin -= anchor;
+            multi.SetInstanceTransform(j, transform);
+        }
+        var node = new MultiMeshInstance3D
+        {
+            Name = name, Position = anchor, Multimesh = multi, ExtraCullMargin = 1f,
+            VisibilityRangeBegin = begin, VisibilityRangeEnd = end,
+            VisibilityRangeBeginMargin = begin > 0 ? margin : 0, VisibilityRangeEndMargin = margin,
+            VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Self,
+            CastShadow = shadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off
+        };
+        AddChild(node);
+        return node;
     }
 
     // =========================================================

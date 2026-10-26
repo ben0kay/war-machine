@@ -1,5 +1,5 @@
 # Individual leaf wind
 
-`LeafWind.gdshader` runs only on generated oak leaf surfaces, not on imported artwork or trunks. The C# generator writes pointed leaf polygons, their colours, and a 0-to-1 attachment weight in UV.y (base fixed, tip movable). The shader uses TIME and world position to introduce independently phased flutter and a shared directional breeze. No per-leaf CPU work or animations are used.
+`LeafWind.gdshader` affects only generated leaf surfaces. The generator encodes UV.y attachment weights (base=0, tip=1) on small folded leaves. TIME/world position provide independently phased flutter and a shared directional breeze. Shader work is guarded by a valid conditional block: zero wind strength/speed leaves geometry static, with no forbidden return in vertex(). A little backlighting keeps two-sided foliage readable.
 
-Tune wind in `../Configuration/TreeMaster.tres`; direction/shared global strength are taken from `ENVIRONMENT/Configuration/EnvironmentMaster.tres` when the tree settings are applied. Shader uniforms are not polled per frame. Imported models remain unmodified. For a fast pause test, set LeafWindStrength to zero and relaunch.
+Tune wind in TreeMaster; direction/shared strength come from EnvironmentMaster when settings are applied. No shader uniforms are rewritten per frame. Native Forward+ visibility range fading handles near/far and outer distance transitions; imported models retain their own materials.

@@ -32,7 +32,7 @@ public partial class ExplorationController : Node3D
             _pitch = Mathf.Clamp(_pitch - motion.Relative.Y * Settings.MouseSensitivity, -1.5f, 1.5f);
             _camera.Rotation = new Vector3(_pitch, 0, 0);
         }
-        if (input is InputEventKey) SetPhysicsProcess(Input.MouseMode == Input.MouseModeEnum.Captured && Direction() != Vector3.Zero);
+        if (input is InputEventKey || input is InputEventMouseButton) SetPhysicsProcess(Input.MouseMode == Input.MouseModeEnum.Captured && Direction() != Vector3.Zero);
     }
 
     // =========================================================
@@ -55,16 +55,16 @@ public partial class ExplorationController : Node3D
     }
 
     // =========================================================
-    // Read physical WASD plus vertical QE/Space without allocating collections.
+    // Read physical WASD/arrows plus vertical QE/Space/Ctrl/RMB without allocating collections.
     private Vector3 Direction()
     {
         Vector3 direction = Vector3.Zero;
-        if (Input.IsPhysicalKeyPressed(Key.W)) direction -= _camera.GlobalBasis.Z;
-        if (Input.IsPhysicalKeyPressed(Key.S)) direction += _camera.GlobalBasis.Z;
-        if (Input.IsPhysicalKeyPressed(Key.A)) direction -= GlobalBasis.X;
-        if (Input.IsPhysicalKeyPressed(Key.D)) direction += GlobalBasis.X;
-        if (Input.IsPhysicalKeyPressed(Key.E) || Input.IsPhysicalKeyPressed(Key.Space)) direction += Vector3.Up;
-        if (Input.IsPhysicalKeyPressed(Key.Q)) direction -= Vector3.Up;
+        if (Input.IsPhysicalKeyPressed(Key.W) || Input.IsPhysicalKeyPressed(Key.Up)) direction -= _camera.GlobalBasis.Z;
+        if (Input.IsPhysicalKeyPressed(Key.S) || Input.IsPhysicalKeyPressed(Key.Down)) direction += _camera.GlobalBasis.Z;
+        if (Input.IsPhysicalKeyPressed(Key.A) || Input.IsPhysicalKeyPressed(Key.Left)) direction -= GlobalBasis.X;
+        if (Input.IsPhysicalKeyPressed(Key.D) || Input.IsPhysicalKeyPressed(Key.Right)) direction += GlobalBasis.X;
+        if (Input.IsPhysicalKeyPressed(Key.E) || Input.IsPhysicalKeyPressed(Key.Space) || Input.IsMouseButtonPressed(MouseButton.Right)) direction += Vector3.Up;
+        if (Input.IsPhysicalKeyPressed(Key.Q) || Input.IsPhysicalKeyPressed(Key.Ctrl)) direction -= Vector3.Up;
         return direction;
     }
 }

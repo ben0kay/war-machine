@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 [ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -11,6 +11,8 @@
 [ext_resource type="Resource" path="res://VEGETATION/Configuration/VegetationMaster.tres" id="10"]
 [ext_resource type="Script" path="res://WORLD/Vegetation/Trees/C/TreePlacement.cs" id="11"]
 [ext_resource type="Resource" path="res://WORLD/Vegetation/Trees/Configuration/TreeMaster.tres" id="12"]
+[ext_resource type="Script" path="res://DEBUG/FpsCounter.cs" id="13"]
+[ext_resource type="Resource" path="res://DEBUG/Configuration/DebugMaster.tres" id="14"]
 [node name="TestWorld" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
@@ -37,10 +39,22 @@ EnvironmentSettings = ExtResource("8")
 [node name="Controls" type="CanvasLayer" parent="."]
 [node name="Help" type="Label" parent="Controls"]
 offset_left = 18.0
-offset_top = 18.0
+offset_top = 44.0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
-text = "WASD fly · QE / Space vertical · Shift boost · Esc mouse
+text = "WASD / Arrows fly · Ctrl down · RMB up
+QE / Space vertical · Shift boost · Esc mouse
 P pause sun · F8 accelerated day preview"
 mouse_filter = 2
+
+[node name="FPS" type="Label" parent="Controls"]
+offset_left = 18.0
+offset_top = 16.0
+mouse_filter = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+text = "FPS: —"
+script = ExtResource("13")
+Settings = ExtResource("14")

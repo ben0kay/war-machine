@@ -1,78 +1,85 @@
-// Builds deterministic tapered-bark oaks with hundreds of individually shaped leaf polygons; no per-leaf nodes.
+// Builds deterministic tapered-bark oaks with budgeted, layered foliage and connected leafy sprigs; no per-leaf nodes.
 using Godot;
 
 public static class TreeGenerator
 {
     // =========================================================
     // Create two material surfaces per tree so branches and foliage can be replaced by authored art later.
-    public static ArrayMesh CreateOak(TreeSettings settings, int variation, Material woodMaterial, Material leafMaterial)
+    public static ArrayMesh CreateOak(TreeSettings settings, int variation, Material woodMaterial, Material leafMaterial, int leafStride = 1)
     {
         var random = new RandomNumberGenerator { Seed = Mix(settings.Seed, variation, 19) };
-        float height = random.RandfRange(Mathf.Min(settings.MinimumHeight, settings.MaximumHeight),
-            Mathf.Max(settings.MinimumHeight, settings.MaximumHeight));
+        float height = random.RandfRange(Mathf.Min(settings.MinimumHeight, settings.MaximumHeight), Mathf.Max(settings.MinimumHeight, settings.MaximumHeight));
+        height = Mathf.Clamp(height, 4, 24);
         float trunkRadius = Mathf.Max(0.1f, settings.TrunkRadius) * random.RandfRange(0.8f, 1.2f);
-        float clusterSize = Mathf.Max(0.4f, settings.LeafClusterSize);
-        int leavesPerCluster = Mathf.Clamp(settings.LeavesPerCluster, 12, 128);
-        float leafLength = Mathf.Clamp(settings.LeafLength, 0.2f, 1.5f);
-        float leafWidth = Mathf.Clamp(settings.LeafWidth, 0.08f, 0.8f);
-        var woodColor = new Color(0.34f, 0.23f, 0.14f);
+        float clusterSize = Mathf.Clamp(settings.LeafClusterSize, 0.4f, 4);
+        int count = Mathf.Clamp(settings.BranchCount, 3, 16), twigs = Mathf.Clamp(settings.TwigsPerBranch, 2, 6);
+        float innerScale = Mathf.Clamp(settings.InnerCanopyScale, 0, 1.5f);
+        int clustersPerBranch = twigs + (innerScale > 0.01f ? 1 : 0);
+        int perCluster = Mathf.Min(Mathf.Clamp(settings.LeavesPerCluster, 24, 256), Mathf.Clamp(settings.LeafBudget, 500, 8000) / (count * clustersPerBranch + 2));
+        float leafLength = Mathf.Clamp(settings.LeafLength, 0.08f, 1.5f), leafWidth = Mathf.Clamp(settings.LeafWidth, 0.04f, 0.8f);
+        leafStride = Mathf.Clamp(leafStride, 1, 8);
+        var woodColor = new Color(0.31f, 0.23f, 0.15f);
         using var wood = new SurfaceTool();
         using var leaves = new SurfaceTool();
-        wood.Begin(Mesh.PrimitiveType.Triangles);
-        leaves.Begin(Mesh.PrimitiveType.Triangles);
+        wood.Begin(Mesh.PrimitiveType.Triangles); leaves.Begin(Mesh.PrimitiveType.Triangles);
         wood.SetMaterial(woodMaterial); leaves.SetMaterial(leafMaterial);
-
-        // A gently crooked, tapering trunk; all positions are local to the tree's base.
         var bottom = Vector3.Zero;
-        var middle = new Vector3(random.RandfRange(-0.18f, 0.18f), height * 0.48f, random.RandfRange(-0.18f, 0.18f));
-        var upper = middle + new Vector3(random.RandfRange(-0.5f, 0.5f), height * 0.37f, random.RandfRange(-0.5f, 0.5f));
-        var tip = upper + new Vector3(random.RandfRange(-0.25f, 0.25f), height * 0.15f, random.RandfRange(-0.25f, 0.25f));
+        var middle = new Vector3(random.RandfRange(-0.22f, 0.22f), height * 0.4f, random.RandfRange(-0.22f, 0.22f));
+        var upper = middle + new Vector3(random.RandfRange(-0.6f, 0.6f), height * 0.42f, random.RandfRange(-0.6f, 0.6f));
+        var tip = upper + new Vector3(random.RandfRange(-0.3f, 0.3f), height * 0.18f, random.RandfRange(-0.3f, 0.3f));
         AddTaper(wood, bottom, middle, trunkRadius * 1.16f, trunkRadius * 0.74f, woodColor);
         AddTaper(wood, middle, upper, trunkRadius * 0.74f, trunkRadius * 0.27f, woodColor);
         AddTaper(wood, upper, tip, trunkRadius * 0.27f, trunkRadius * 0.06f, woodColor);
 
-        // Offset branches support hundreds of separate, tapering leaves, not opaque geometric canopy balls.
-        int count = Mathf.Clamp(settings.BranchCount, 3, 16);
+        // Lower, layered branches and several leafy twigs form an irregular crown instead of a bare pole.
         for (int i = 0; i < count; i++)
         {
-            float fraction = (i + random.RandfRange(-0.25f, 0.25f)) / count;
-            float y = height * Mathf.Lerp(0.42f, 0.83f, fraction);
-            float angle = i * 2.399963f + random.RandfRange(-0.5f, 0.5f);
-            var start = new Vector3(Mathf.Lerp(middle.X, upper.X, 0.4f), y, Mathf.Lerp(middle.Z, upper.Z, 0.4f));
-            float length = height * random.RandfRange(0.24f, 0.37f);
+            float fraction = (i + random.RandfRange(-0.2f, 0.2f)) / count;
+            float t = Mathf.Lerp(0.3f, 0.78f, fraction);
+            Vector3 start = t < 0.4f ? bottom.Lerp(middle, t / 0.4f) : middle.Lerp(upper, (t - 0.4f) / 0.42f);
+            float angle = i * 2.399963f + random.RandfRange(-0.4f, 0.4f);
             var spread = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
-            var elbow = start + spread * length * 0.6f + Vector3.Up * length * 0.27f;
-            var end = start + spread * length + Vector3.Up * length * random.RandfRange(0.42f, 0.7f);
-            float radius = trunkRadius * random.RandfRange(0.18f, 0.31f);
-            AddTaper(wood, start, elbow, radius, radius * 0.60f, woodColor);
-            AddTaper(wood, elbow, end, radius * 0.60f, radius * 0.07f, woodColor);
-            float foliage = clusterSize * random.RandfRange(0.75f, 1.2f);
-            AddLeafCluster(leaves, end + Vector3.Up * foliage * 0.23f,
-                new Vector3(foliage * 1.05f, foliage * 0.85f, foliage), random,
-                leavesPerCluster, leafLength, leafWidth);
-            if (i % 2 == 0)
-                AddLeafCluster(leaves, elbow + Vector3.Up * foliage * 0.5f,
-                    new Vector3(foliage * 0.76f, foliage * 0.88f, foliage * 0.78f), random,
-                    Mathf.Max(12, leavesPerCluster / 2), leafLength, leafWidth);
+            var side = new Vector3(-spread.Z, 0, spread.X);
+            float length = height * random.RandfRange(0.28f, 0.38f) * (1.05f - fraction * 0.25f);
+            var elbow = start + spread * length * 0.55f + Vector3.Up * length * 0.18f;
+            var end = start + spread * length + Vector3.Up * length * random.RandfRange(0.35f, 0.55f);
+            float radius = trunkRadius * random.RandfRange(0.18f, 0.3f);
+            AddTaper(wood, start, elbow, radius, radius * 0.55f, woodColor);
+            AddTaper(wood, elbow, end, radius * 0.55f, radius * 0.06f, woodColor);
+            if (innerScale > 0.01f)
+            {
+                float foliage = clusterSize * innerScale;
+                AddLeafCluster(wood, leaves, elbow + Vector3.Up * 0.3f, new Vector3(foliage, foliage * 0.7f, foliage),
+                    random, perCluster, leafLength, leafWidth, leafStride, woodColor);
+            }
+            for (int j = 0; j < twigs; j++)
+            {
+                float along = Mathf.Lerp(0.15f, 1f, (j + 0.5f) / twigs);
+                var twigStart = elbow.Lerp(end, along);
+                float handed = j % 2 == 0 ? 1f : -1f;
+                var twigEnd = twigStart + side * handed * random.RandfRange(0.45f, 1.05f)
+                    + spread * random.RandfRange(0.25f, 0.65f) + Vector3.Up * random.RandfRange(0.2f, 0.65f);
+                AddTaper(wood, twigStart, twigEnd, radius * 0.24f, 0.008f, woodColor, 5);
+                float foliage = clusterSize * random.RandfRange(0.52f, 0.72f);
+                AddLeafCluster(wood, leaves, twigEnd, new Vector3(foliage, foliage * 0.7f, foliage), random,
+                    perCluster, leafLength, leafWidth, leafStride, woodColor);
+            }
         }
-        AddLeafCluster(leaves, tip + Vector3.Up * clusterSize * 0.18f,
-            new Vector3(clusterSize * 1.15f, clusterSize * 1.05f, clusterSize * 1.15f), random,
-            leavesPerCluster * 2, leafLength, leafWidth);
-
+        AddLeafCluster(wood, leaves, tip, new Vector3(clusterSize, clusterSize * 0.65f, clusterSize), random,
+            perCluster * 2, leafLength, leafWidth, leafStride, woodColor);
         var mesh = new ArrayMesh();
         wood.Commit(mesh); leaves.Commit(mesh);
         return mesh;
     }
 
     // =========================================================
-    // Build a tapered 7-sided branch with flat-shaded bark, without separate scene nodes or draw calls.
-    private static void AddTaper(SurfaceTool surface, Vector3 start, Vector3 end, float bottomRadius, float topRadius, Color color)
+    // Build tapered branches with bounded side counts and flat-shaded bark, without separate scene nodes.
+    private static void AddTaper(SurfaceTool surface, Vector3 start, Vector3 end, float bottomRadius, float topRadius, Color color, int sides = 7)
     {
         Vector3 axis = (end - start).Normalized();
         Vector3 right = axis.Cross(Vector3.Forward).Normalized();
         if (right.LengthSquared() < 0.01f) right = axis.Cross(Vector3.Right).Normalized();
         Vector3 forward = axis.Cross(right).Normalized();
-        const int sides = 7;
         for (int i = 0; i < sides; i++)
         {
             float a = i * Mathf.Tau / sides, b = (i + 1) * Mathf.Tau / sides;
@@ -86,33 +93,44 @@ public static class TreeGenerator
     }
 
     // =========================================================
-    // Place individual pointed leaf diamonds throughout a loose irregular crown, with no per-leaf nodes.
-    private static void AddLeafCluster(SurfaceTool surface, Vector3 center, Vector3 radius,
-        RandomNumberGenerator random, int count, float leafLength, float leafWidth)
+    // Populate connected fine sprigs with smaller folded leaves. Far LOD skips leaves without changing RNG or attachment points.
+    private static void AddLeafCluster(SurfaceTool wood, SurfaceTool surface, Vector3 center, Vector3 radius,
+        RandomNumberGenerator random, int count, float leafLength, float leafWidth, int leafStride, Color woodColor)
     {
-        for (int i = 0; i < count; i++)
+        const int perSprig = 8;
+        for (int shoot = 0, index = 0; index < count; shoot++)
         {
-            Vector3 radial = RandomDirection(random);
-            float depth = Mathf.Pow(random.Randf(), 0.55f); // Dense outer shell with some interior foliage.
-            var anchor = center + new Vector3(radial.X * radius.X, radial.Y * radius.Y, radial.Z * radius.Z) * depth;
-            var outward = (radial * 0.66f + Vector3.Up * 0.2f + RandomDirection(random) * 0.55f).Normalized();
-            var spin = RandomDirection(random);
-            Vector3 side = outward.Cross(spin).Normalized();
-            if (side.LengthSquared() < 0.01f) side = outward.Cross(Vector3.Right).Normalized();
-            float length = leafLength * random.RandfRange(0.65f, 1.3f);
-            float width = leafWidth * random.RandfRange(0.65f, 1.15f);
-            var start = anchor - outward * (length * 0.24f);
-            var shoulders = start + outward * (length * 0.45f);
-            var left = shoulders + side * (width * 0.5f);
-            var right = shoulders - side * (width * 0.5f);
-            var tip = start + outward * length + Vector3.Up * (length * random.RandfRange(-0.09f, 0.14f));
-            float variation = random.RandfRange(0.8f, 1.15f);
-            var shade = new Color(random.RandfRange(0.13f, 0.2f), random.RandfRange(0.28f, 0.43f), random.RandfRange(0.055f, 0.13f));
-            var color = new Color(shade.R * variation, shade.G * variation, shade.B * variation);
-
-            // UV.y encodes stiffness: attached base is fixed, shoulders bend, outer tip flutters most.
-            AddLeafFace(surface, start, left, tip, color, 0f, 0.45f, 1f);
-            AddLeafFace(surface, start, tip, right, color, 0f, 1f, 0.45f);
+            Vector3 radial = (RandomDirection(random) + Vector3.Up * 0.2f).Normalized();
+            var end = center + new Vector3(radial.X * radius.X, radial.Y * radius.Y, radial.Z * radius.Z) * random.RandfRange(0.65f, 1f);
+            var axis = (end - center).Normalized();
+            var side = axis.Cross(Vector3.Up);
+            if (side.LengthSquared() < 0.01f) side = axis.Cross(Vector3.Right);
+            side = side.Normalized();
+            if (leafStride == 1 || shoot % 2 == 0) AddTaper(wood, center, end, 0.009f, 0.0025f, woodColor, 3);
+            for (int j = 0; j < perSprig && index < count; j++, index++)
+            {
+                var anchor = center.Lerp(end, Mathf.Clamp((j + 1f) / perSprig + random.RandfRange(-0.04f, 0.04f), 0.05f, 1));
+                float handed = j % 2 == 0 ? 1f : -1f;
+                var outward = (side * handed + axis * 0.35f + Vector3.Up * 0.3f + RandomDirection(random) * 0.22f).Normalized();
+                var across = outward.Cross(Vector3.Up);
+                if (across.LengthSquared() < 0.01f) across = outward.Cross(Vector3.Right);
+                across = across.Normalized();
+                float lodScale = Mathf.Min(2f, Mathf.Sqrt(leafStride)); // Coarser distant leaves keep crown coverage with fewer polygons.
+                float length = leafLength * random.RandfRange(0.8f, 1.2f) * lodScale, width = leafWidth * random.RandfRange(0.8f, 1.15f) * lodScale;
+                var shoulders = anchor + outward * length * 0.48f;
+                var tip = anchor + outward * length - Vector3.Up * length * 0.08f;
+                var left = shoulders + across * width * 0.5f;
+                var right = shoulders - across * width * 0.5f;
+                var ridge = shoulders + outward.Cross(across).Normalized() * width * 0.18f;
+                float variation = random.RandfRange(0.85f, 1.12f);
+                var color = new Color(random.RandfRange(0.14f, 0.2f) * variation, random.RandfRange(0.28f, 0.4f) * variation,
+                    random.RandfRange(0.065f, 0.12f) * variation);
+                if (index % leafStride != 0) continue;
+                AddLeafFace(surface, anchor, left, ridge, color, 0f, 0.48f, 0.48f);
+                AddLeafFace(surface, left, tip, ridge, color, 0.48f, 1f, 0.48f);
+                AddLeafFace(surface, tip, right, ridge, color, 1f, 0.48f, 0.48f);
+                AddLeafFace(surface, right, anchor, ridge, color, 0.48f, 0f, 0.48f);
+            }
         }
     }
 
