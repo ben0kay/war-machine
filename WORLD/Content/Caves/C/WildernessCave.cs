@@ -17,28 +17,27 @@ public partial class WildernessCave : Node3D
         var data = terrain.Get("data").AsGodotObject();
         Vector2 origin = world.SpawnXZ + Settings.SpawnOffset;
         int sections = Mathf.Clamp(Settings.Sections, 16, 144);
-        var centers = new Vector3[sections + 1]; float highest = float.MinValue;
-        for (int i = 0; i <= sections; i++)
+        var centers = new Vector3[sections + 1];
+        float entryHeight = data.Call("get_height", new Vector3(origin.X, 0, origin.Y)).AsSingle();
+        if (!float.IsFinite(entryHeight)) { GD.PushError("Cave entrance outside saved terrain."); return; }
+        centers[0] = new Vector3(origin.X, entryHeight + 0.06f, origin.Y);
+        float length = Mathf.Max(30, Settings.Length), stepLength = length / sections;
+        float maxGrade = Mathf.Clamp(Settings.MaximumGrade, 0.05f, 0.45f);
+        float depth = Mathf.Clamp(Settings.DescentDepth, 0, length * maxGrade * 0.9f);
+        float yaw = 0;
+        for (int i = 1; i <= sections; i++)
         {
             float t = (float)i / sections;
-            float z = origin.Y - t * Settings.Length;
-            float x = origin.X + Mathf.Sin(t * Mathf.Tau * 1.1f) * Settings.Bend
-                + noise.Broad(new Vector3(origin.X, 0, z)) * Settings.Bend * 0.3f * Mathf.SmoothStep(0, 0.15f, t);
-            float h = data.Call("get_height", new Vector3(x, 0, z)).AsSingle();
-            if (!float.IsFinite(h)) { GD.PushError("Cave path outside saved terrain."); return; }
-            highest = Mathf.Max(highest, h); centers[i] = new Vector3(x, h, z);
-        }
-        float entryHeight = centers[0].Y;
-        for (int i = 0; i <= sections; i++)
-        {
-            float t = (float)i / sections;
-            var pos = centers[i];
-            float rise = Mathf.SmoothStep(0, 0.35f, t);
-            pos.Y = Mathf.Lerp(entryHeight + 0.06f, highest + 0.5f, rise)
-                + (1 - Mathf.Cos(t * Mathf.Tau * 1.5f)) * 0.5f * Settings.HeightVariation;
-            pos.Y = Mathf.Max(pos.Y, centers[i].Y + 0.06f)
-                + noise.Broad(pos + Vector3.Right * 23) * Mathf.Clamp(Settings.FloorRelief, 0, 0.2f);
-            centers[i] = pos;
+            Vector3 previous = centers[i - 1];
+            float wantedYaw = noise.Broad(previous + Vector3.Up * 53) * Mathf.DegToRad(Mathf.Clamp(Settings.CorridorWanderDegrees, 0, 45));
+            yaw = Mathf.MoveToward(yaw, wantedYaw, Mathf.DegToRad(6) * stepLength);
+            Vector3 point = previous + new Vector3(Mathf.Sin(yaw), 0, -Mathf.Cos(yaw)) * stepLength;
+            float desiredY = centers[0].Y - depth * t
+                + noise.Broad(point + Vector3.Up * 91) * Mathf.Clamp(Settings.CorridorVerticalNoise, 0, 1) * Mathf.Sin(t * Mathf.Pi);
+            // Grade limits make seeded vertical wander walkable; the floor never follows the surface uphill.
+            float drop = Mathf.Clamp(previous.Y - desiredY, 0, maxGrade * stepLength);
+            point.Y = previous.Y - drop;
+            centers[i] = point;
         }
         _centers = centers;
         Entrance = centers[0];
@@ -58,7 +57,8 @@ public partial class WildernessCave : Node3D
         _passages.Clear(); _passages.Add(main);
         CreateBranches(main, profile, noise);
         // The outer terrain and entrance use this exact cached noisy rim, never independent random offsets.
-        foreach (var passage in _passages) EmbedInTerrain(terrain, data, passage.Centers, noise);
+        foreach (var passage in _passages)
+            if (!HasNaturalCover(data, passage)) EmbedInTerrain(terrain, data, passage.Centers, noise);
         data.Call("calc_height_range", true); data.Call("update_maps", 3, true, false);
         terrain.Call("get_collision").AsGodotObject().Call("update", true);
         for (int i = 0; i < sections; i++) for (int j = 0; j < profile.Length; j++)
@@ -193,6 +193,12 @@ public partial class WildernessCave : Node3D
             }
             int px = Mathf.PosMod(x, regionSize), pz = Mathf.PosMod(z, regionSize);
             float old = maps.heights.GetPixel(px, pz).R;
+            // Buried corridors need only their inward-facing tunnel mesh, not a generated mountain above them.
+            Vector3 entryOffset = pos - Entrance; entryOffset.Y = 0;
+            float mouthDepth = entryOffset.Dot(entryDirection);
+            bool mouth = path == _centers && mouthDepth >= -0.6f && mouthDepth < 5.5f
+                && Mathf.Abs(entryOffset.Dot(entryRight)) < maxWidth + 0.5f;
+            if (old >= nearest.Y + maxHeight + Mathf.Max(0, Settings.MinimumRoofCover) && !mouth) continue;
             float depth = path[0].Z - pos.Z;
             float front = Mathf.SmoothStep(0, 5, depth);
             float organicDistance = distance + noise.Broad(pos) * 3;
@@ -200,9 +206,7 @@ public partial class WildernessCave : Node3D
             float ridge = nearest.Y + maxHeight + 5 + noise.Broad(pos + Vector3.Up * 47) * 2;
             maps.heights.SetPixel(px, pz, new Color(Mathf.Lerp(old, Mathf.Max(old, ridge), blend), 0, 0));
             // Hole only at the mouth, allowing passage through the rising cliff; deeper roof is buried.
-            Vector3 fromEntry = pos - Entrance; fromEntry.Y = 0;
-            float entryDepth = fromEntry.Dot(entryDirection);
-            if (path == _centers && entryDepth >= -0.6f && entryDepth < 5.5f && Mathf.Abs(fromEntry.Dot(entryRight)) < maxWidth + 0.5f)
+            if (mouth)
             {
                 var control = maps.control.GetPixel(px, pz);
                 int bits = System.BitConverter.SingleToInt32Bits(control.R) | 4;

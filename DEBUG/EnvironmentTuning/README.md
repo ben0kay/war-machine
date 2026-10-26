@@ -13,3 +13,5 @@ F9 now adds **Entities / Robot_001** after scene readiness. Bindings edit the ro
 Stage/active status refreshes on opening and meaningful events only; hidden UI has no polling callback. Subscriptions are released on exit. Controls have source checks only; local build, reset, two instances and visual/audio acceptance remain pending.
 
 Pine trees now also exposes staged trunk thickness multiplier and minimum/maximum variation. Defaults 2.0 / 0.85 / 1.25; Apply / Rebuild vegetation regenerates shared tree variants. These controls participate in existing reset behavior.
+
+Ground haze now exposes Wisp scale, Wisp drift and Wisp contrast in addition to enable/density/height. Defaults enable a 1.1m noisy moving ground layer at density 0.18. These settings bind to the existing runtime EnvironmentConfig, reset normally and update only on change. See ENVIRONMENT/Weather/README.md for terrain anchoring and native GPU cost.

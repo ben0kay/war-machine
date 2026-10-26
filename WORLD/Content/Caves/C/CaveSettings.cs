@@ -8,8 +8,6 @@ public partial class CaveSettings : Resource
     [Export] public float Length { get; set; } = 120;
     [Export] public float Width { get; set; } = 3.5f;
     [Export] public float Height { get; set; } = 4.8f;
-    [Export] public float Bend { get; set; } = 11;
-    [Export] public float HeightVariation { get; set; } = 3;
     [Export] public int Sections { get; set; } = 96;
     [ExportGroup("Seeded organic shape")]
     [Export] public int Seed { get; set; } = 7131;
@@ -22,9 +20,15 @@ public partial class CaveSettings : Resource
     [Export(PropertyHint.Range, "12,40,1")] public int ArchSegments { get; set; } = 24;
     [Export] public float EntranceBlendRadius { get; set; } = 14;
     [Export] public float RidgeFeather { get; set; } = 32;
+    [ExportGroup("Underground corridors")]
+    [Export] public float DescentDepth { get; set; } = 30;
+    [Export] public float MaximumGrade { get; set; } = 0.35f;
+    [Export] public float CorridorWanderDegrees { get; set; } = 35;
+    [Export] public float CorridorVerticalNoise { get; set; } = 0.5f;
+    [Export] public float MinimumRoofCover { get; set; } = 3;
     [ExportGroup("Fork")]
     [Export] public float BranchLength { get; set; } = 75;
-    [Export] public float BranchDescent { get; set; } = 4;
+    [Export] public float BranchDescent { get; set; } = 12;
     [Export] public float JunctionLength { get; set; } = 14;
     [ExportGroup("Lighting")]
     [Export] public float LightEnergy { get; set; } = 2;

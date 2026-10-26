@@ -45,6 +45,9 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         Toggle(_sky.Settings, "GroundHazeEnabled", "Ground haze enabled", haze.ApplySettings);
         Slider(_sky.Settings, "GroundHazeDensity", "Haze density", 0, 0.3, 0.001, haze.ApplySettings);
         Slider(_sky.Settings, "GroundHazeHeight", "Layer height (m)", 0.25, 8, 0.05, haze.ApplySettings);
+        Slider(_sky.Settings, "GroundHazeNoiseScale", "Wisp scale", 0.05, 1, 0.01, haze.ApplySettings);
+        Slider(_sky.Settings, "GroundHazeDriftSpeed", "Wisp drift", 0, 2, 0.01, haze.ApplySettings);
+        Slider(_sky.Settings, "GroundHazeContrast", "Wisp contrast", 0, 1, 0.01, haze.ApplySettings);
         Category(content, "Sky / Time / Wind");
         Slider(_sky.Settings, "StartHour", "Hour", 0, 24, 0.01, _sky.ApplyTime);
         Slider(_sky.Settings, "DayLengthMinutes", "Day length (minutes)", 1, 1440, 1, _sky.ApplyCycle);
@@ -225,6 +228,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     private void ApplyWind()
     {
         _grass.ApplyAppearance(); _trees.ApplyWind();
+        GetParent().GetNode<GroundHaze>("GroundHaze").ApplySettings();
         GetParent().GetNode<WeatherBridge>("Weather").ApplySettings();
         foreach (var child in GetParent().GetNode("Content").GetChildren()) if (child is ContentScatter scatter) scatter.ApplyWind();
     }

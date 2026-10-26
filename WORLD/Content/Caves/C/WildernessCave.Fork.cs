@@ -56,17 +56,44 @@ public partial class WildernessCave
             Vector3 heading = (direction + right * side * 0.55f).Normalized();
             Vector3 across = heading.Cross(Vector3.Up);
             var path = new Vector3[sections + 1];
-            for (int i = 0; i <= sections; i++)
+            path[0] = start;
+            float stepLength = length / sections, yaw = 0;
+            float maxGrade = Mathf.Clamp(Settings.MaximumGrade, 0.05f, 0.45f);
+            float descent = Mathf.Clamp(Settings.BranchDescent, 0, length * maxGrade * 0.9f);
+            for (int i = 1; i <= sections; i++)
             {
                 float t = (float)i / sections;
-                Vector3 point = start + heading * length * t;
-                point += across * noise.Broad(point + Vector3.Up * (side * 27)) * 2 * Mathf.SmoothStep(0, 0.2f, t);
-                point.Y = end.Y - Mathf.Clamp(Settings.BranchDescent, 0, length * 0.12f) * t
-                    + noise.Broad(point + Vector3.Up * 37) * 0.1f * Mathf.Sin(t * Mathf.Pi);
+                Vector3 previous = path[i - 1];
+                float wanted = noise.Broad(previous + Vector3.Up * (side * 27)) * Mathf.DegToRad(15);
+                yaw = Mathf.MoveToward(yaw, wanted, Mathf.DegToRad(4) * stepLength);
+                Vector3 step = heading * Mathf.Cos(yaw) + across * Mathf.Sin(yaw);
+                Vector3 point = previous + step * stepLength;
+                float desiredY = end.Y - descent * t + noise.Broad(point + Vector3.Up * 37) * 0.25f * Mathf.Sin(t * Mathf.Pi);
+                point.Y = previous.Y - Mathf.Clamp(previous.Y - desiredY, 0, maxGrade * stepLength);
                 path[i] = point;
             }
             _passages.Add(CreatePassage(path, profile, noise, 0.85f));
         }
+    }
+
+    // =========================================================
+    // Actual surface cover, not an arbitrary Y=0 flag, decides whether a route needs entrance terrain support.
+    private bool HasNaturalCover(GodotObject data, Passage passage)
+    {
+        float cover = Mathf.Max(0, Settings.MinimumRoofCover);
+        float relief = Mathf.Clamp(Settings.WallRelief, 0, 0.6f);
+        for (int i = 0; i < passage.Centers.Length; i++)
+        {
+            Vector3 center = passage.Centers[i];
+            Vector3 tangent = passage.Centers[Mathf.Min(i + 1, passage.Centers.Length - 1)] - passage.Centers[Mathf.Max(0, i - 1)];
+            tangent.Y = 0; Vector3 across = tangent.Normalized().Cross(Vector3.Up) * (passage.Widths[i] + relief);
+            foreach (Vector3 point in new[] { center - across, center, center + across })
+            {
+                float surface = data.Call("get_height", point).AsSingle();
+                if (!float.IsFinite(surface) || surface < center.Y + passage.Heights[i] + relief + cover) return false;
+            }
+        }
+        return true;
     }
 
     // =========================================================
