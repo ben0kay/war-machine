@@ -17,17 +17,20 @@ public static class TreeGenerator
         AddTaper(wood, Vector3.Zero, Vector3.Up * height, radius, radius * (1 - settings.TrunkTaper), bark, 8);
         int fullTiers = Mathf.Clamp(settings.BranchTierCount, 3, 24);
         bool distant = leafStride > 1;
-        int tiers = distant ? Mathf.Max(4, fullTiers / 2) : fullTiers, branches = distant ? 4 : 6;
+        int tiers = fullTiers, branches = 6;
         int budget = Mathf.Clamp((int)(settings.LeafBudget * settings.FoliageDensity), 72, 2400);
         int count = Mathf.Max(2, budget / (fullTiers * 6));
+        if (distant) count = Mathf.Max(2, count / 3);
         for (int tier = 0; tier < tiers; tier++)
         {
             float t = tier / (float)tiers;
             float y = height * Mathf.Lerp(0.18f, 0.95f, t);
             float length = height * settings.ConicalWidth * Mathf.Pow(1 - t, settings.BranchLengthFalloff);
+            random.Seed = Mix(settings.Seed, variation, tier + 101);
             float rotation = random.RandfRange(0, Mathf.Tau);
             for (int branch = 0; branch < branches; branch++)
             {
+                random.Seed = Mix(settings.Seed + variation, tier, branch + 501);
                 float angle = rotation + branch * Mathf.Tau / branches + random.RandfRange(-0.12f, 0.12f);
                 var direction = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
                 var start = Vector3.Up * y;
@@ -41,7 +44,7 @@ public static class TreeGenerator
                     float fan = length * 0.32f * (1 - along * 0.65f);
                     var anchor = center + side * random.RandfRange(-fan, fan) + Vector3.Up * random.RandfRange(-0.45f, 0.45f);
                     var axis = (direction + side * random.RandfRange(-1.8f, 1.8f) - Vector3.Up * 0.25f).Normalized();
-                    float needle = settings.NeedleClusterLength * random.RandfRange(0.7f, 1.2f) * (distant ? 1.5f : 1f);
+                    float needle = settings.NeedleClusterLength * random.RandfRange(0.7f, 1.2f) * (distant ? 1.8f : 1f);
                     float shade = random.RandfRange(1 - settings.ColourVariation, 1 + settings.ColourVariation);
                     var color = new Color(0.085f, 0.23f, 0.135f) * shade;
                     if (distant && j % 2 != 0) continue;
@@ -49,7 +52,7 @@ public static class TreeGenerator
                     var tip = anchor + axis * needle;
                     var across = axis.Cross(Vector3.Up).Normalized();
                     var up = across.Cross(axis).Normalized();
-                    float width = settings.NeedleClusterThickness * (distant ? 1.4f : 1f);
+                    float width = settings.NeedleClusterThickness * (distant ? 2.2f : 1f);
                     var middle = anchor.Lerp(tip, 0.4f);
                     var a = middle + across * width;
                     var b = middle - across * width * 0.5f + up * width * 0.866f;
