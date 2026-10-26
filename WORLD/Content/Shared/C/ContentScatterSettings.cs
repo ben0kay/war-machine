@@ -25,5 +25,11 @@ public partial class ContentScatterSettings : Resource
     [Export] public Color PrimaryColor { get; set; } = new(0.12f, 0.28f, 0.1f);
     [Export] public Color AccentColor { get; set; } = new(0.7f, 0.5f, 0.85f);
     [Export] public float WindStrength { get; set; } = 0.15f;
+    [ExportGroup("Rock Surface")]
+    [Export] public Material? SurfaceMaterial { get; set; }
+    [Export(PropertyHint.Range, "0.1,5,0.05")] public float RockTextureScale { get; set; } = 0.8f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float RockNormalStrength { get; set; } = 0.65f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float RockMossAmount { get; set; } = 0.35f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float RockWetness { get; set; } = 0.15f;
     [Export] public Godot.Collections.Array<Mesh> ImportedMeshes { get; set; } = new();
 }

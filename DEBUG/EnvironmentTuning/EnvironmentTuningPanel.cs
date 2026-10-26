@@ -65,6 +65,13 @@ public partial class EnvironmentTuningPanel : CanvasLayer
             Slider(scatter.Settings, "Density", "Placement density *", 0, 1, 0.01);
             Slider(scatter.Settings, "Size", "Size *", 0.2, 6, 0.1);
             Slider(scatter.Settings, "RenderDistance", "Distance (m) *", 16, 256, 1);
+            if (scatter.Settings.Kind == ContentScatterSettings.ContentKind.Rocks)
+            {
+                Slider(scatter.Settings, "RockTextureScale", "Stone scale", 0.1, 5, 0.05, scatter.ApplySurface);
+                Slider(scatter.Settings, "RockNormalStrength", "Surface detail", 0, 1, 0.01, scatter.ApplySurface);
+                Slider(scatter.Settings, "RockMossAmount", "Moss", 0, 1, 0.01, scatter.ApplySurface);
+                Slider(scatter.Settings, "RockWetness", "Wetness", 0, 1, 0.01, scatter.ApplySurface);
+            }
         }
         outer.AddChild(new Label { Text = "* Pending until Apply. Terrain is never modified." });
         var actions = new HBoxContainer(); outer.AddChild(actions);

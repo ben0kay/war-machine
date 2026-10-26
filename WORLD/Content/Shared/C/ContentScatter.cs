@@ -12,7 +12,7 @@ public partial class ContentScatter : Node3D
     private readonly Dictionary<Vector2I, List<MultiMeshInstance3D>> _chunks = new();
     private Mesh[] _meshes = System.Array.Empty<Mesh>();
     private FastNoiseLite _patch = null!;
-    private ShaderMaterial? _wind;
+    private ShaderMaterial? _wind, _stone;
     private Vector2I _center = new(int.MinValue, int.MinValue);
     private int _chunkSize;
     private bool _initialized, _queued;
@@ -32,7 +32,7 @@ public partial class ContentScatter : Node3D
     public void ApplySettings()
     {
         foreach (var nodes in _chunks.Values) foreach (var node in nodes) { RemoveChild(node); node.QueueFree(); }
-        _chunks.Clear(); _meshes = System.Array.Empty<Mesh>(); _wind = null;
+        _chunks.Clear(); _meshes = System.Array.Empty<Mesh>(); _wind = null; _stone = null;
         _center = new Vector2I(int.MinValue, int.MinValue);
         if (!_initialized || !Settings.Enabled || Settings.Density <= 0) return;
         _chunkSize = Mathf.Clamp(Settings.ChunkSize, 16, 64);
@@ -43,7 +43,12 @@ public partial class ContentScatter : Node3D
         {
             bool plant = Settings.Kind == ContentScatterSettings.ContentKind.Flowers || Settings.Kind == ContentScatterSettings.ContentKind.Bushes;
             Material material;
-            if (plant)
+            if (Settings.SurfaceMaterial != null)
+            {
+                material = (Material)Settings.SurfaceMaterial.Duplicate();
+                if (Settings.Kind == ContentScatterSettings.ContentKind.Rocks) { _stone = material as ShaderMaterial; ApplySurface(); }
+            }
+            else if (plant)
             {
                 _wind = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Content/Vegetation/Trees/Shaders/LeafWind.gdshader") };
                 material = _wind; ApplyWind();
@@ -61,6 +66,17 @@ public partial class ContentScatter : Node3D
             }
         }
         _meshes = meshes.ToArray(); Move(_explorer.GlobalPosition);
+    }
+
+    // =========================================================
+    // One material per category; runtime sliders only upload changed surface settings on input.
+    public void ApplySurface()
+    {
+        if (_stone == null) return;
+        _stone.SetShaderParameter("texture_scale", Settings.RockTextureScale);
+        _stone.SetShaderParameter("normal_strength", Settings.RockNormalStrength);
+        _stone.SetShaderParameter("moss_amount", Settings.RockMossAmount);
+        _stone.SetShaderParameter("wetness", Settings.RockWetness);
     }
 
     // =========================================================

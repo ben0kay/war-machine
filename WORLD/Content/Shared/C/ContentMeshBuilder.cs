@@ -16,6 +16,15 @@ public sealed class ContentMeshBuilder : System.IDisposable
     }
 
     // =========================================================
+    // Rock normals point away from the interior, independent of the generator's triangle order.
+    public void RockFace(Vector3 a, Vector3 b, Vector3 c, Color color, Vector3 center)
+    {
+        var normal = (b - a).Cross(c - a).Normalized();
+        if (normal.Dot((a + b + c) / 3f - center) < 0) (b, c) = (c, b);
+        Face(a, b, c, color);
+    }
+
+    // =========================================================
     // Pointed folded leaves and petals, double-sided through geometry for predictable rendering.
     public void Leaf(Vector3 start, Vector3 end, float width, Color color)
     {

@@ -18,10 +18,10 @@ public static class RockGenerator
         for (int i = 0; i < sides; i++)
         {
             int next = (i + 1) % sides; var color = settings.PrimaryColor.Lerp(settings.AccentColor, random.RandfRange(0, 0.5f));
-            mesh.Face(ring[i], top, ring[next], color);
-            mesh.Face(lower[i], ring[i], lower[next], color * 0.85f);
-            mesh.Face(lower[next], ring[i], ring[next], color * 0.9f);
-            mesh.Face(Vector3.Down * settings.Size * 0.12f, lower[i], lower[next], color);
+            mesh.RockFace(ring[i], top, ring[next], color, Vector3.Up * settings.Size * 0.2f);
+            mesh.RockFace(lower[i], ring[i], lower[next], color * 0.85f, Vector3.Up * settings.Size * 0.2f);
+            mesh.RockFace(lower[next], ring[i], ring[next], color * 0.9f, Vector3.Up * settings.Size * 0.2f);
+            mesh.RockFace(Vector3.Down * settings.Size * 0.12f, lower[i], lower[next], color, Vector3.Up * settings.Size * 0.2f);
         }
         return mesh.Finish();
     }
