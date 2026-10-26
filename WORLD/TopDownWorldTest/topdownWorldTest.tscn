@@ -1,0 +1,66 @@
+[gd_scene load_steps=11 format=3]
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownWorldTest.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/TopDownWorldTest/Configuration/TopDownTestMaster.tres" id="2"]
+[ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
+[ext_resource type="Terrain3DAssets" path="res://WORLD/Terrain/TerrainAssets.tres" id="4"]
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownPlayer.cs" id="5"]
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownCamera.cs" id="6"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
+sky_top_color = Color(0.3, 0.48, 0.7, 1)
+sky_horizon_color = Color(0.76, 0.83, 0.86, 1)
+ground_bottom_color = Color(0.22, 0.24, 0.21, 1)
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMaterial")
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.75, 0.8, 0.9, 1)
+ambient_light_energy = 0.65
+reflected_light_source = 2
+[sub_resource type="CapsuleShape3D" id="PlayerCapsule"]
+radius = 0.3
+height = 1.8
+
+[node name="TopDownWorldTest" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+[node name="Terrain3D" type="Terrain3D" parent="."]
+region_size = 1024
+collision_mode = 3
+collision_layer = 1
+collision_mask = 1
+data_directory = "res://WORLD/TopDownWorldTest/Terrain/Data"
+material = ExtResource("3")
+assets = ExtResource("4")
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment")
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -25, 0)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 1.1
+shadow_enabled = true
+[node name="Player" type="CharacterBody3D" parent="."]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("5")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+position = Vector3(0, 0.9, 0)
+shape = SubResource("PlayerCapsule")
+[node name="Camera" type="Camera3D" parent="."]
+position = Vector3(532, 35, 532)
+rotation_degrees = Vector3(-55, 45, 0)
+projection = 1
+size = 48.0
+current = true
+script = ExtResource("6")
+[node name="Controls" type="CanvasLayer" parent="."]
+[node name="Status" type="Label" parent="Controls"]
+offset_left = 16.0
+offset_top = 16.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+text = "Loading saved preview terrain…"
+mouse_filter = 2

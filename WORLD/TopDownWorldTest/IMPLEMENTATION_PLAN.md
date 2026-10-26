@@ -1,6 +1,6 @@
 # TD — Orthographic Top-Down World Test
 
-> **Plan only: TD0–TD3 Planned.** This does not implement a new scene or change the playable main world.
+> **TD0/TD1 implemented, Awaiting Validation; TD2/TD3 Planned.** Standalone scene exists; original playable main world is unchanged. Native terrain must be baked once locally before first play.
 >
 > Create `WORLD/TopDownWorldTest/topdownWorldTest.tscn`, an isolated Godot 4 C# 3D experiment. The real main world `WORLD/testworld.tscn` must remain untouched and be the project default.
 
@@ -16,8 +16,8 @@ Read root `README.md`, `CodePreferences.md`, `WORLD/README.md`, `WORLD/Generatio
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| **TD0** | Standalone scene and basic Terrain3D preview terrain | Planned |
-| **TD1** | Low-poly human, walking, angled orthographic follow camera | Planned |
+| **TD0** | Standalone scene and basic Terrain3D preview terrain | Awaiting Validation |
+| **TD1** | Low-poly human, walking, angled orthographic follow camera | Awaiting Validation |
 | **TD2** | Existing robot on nearby walk/stop/scan patrol | Planned |
 | **TD3** | Small settings, documentation and sanity checks | Planned |
 
@@ -62,6 +62,14 @@ All phases are appropriate for Codex / ChatGPT Work. Implement only authorized p
 - Performance: static terrain; player animates only in motion; camera follows only until settled; existing robot uses its active patrol and scan timers. No global per-frame scene searches, redundant materials or long-running noise.
 - Brief validation: compile, run current scene, check WASD/zoom/hill/robot loop when local tools exist; report unverified tests honestly. The user will do appearance/FPS assessment.
 - Do not update the original TestWorld or any saved normal-world terrain, weather settings or robot master.
+
+## TD0/TD1 implementation handoff — 2026-10-26
+
+Implemented only the two authorized phases. Files: standalone `topdownWorldTest.tscn`, test settings/master, TopDownWorldTest composition, TopDownPlayer, TopDownCamera, TopDownTerrainBake and its explicit bake scene. Basic sky/sun replaces optional Sky3D in this isolated preview. Main scene/project selection, normal-world terrain, vegetation/weather, shared player and all robot assets are untouched.
+
+One 1024m region uses the established native import/save path and Full/Game collision to keep player/hill covered independently of camera offset. Godot/.NET are unavailable here, so no native `.res` was generated; the plan's documented one-shot fallback is provided with overwrite refusal. Missing bake leaves on-screen instructions and inactive physics, not an automatic generation pass.
+
+C# source/delimiter, resource path/ID and camera-axis/hill-grade checks plus whitespace review performed. **Build, bake, collision, input, animation, scene runtime and visual/FPS acceptance are deferred, not passed.** See README for exact commands and brief local checks. TD2 (existing robot integration) and TD3 remain unimplemented. This job is one feature-branch commit; no main-branch publication is required to try it locally after checkout.
 
 ## Suggested Codex instruction
 
