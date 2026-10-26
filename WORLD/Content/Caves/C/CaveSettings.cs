@@ -5,10 +5,10 @@ public partial class CaveSettings : Resource
 {
     [ExportGroup("Layout")]
     [Export] public Vector2 SpawnOffset { get; set; } = new(48, -28);
-    [Export] public float Length { get; set; } = 120;
+    [Export] public float Length { get; set; } = 190;
     [Export] public float Width { get; set; } = 3.5f;
     [Export] public float Height { get; set; } = 4.8f;
-    [Export] public int Sections { get; set; } = 96;
+    [Export] public int Sections { get; set; } = 144;
     [ExportGroup("Seeded organic shape")]
     [Export] public int Seed { get; set; } = 7131;
     [Export] public float ShapeFrequency { get; set; } = 0.055f;
@@ -23,11 +23,20 @@ public partial class CaveSettings : Resource
     [ExportGroup("Underground corridors")]
     [Export] public float DescentDepth { get; set; } = 30;
     [Export] public float MaximumGrade { get; set; } = 0.35f;
-    [Export] public float CorridorWanderDegrees { get; set; } = 35;
+    [Export] public float CorridorWanderDegrees { get; set; } = 55;
+    [Export] public float MacroBendSpacing { get; set; } = 32;
+    [Export] public float MacroBendAmplitude { get; set; } = 16;
+    [ExportGroup("Broad chambers")]
+    [Export(PropertyHint.Range, "0,4,1")] public int MainChamberCount { get; set; } = 2;
+    [Export(PropertyHint.Range, "0,4,1")] public int BranchChamberCount { get; set; } = 1;
+    [Export] public float ChamberHalfLength { get; set; } = 19;
+    [Export] public float ChamberWidthMultiplier { get; set; } = 2.2f;
+    [Export] public float ChamberHeightMultiplier { get; set; } = 2f;
+    [ExportGroup("Underground corridors continued")]
     [Export] public float CorridorVerticalNoise { get; set; } = 0.5f;
     [Export] public float MinimumRoofCover { get; set; } = 3;
     [ExportGroup("Fork")]
-    [Export] public float BranchLength { get; set; } = 75;
+    [Export] public float BranchLength { get; set; } = 125;
     [Export] public float BranchDescent { get; set; } = 12;
     [Export] public float JunctionLength { get; set; } = 14;
     [ExportGroup("Exterior hillside material")]

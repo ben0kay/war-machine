@@ -17,28 +17,12 @@ public partial class WildernessCave : Node3D
         var data = terrain.Get("data").AsGodotObject();
         Vector2 origin = world.SpawnXZ + Settings.SpawnOffset;
         int sections = Mathf.Clamp(Settings.Sections, 16, 144);
-        var centers = new Vector3[sections + 1];
         float entryHeight = data.Call("get_height", new Vector3(origin.X, 0, origin.Y)).AsSingle();
         if (!float.IsFinite(entryHeight)) { GD.PushError("Cave entrance outside saved terrain."); return; }
-        centers[0] = new Vector3(origin.X, entryHeight + 0.06f, origin.Y);
-        float length = Mathf.Max(30, Settings.Length), stepLength = length / sections;
-        float maxGrade = Mathf.Clamp(Settings.MaximumGrade, 0.05f, 0.45f);
-        float depth = Mathf.Clamp(Settings.DescentDepth, 0, length * maxGrade * 0.9f);
-        float yaw = 0;
-        for (int i = 1; i <= sections; i++)
-        {
-            float t = (float)i / sections;
-            Vector3 previous = centers[i - 1];
-            float wantedYaw = noise.Broad(previous + Vector3.Up * 53) * Mathf.DegToRad(Mathf.Clamp(Settings.CorridorWanderDegrees, 0, 45));
-            yaw = Mathf.MoveToward(yaw, wantedYaw, Mathf.DegToRad(6) * stepLength);
-            Vector3 point = previous + new Vector3(Mathf.Sin(yaw), 0, -Mathf.Cos(yaw)) * stepLength;
-            float desiredY = centers[0].Y - depth * t
-                + noise.Broad(point + Vector3.Up * 91) * Mathf.Clamp(Settings.CorridorVerticalNoise, 0, 1) * Mathf.Sin(t * Mathf.Pi);
-            // Grade limits make seeded vertical wander walkable; the floor never follows the surface uphill.
-            float drop = Mathf.Clamp(previous.Y - desiredY, 0, maxGrade * stepLength);
-            point.Y = previous.Y - drop;
-            centers[i] = point;
-        }
+        float length = Mathf.Clamp(Settings.Length, 30, 260);
+        var centers = CaveRouteBuilder.Build(Settings, noise,
+            new Vector3(origin.X, entryHeight + 0.06f, origin.Y), Vector3.Forward,
+            length, sections, Settings.DescentDepth, 0);
         _centers = centers;
         Entrance = centers[0];
         var material = (Material)GD.Load<Material>("res://WORLD/Content/Rocks/Configuration/StoneMaterial.tres").Duplicate();
@@ -52,13 +36,13 @@ public partial class WildernessCave : Node3D
             profile[j + FloorSegments + 1] = new Vector2(Mathf.Cos(angle), 0.22f + 0.78f * Mathf.Sin(angle));
         }
         profile[^1] = new Vector2(-1, 0.12f);
-        var main = CreatePassage(centers, profile, noise, 1);
+        var main = CreatePassage(centers, profile, noise, 1, Settings.MainChamberCount, length);
         var rings = main.Rings;
         _passages.Clear(); _passages.Add(main);
         CreateBranches(main, profile, noise);
         // The outer terrain and entrance use this exact cached noisy rim, never independent random offsets.
         foreach (var passage in _passages)
-            if (!HasNaturalCover(data, passage)) EmbedInTerrain(terrain, data, passage.Centers, noise);
+            if (!HasNaturalCover(data, passage)) EmbedInTerrain(terrain, data, passage, noise);
         data.Call("calc_height_range", true); data.Call("update_maps", 3, true, false);
         terrain.Call("get_collision").AsGodotObject().Call("update", true);
         for (int i = 0; i < sections; i++) for (int j = 0; j < profile.Length; j++)
@@ -161,60 +145,73 @@ public partial class WildernessCave : Node3D
 
     // =========================================================
     // One bounded runtime authoring pass raises the actual heightfield over the passage; source regions stay untouched.
-    private void EmbedInTerrain(Node3D terrain, GodotObject data, Vector3[] path, CaveShapeNoise noise)
+    private void EmbedInTerrain(Node3D terrain, GodotObject data, Passage passage, CaveShapeNoise noise)
     {
-        float feather = Mathf.Clamp(Settings.RidgeFeather, 16, 64);
-        float maxWidth = Mathf.Max(2, Settings.Width) * (1 + Mathf.Clamp(Settings.WidthNoise, 0, 0.4f)) + Mathf.Clamp(Settings.WallRelief, 0, 0.6f);
-        float maxHeight = Mathf.Max(3, Settings.Height) * (1 + Mathf.Clamp(Settings.HeightNoise, 0, 0.4f)) + Mathf.Clamp(Settings.WallRelief, 0, 0.6f);
-        float minX = float.MaxValue, maxX = float.MinValue;
-        foreach (var point in path) { minX = Mathf.Min(minX, point.X); maxX = Mathf.Max(maxX, point.X); }
-        int regionSize = terrain.Get("region_size").AsInt32();
-        float spacing = terrain.Get("vertex_spacing").AsSingle();
-        Vector3 entryDirection = _centers[1] - _centers[0]; entryDirection.Y = 0; entryDirection = entryDirection.Normalized();
-        Vector3 entryRight = entryDirection.Cross(Vector3.Up);
-        var regions = new System.Collections.Generic.Dictionary<Vector2I, (Image heights, Image control)>();
-        for (int z = Mathf.FloorToInt((path[^1].Z - feather) / spacing); z <= Mathf.CeilToInt((path[0].Z + maxWidth + 3) / spacing); z++)
-        for (int x = Mathf.FloorToInt((minX - feather - maxWidth) / spacing); x <= Mathf.CeilToInt((maxX + feather + maxWidth) / spacing); x++)
+        float feather = Mathf.Clamp(Settings.RidgeFeather, 16, 64), relief = Mathf.Clamp(Settings.WallRelief, 0, 0.6f);
+        Vector3[] path = passage.Centers;
+        // Bound BOTH horizontal axes by every centre and its local expanded chamber width.
+        float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+        for (int i = 0; i < path.Length; i++)
         {
-            var pos = new Vector3(x * spacing, 0, z * spacing);
-            float distance = float.MaxValue; Vector3 nearest = path[0];
+            float radius = passage.Widths[i] + relief + feather + 5;
+            minX = Mathf.Min(minX, path[i].X - radius); maxX = Mathf.Max(maxX, path[i].X + radius);
+            minZ = Mathf.Min(minZ, path[i].Z - radius); maxZ = Mathf.Max(maxZ, path[i].Z + radius);
+        }
+        float spacing = terrain.Get("vertex_spacing").AsSingle();
+        int regionSize = terrain.Get("region_size").AsInt32();
+        Vector3 entryForward = path[1] - path[0]; entryForward.Y = 0; entryForward = entryForward.Normalized();
+        Vector3 entryRight = entryForward.Cross(Vector3.Up);
+        bool isMain = path == _centers;
+        var regions = new System.Collections.Generic.Dictionary<Vector2I, (Image heights, Image control)>();
+        for (int z = Mathf.FloorToInt(minZ / spacing); z <= Mathf.CeilToInt(maxZ / spacing); z++)
+        for (int x = Mathf.FloorToInt(minX / spacing); x <= Mathf.CeilToInt(maxX / spacing); x++)
+        {
+            Vector3 pos = new(x * spacing, 0, z * spacing);
+            float best = float.MaxValue, width = 0, height = 0;
+            Vector3 nearest = path[0];
             for (int j = 0; j < path.Length - 1; j++)
             {
-                var a = new Vector2(path[j].X, path[j].Z); var b = new Vector2(path[j + 1].X, path[j + 1].Z);
-                float t = Mathf.Clamp((new Vector2(pos.X, pos.Z) - a).Dot(b - a) / (b - a).LengthSquared(), 0, 1);
-                var point = path[j].Lerp(path[j + 1], t);
-                float d = new Vector2(pos.X - point.X, pos.Z - point.Z).Length();
-                if (d < distance) { distance = d; nearest = point; }
+                Vector2 a = new(path[j].X, path[j].Z), b = new(path[j + 1].X, path[j + 1].Z);
+                Vector2 edge = b - a;
+                float u = Mathf.Clamp((new Vector2(pos.X, pos.Z) - a).Dot(edge)
+                    / Mathf.Max(0.0001f, edge.LengthSquared()), 0, 1);
+                Vector3 candidate = path[j].Lerp(path[j + 1], u);
+                float d2 = new Vector2(pos.X - candidate.X, pos.Z - candidate.Z).LengthSquared();
+                if (d2 >= best) continue;
+                best = d2; nearest = candidate;
+                width = Mathf.Lerp(passage.Widths[j], passage.Widths[j + 1], u) + relief;
+                height = Mathf.Lerp(passage.Heights[j], passage.Heights[j + 1], u) + relief;
             }
-            if (distance > maxWidth + feather) continue;
+            if (best > (width + feather + 5) * (width + feather + 5)) continue;
+            Vector3 mouthOffset = pos - Entrance; mouthOffset.Y = 0;
+            float mouthDepth = mouthOffset.Dot(entryForward);
+            bool mouth = isMain && mouthDepth >= -0.6f && mouthDepth < 5.5f
+                && Mathf.Abs(mouthOffset.Dot(entryRight)) < width + 0.5f;
+            float distance = Mathf.Sqrt(best), organic = distance + noise.Broad(pos) * 3;
+            if (organic > width + feather && !mouth) continue;
+            float forwardDistance = (pos - path[0]).Dot(entryForward);
+            float startBlend = isMain ? Mathf.SmoothStep(0, 5, forwardDistance) : 1;
+            float blend = (1 - Mathf.SmoothStep(width + 5, width + feather, organic)) * startBlend;
+            if (blend <= 0 && !mouth) continue;
             var key = new Vector2I(Mathf.FloorToInt((float)x / regionSize), Mathf.FloorToInt((float)z / regionSize));
             if (!regions.TryGetValue(key, out var maps))
             {
-                var region = data.Call("get_regionp", pos).AsGodotObject(); if (region == null) continue;
+                var region = data.Call("get_regionp", pos).AsGodotObject();
+                if (region == null) continue;
                 maps = ((Image)region.Call("get_map", 0).AsGodotObject(), (Image)region.Call("get_map", 1).AsGodotObject());
                 regions[key] = maps;
             }
             int px = Mathf.PosMod(x, regionSize), pz = Mathf.PosMod(z, regionSize);
             float old = maps.heights.GetPixel(px, pz).R;
-            // Buried corridors need only their inward-facing tunnel mesh, not a generated mountain above them.
-            Vector3 entryOffset = pos - Entrance; entryOffset.Y = 0;
-            float mouthDepth = entryOffset.Dot(entryDirection);
-            bool mouth = path == _centers && mouthDepth >= -0.6f && mouthDepth < 5.5f
-                && Mathf.Abs(entryOffset.Dot(entryRight)) < maxWidth + 0.5f;
-            if (old >= nearest.Y + maxHeight + Mathf.Max(0, Settings.MinimumRoofCover) && !mouth) continue;
-            float depth = path[0].Z - pos.Z;
-            float front = Mathf.SmoothStep(0, 5, depth);
-            float organicDistance = distance + noise.Broad(pos) * 3;
-            float blend = (1 - Mathf.SmoothStep(maxWidth + 5, maxWidth + feather, organicDistance)) * front;
-            float ridge = nearest.Y + maxHeight + 5 + noise.Broad(pos + Vector3.Up * 47) * 2;
-            maps.heights.SetPixel(px, pz, new Color(Mathf.Lerp(old, Mathf.Max(old, ridge), blend), 0, 0));
-            // Hole only at the mouth, allowing passage through the rising cliff; deeper roof is buried.
-            if (mouth)
-            {
-                var control = maps.control.GetPixel(px, pz);
-                int bits = System.BitConverter.SingleToInt32Bits(control.R) | 4;
-                maps.control.SetPixel(px, pz, new Color(System.BitConverter.Int32BitsToSingle(bits), 0, 0));
-            }
+            float roof = nearest.Y + height + Mathf.Max(3, Settings.MinimumRoofCover) + 1
+                + noise.Broad(pos + Vector3.Up * 47) * 2;
+            // Only lift insufficient surface cells in the loaded runtime maps; never save regions.
+            if (old < roof && blend > 0)
+                maps.heights.SetPixel(px, pz, new Color(Mathf.Lerp(old, roof, blend), 0, 0));
+            if (!mouth) continue;
+            var control = maps.control.GetPixel(px, pz);
+            int bits = System.BitConverter.SingleToInt32Bits(control.R) | 4;
+            maps.control.SetPixel(px, pz, new Color(System.BitConverter.Int32BitsToSingle(bits), 0, 0));
         }
     }
 

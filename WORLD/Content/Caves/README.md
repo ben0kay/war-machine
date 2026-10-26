@@ -51,3 +51,14 @@ The entrance apron now uses its own `Configuration/CaveExterior.tres` / `Shaders
 Default exterior texture scale is 0.25 instead of the interior stone's 0.8, giving roughly 3.2× larger visible rock features. Sharper world-space triplanar weights preserve block detail instead of blending projections broadly. Normal strength 1.0 and terrain-like roughness/cool macro tint replace the smoother moss/wet stone finish; upward ledges blend the terrain ground texture. This approximates the hillside appearance on an arbitrary mesh, not the entire Terrain3D material pipeline.
 
 `CaveMaster` owns ExteriorTextureScale and ExteriorNormalStrength (spawn-time values). No cave shape, descent, noise, floor, junction, collision or terrain texture settings change in this revision. Resource/source checks only; visual colour/scale match remains pending local acceptance because Godot/.NET are unavailable here.
+
+ 
+## Winding layout and organic chamber extensions — latest revision
+
+The main corridor is now **190m / 144 sections**, with two **125m branches**. `C/CaveRouteBuilder.cs` generates broad seeded lateral offsets at spaced control points, interpolated with Catmull-Rom curves. The mouth and branch entries remain initially straight for stable joins. Default `MacroBendSpacing=32m`, `MacroBendAmplitude=16m`, `CorridorWanderDegrees=55` (bounds lateral turn slope); branches use 70% bend amplitude. All paths progress forward and descend within the original grade limit. Existing small rock noise remains independent.
+
+Cached passage rings now smoothly widen into **two main chambers and one per branch**, using `ChamberHalfLength=19m`, `ChamberWidthMultiplier=2.2` and `ChamberHeightMultiplier=2`. No chamber expansion reaches the three junction ports or the entrance; floor noise remains low, and collision uses the exact generated geometry. This first pass creates **big irregular tunnel bulges**, not independent spherical rooms, vertical ravines or additional forks.
+
+Terrain cover now follows *both horizontal axes* of the curved passage and each section's interpolated width/ceiling, rather than a straight Z envelope and one constant passage size. Only deficient runtime heightmap cells are raised; entrance hole and saved-region protections remain. No per-frame cave noise/update loops. Very extreme bends or chamber values can still produce overlaps, so keep the recommended values until visually validated.
+
+**Deferred local checks:** Compile with Godot/.NET, F6-walk from mouth through both branches; check genuinely obscured curved sightlines, chamber space, ceiling cover/daylight gaps, chamber collisions, fork seams, weather shelter, and entrance appearance. This revision was source-reviewed but not visually validated on Windows. Older 120m/75m measurements in the history above are superseded.

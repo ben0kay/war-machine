@@ -15,7 +15,7 @@ public partial class WildernessCave
 
     // =========================================================
     // Cache every shared cross-section vertex once. Floor relief is lower amplitude than wall relief.
-    private Passage CreatePassage(Vector3[] centers, Vector2[] profile, CaveShapeNoise noise, float widthScale)
+    private Passage CreatePassage(Vector3[] centers, Vector2[] profile, CaveShapeNoise noise, float widthScale, int chambers, float routeLength)
     {
         int count = centers.Length;
         var passage = new Passage { Centers = centers, Rings = new Vector3[count, profile.Length], Widths = new float[count], Heights = new float[count] };
@@ -23,7 +23,12 @@ public partial class WildernessCave
         {
             Vector3 tangent = centers[Mathf.Min(count - 1, i + 1)] - centers[Mathf.Max(0, i - 1)]; tangent.Y = 0;
             Vector3 right = tangent.Normalized().Cross(Vector3.Up);
-            passage.Widths[i] = noise.Width(centers[i]) * widthScale; passage.Heights[i] = noise.Height(centers[i]);
+            // One smooth broad width/ceiling expansion per chamber; exact passage ports stay unchanged.
+            float pulse = ChamberInfluence(i * routeLength / (count - 1f), routeLength, chambers, noise);
+            passage.Widths[i] = noise.Width(centers[i]) * widthScale
+                * (1 + pulse * (Mathf.Clamp(Settings.ChamberWidthMultiplier, 1, 3) - 1));
+            passage.Heights[i] = noise.Height(centers[i])
+                * (1 + pulse * (Mathf.Clamp(Settings.ChamberHeightMultiplier, 1, 3) - 1));
             for (int j = 0; j < profile.Length; j++)
             {
                 Vector2 p = profile[j];
@@ -42,37 +47,39 @@ public partial class WildernessCave
     }
 
     // =========================================================
+    // Smooth chamber pulses are zero at tunnel ends, protecting shared fork and mouth seams.
+    private float ChamberInfluence(float travel, float length, int count, CaveShapeNoise noise)
+    {
+        count = Mathf.Clamp(count, 0, 4);
+        float halfLength = Mathf.Clamp(Settings.ChamberHalfLength, 9, 32), amount = 0;
+        for (int i = 0; i < count; i++)
+        {
+            float center = length * (i + 1f) / (count + 1f);
+            float shift = noise.Broad(new Vector3(i * 37, Settings.Seed * 0.01f, 313))
+                * halfLength * 0.2f;
+            float closeness = 1 - Mathf.Clamp(Mathf.Abs(travel - center - shift) / halfLength, 0, 1);
+            amount = Mathf.Max(amount, Mathf.SmoothStep(0, 1, closeness));
+        }
+        return amount;
+    }
+
+    // =========================================================
     // Two separately winding descending branches start beyond a broad junction chamber.
     private void CreateBranches(Passage main, Vector2[] profile, CaveShapeNoise noise)
     {
         Vector3 end = main.Centers[^1], direction = end - main.Centers[^2]; direction.Y = 0; direction = direction.Normalized();
         Vector3 right = direction.Cross(Vector3.Up);
         float junction = Mathf.Clamp(Settings.JunctionLength, 10, 20);
-        float length = Mathf.Clamp(Settings.BranchLength, 25, 120);
-        int sections = Mathf.CeilToInt(length / 1.25f);
+        float length = Mathf.Clamp(Settings.BranchLength, 25, 220);
+        int sections = Mathf.CeilToInt(length / 1.35f);
         for (int side = -1; side <= 1; side += 2)
         {
             Vector3 start = end + direction * junction + right * side * 7;
             Vector3 heading = (direction + right * side * 0.55f).Normalized();
-            Vector3 across = heading.Cross(Vector3.Up);
-            var path = new Vector3[sections + 1];
-            path[0] = start;
-            float stepLength = length / sections, yaw = 0;
-            float maxGrade = Mathf.Clamp(Settings.MaximumGrade, 0.05f, 0.45f);
-            float descent = Mathf.Clamp(Settings.BranchDescent, 0, length * maxGrade * 0.9f);
-            for (int i = 1; i <= sections; i++)
-            {
-                float t = (float)i / sections;
-                Vector3 previous = path[i - 1];
-                float wanted = noise.Broad(previous + Vector3.Up * (side * 27)) * Mathf.DegToRad(15);
-                yaw = Mathf.MoveToward(yaw, wanted, Mathf.DegToRad(4) * stepLength);
-                Vector3 step = heading * Mathf.Cos(yaw) + across * Mathf.Sin(yaw);
-                Vector3 point = previous + step * stepLength;
-                float desiredY = end.Y - descent * t + noise.Broad(point + Vector3.Up * 37) * 0.25f * Mathf.Sin(t * Mathf.Pi);
-                point.Y = previous.Y - Mathf.Clamp(previous.Y - desiredY, 0, maxGrade * stepLength);
-                path[i] = point;
-            }
-            _passages.Add(CreatePassage(path, profile, noise, 0.85f));
+            // Each fork uses independent seeded bends, constrained to forward travel.
+            var path = CaveRouteBuilder.Build(Settings, noise, start, heading, length, sections,
+                Settings.BranchDescent, side < 0 ? 1 : 2, 0.7f);
+            _passages.Add(CreatePassage(path, profile, noise, 0.85f, Settings.BranchChamberCount, length));
         }
     }
 
