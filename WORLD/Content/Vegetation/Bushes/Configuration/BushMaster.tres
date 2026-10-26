@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ContentScatterSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Shared/C/ContentScatterSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+Kind = 1
+Seed = 4812
+Density = 0.38
+Spacing = 9.0
+RenderDistance = 100.0
+Size = 1.4
+Detail = 20
+PrimaryColor = Color(0.1, 0.24, 0.12, 1)
+AccentColor = Color(0.3, 0.4, 0.14, 1)
+WindStrength = 0.15

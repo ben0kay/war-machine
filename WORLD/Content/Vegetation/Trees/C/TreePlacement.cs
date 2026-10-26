@@ -58,7 +58,7 @@ public partial class TreePlacement : Node3D
         else
         {
             var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
-            var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Vegetation/Trees/Shaders/LeafWind.gdshader") };
+            var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Content/Vegetation/Trees/Shaders/LeafWind.gdshader") };
             _foliage = foliage;
             Vector2 wind = EnvironmentSettings.WindDirection;
             wind = wind.LengthSquared() > 0.0001f ? wind.Normalized() : Vector2.Right;

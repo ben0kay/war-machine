@@ -1,6 +1,6 @@
 # Tree fixes, FPS and exploration controls — 2026-10-25
 
-**Implemented; awaiting user/target-PC visual and performance acceptance.** Job commit is the commit introducing this file (`git log -1 --format=%H -- WORLD/Vegetation/Trees/Validation/README.md`). No WE phase is advanced by this separate requested refinement.
+**Implemented; awaiting user/target-PC visual and performance acceptance.** Job commit is the commit introducing this file (`git log -1 --format=%H -- WORLD/Content/Vegetation/Trees/Validation/README.md`). No WE phase is advanced by this separate requested refinement.
 
 ## Changes
 
@@ -35,8 +35,8 @@ Use your Godot .NET executable path in place of `godot`; .NET 8+ SDK must be on 
 
 ```sh
 dotnet build
-godot --headless --path . --script res://WORLD/Vegetation/Trees/Validation/ValidateTrees.gd
-godot --path . --resolution 640x360 --script res://WORLD/Vegetation/Trees/Validation/ValidateTrees.gd
+godot --headless --path . --script res://WORLD/Content/Vegetation/Trees/Validation/ValidateTrees.gd
+godot --path . --resolution 640x360 --script res://WORLD/Content/Vegetation/Trees/Validation/ValidateTrees.gd
 godot --headless --path . --script res://VEGETATION/Validation/ValidateGrass.gd
 ```
 

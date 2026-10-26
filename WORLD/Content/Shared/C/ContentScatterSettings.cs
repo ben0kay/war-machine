@@ -1,0 +1,29 @@
+// Editable preview art and distribution settings shared by world content categories.
+using Godot;
+
+[GlobalClass]
+public partial class ContentScatterSettings : Resource
+{
+    public enum ContentKind { Flowers, Bushes, FallenLogs, Rocks }
+    [ExportGroup("Distribution")]
+    [Export] public ContentKind Kind { get; set; }
+    [Export] public bool Enabled { get; set; } = true;
+    [Export] public int Seed { get; set; } = 4711;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float Density { get; set; } = 0.45f;
+    [Export] public float Spacing { get; set; } = 7f;
+    [Export] public int ChunkSize { get; set; } = 32;
+    [Export] public float RenderDistance { get; set; } = 85f;
+    [Export] public float MaximumSlope { get; set; } = 0.65f;
+    [Export] public float PatchFrequency { get; set; } = 0.025f;
+    [Export] public float PatchThreshold { get; set; } = -0.1f;
+    [Export] public bool CastShadows { get; set; }
+    [ExportGroup("Generated Artwork")]
+    [Export] public float MinimumScale { get; set; } = 0.8f;
+    [Export] public float MaximumScale { get; set; } = 1.3f;
+    [Export] public float Size { get; set; } = 1f;
+    [Export] public int Detail { get; set; } = 32;
+    [Export] public Color PrimaryColor { get; set; } = new(0.12f, 0.28f, 0.1f);
+    [Export] public Color AccentColor { get; set; } = new(0.7f, 0.5f, 0.85f);
+    [Export] public float WindStrength { get; set; } = 0.15f;
+    [Export] public Godot.Collections.Array<Mesh> ImportedMeshes { get; set; } = new();
+}

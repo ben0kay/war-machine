@@ -57,6 +57,15 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         Slider(_trees.Settings, "RenderDistance", "Tree distance (m) *", 64, 512, 1);
         Toggle(_trees.Settings, "CastShadows", "Tree shadows (rebuild)", () => { });
         Slider(_trees.Settings, "LeafWindStrength", "Branch wind", 0, 2, 0.01, _trees.ApplyWind);
+        foreach (var child in world.GetNode("Content").GetChildren())
+        {
+            if (child is not ContentScatter scatter) continue;
+            Category(content, scatter.Name.ToString());
+            Toggle(scatter.Settings, "Enabled", "Enabled (apply)", () => { });
+            Slider(scatter.Settings, "Density", "Placement density *", 0, 1, 0.01);
+            Slider(scatter.Settings, "Size", "Size *", 0.2, 6, 0.1);
+            Slider(scatter.Settings, "RenderDistance", "Distance (m) *", 16, 256, 1);
+        }
         outer.AddChild(new Label { Text = "* Pending until Apply. Terrain is never modified." });
         var actions = new HBoxContainer(); outer.AddChild(actions);
         Button(actions, "Apply / Rebuild vegetation", Rebuild);
@@ -122,7 +131,15 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     // =========================================================
     private void Refresh() { _syncing = true; foreach (var sync in _refresh) sync(); _syncing = false; }
     // =========================================================
-    private void ApplyWind() { _grass.ApplyAppearance(); _trees.ApplyWind(); }
+    private void ApplyWind()
+    {
+        _grass.ApplyAppearance(); _trees.ApplyWind();
+        foreach (var child in GetParent().GetNode("Content").GetChildren()) if (child is ContentScatter scatter) scatter.ApplyWind();
+    }
     // =========================================================
-    private void Rebuild() { _grass.ApplySettings(); _trees.ApplySettings(); }
+    private void Rebuild()
+    {
+        _grass.ApplySettings(); _trees.ApplySettings();
+        foreach (var child in GetParent().GetNode("Content").GetChildren()) if (child is ContentScatter scatter) scatter.ApplySettings();
+    }
 }

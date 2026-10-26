@@ -15,7 +15,7 @@ The follow-up request replaces the sparse crossed cards with the included demo's
 
 ## Scoped tree / exploration fixes
 
-The requested tree refinement fixes leaf shader compilation, replaces oversized diamonds with budgeted folded leaves on connected twig layers, and adds generated far meshes plus native Forward+ range fades. TestWorld also includes a throttled top-left FPS overlay and arrows / Ctrl-down / RMB-up aliases. These changes preserve saved terrain, grass, mist, sun and existing controls. See `Vegetation/Trees/Validation/README.md` for validation and target-PC checks. This work does not mark WE2–WE8 implemented or accepted.
+The requested tree refinement fixes leaf shader compilation, replaces oversized diamonds with budgeted folded leaves on connected twig layers, and adds generated far meshes plus native Forward+ range fades. TestWorld also includes a throttled top-left FPS overlay and arrows / Ctrl-down / RMB-up aliases. These changes preserve saved terrain, grass, mist, sun and existing controls. See `Content/Vegetation/Trees/Validation/README.md` for validation and target-PC checks. This work does not mark WE2–WE8 implemented or accepted.
 
 ## Atmosphere direction — persistent eerie mist (applies to every remaining phase)
 
@@ -257,4 +257,8 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 
 ## Authorized pine / tuning / landscape revision
 
-Implemented: procedural conifers, F9 runtime environment panel, and a separate 2048m meadow/mountain landscape. Existing terrain preserved; runtime tuning never writes authored data. C# compilation and brief headless startup checked; visual, interaction and performance acceptance are deferred to the user. This scoped geography change does not mark all of WE2 or later phases accepted. See DEBUG/EnvironmentTuning/README.md and WORLD/Vegetation/Trees/README.md.
+Implemented: procedural conifers, F9 runtime environment panel, and a separate 2048m meadow/mountain landscape. Existing terrain preserved; runtime tuning never writes authored data. C# compilation and brief headless startup checked; visual, interaction and performance acceptance are deferred to the user. This scoped geography change does not mark all of WE2 or later phases accepted. See DEBUG/EnvironmentTuning/README.md and WORLD/Content/Vegetation/Trees/README.md.
+
+## Scoped content preview
+
+Relocated WORLD/Vegetation into WORLD/Content/Vegetation. Added category-owned procedural flowers, shrubs, fallen logs and rocks using a shared event-driven Terrain3D scatterer, integrated in TestWorld and F9 tuning. Decorative only; saved terrain unchanged. Awaiting user visual/performance validation; this does not implement or accept the remaining full vegetation phases.

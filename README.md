@@ -81,3 +81,5 @@ Create folders, subfolders and scripts **when implementing their owning features
 AI workflow: read this README → read CodePreferences → read the owning folder's README and plan → inspect actual scripts/scenes/assets → work only on the explicitly requested phase → validate and update owning docs. Never assume planned features already exist.
 
 **North star:** *Make the wilderness itself worth exploring before adding survival systems or robotic enemies.*
+
+World-local decorative content lives in `WORLD/Content/`: vegetation (trees, plants/flowers, bushes, fallen logs) and rocks, with category-owned C# generators and editable masters. See `WORLD/Content/README.md`.

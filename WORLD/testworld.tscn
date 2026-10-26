@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=21 format=3]
 [ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -9,11 +9,16 @@
 [ext_resource type="Resource" path="res://ENVIRONMENT/Configuration/EnvironmentMaster.tres" id="8"]
 [ext_resource type="Script" path="res://VEGETATION/Grass/TerrainGrass.cs" id="9"]
 [ext_resource type="Resource" path="res://VEGETATION/Configuration/VegetationMaster.tres" id="10"]
-[ext_resource type="Script" path="res://WORLD/Vegetation/Trees/C/TreePlacement.cs" id="11"]
-[ext_resource type="Resource" path="res://WORLD/Vegetation/Trees/Configuration/TreeMaster.tres" id="12"]
+[ext_resource type="Script" path="res://WORLD/Content/Vegetation/Trees/C/TreePlacement.cs" id="11"]
+[ext_resource type="Resource" path="res://WORLD/Content/Vegetation/Trees/Configuration/TreeMaster.tres" id="12"]
 [ext_resource type="Script" path="res://DEBUG/FpsCounter.cs" id="13"]
 [ext_resource type="Resource" path="res://DEBUG/Configuration/DebugMaster.tres" id="14"]
 [ext_resource type="Script" path="res://DEBUG/EnvironmentTuning/EnvironmentTuningPanel.cs" id="15"]
+[ext_resource type="Script" path="res://WORLD/Content/Shared/C/ContentScatter.cs" id="16"]
+[ext_resource type="Resource" path="res://WORLD/Content/Vegetation/Plants/Configuration/PlantMaster.tres" id="17"]
+[ext_resource type="Resource" path="res://WORLD/Content/Vegetation/Bushes/Configuration/BushMaster.tres" id="18"]
+[ext_resource type="Resource" path="res://WORLD/Content/Vegetation/FallenLogs/Configuration/FallenLogMaster.tres" id="19"]
+[ext_resource type="Resource" path="res://WORLD/Content/Rocks/Configuration/RockMaster.tres" id="20"]
 [node name="TestWorld" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
@@ -62,3 +67,25 @@ Settings = ExtResource("14")
 
 [node name="EnvironmentTuning" type="CanvasLayer" parent="."]
 script = ExtResource("15")
+
+[node name="Content" type="Node3D" parent="."]
+
+[node name="Plants" type="Node3D" parent="Content"]
+script = ExtResource("16")
+Settings = ExtResource("17")
+EnvironmentSettings = ExtResource("8")
+
+[node name="Bushes" type="Node3D" parent="Content"]
+script = ExtResource("16")
+Settings = ExtResource("18")
+EnvironmentSettings = ExtResource("8")
+
+[node name="FallenLogs" type="Node3D" parent="Content"]
+script = ExtResource("16")
+Settings = ExtResource("19")
+EnvironmentSettings = ExtResource("8")
+
+[node name="Rocks" type="Node3D" parent="Content"]
+script = ExtResource("16")
+Settings = ExtResource("20")
+EnvironmentSettings = ExtResource("8")

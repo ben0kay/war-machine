@@ -15,6 +15,12 @@ public partial class TestWorld : Node3D
         grass.Settings = (VegetationConfig)grass.Settings.Duplicate(); grass.EnvironmentSettings = environment.Settings;
         var trees = GetNode<TreePlacement>("Trees");
         trees.Settings = (TreeSettings)trees.Settings.Duplicate(); trees.EnvironmentSettings = environment.Settings;
+        foreach (var child in GetNode("Content").GetChildren())
+        {
+            if (child is not ContentScatter scatter) continue;
+            scatter.Settings = (ContentScatterSettings)scatter.Settings.Duplicate();
+            scatter.EnvironmentSettings = environment.Settings;
+        }
         GetNode<Node>("Terrain3D").Set("data_directory", Settings.DataDirectory);
     }
 
@@ -38,6 +44,8 @@ public partial class TestWorld : Node3D
         terrain.Call("set_camera", explorer.GetNode<Camera3D>("Camera3D"));
         GetNode<TerrainGrass>("Vegetation").Initialize(terrain, (ExplorationController)explorer);
         GetNode<TreePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);
+        foreach (var child in GetNode("Content").GetChildren())
+            if (child is ContentScatter scatter) scatter.Initialize(terrain, (ExplorationController)explorer, Settings);
         SetProcess(false); SetPhysicsProcess(false);
     }
 }
