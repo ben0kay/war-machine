@@ -1,6 +1,6 @@
 # ENTITIES — Shared Actors and Robot Types
 
-> **Status: RM0 implemented — Awaiting Validation.** Shared mobile actor scene, runtime settings and lifecycle hooks exist. RM1–RM5 remain Planned; no robot model or gameplay encounter exists yet.
+> **Status: RM0 and RM1 implemented — Awaiting Validation.** Shared actor foundation and [Robot_001 visual walker](TYPES/Robots/Robot_001/README.md) exist. RM2–RM5 remain Planned; no patrol/scan encounter or world placement yet.
 
 This folder will own reusable **mobile world actors**: identity/lifecycle, movement composition, optional sensing, and type-specific behaviour/artwork. Our first proof is an **original large mechanical walker (Robot_001)** that walks a loop in `WORLD/testworld.tscn`, stops, turns its head, sweeps a **translucent cyan scanning cone** with moving scan bands, and resumes walking.
 
@@ -27,7 +27,7 @@ New folders/materials/scripts are created **only when their phase is authorized*
 
 **Implemented foundation:** [Shared/README.md](Shared/README.md) documents lifecycle, sockets, idle cost and deferred checks.
 
-**Next proposed phase:** RM1 robotic silhouette. Implement **only** a phase the owner explicitly selects.
+**Next proposed phase:** RM2 shared waypoint patrol. Implement **only** a phase the owner explicitly selects.
 ## Before Codex starts
 
 The implementation plan includes **cross-phase modularity and performance guardrails**: idempotent actor activation/deactivation with event cleanup; event-driven proximity wake/sleep with hysteresis; one shared gait update and foot-target caching; cached procedural mesh resources and stable VisualRoot/SensorSocket transforms; separate logical sensor vs transparent beam (no full-world target scans); and bounded raycasts / shader overdraw. These are constraints on RM0–RM5, **not additional phases**. The root entity scene stays minimal; no generic entity manager, premature navigation system or new debug UI is required.

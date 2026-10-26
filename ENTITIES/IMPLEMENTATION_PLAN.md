@@ -1,6 +1,6 @@
 # RM — Reusable Entity, Mechanical Walker and Scanning Prototype
 
-> **State:** **RM0 implemented, Awaiting Validation; RM1–RM5 Planned.** Only RM0 was authorized for this job.
+> **State:** **RM0 and RM1 implemented, Awaiting Validation; RM2–RM5 Planned.** Latest job authorized RM1 only.
 >
 > **Purpose:** In the existing Godot C# **War Machine** project, add one memorable non-hostile, original giant mechanical walker that **walks → stops → scans → resumes** in the real `WORLD/testworld.tscn`. Build small shared components so future robots and other entity types can reuse movement, waypoints, sensing and visuals where appropriate.
 >
@@ -11,7 +11,7 @@
 | Phase | Goal | Recommended assistant | Status |
 | --- | --- | --- | --- |
 | **RM0** | Minimal shared Entity base, folders, configs and reusable actor/component contract | Codex / ChatGPT Work; Regular Chat can review design | **Awaiting Validation** |
-| **RM1** | Robot_001 procedural hard-surface model and mechanical stepping | Codex / ChatGPT Work | **Planned** |
+| **RM1** | Robot_001 procedural hard-surface model and mechanical stepping | Codex / ChatGPT Work | **Awaiting Validation** |
 | **RM2** | Shared waypoint patrol and stop/turn/dwell lifecycle | Codex / ChatGPT Work | **Planned** |
 | **RM3** | Shared logical scan sensor and Robot-only cyan 3D beam effect | Codex / ChatGPT Work | **Planned** |
 | **RM4** | Integrate an end-to-end walk/stop/scan loop into TestWorld | Codex / ChatGPT Work | **Planned** |
@@ -23,7 +23,7 @@
 
 As inspected before this plan:
 
-- **RM0 now exists:** `Shared/Entity.tscn`, `Shared/C/EntityCore.cs`, `Shared/C/EntitySettings.cs`, `Configuration/EntityMaster.tres` and `Shared/README.md`. Remaining runtime paths below are proposed.
+- **RM0 now exists:** `Shared/Entity.tscn`, `Shared/C/EntityCore.cs`, `Shared/C/EntitySettings.cs`, `Configuration/EntityMaster.tres` and `Shared/README.md`. RM1 adds Robot_001 scene/controller/settings/mesh builder/master and shared MechanicalLegs. Remaining patrol/scanning paths below are proposed.
 - `WORLD/testworld.tscn` is the **actual project main scene**. It has Terrain3D terrain, Sky3D day/night and thick distance mist, vegetation/grass/pines and small decorative content, a cave, weather integration, F9 tuning and the FPS display.
 - `PLAYER/ExplorationController.cs` extends `CharacterBody3D` and supports a free-flight camera plus optional collidable **first-person movement via F6**. Do not rewrite it to give the robot movement. Use it only as an optional future sensing target/debug reference.
 - The main landscape has authored/saved Terrain3D data. **Do not rebake, replace, overwrite or regenerate terrain** to make a robot patrol.
@@ -144,6 +144,10 @@ Implemented the minimal capsule/VisualRoot actor, per-instance settings copy, id
 - **Performance:** Update all articulated legs from **one** active robot gait driver, never per-leg `_Process`; cache planted targets, avoid per-frame stationary terrain raycasts and settle to a static pose when halted. Reuse generated meshes/materials and turn the gait driver off at rest/out of relevance. Robot root collision is coarse and separate from visual feet.
 - **Pass:** Coherent full-body 3D shape, four distinct mechanically hinged legs and moving joints, stable leg pose when stopped, head independently rotatable, reasonable triangle/instance counts, replaceable art hierarchy.
 - **Assistant:** Codex due to procedural geometry, transforms, rig math and scene wiring; Copilot can run local visual/sanity checks.
+
+### RM1 implementation handoff — 2026-10-26
+
+Implemented Robot_001 inherited scene, RobotSettings/master, cached primitive art builder, named head/sensor/leg rig, and one reusable two-bone gait driver. Includes explicit stationary preview, body bob/pitch, settling, coarse capsule, head yaw and visibility/lifecycle shutdown. ArtOverride supports an explicitly matching rig; arbitrary GLBs require a wrapper. Flat ground only by default; optional foot-target correction is injected, with no per-frame terrain queries. No patrol/scanner or world edits. Source/path checks and whitespace review passed; dotnet/Godot unavailable, so compilation and visual/runtime acceptance are deferred. See [Robot_001 handoff](TYPES/Robots/Robot_001/README.md). One local commit for this job (Git history); push not requested. RM2 requires separate authorization.
 
 ## 5. RM2 — Shared patrol and stop-state movement
 
