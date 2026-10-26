@@ -7,6 +7,7 @@ public partial class TreePlacement : Node3D
     [Export] public TreeSettings Settings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
 
+    private ShaderMaterial? _foliage;
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
     private WorldConfig _world = null!;
@@ -58,6 +59,7 @@ public partial class TreePlacement : Node3D
         {
             var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
             var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Vegetation/Trees/Shaders/LeafWind.gdshader") };
+            _foliage = foliage;
             Vector2 wind = EnvironmentSettings.WindDirection;
             wind = wind.LengthSquared() > 0.0001f ? wind.Normalized() : Vector2.Right;
             foliage.SetShaderParameter("wind_direction", wind);
@@ -70,12 +72,22 @@ public partial class TreePlacement : Node3D
             if (Settings.UseGeneratedLod) _farMeshes = new Mesh[count];
             for (int i = 0; i < count; i++)
             {
-                _meshes[i] = TreeGenerator.CreateOak(Settings, i, bark, foliage);
+                _meshes[i] = TreeGenerator.CreatePine(Settings, i, bark, foliage);
                 if (_farMeshes.Length > 0)
-                    _farMeshes[i] = TreeGenerator.CreateOak(Settings, i, bark, foliage, Mathf.Clamp(Settings.FarLeafStride, 2, 8));
+                    _farMeshes[i] = TreeGenerator.CreatePine(Settings, i, bark, foliage, Mathf.Clamp(Settings.FarLeafStride, 2, 8));
             }
         }
+        ApplyWind();
         OnViewMoved(_explorer.GlobalPosition);
+    }
+
+    // =========================================================
+    // Update the shared GPU material directly; wind sliders never regenerate geometry.
+    public void ApplyWind()
+    {
+        if (_foliage == null) return;
+        _foliage.SetShaderParameter("wind_strength", Settings.LeafWindStrength * EnvironmentSettings.GrassWindStrength);
+        _foliage.SetShaderParameter("wind_speed", Settings.LeafWindSpeed * EnvironmentSettings.GrassWindSpeed / 0.025f);
     }
 
     // =========================================================
@@ -161,9 +173,9 @@ public partial class TreePlacement : Node3D
             float averageHeight = 0;
             foreach (var transform in bins[i]) averageHeight += transform.Origin.Y;
             var anchor = new Vector3((key.X + 0.5f) * _chunkSize, averageHeight / bins[i].Count, (key.Y + 0.5f) * _chunkSize);
-            chunk.Nodes.Add(CreateBatch($"Oak_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor, 0, hasLod ? lod : distance, margin, Settings.CastShadows));
+            chunk.Nodes.Add(CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor, 0, hasLod ? lod : distance, margin, Settings.CastShadows));
             if (hasLod)
-                chunk.Nodes.Add(CreateBatch($"Oak_{key.X}_{key.Y}_{i}_Far", _farMeshes[i], bins[i], anchor, lod, distance, margin,
+                chunk.Nodes.Add(CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Far", _farMeshes[i], bins[i], anchor, lod, distance, margin,
                     Settings.CastShadows && Settings.FarCastShadows));
             chunk.TreeCount += bins[i].Count;
         }

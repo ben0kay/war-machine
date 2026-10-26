@@ -1,29 +1,9 @@
-# Procedural trees — layered canopy preview
+# Procedural conifers
 
-The trees in `WORLD/testworld.tscn` use deterministic C# meshes and saved Terrain3D heights. This is replaceable preview artwork, with no collision, harvesting, gameplay simulation or terrain/save mutation.
+TestWorld now uses seeded tall pines: straight tapered trunks, downward-angled branch tiers and overlapping narrow needle fans. Four shared near/far mesh variants use Terrain3D height/slope sampling and chunk MultiMeshes. ImportedMeshes still replaces generated artwork.
 
-- `C/`: generator, settings and chunk placement.
-- `Configuration/TreeMaster.tres`: editable shape, density, leaf budget, GPU wind, quality and distances.
-- `Shaders/LeafWind.gdshader`: shared, compilation-checked leaf-tip flutter. Zero wind strength/speed bypasses the wind branch without an invalid processor return.
-- `Artwork/`: future authored models.
-- `Validation/`: checks, rendered evidence and remaining target-PC profiling.
+TreeMaster owns height range/multiplier, trunk taper, tier count, length falloff, foliage density/budget, conical width, colour variation, placement density, distances and subtle GPU wind. Old oak-only shape properties were removed. No per-tree nodes or processing were added. Chunk movement and height-map changes remain the placement triggers; idle placement is dormant.
 
-## Tree fixes
+F9 opens the environment panel. Wind updates shared materials immediately. Shape and placement sliders require Apply/Rebuild vegetation; this rebuilds only nearby tree batches and the grass particle pool, never terrain. Zero placement density frees tree batches. Runtime settings are copies of master resources and are discarded on exit.
 
-Smaller **folded** leaves are attached along connected fine sprigs, supported by secondary twigs and lower main branches. Inner and outer crown clusters form fuller layers without opaque canopy balls. TreeMaster controls leaf size, twigs, inner canopy fullness and a hard per-variant leaf budget. Four seeded variants share two material surfaces each. Wind remains on the GPU with fixed attachment bases and moving tips; no per-leaf nodes, scripts or physics.
-
-A cheaper generated far mesh retains a stable subset of leaves and coarser leaf silhouettes. Native Forward+ geometry ranges blend near/far levels around 110m and fade the outer range around 240m, with configurable margins. Distant shadows default off. MultiMesh roots are local to a chunk anchor so native range culling measures the correct world position; near/far levels share identical root transforms. Wind culling margin avoids clipping leaf tips. Chunk cache retention reduces boundary reload thrashing and covers the camera's movement inside a chunk.
-
-## Configuration / model replacement
-
-Edit TreeMaster and relaunch, or call `GetNode<TreePlacement>("Trees").ApplySettings()`. Shared wind direction/strength comes from EnvironmentMaster at settings application. Density=0 or Enabled=false removes both mesh levels. Height-map changes coalesce into an explicit rebuild; tree placement never regenerates saved terrain.
-
-Add Mesh resources to ImportedMeshes to replace the generator. Imported materials remain untouched; they do not automatically receive procedural wind or generated LOD. Imported meshes still use native outer range fading. A full .glb scene may need its Mesh resources extracted; interactive scene trees require a separate future system.
-
-## Performance / status
-
-Activation: world initialization, explorer chunk crossing, explicit settings application and terrain-height changes. Sleep: no tree `_Process` or `_PhysicsProcess`; stationary and sub-chunk movement do not rebuild batches. Off removes all instances. Active GPU wind, native culling/fading and enabled shadows remain rendering costs. The visible FPS counter is a separate, throttled diagnostic.
-
-Native range fades temporarily overlap mesh levels. More detailed near foliage costs more geometry than the old sparse trees; no FPS improvement is claimed. Leaf budget, far sampling, render range and shadows are tunable. Trees remain stylized, untextured preview art rather than final oak models. Imported mesh support is preserved.
-
-**Implemented and validated under Godot 4.5.1 .NET, including software Vulkan renders. Target-PC visual/performance acceptance remains pending.** See [validation](Validation/README.md). This separate requested refinement does not advance WE4 or any other environment-plan phase.
+Implemented, awaiting user visual/performance validation. Brief C# compilation and headless scene launch only; no new rendered comparison or GPU profiling. Existing Validation notes describe the previous oak implementation.

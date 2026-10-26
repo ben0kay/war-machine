@@ -12,6 +12,7 @@ public partial class VegetationConfig : Resource
     [Export(PropertyHint.Range, "10000,1000000,10000")] public int ParticleBudget { get; set; } = 500000;
     [Export(PropertyHint.Range, "10,60,1")] public int SimulationFps { get; set; } = 30;
     [Export] public bool CastShadows { get; set; }
+    [Export] public float WindMultiplier { get; set; } = 1f;
     [ExportGroup("Coverage")]
     [Export(PropertyHint.Range, "8,128,1")] public float RenderDistance { get; set; } = 60f;
     [Export(PropertyHint.Range, "16,64,1")] public float TileWidth { get; set; } = 24f;

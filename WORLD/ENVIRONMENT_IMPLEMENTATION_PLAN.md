@@ -254,3 +254,7 @@ WE0/WE1 are implemented with automated checks, awaiting local visual/performance
 - Which assets and material style best communicate believable rugged wilderness.
 
 **Environment milestone:** A player launches **`WORLD/testworld.tscn`** into a **usually misty, eerie forested wilderness**: textured hills and vegetation remain readable up close, distant ridges and tree silhouettes melt into blue-grey fog, the Sky3D sun moves through changing haze, and later rain and cave/landmark exploration deepen the atmosphere — **with no robot, enemy or survival mechanics required**.
+
+## Authorized pine / tuning / landscape revision
+
+Implemented: procedural conifers, F9 runtime environment panel, and a separate 2048m meadow/mountain landscape. Existing terrain preserved; runtime tuning never writes authored data. C# compilation and brief headless startup checked; visual, interaction and performance acceptance are deferred to the user. This scoped geography change does not mark all of WE2 or later phases accepted. See DEBUG/EnvironmentTuning/README.md and WORLD/Vegetation/Trees/README.md.

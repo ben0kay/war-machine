@@ -15,7 +15,7 @@ public partial class TerrainGrass : Node3D
     private readonly List<Vector2I> _coordinates = new();
     private Vector2I _center = new(int.MinValue, int.MinValue);
     private int _half, _width;
-    private float _tileWidth, _radius;
+    private float _tileWidth, _radius, _appliedHeight = -1;
     private bool _refreshQueued, _initialized;
     private readonly string[] _terrainSignals = { "maps_changed", "region_map_changed", "height_maps_changed", "control_maps_changed", "color_maps_changed" };
     public int AllocatedParticles { get; private set; }
@@ -92,7 +92,26 @@ public partial class TerrainGrass : Node3D
                 AddChild(tile); _tiles.Add(tile); _coordinates.Add(new Vector2I(x, z));
             }
         AllocatedParticles = rows * rows * _tiles.Count;
-        UpdateBounds(); OnCameraMoved(_camera.GlobalPosition);
+        ApplyAppearance(); UpdateBounds(); OnCameraMoved(_camera.GlobalPosition);
+    }
+
+    // =========================================================
+    // Shared uniforms change immediately; height changes restart only the existing GPU pool.
+    public void ApplyAppearance()
+    {
+        if (_tiles.Count == 0) return;
+        _placement.SetShaderParameter("wind_strength", Mathf.Clamp(EnvironmentSettings.GrassWindStrength * Settings.WindMultiplier, 0, 2));
+        _placement.SetShaderParameter("wind_speed", EnvironmentSettings.GrassWindSpeed);
+        float height = Mathf.Clamp(Settings.Height, 0.1f, 3);
+        float width = Mathf.Clamp(Settings.BladeWidth, 0.03f, 0.3f);
+        _placement.SetShaderParameter("min_scale", new Vector3(width, height * 0.5f, width));
+        _placement.SetShaderParameter("max_scale", new Vector3(width, height, width));
+        _placement.SetShaderParameter("clod_scale_boost", Settings.ClumpHeightBoost * height);
+        if (!Mathf.IsEqualApprox(_appliedHeight, height))
+        {
+            _appliedHeight = height; UpdateBounds();
+            foreach (var tile in _tiles) { tile.Restart(true); TileRestarts++; }
+        }
     }
 
     // =========================================================

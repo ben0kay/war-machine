@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 [ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -13,6 +13,7 @@
 [ext_resource type="Resource" path="res://WORLD/Vegetation/Trees/Configuration/TreeMaster.tres" id="12"]
 [ext_resource type="Script" path="res://DEBUG/FpsCounter.cs" id="13"]
 [ext_resource type="Resource" path="res://DEBUG/Configuration/DebugMaster.tres" id="14"]
+[ext_resource type="Script" path="res://DEBUG/EnvironmentTuning/EnvironmentTuningPanel.cs" id="15"]
 [node name="TestWorld" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
@@ -45,7 +46,7 @@ theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 text = "WASD / Arrows fly · Ctrl down · RMB up
 QE / Space vertical · Shift boost · Esc mouse
-P pause sun · F8 accelerated day preview"
+P pause sun · F8 accelerated day preview · F9 tuning"
 mouse_filter = 2
 
 [node name="FPS" type="Label" parent="Controls"]
@@ -58,3 +59,6 @@ theme_override_constants/shadow_offset_y = 2
 text = "FPS: —"
 script = ExtResource("13")
 Settings = ExtResource("14")
+
+[node name="EnvironmentTuning" type="CanvasLayer" parent="."]
+script = ExtResource("15")

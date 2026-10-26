@@ -4,13 +4,13 @@
 
 [resource]
 script = ExtResource("1")
-DataDirectory = "res://WORLD/Terrain/Data"
+DataDirectory = "res://WORLD/Terrain/PineLandscape"
 Seed = 78341
-Size = 1024
-Elevation = 155.0
+Size = 2048
+Elevation = 220.0
 NoiseFrequency = 0.0035
 GrassSpacing = 4
 GrassSlopeLimit = 0.6
 GrassCoverage = 0.85
-SpawnXZ = Vector2(512, 620)
+SpawnXZ = Vector2(1024, 1240)
 SpawnClearance = 4.0

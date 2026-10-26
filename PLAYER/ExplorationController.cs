@@ -5,6 +5,7 @@ public partial class ExplorationController : Node3D
 {
     public event System.Action<Vector3>? ViewPositionChanged;
     [Export] public PlayerConfig Settings { get; set; } = null!;
+    public bool ControlsBlocked { get; set; }
     private Camera3D _camera = null!;
     private float _pitch;
 
@@ -23,6 +24,7 @@ public partial class ExplorationController : Node3D
     // Mouse capture and movement events wake flight only while input is held.
     public override void _UnhandledInput(InputEvent input)
     {
+        if (ControlsBlocked) return;
         if (input is InputEventKey key && key.Pressed && !key.Echo && key.Keycode == Key.Escape)
             Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
                 ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
@@ -40,7 +42,7 @@ public partial class ExplorationController : Node3D
     public override void _PhysicsProcess(double delta)
     {
         Vector3 direction = Direction();
-        if (Input.MouseMode != Input.MouseModeEnum.Captured || !GetWindow().HasFocus() || direction == Vector3.Zero)
+        if (ControlsBlocked || Input.MouseMode != Input.MouseModeEnum.Captured || !GetWindow().HasFocus() || direction == Vector3.Zero)
         { SetPhysicsProcess(false); return; }
         float speed = Settings.MoveSpeed * (Input.IsPhysicalKeyPressed(Key.Shift) ? Settings.BoostMultiplier : 1f);
         GlobalPosition += direction.Normalized() * speed * (float)delta;

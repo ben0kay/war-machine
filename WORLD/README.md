@@ -7,9 +7,9 @@
 - `Generation/`: explicit, overwrite-protected offline C# bake scene. Gameplay never bakes.
 - `TestWorld.cs`: selects saved terrain and safely positions the reusable `PLAYER/Explorer.tscn`.
 - `../ENVIRONMENT/`: single Sky3D owner and master time/wind configuration.
-- `Vegetation/Trees/`: separate C# procedural oak preview, seeded Terrain3D height-based chunk placement and replaceable mesh assets. Config: `Vegetation/Trees/Configuration/TreeMaster.tres`. No WE4 phase status change.
+- `Vegetation/Trees/`: separate C# procedural pine preview, seeded Terrain3D height-based chunk placement and replaceable mesh assets. Config: `Vegetation/Trees/Configuration/TreeMaster.tres`. No WE4 phase status change.
 
-The 1024 × 1024 metre world has a winding valley, ridges and noisy relief, using the main demo's grass/cliff autoshader and macro variation. It retains 46,845 legacy saved grass clumps for authoring compatibility, with their crossed-card asset disabled. Visible grass is now the ribbon-based GPU particle adaptation under `VEGETATION/`, configured by its own master resource. No terrain rebake is needed. World art resources are owned here; unchanged CC0 texture files remain referenced from `demo/assets/textures` and must ship with the project.
+The active 2048 × 2048 metre world has a broad rolling meadow valley blending into mountain shoulders, using the main demo's grass/cliff autoshader and macro variation. The previous authored region and legacy grass remain untouched in Terrain/Data; active saved terrain lives in Terrain/PineLandscape without legacy cards. Visible grass is now the ribbon-based GPU particle adaptation under `VEGETATION/`, configured by its own master resource. No terrain rebake is needed. World art resources are owned here; unchanged CC0 texture files remain referenced from `demo/assets/textures` and must ship with the project.
 
 Controls: **WASD / arrows** flight, **Ctrl** down, **RMB** up, **QE/Space** vertical aliases, **Shift** boost, **Esc** mouse capture, **P** solar pause, **F8** accelerated full-day preview. Flight intentionally has no collision and can pass through land; start is sampled above the ground. This is an environment inspection controller.
 
@@ -18,3 +18,5 @@ The authorized grass/mist refinement now uses Sky3D density 0.025, start 0m and 
 WE0/WE1 implementation and automated checks are complete; both remain **Awaiting Validation** for local engine/visual/performance acceptance. See [validation](WE0_WE1_VALIDATION.md) and [phase plan](ENVIRONMENT_IMPLEMENTATION_PLAN.md). Later phases remain Planned.
 
 The top-left FPS counter is configured in `../DEBUG/Configuration/DebugMaster.tres` and refreshes at 2Hz while visible. Tree canopy/shader/LOD fixes and controls validation are recorded in `Vegetation/Trees/Validation/README.md`.
+
+F9 opens the runtime environment tuning panel. See `../DEBUG/EnvironmentTuning/README.md`. Current pine/panel/terrain work awaits user visual and performance validation.

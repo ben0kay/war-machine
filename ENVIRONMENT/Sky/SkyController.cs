@@ -34,6 +34,17 @@ public partial class SkyController : Node
     }
 
     // =========================================================
+    // Direct Sky3D setters immediately update its existing sun and timer.
+    public void ApplyTime() => Sky.Set("current_time", Mathf.PosMod(Settings.StartHour, 24));
+    // =========================================================
+    public void ApplyCycle()
+    {
+        _preview = false;
+        Sky.Set("minutes_per_day", Mathf.Max(1, Settings.DayLengthMinutes));
+        SetPaused(Settings.StartPaused);
+    }
+
+    // =========================================================
     // P pauses only solar time; F8 previews a full day in one configured minute.
     public override void _UnhandledInput(InputEvent input)
     {
@@ -49,9 +60,9 @@ public partial class SkyController : Node
 
     // =========================================================
     // Sky3D stops its timer while paused; cloud and grass shader motion remain intentional.
-    private void SetPaused(bool paused)
+    public void SetPaused(bool paused)
     {
-        _paused = paused; Sky.Set("game_time_enabled", !paused);
+        _paused = paused; Settings.StartPaused = paused; Sky.Set("game_time_enabled", !paused);
         GD.Print($"Solar time paused: {paused}");
     }
 }

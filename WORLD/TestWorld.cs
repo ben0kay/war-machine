@@ -7,7 +7,16 @@ public partial class TestWorld : Node3D
 
     // =========================================================
     // Select the saved data from the world master before Terrain3D initializes.
-    public override void _EnterTree() => GetNode<Node>("Terrain3D").Set("data_directory", Settings.DataDirectory);
+    public override void _EnterTree()
+    {
+        var environment = GetNode<SkyController>("Environment");
+        environment.Settings = (EnvironmentConfig)environment.Settings.Duplicate();
+        var grass = GetNode<TerrainGrass>("Vegetation");
+        grass.Settings = (VegetationConfig)grass.Settings.Duplicate(); grass.EnvironmentSettings = environment.Settings;
+        var trees = GetNode<TreePlacement>("Trees");
+        trees.Settings = (TreeSettings)trees.Settings.Duplicate(); trees.EnvironmentSettings = environment.Settings;
+        GetNode<Node>("Terrain3D").Set("data_directory", Settings.DataDirectory);
+    }
 
     // =========================================================
     // Defer terrain sampling until Terrain3D has completed initialization.
