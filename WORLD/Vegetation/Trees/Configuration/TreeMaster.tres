@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="TreeSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Vegetation/Trees/C/TreeSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+Seed = 78341
+Density = 0.72
+Spacing = 16.0
+RenderDistance = 240.0
+ChunkSize = 96
+ForestThreshold = -0.25
+ForestNoiseFrequency = 0.003
+MaximumSlope = 0.55
+SpawnClearingRadius = 34.0
+CastShadows = true
+Variants = 4
+MinimumHeight = 9.0
+MaximumHeight = 13.0
+TrunkRadius = 0.52
+BranchCount = 9
+LeafClusterSize = 1.85
+MinimumScale = 0.8
+MaximumScale = 1.25
+ImportedMeshes = Array[Mesh]([])

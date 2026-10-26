@@ -28,6 +28,7 @@ public partial class TestWorld : Node3D
         explorer.LookAt(new Vector3(Settings.Size * 0.5f, height + 10, Settings.Size * 0.3f));
         terrain.Call("set_camera", explorer.GetNode<Camera3D>("Camera3D"));
         GetNode<TerrainGrass>("Vegetation").Initialize(terrain, (ExplorationController)explorer);
+        GetNode<TreePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);
         SetProcess(false); SetPhysicsProcess(false);
     }
 }

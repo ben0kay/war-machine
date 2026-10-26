@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 [ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -9,6 +9,8 @@
 [ext_resource type="Resource" path="res://ENVIRONMENT/Configuration/EnvironmentMaster.tres" id="8"]
 [ext_resource type="Script" path="res://VEGETATION/Grass/TerrainGrass.cs" id="9"]
 [ext_resource type="Resource" path="res://VEGETATION/Configuration/VegetationMaster.tres" id="10"]
+[ext_resource type="Script" path="res://WORLD/Vegetation/Trees/C/TreePlacement.cs" id="11"]
+[ext_resource type="Resource" path="res://WORLD/Vegetation/Trees/Configuration/TreeMaster.tres" id="12"]
 [node name="TestWorld" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
@@ -28,6 +30,9 @@ Sky = NodePath("../Sky3D")
 script = ExtResource("9")
 Settings = ExtResource("10")
 EnvironmentSettings = ExtResource("8")
+[node name="Trees" type="Node3D" parent="."]
+script = ExtResource("11")
+Settings = ExtResource("12")
 [node name="Controls" type="CanvasLayer" parent="."]
 [node name="Help" type="Label" parent="Controls"]
 offset_left = 18.0

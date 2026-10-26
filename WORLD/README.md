@@ -7,6 +7,7 @@
 - `Generation/`: explicit, overwrite-protected offline C# bake scene. Gameplay never bakes.
 - `TestWorld.cs`: selects saved terrain and safely positions the reusable `PLAYER/Explorer.tscn`.
 - `../ENVIRONMENT/`: single Sky3D owner and master time/wind configuration.
+- `Vegetation/Trees/`: separate C# procedural oak preview, seeded Terrain3D height-based chunk placement and replaceable mesh assets. Config: `Vegetation/Trees/Configuration/TreeMaster.tres`. No WE4 phase status change.
 
 The 1024 × 1024 metre world has a winding valley, ridges and noisy relief, using the main demo's grass/cliff autoshader and macro variation. It retains 46,845 legacy saved grass clumps for authoring compatibility, with their crossed-card asset disabled. Visible grass is now the ribbon-based GPU particle adaptation under `VEGETATION/`, configured by its own master resource. No terrain rebake is needed. World art resources are owned here; unchanged CC0 texture files remain referenced from `demo/assets/textures` and must ship with the project.
 
