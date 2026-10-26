@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ENTITIES/Shared/C/EntityCore.cs" id="1"]
+[ext_resource type="Resource" path="res://ENTITIES/Configuration/EntityMaster.tres" id="2"]
+
+[sub_resource type="CapsuleShape3D" id="Capsule"]
+resource_local_to_scene = true
+radius = 0.5
+height = 2.0
+
+[node name="Entity" type="CharacterBody3D" node_paths=PackedStringArray("VisualRoot")]
+process_mode = 4
+script = ExtResource("1")
+Settings = ExtResource("2")
+VisualRoot = NodePath("VisualRoot")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1, 0)
+shape = SubResource("Capsule")
+
+[node name="VisualRoot" type="Node3D" parent="."]

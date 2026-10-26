@@ -1,6 +1,6 @@
 # RM — Reusable Entity, Mechanical Walker and Scanning Prototype
 
-> **State:** PLAN ONLY — **RM0–RM5 all Planned**. This file authorizes *no implementation* by itself.
+> **State:** **RM0 implemented, Awaiting Validation; RM1–RM5 Planned.** Only RM0 was authorized for this job.
 >
 > **Purpose:** In the existing Godot C# **War Machine** project, add one memorable non-hostile, original giant mechanical walker that **walks → stops → scans → resumes** in the real `WORLD/testworld.tscn`. Build small shared components so future robots and other entity types can reuse movement, waypoints, sensing and visuals where appropriate.
 >
@@ -10,7 +10,7 @@
 
 | Phase | Goal | Recommended assistant | Status |
 | --- | --- | --- | --- |
-| **RM0** | Minimal shared Entity base, folders, configs and reusable actor/component contract | Codex / ChatGPT Work; Regular Chat can review design | **Planned** |
+| **RM0** | Minimal shared Entity base, folders, configs and reusable actor/component contract | Codex / ChatGPT Work; Regular Chat can review design | **Awaiting Validation** |
 | **RM1** | Robot_001 procedural hard-surface model and mechanical stepping | Codex / ChatGPT Work | **Planned** |
 | **RM2** | Shared waypoint patrol and stop/turn/dwell lifecycle | Codex / ChatGPT Work | **Planned** |
 | **RM3** | Shared logical scan sensor and Robot-only cyan 3D beam effect | Codex / ChatGPT Work | **Planned** |
@@ -23,7 +23,7 @@
 
 As inspected before this plan:
 
-- **`ENTITIES/` contains planning documentation only.** All runtime scenes, scripts, resources and components described below are **proposed**, not implemented.
+- **RM0 now exists:** `Shared/Entity.tscn`, `Shared/C/EntityCore.cs`, `Shared/C/EntitySettings.cs`, `Configuration/EntityMaster.tres` and `Shared/README.md`. Remaining runtime paths below are proposed.
 - `WORLD/testworld.tscn` is the **actual project main scene**. It has Terrain3D terrain, Sky3D day/night and thick distance mist, vegetation/grass/pines and small decorative content, a cave, weather integration, F9 tuning and the FPS display.
 - `PLAYER/ExplorationController.cs` extends `CharacterBody3D` and supports a free-flight camera plus optional collidable **first-person movement via F6**. Do not rewrite it to give the robot movement. Use it only as an optional future sensing target/debug reference.
 - The main landscape has authored/saved Terrain3D data. **Do not rebake, replace, overwrite or regenerate terrain** to make a robot patrol.
@@ -125,6 +125,10 @@ These additions deliberately keep the first robot **small and expandable**. They
 - **Performance:** Spawn/enable explicitly wakes actor; disabled/sleeping actor does **zero unnecessary physics/process**, sensor or gait work. Canceled timers and disconnected signals do not leak callbacks. Relevance waking uses player movement events and hysteresis only when implemented; **no global actor manager**. Document idle costs.
 - **Pass:** A minimal reusable entity scene/resources load/compile and can be instantiated/released cleanly; no visual/gameplay changes to TestWorld.
 - **Assistant:** Codex for scene/C#/resource setup; Regular Chat can refine design/docs; Copilot local build checks.
+
+### RM0 implementation handoff — 2026-10-26
+
+Implemented the minimal capsule/VisualRoot actor, per-instance settings copy, idempotent lifecycle signal/hooks, exit cleanup and dormant process mode. No world files changed. No proximity subscriptions, unused radius settings, robot artwork or later-phase components were added. See [Shared/README.md](Shared/README.md) for exact contracts and local checks. Source/path review and `git diff --check` completed; dotnet/Godot are unavailable here, so build/instantiate/release checks are deferred. This job is one local commit (see Git history); no push requested. RM1 requires separate authorization.
 
 ## 4. RM1 — Robot_001 visual walker and articulated legs
 
