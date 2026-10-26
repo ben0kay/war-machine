@@ -7,3 +7,11 @@ TreeMaster owns height range/multiplier, trunk taper, tier count, length falloff
 F9 opens the environment panel. Wind updates shared materials immediately. Shape and placement sliders require Apply/Rebuild vegetation; this rebuilds only nearby tree batches and the grass particle pool, never terrain. Zero placement density frees tree batches. Runtime settings are copies of master resources and are discarded on exit.
 
 Implemented, awaiting user visual/performance validation. Brief C# compilation and headless scene launch only; no new rendered comparison or GPU profiling. Existing Validation notes describe the previous oak implementation.
+
+## Foliage cost / culling revision
+
+Replaced the 3,600 six-triangle thin needle fans with 900 closed six-triangle elongated tufts, adding vertical scatter and configurable length/thickness. Near default: 5,920 triangles (864 tufts plus trunk/branches), previously 22,336. Far default: 1,120 triangles (6 tiers, 4 branches, 6 tufts/branch), previously 4,624; distant branches now simplify too. These are geometry counts, not measured frame-time improvements.
+
+Placement batches are now 48m instead of 96m; native range culling remains per batch, not per tree. Near/far switch is 60m; outer range stays 240m, measured from batch centers. A tree at the batch edge can remain visible beyond that distance. Opaque hard LOD transitions replace Self fades that could put foliage into an expensive transparency path and overlap both levels. A visible LOD pop is the tradeoff. Closed tufts use backface culling. Wind avoids per-vertex matrix inversion (placement uses uniform scale). No per-tree CPU callbacks were added.
+
+F9 exposes tuft length/thickness, LOD/render distances and a tree-shadow toggle (Apply/Rebuild). Shadows remain enabled near, disabled far; turning them off provides a useful local comparison. Original terrain and grass untouched. Brief compile/launch only; visual acceptance and FPS comparison deferred to user.

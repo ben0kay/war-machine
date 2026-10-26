@@ -199,7 +199,7 @@ public partial class TreePlacement : Node3D
             Name = name, Position = anchor, Multimesh = multi, ExtraCullMargin = 1f,
             VisibilityRangeBegin = begin, VisibilityRangeEnd = end,
             VisibilityRangeBeginMargin = begin > 0 ? margin : 0, VisibilityRangeEndMargin = margin,
-            VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Self,
+            VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Disabled,
             CastShadow = shadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off
         };
         AddChild(node);

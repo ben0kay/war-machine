@@ -15,8 +15,11 @@ public static class TreeGenerator
         wood.SetMaterial(woodMaterial); leaves.SetMaterial(leafMaterial);
         var bark = new Color(0.25f, 0.19f, 0.14f);
         AddTaper(wood, Vector3.Zero, Vector3.Up * height, radius, radius * (1 - settings.TrunkTaper), bark, 8);
-        int tiers = Mathf.Clamp(settings.BranchTierCount, 3, 24), branches = 6;
-        int count = Mathf.Clamp((int)(settings.LeafBudget * settings.FoliageDensity / (tiers * branches)), 6, 160);
+        int fullTiers = Mathf.Clamp(settings.BranchTierCount, 3, 24);
+        bool distant = leafStride > 1;
+        int tiers = distant ? Mathf.Max(4, fullTiers / 2) : fullTiers, branches = distant ? 4 : 6;
+        int budget = Mathf.Clamp((int)(settings.LeafBudget * settings.FoliageDensity), 72, 2400);
+        int count = Mathf.Max(2, budget / (fullTiers * 6));
         for (int tier = 0; tier < tiers; tier++)
         {
             float t = tier / (float)tiers;
@@ -36,19 +39,27 @@ public static class TreeGenerator
                     var center = start.Lerp(end, along);
                     var side = new Vector3(-direction.Z, 0, direction.X);
                     float fan = length * 0.32f * (1 - along * 0.65f);
-                    var anchor = center + side * random.RandfRange(-fan, fan) + Vector3.Up * random.RandfRange(-0.12f, 0.16f);
+                    var anchor = center + side * random.RandfRange(-fan, fan) + Vector3.Up * random.RandfRange(-0.45f, 0.45f);
                     var axis = (direction + side * random.RandfRange(-1.8f, 1.8f) - Vector3.Up * 0.25f).Normalized();
-                    float needle = random.RandfRange(0.25f, 0.55f) * Mathf.Min(1.6f, Mathf.Sqrt(leafStride));
+                    float needle = settings.NeedleClusterLength * random.RandfRange(0.7f, 1.2f) * (distant ? 1.5f : 1f);
                     float shade = random.RandfRange(1 - settings.ColourVariation, 1 + settings.ColourVariation);
                     var color = new Color(0.085f, 0.23f, 0.135f) * shade;
-                    if (j % leafStride != 0) continue;
-                    // Narrow pointed needle fans overlap in branch layers, never broadleaf crowns.
-                    for (int n = -1; n <= 1; n++)
-                    {
-                        var tip = anchor + (axis + side * n * 0.3f) * needle;
-                        AddLeafFace(leaves, anchor - side * 0.035f, anchor + side * 0.035f, tip, color, 0, 0, 1);
-                        AddLeafFace(leaves, anchor - Vector3.Up * 0.025f, anchor + Vector3.Up * 0.025f, tip, color, 0, 0, 1);
-                    }
+                    if (distant && j % 2 != 0) continue;
+                    // Closed tapered tufts give volume with six triangles, replacing many intersecting needle fans.
+                    var tip = anchor + axis * needle;
+                    var across = axis.Cross(Vector3.Up).Normalized();
+                    var up = across.Cross(axis).Normalized();
+                    float width = settings.NeedleClusterThickness * (distant ? 1.4f : 1f);
+                    var middle = anchor.Lerp(tip, 0.4f);
+                    var a = middle + across * width;
+                    var b = middle - across * width * 0.5f + up * width * 0.866f;
+                    var c = middle - across * width * 0.5f - up * width * 0.866f;
+                    AddLeafFace(leaves, anchor, b, a, color * 0.85f, 0, 0.4f, 0.4f);
+                    AddLeafFace(leaves, anchor, c, b, color * 0.9f, 0, 0.4f, 0.4f);
+                    AddLeafFace(leaves, anchor, a, c, color, 0, 0.4f, 0.4f);
+                    AddLeafFace(leaves, a, b, tip, color, 0.4f, 0.4f, 1);
+                    AddLeafFace(leaves, b, c, tip, color * 0.9f, 0.4f, 0.4f, 1);
+                    AddLeafFace(leaves, c, a, tip, color * 1.08f, 0.4f, 0.4f, 1);
                 }
             }
         }
@@ -80,6 +91,7 @@ public static class TreeGenerator
     private static void AddLeafFace(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c,
         Color color, float anchorWeight, float middleWeight, float tipWeight)
     {
+        (a, b) = (b, a); (anchorWeight, middleWeight) = (middleWeight, anchorWeight);
         Vector3 normal = (b - a).Cross(c - a).Normalized();
         surface.SetNormal(normal); surface.SetColor(color); surface.SetUV(new Vector2(0.5f, anchorWeight)); surface.AddVertex(a);
         surface.SetNormal(normal); surface.SetColor(color); surface.SetUV(new Vector2(0f, middleWeight)); surface.AddVertex(b);

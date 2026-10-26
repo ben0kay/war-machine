@@ -10,7 +10,7 @@ public partial class TreeSettings : Resource
     [Export(PropertyHint.Range, "0,1,0.01")] public float Density { get; set; } = 0.72f;
     [Export(PropertyHint.Range, "8,40,1")] public float Spacing { get; set; } = 16f;
     [Export(PropertyHint.Range, "64,512,16")] public float RenderDistance { get; set; } = 240f;
-    [Export(PropertyHint.Range, "32,192,16")] public int ChunkSize { get; set; } = 96;
+    [Export(PropertyHint.Range, "32,192,16")] public int ChunkSize { get; set; } = 48;
     [Export(PropertyHint.Range, "-1,1,0.01")] public float ForestThreshold { get; set; } = -0.25f;
     [Export(PropertyHint.Range, "0.0001,0.03,0.0001")] public float ForestNoiseFrequency { get; set; } = 0.003f;
     [Export(PropertyHint.Range, "0,2,0.01")] public float MaximumSlope { get; set; } = 0.55f;
@@ -25,7 +25,9 @@ public partial class TreeSettings : Resource
     [Export(PropertyHint.Range, "0.4,1.5,0.05")] public float MinimumScale { get; set; } = 0.8f;
     [Export(PropertyHint.Range, "0.4,2,0.05")] public float MaximumScale { get; set; } = 1.25f;
 
-    [Export(PropertyHint.Range, "500,8000,100")] public int LeafBudget { get; set; } = 3600;
+    [Export(PropertyHint.Range, "500,8000,100")] public int LeafBudget { get; set; } = 900;
+    [Export(PropertyHint.Range, "0.3,2,0.05")] public float NeedleClusterLength { get; set; } = 0.95f;
+    [Export(PropertyHint.Range, "0.05,0.5,0.01")] public float NeedleClusterThickness { get; set; } = 0.19f;
     [ExportGroup("Pine Silhouette")]
     [Export(PropertyHint.Range, "0.5,2,0.05")] public float HeightMultiplier { get; set; } = 1f;
     [Export(PropertyHint.Range, "0.5,0.99,0.01")] public float TrunkTaper { get; set; } = 0.94f;
@@ -36,8 +38,8 @@ public partial class TreeSettings : Resource
     [Export(PropertyHint.Range, "0,0.5,0.01")] public float ColourVariation { get; set; } = 0.22f;
     [ExportGroup("Distance / Quality")]
     [Export] public bool UseGeneratedLod { get; set; } = true;
-    [Export(PropertyHint.Range, "32,256,8")] public float LodDistance { get; set; } = 110f;
-    [Export(PropertyHint.Range, "4,48,2")] public float DistanceFadeMargin { get; set; } = 20f;
+    [Export(PropertyHint.Range, "32,256,8")] public float LodDistance { get; set; } = 60f;
+    [Export(PropertyHint.Range, "4,48,2")] public float DistanceFadeMargin { get; set; } = 8f;
     [Export(PropertyHint.Range, "2,8,1")] public int FarLeafStride { get; set; } = 6;
     [Export] public bool FarCastShadows { get; set; }
 

@@ -1,6 +1,6 @@
 // Per-leaf vertex flutter: each pointed leaf is attached at UV.y=0 and free at UV.y=1.
 shader_type spatial;
-render_mode cull_disabled, depth_draw_opaque;
+render_mode cull_back, depth_draw_opaque;
 
 uniform vec2 wind_direction = vec2(1.0, 0.4);
 uniform float wind_strength : hint_range(0.0, 2.0) = 0.55;
@@ -18,7 +18,7 @@ void vertex() {
     // Displace in world direction so rotated MultiMesh trees all bend with the same breeze.
     vec3 movement_world = vec3(direction.x, breeze * 0.16, direction.y)
         * (breeze * 0.18 + flutter * 0.09) * wind_strength * UV.y;
-    VERTEX += inverse(mat3(MODEL_MATRIX)) * movement_world;
+    VERTEX += transpose(mat3(MODEL_MATRIX)) * movement_world / dot(MODEL_MATRIX[0].xyz, MODEL_MATRIX[0].xyz);
     }
 }
 

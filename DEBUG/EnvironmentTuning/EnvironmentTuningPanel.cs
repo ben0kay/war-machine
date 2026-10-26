@@ -51,6 +51,11 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         Slider(_trees.Settings, "HeightMultiplier", "Height multiplier *", 0.5, 2, 0.05);
         Slider(_trees.Settings, "FoliageDensity", "Foliage density *", 0.1, 2, 0.05);
         Slider(_trees.Settings, "Density", "Placement density *", 0, 1, 0.01);
+        Slider(_trees.Settings, "NeedleClusterLength", "Tuft length *", 0.3, 2, 0.05);
+        Slider(_trees.Settings, "NeedleClusterThickness", "Tuft thickness *", 0.05, 0.5, 0.01);
+        Slider(_trees.Settings, "LodDistance", "Detail distance (m) *", 32, 160, 1);
+        Slider(_trees.Settings, "RenderDistance", "Tree distance (m) *", 64, 512, 1);
+        Toggle(_trees.Settings, "CastShadows", "Tree shadows (rebuild)", () => { });
         Slider(_trees.Settings, "LeafWindStrength", "Branch wind", 0, 2, 0.01, _trees.ApplyWind);
         outer.AddChild(new Label { Text = "* Pending until Apply. Terrain is never modified." });
         var actions = new HBoxContainer(); outer.AddChild(actions);
