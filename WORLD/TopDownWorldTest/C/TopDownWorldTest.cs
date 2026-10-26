@@ -1,4 +1,4 @@
-// Standalone TD0/TD1 composition only: saved preview terrain, test human and ortho camera. No normal-world content.
+// Standalone TD0–TD2 composition: saved preview terrain, test human, ortho camera and the existing reusable robot.
 using Godot;
 using System.IO;
 
@@ -31,6 +31,8 @@ public partial class TopDownWorldTest : Node3D
         terrain.Call("set_camera", camera);
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(Settings, camera);
-        status.Text = "Top-down test · WASD screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene";
+        bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
+        status.Text = "Top-down test · WASD screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene"
+            + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 }

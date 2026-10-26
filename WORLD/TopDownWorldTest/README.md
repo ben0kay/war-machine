@@ -1,6 +1,6 @@
 # Top-down World Test — TD0/TD1
 
-**Implemented, Awaiting Local Validation. TD2/TD3 remain Planned.** Standalone preview scene: `WORLD/TopDownWorldTest/topdownWorldTest.tscn`. The project's main scene remains `WORLD/testworld.tscn`.
+**TD0–TD2 implemented, Awaiting Local Validation. TD3 remains Planned.** Standalone preview scene: `WORLD/TopDownWorldTest/topdownWorldTest.tscn`. The project's main scene remains `WORLD/testworld.tscn`.
 
 Git branch: `implement-td0-td1` (original `main` is unchanged).
 
@@ -27,7 +27,7 @@ A missing terrain bake displays setup instructions instead of dropping the playe
 - `C/TopDownCamera.cs`: 45° yaw / 55° down, orthographic size 48m, smoothly follows the physical root and zooms between 20–80m.
 - `Configuration/TopDownTestMaster.tres` / `C/TopDownTestSettings.cs`: test-only player/camera settings and bake-time seed/spawn/relief/hill settings. No source masters are mutated during gameplay.
 
-Preview reuses existing terrain material/assets, with their legacy grass mesh disabled. No grass emitter, trees, rocks, cave, weather, haze, F9 panel or robot is instanced. A basic procedural sky, ambient light and shadowed sun are used; no extra sky addon/controller coupling. Existing Robot_001 integration is **TD2**, not part of this job.
+Preview reuses existing terrain material/assets, with their legacy grass mesh disabled. No grass emitter, trees, rocks, cave, weather, haze or F9 panel is instanced. A basic procedural sky, ambient light and shadowed sun are used; no extra sky addon/controller coupling. The actual existing Robot_001 scene is directly instanced for **TD2**; its shared files are unchanged.
 
 ## Collision and idle cost
 
@@ -40,3 +40,13 @@ Movement key/focus changes wake player PhysicsProcess. It runs during movement/d
 Here: source review, resource/path/ID checks, camera-axis and hill-slope calculations, C# delimiter smoke checks and `git diff --check`. **No build, native terrain bake, scene load or runtime/render check was possible**: Godot/.NET absent. These phases are implemented but **Awaiting Validation**.
 
 Brief local check: bake once and confirm the second bake refuses overwrite; run preview; test W/A/S/D screen directions, diagonal speed, Shift, stopping, focus loss, wheel bounds, steady follow and walking over the hill without falling. Check idle callbacks settle. Confirm F5 still opens the original world. Appearance/FPS acceptance stays with the owner; no extensive test suite was added.
+
+## TD2 — Existing robot patrol
+
+`C/TopDownRobotPlacement.cs` is a preview-only placement adapter; it does not use the main world's WorldConfig/ExplorationController or copy WORLD/RobotEncounter.tscn. It samples this preview's Terrain3D, caches three/four editable route markers and invokes `RobotController.InitializeEncounter(route, groundSampler, player)`.
+
+The `RobotPatrol` node centres on spawn offset **(-24, +8)m**, with four markers forming a **12m square**. It starts at **(-30, +14)m** relative to the player (~33m away), in view toward the left/west-southwest and away from the hill. Inspect/edit RobotPatrol/Route in the preview scene. Entire route edges plus a 5m foot corridor are checked once for finite/level terrain. Invalid placement leaves the actor hidden/dormant with an Output error; the player/camera preview remains usable.
+
+The robot has a local EntitySettings startup resource with StartActive=false and a hidden placement root, so a missing terrain bake never starts patrol/scanning/audio at world origin. After safe positioning, the real robot is shown and explicitly activated. Its own runtime master copy, original biped gait, scan shader, sensing, spatial sounds, gravity/height support and lifecycle remain intact. Actor shutdown handles unload. No new per-frame placement/relevance loop or global manager; full test-terrain collision already covers both player and robot. The optional sensing candidate is the visible test player; no damage/chase is added.
+
+Check locally after the existing one-time terrain bake: watch two full walk → stop → scan → recover → walk cycles while moving the player around. Confirm the whole body advances, feet stay grounded, cyan beam sweeps, audio is bounded, and unloading leaves no errors. Check missing-data startup remains dormant. Source/resource/route-camera math checks passed here; Godot/.NET unavailable, so build and runtime/visual acceptance are still pending. TD3 is not automatically implemented.

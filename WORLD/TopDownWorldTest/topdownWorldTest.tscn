@@ -1,10 +1,19 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=15 format=3]
 [ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownWorldTest.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/TopDownWorldTest/Configuration/TopDownTestMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
 [ext_resource type="Terrain3DAssets" path="res://WORLD/Terrain/TerrainAssets.tres" id="4"]
 [ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownPlayer.cs" id="5"]
 [ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownCamera.cs" id="6"]
+
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownRobotPlacement.cs" id="7"]
+[ext_resource type="PackedScene" path="res://ENTITIES/TYPES/Robots/Robot_001/Robot_001.tscn" id="8"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/C/EntitySettings.cs" id="9"]
+
+[sub_resource type="Resource" id="RobotStartup"]
+script = ExtResource("9")
+TypeLabel = "Robot_001"
+StartActive = false
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.3, 0.48, 0.7, 1)
@@ -64,3 +73,21 @@ theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 text = "Loading saved preview terrain…"
 mouse_filter = 2
+
+[node name="RobotPatrol" type="Node3D" parent="." node_paths=PackedStringArray("Robot", "RouteMarkers")]
+visible = false
+script = ExtResource("7")
+Robot = NodePath("Robot_001")
+RouteMarkers = NodePath("Route")
+SpawnOffset = Vector2(-24, 8)
+[node name="Route" type="Node3D" parent="RobotPatrol"]
+[node name="NorthWest" type="Marker3D" parent="RobotPatrol/Route"]
+position = Vector3(-6, 0, -6)
+[node name="NorthEast" type="Marker3D" parent="RobotPatrol/Route"]
+position = Vector3(6, 0, -6)
+[node name="SouthEast" type="Marker3D" parent="RobotPatrol/Route"]
+position = Vector3(6, 0, 6)
+[node name="SouthWest" type="Marker3D" parent="RobotPatrol/Route"]
+position = Vector3(-6, 0, 6)
+[node name="Robot_001" parent="RobotPatrol" instance=ExtResource("8")]
+Settings = SubResource("RobotStartup")

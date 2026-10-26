@@ -1,6 +1,6 @@
 # TD — Orthographic Top-Down World Test
 
-> **TD0/TD1 implemented, Awaiting Validation; TD2/TD3 Planned.** Standalone scene exists; original playable main world is unchanged. Native terrain must be baked once locally before first play.
+> **TD0–TD2 implemented, Awaiting Validation; TD3 Planned.** Standalone scene exists; original playable main world is unchanged. Native terrain must be baked once locally before first play.
 >
 > Create `WORLD/TopDownWorldTest/topdownWorldTest.tscn`, an isolated Godot 4 C# 3D experiment. The real main world `WORLD/testworld.tscn` must remain untouched and be the project default.
 
@@ -18,7 +18,7 @@ Read root `README.md`, `CodePreferences.md`, `WORLD/README.md`, `WORLD/Generatio
 | --- | --- | --- |
 | **TD0** | Standalone scene and basic Terrain3D preview terrain | Awaiting Validation |
 | **TD1** | Low-poly human, walking, angled orthographic follow camera | Awaiting Validation |
-| **TD2** | Existing robot on nearby walk/stop/scan patrol | Planned |
+| **TD2** | Existing robot on nearby walk/stop/scan patrol | Awaiting Validation |
 | **TD3** | Small settings, documentation and sanity checks | Planned |
 
 All phases are appropriate for Codex / ChatGPT Work. Implement only authorized phases. When all TD0–TD3 are authorized as one prototype job, keep it to one commit.
@@ -70,6 +70,12 @@ Implemented only the two authorized phases. Files: standalone `topdownWorldTest.
 One 1024m region uses the established native import/save path and Full/Game collision to keep player/hill covered independently of camera offset. Godot/.NET are unavailable here, so no native `.res` was generated; the plan's documented one-shot fallback is provided with overwrite refusal. Missing bake leaves on-screen instructions and inactive physics, not an automatic generation pass.
 
 C# source/delimiter, resource path/ID and camera-axis/hill-grade checks plus whitespace review performed. **Build, bake, collision, input, animation, scene runtime and visual/FPS acceptance are deferred, not passed.** See README for exact commands and brief local checks. TD2 (existing robot integration) and TD3 remain unimplemented. This job is one feature-branch commit; no main-branch publication is required to try it locally after checkout.
+
+## TD2 implementation handoff — 2026-10-26
+
+Implemented only TD2 on the existing implement-td0-td1 branch. Direct Robot_001 scene instance, preview-only local dormant startup resource, hidden placement root and four editable markers were added. TopDownRobotPlacement validates this test terrain's edge/foot corridor heights, places the actor ~33m from spawn away from the hill, passes cached waypoints/height sampler/player to the existing InitializeEncounter API, then shows and activates it. TopDownWorldTest invokes placement only after native terrain, player and camera setup succeed. No original-world/robot/player-shared files or masters changed. No per-frame helper processing; original actor lifecycle owns shutdown.
+
+Source/resource/scene wiring, route distance/camera projection calculations and whitespace checks passed. Godot/.NET unavailable: **build, saved terrain bake, two complete patrol/scan cycles, foot planting, player sensing, audio and runtime unload are unverified**. Existing first-run bake instructions still apply. TD3 remains Planned. One commit for this authorized job; published on the same feature branch, not main.
 
 ## Suggested Codex instruction
 

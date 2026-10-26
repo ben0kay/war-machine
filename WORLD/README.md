@@ -2,7 +2,7 @@
 
 `testworld.tscn` is the playable environment foundation and project main scene. **F5** runs it; open it and press **F6** to run directly. Build with a Godot .NET editor and .NET 8 SDK first. No competing WorldRoot exists.
 
-**Standalone orthographic camera test:** [TopDownWorldTest/IMPLEMENTATION_PLAN.md](TopDownWorldTest/IMPLEMENTATION_PLAN.md) — TD0/TD1 implemented, awaiting local validation: a separate Terrain3D landscape, low-poly walking player and orthographic follow camera. Existing Robot_001 integration remains TD2. Run the preview-only bake scene once locally, then F6 the preview; see its README. Does not replace TestWorld.
+**Standalone orthographic camera test:** [TopDownWorldTest/IMPLEMENTATION_PLAN.md](TopDownWorldTest/IMPLEMENTATION_PLAN.md) — TD0–TD2 implemented, awaiting local validation: a separate Terrain3D landscape, low-poly walking player and orthographic follow camera. TD2 directly reuses the existing Robot_001 on a nearby preview patrol. Run the preview-only bake scene once locally, then F6 the preview; see its README. Does not replace TestWorld.
 
 **Surface terrain roadmap:** [SURFACE_IMPLEMENTATION_PLAN.md](SURFACE_IMPLEMENTATION_PLAN.md) — optional SF0–SF5 work for erosion gullies, rock outcrops, scree, forest-edge ecology and one surface landmark. All phases remain Planned; separate from the WE environment and CV cave roadmaps.
 
