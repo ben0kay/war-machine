@@ -41,3 +41,7 @@ ColourVariation = 0.22
 
 NeedleClusterLength = 0.95
 NeedleClusterThickness = 0.19
+
+TrunkThicknessMultiplier = 2.0
+MinimumTrunkThickness = 0.85
+MaximumTrunkThickness = 1.25

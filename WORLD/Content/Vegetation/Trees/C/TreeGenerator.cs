@@ -13,8 +13,12 @@ public static class TreeGenerator
         using var wood = new SurfaceTool(); using var leaves = new SurfaceTool();
         wood.Begin(Mesh.PrimitiveType.Triangles); leaves.Begin(Mesh.PrimitiveType.Triangles);
         wood.SetMaterial(woodMaterial); leaves.SetMaterial(leafMaterial);
+        var trunkRandom = new RandomNumberGenerator { Seed = Mix(settings.Seed, variation, 7741) };
+        float low = Mathf.Max(0.1f, Mathf.Min(settings.MinimumTrunkThickness, settings.MaximumTrunkThickness));
+        float high = Mathf.Max(low, Mathf.Max(settings.MinimumTrunkThickness, settings.MaximumTrunkThickness));
+        float trunkRadius = radius * Mathf.Max(0.1f, settings.TrunkThicknessMultiplier) * trunkRandom.RandfRange(low, high);
         var bark = new Color(0.25f, 0.19f, 0.14f);
-        AddTaper(wood, Vector3.Zero, Vector3.Up * height, radius, radius * (1 - settings.TrunkTaper), bark, 8);
+        AddTaper(wood, Vector3.Zero, Vector3.Up * height, trunkRadius, trunkRadius * (1 - settings.TrunkTaper), bark, 8);
         int fullTiers = Mathf.Clamp(settings.BranchTierCount, 3, 24);
         bool distant = leafStride > 1;
         int tiers = fullTiers, branches = 6;

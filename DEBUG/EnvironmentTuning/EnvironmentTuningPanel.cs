@@ -75,6 +75,9 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         Slider(_grass.Settings, "WindMultiplier", "Grass wind", 0, 2, 0.01, _grass.ApplyAppearance);
         Category(content, "Pine trees");
         Slider(_trees.Settings, "HeightMultiplier", "Height multiplier *", 0.5, 2, 0.05);
+        Slider(_trees.Settings, "TrunkThicknessMultiplier", "Trunk thickness *", 0.5, 4, 0.05);
+        Slider(_trees.Settings, "MinimumTrunkThickness", "Trunk minimum *", 0.5, 1.5, 0.05);
+        Slider(_trees.Settings, "MaximumTrunkThickness", "Trunk maximum *", 0.5, 1.5, 0.05);
         Slider(_trees.Settings, "FoliageDensity", "Foliage density *", 0.1, 2, 0.05);
         Slider(_trees.Settings, "Density", "Placement density *", 0, 1, 0.01);
         Slider(_trees.Settings, "NeedleClusterLength", "Tuft length *", 0.3, 2, 0.05);

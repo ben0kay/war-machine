@@ -21,3 +21,9 @@ F9 exposes tuft length/thickness, LOD/render distances and a tree-shadow toggle 
 Far meshes now retain every branch tier and all six radial branches. Only tuft count/detail reduces; coarser, wider foliage preserves canopy coverage. Branch-local seeds keep branch positions identical across LODs. Default distant mesh is 1,600 triangles (144 tufts plus full branch skeleton), versus 5,920 near. This deliberately spends a little more distant geometry to retain the pine outline. Native LOD still chooses by batch centre, so two trees can differ in detail despite their individual distances; 48m batches limit, but do not eliminate, that approximation. No claim of per-tree LOD. User visual/FPS validation pending.
 
 Default HeightMultiplier is now 1.5, also reflected by TreeMaster and the F9 initial reset value. Placement density/range and mesh budgets are unchanged.
+
+## Thickened trunks
+
+Default trunk geometry now uses `TrunkRadius × TrunkThicknessMultiplier × seeded thickness variation`: base radius remains 0.42m, multiplier **2**, variation **0.85–1.25**. Radius before existing whole-tree instance scale is therefore 0.714–1.05m. Only the main trunk/taper uses this new factor; branch radius, foliage spread, height, forest positions and other random streams are preserved.
+
+Thickness is seeded per shared art variant (four variants by default), not a unique material/mesh per placed tree. Near/far meshes use the identical independent thickness seed so LOD changes do not alter trunk width. Existing whole-tree size variation remains. F9 Pine trees exposes thickness multiplier/min/max as staged controls: press Apply / Rebuild vegetation. Imported meshes are unaffected. No per-frame work or extra tree nodes were added. Source/binding checks passed; rendered proportions still need local acceptance.

@@ -22,6 +22,9 @@ public partial class TreeSettings : Resource
     [Export(PropertyHint.Range, "4,20,0.5")] public float MinimumHeight { get; set; } = 14f;
     [Export(PropertyHint.Range, "4,24,0.5")] public float MaximumHeight { get; set; } = 22f;
     [Export(PropertyHint.Range, "0.1,1.5,0.05")] public float TrunkRadius { get; set; } = 0.42f;
+    [Export(PropertyHint.Range, "0.5,4,0.05")] public float TrunkThicknessMultiplier { get; set; } = 2;
+    [Export(PropertyHint.Range, "0.5,1.5,0.05")] public float MinimumTrunkThickness { get; set; } = 0.85f;
+    [Export(PropertyHint.Range, "0.5,1.5,0.05")] public float MaximumTrunkThickness { get; set; } = 1.25f;
     [Export(PropertyHint.Range, "0.4,1.5,0.05")] public float MinimumScale { get; set; } = 0.8f;
     [Export(PropertyHint.Range, "0.4,2,0.05")] public float MaximumScale { get; set; } = 1.25f;
 
