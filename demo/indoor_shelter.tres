@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeatherProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/weather_atmosphere/core/weather_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Indoor Shelter"
+wind_speed = 0.0
+fog_density = 0.0
+mist_intensity = 0.0
+environment_brightness = 0.58
+sun_energy_multiplier = 0.48
+sun_color = Color(0.88, 0.78, 0.64, 1)
+ambient_tint = Color(0.62, 0.55, 0.48, 1)

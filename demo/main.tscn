@@ -1,0 +1,412 @@
+[gd_scene load_steps=25 format=3]
+
+[ext_resource type="Script" path="res://demo/main.gd" id="1_demo"]
+[ext_resource type="PackedScene" path="res://addons/weather_atmosphere/weather_system_3d.tscn" id="2_controller"]
+[ext_resource type="Resource" path="res://addons/weather_atmosphere/presets/clear_calm.tres" id="3_clear"]
+[ext_resource type="Script" path="res://demo/demo_player.gd" id="4_player"]
+[ext_resource type="Script" path="res://addons/weather_atmosphere/zones/weather_zone_3d.gd" id="5_zone"]
+[ext_resource type="Resource" path="res://demo/indoor_shelter.tres" id="6_shelter"]
+[ext_resource type="Script" path="res://demo/showcase_environment.gd" id="7_showcase"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
+sky_top_color = Color(0.12, 0.22, 0.4, 1)
+sky_horizon_color = Color(0.62, 0.72, 0.84, 1)
+ground_bottom_color = Color(0.05, 0.06, 0.08, 1)
+ground_horizon_color = Color(0.5, 0.56, 0.62, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMaterial")
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.8, 0.86, 0.95, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.14, 0.17, 0.14, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="GroundMesh"]
+material = SubResource("GroundMaterial")
+size = Vector3(40, 0.2, 40)
+
+[sub_resource type="StandardMaterial3D" id="BlockMaterial"]
+albedo_color = Color(0.42, 0.36, 0.28, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="BlockMesh"]
+material = SubResource("BlockMaterial")
+size = Vector3(2, 3, 2)
+
+[sub_resource type="CapsuleShape3D" id="PlayerShape"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="BoxShape3D" id="ShelterZoneShape"]
+size = Vector3(5.4, 4, 5.4)
+
+[sub_resource type="StyleBoxFlat" id="ControlPanelStyle"]
+bg_color = Color(0.025, 0.043, 0.06, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.7, 0.78, 0.55)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StatusCardStyle"]
+bg_color = Color(0.075, 0.115, 0.145, 0.92)
+border_width_left = 2
+border_color = Color(0.35, 0.82, 0.9, 0.72)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="PrimaryButtonNormal"]
+bg_color = Color(0.12, 0.42, 0.48, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="PrimaryButtonHover"]
+bg_color = Color(0.16, 0.56, 0.63, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="PrimaryButtonPressed"]
+bg_color = Color(0.08, 0.32, 0.38, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="ProgressBackground"]
+bg_color = Color(0.1, 0.14, 0.17, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="ProgressFill"]
+bg_color = Color(0.35, 0.8, 0.88, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="HintStyle"]
+bg_color = Color(0.025, 0.043, 0.06, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.7, 0.78, 0.55)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+content_margin_left = 12.0
+content_margin_top = 7.0
+content_margin_right = 12.0
+content_margin_bottom = 7.0
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_demo")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, -28, 0)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.15
+shadow_enabled = true
+
+[node name="Player" type="CharacterBody3D" parent="." groups=["weather_target"]]
+position = Vector3(10, 0.9, 12)
+rotation_degrees = Vector3(0, 40, 0)
+script = ExtResource("4_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("PlayerShape")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+position = Vector3(0, 0.7, 0)
+rotation_degrees = Vector3(-17, 0, 0)
+current = true
+
+[node name="ShowcaseEnvironment" type="Node3D" parent="."]
+script = ExtResource("7_showcase")
+
+[node name="WeatherController3D" parent="." node_paths=PackedStringArray("camera", "world_environment", "sun_light") instance=ExtResource("2_controller")]
+camera = NodePath("../Player/Camera3D")
+world_environment = NodePath("../WorldEnvironment")
+sun_light = NodePath("../Sun")
+initial_profile = ExtResource("3_clear")
+
+[node name="ShelterWeatherZone" type="Area3D" parent="." node_paths=PackedStringArray("controller")]
+position = Vector3(-6, 2, -2)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("5_zone")
+profile = ExtResource("6_shelter")
+controller = NodePath("../WeatherController3D")
+weather_priority = 10
+enter_transition_duration = 0.65
+exit_transition_duration = 1.25
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ShelterWeatherZone"]
+shape = SubResource("ShelterZoneShape")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="ControlPanel" type="Panel" parent="UI"]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 482.0
+offset_bottom = 702.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("ControlPanelStyle")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI"]
+offset_left = 32.0
+offset_top = 28.0
+offset_right = 468.0
+offset_bottom = 690.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Title" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Weather & Atmosphere Toolkit"
+
+[node name="Badge" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.86, 0.92, 1)
+theme_override_font_sizes/font_size = 13
+text = "12 PRESETS  •  3 QUALITY TIERS  •  GODOT 4.2+"
+
+[node name="Status" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StatusCardStyle")
+text = "● OUTDOORS   •   Initializing..."
+vertical_alignment = 1
+
+[node name="ProfileSection" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.86, 0.92, 1)
+theme_override_font_sizes/font_size = 12
+text = "PROFILE"
+
+[node name="PresetLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Choose weather — applies instantly"
+
+[node name="PresetPicker" type="OptionButton" parent="UI/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "Choose a preset. Selection transitions immediately using the duration below."
+
+[node name="ProfileActions" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="UI/MarginContainer/VBoxContainer/ProfileActions"]
+custom_minimum_size = Vector2(50, 34)
+layout_mode = 2
+tooltip_text = "Previous profile (Q)"
+text = "Q  ‹"
+
+[node name="Apply" type="Button" parent="UI/MarginContainer/VBoxContainer/ProfileActions"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Replay the selected profile transition"
+theme_override_styles/normal = SubResource("PrimaryButtonNormal")
+theme_override_styles/hover = SubResource("PrimaryButtonHover")
+theme_override_styles/pressed = SubResource("PrimaryButtonPressed")
+text = "Apply / replay profile"
+
+[node name="Next" type="Button" parent="UI/MarginContainer/VBoxContainer/ProfileActions"]
+custom_minimum_size = Vector2(50, 34)
+layout_mode = 2
+tooltip_text = "Next profile (E or Space)"
+text = "›  E"
+
+[node name="TransitionStatus" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.64, 0.78, 0.82, 1)
+theme_override_font_sizes/font_size = 12
+text = "Active profile  •  Clear Calm"
+
+[node name="TransitionProgress" type="ProgressBar" parent="UI/MarginContainer/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("ProgressBackground")
+theme_override_styles/fill = SubResource("ProgressFill")
+show_percentage = false
+
+[node name="TuningSection" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.86, 0.92, 1)
+theme_override_font_sizes/font_size = 12
+text = "LIVE TUNING"
+
+[node name="IntensityRow" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UI/MarginContainer/VBoxContainer/IntensityRow"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Intensity"
+
+[node name="Intensity" type="HSlider" parent="UI/MarginContainer/VBoxContainer/IntensityRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Scale the active weather without changing its profile"
+max_value = 1.25
+step = 0.05
+value = 1.0
+
+[node name="Value" type="Label" parent="UI/MarginContainer/VBoxContainer/IntensityRow"]
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="TransitionRow" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UI/MarginContainer/VBoxContainer/TransitionRow"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Transition"
+
+[node name="Transition" type="HSlider" parent="UI/MarginContainer/VBoxContainer/TransitionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Duration used by the next preset or clear-weather action"
+max_value = 8.0
+step = 0.25
+value = 2.0
+
+[node name="Value" type="Label" parent="UI/MarginContainer/VBoxContainer/TransitionRow"]
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+text = "2.00s"
+horizontal_alignment = 2
+
+[node name="WindRow" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UI/MarginContainer/VBoxContainer/WindRow"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Wind speed"
+
+[node name="Wind" type="HSlider" parent="UI/MarginContainer/VBoxContainer/WindRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Override wind speed while preserving the profile direction"
+max_value = 25.0
+step = 0.5
+
+[node name="Value" type="Label" parent="UI/MarginContainer/VBoxContainer/WindRow"]
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+text = "0.0"
+horizontal_alignment = 2
+
+[node name="QualityLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Quality and allocation budget"
+
+[node name="QualityPicker" type="OptionButton" parent="UI/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "Changes real particle allocations, not only a visual multiplier"
+
+[node name="ToolsSection" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.86, 0.92, 1)
+theme_override_font_sizes/font_size = 12
+text = "TOOLS & DIAGNOSTICS"
+
+[node name="QuickActions" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Clear" type="Button" parent="UI/MarginContainer/VBoxContainer/QuickActions"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Transition to clear weather (C)"
+text = "C  Clear weather"
+
+[node name="Lightning" type="Button" parent="UI/MarginContainer/VBoxContainer/QuickActions"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Trigger a manual lightning sequence (L)"
+text = "L  Trigger lightning"
+
+[node name="RendererInfo" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.76, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "Renderer: detecting..."
+
+[node name="WindDebug" type="CheckButton" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Display gust and turbulence-aware wind direction in the world (V)"
+text = "Show wind debug arrow   [V]"
+
+[node name="Diagnostics" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.76, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "-- FPS  •  ---- allocated particles  •  High quality"
+
+[node name="HelpToggle" type="Button" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Show or hide demo keyboard controls (F1)"
+text = "Controls & keyboard shortcuts   [F1]"
+
+[node name="HelpDetails" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.86, 0.88, 1)
+theme_override_font_sizes/font_size = 12
+text = "WASD move  •  Shift sprint  •  Click scene to look  •  Esc cursor\nQ/E profile  •  Space next  •  C clear  •  L flash  •  V wind  •  Tab panel"
+
+[node name="UIVisibilityHint" type="Label" parent="UI"]
+visible = false
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 226.0
+offset_bottom = 54.0
+theme_override_colors/font_color = Color(0.75, 0.92, 0.95, 1)
+theme_override_styles/normal = SubResource("HintStyle")
+text = "Tab  •  Show weather controls"
+horizontal_alignment = 1
+vertical_alignment = 1
