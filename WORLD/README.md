@@ -2,6 +2,8 @@
 
 `testworld.tscn` is the playable environment foundation and project main scene. **F5** runs it; open it and press **F6** to run directly. Build with a Godot .NET editor and .NET 8 SDK first. No competing WorldRoot exists.
 
+**Standalone orthographic camera test:** [TopDownWorldTest/IMPLEMENTATION_PLAN.md](TopDownWorldTest/IMPLEMENTATION_PLAN.md) — TD0–TD3 planned: a tiny Terrain3D landscape, low-poly walking player, camera follow and existing Robot_001. Does not replace TestWorld.
+
 **Surface terrain roadmap:** [SURFACE_IMPLEMENTATION_PLAN.md](SURFACE_IMPLEMENTATION_PLAN.md) — optional SF0–SF5 work for erosion gullies, rock outcrops, scree, forest-edge ecology and one surface landmark. All phases remain Planned; separate from the WE environment and CV cave roadmaps.
 
 - `Configuration/WorldMaster.tres` / `WorldConfig.cs`: seed, landscape bake settings, saved-data directory, spawn and grass placement.
