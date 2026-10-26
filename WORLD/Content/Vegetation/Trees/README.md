@@ -27,3 +27,9 @@ Default HeightMultiplier is now 1.5, also reflected by TreeMaster and the F9 ini
 Default trunk geometry now uses `TrunkRadius × TrunkThicknessMultiplier × seeded thickness variation`: base radius remains 0.42m, multiplier **2**, variation **0.85–1.25**. Radius before existing whole-tree instance scale is therefore 0.714–1.05m. Only the main trunk/taper uses this new factor; branch radius, foliage spread, height, forest positions and other random streams are preserved.
 
 Thickness is seeded per shared art variant (four variants by default), not a unique material/mesh per placed tree. Near/far meshes use the identical independent thickness seed so LOD changes do not alter trunk width. Existing whole-tree size variation remains. F9 Pine trees exposes thickness multiplier/min/max as staged controls: press Apply / Rebuild vegetation. Imported meshes are unaffected. No per-frame work or extra tree nodes were added. Source/binding checks passed; rendered proportions still need local acceptance.
+
+## Solid bark correction
+
+Owner observed all trunks looking like cutaways from outside. Wood triangles had outward calculated normals but the wrong submitted front-face winding for Godot culling. Wood now submits clockwise front faces while retaining outward lighting normals. Both ends of each tapered trunk/branch are capped. Leaf generation/materials are unchanged; no double-sided material workaround or extra per-tree nodes. The same generator produces near/far meshes, so both LODs receive the correction.
+
+Brief numerical checks cover closed taper edge counts and outward side/top/bottom normals. No Godot/.NET here: rendered culling, branch ends and LOD transition still need owner confirmation after rebuild/restart.

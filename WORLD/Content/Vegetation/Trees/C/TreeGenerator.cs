@@ -90,6 +90,9 @@ public static class TreeGenerator
             Vector3 highA = end + radialA * topRadius, highB = end + radialB * topRadius;
             AddFace(surface, lowA, lowB, highA, color);
             AddFace(surface, highA, lowB, highB, color);
+            // Close both ends as well as the bark sides; the same helper serves trunks and branches.
+            AddFace(surface, start, lowB, lowA, color);
+            AddFace(surface, end, highA, highB, color);
         }
     }
 
@@ -109,10 +112,11 @@ public static class TreeGenerator
     // Add flat-shaded triangles, with vertex colours baked once rather than material updates per tree.
     private static void AddFace(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c, Color color)
     {
+        // Keep the outward lighting normal, but submit clockwise front faces for Godot's solid wood surface.
         Vector3 normal = (b - a).Cross(c - a).Normalized();
         surface.SetNormal(normal); surface.SetColor(color); surface.AddVertex(a);
-        surface.SetNormal(normal); surface.SetColor(color); surface.AddVertex(b);
         surface.SetNormal(normal); surface.SetColor(color); surface.AddVertex(c);
+        surface.SetNormal(normal); surface.SetColor(color); surface.AddVertex(b);
     }
 
     // =========================================================
