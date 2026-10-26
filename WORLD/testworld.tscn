@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=24 format=3]
 [ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -19,11 +19,15 @@
 [ext_resource type="Resource" path="res://WORLD/Content/Vegetation/Bushes/Configuration/BushMaster.tres" id="18"]
 [ext_resource type="Resource" path="res://WORLD/Content/Vegetation/FallenLogs/Configuration/FallenLogMaster.tres" id="19"]
 [ext_resource type="Resource" path="res://WORLD/Content/Rocks/Configuration/RockMaster.tres" id="20"]
+[ext_resource type="Script" path="res://PLAYER/CameraModeButton.cs" id="21"]
+[ext_resource type="Script" path="res://WORLD/Content/Caves/C/WildernessCave.cs" id="22"]
+[ext_resource type="Resource" path="res://WORLD/Content/Caves/Configuration/CaveMaster.tres" id="23"]
 [node name="TestWorld" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
 [node name="Terrain3D" type="Terrain3D" parent="."]
 region_size = 1024
+collision_mode = 1
 data_directory = "res://WORLD/Terrain/Data"
 material = ExtResource("3")
 assets = ExtResource("4")
@@ -51,6 +55,7 @@ theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 text = "WASD / Arrows fly · Ctrl down · RMB up
 QE / Space vertical · Shift boost · Esc mouse
+F6 camera mode · Space jump (walking)
 P pause sun · F8 accelerated day preview · F9 tuning"
 mouse_filter = 2
 
@@ -89,3 +94,9 @@ EnvironmentSettings = ExtResource("8")
 script = ExtResource("16")
 Settings = ExtResource("20")
 EnvironmentSettings = ExtResource("8")
+
+[node name="CameraMode" type="CanvasLayer" parent="."]
+script = ExtResource("21")
+[node name="Cave" type="Node3D" parent="Content"]
+script = ExtResource("22")
+Settings = ExtResource("23")

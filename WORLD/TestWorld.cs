@@ -40,8 +40,10 @@ public partial class TestWorld : Node3D
         { GD.PushError("Saved terrain missing at spawn. Run the explicit terrain bake; gameplay does not regenerate it."); return; }
         var explorer = GetNode<Node3D>("Explorer");
         explorer.Position = new Vector3(position.X, height + Settings.SpawnClearance, position.Z);
-        explorer.LookAt(new Vector3(Settings.Size * 0.5f, height + 10, Settings.Size * 0.3f));
+        explorer.LookAt(new Vector3(Settings.Size * 0.5f, height + Settings.SpawnClearance, Settings.Size * 0.3f));
+        ((ExplorationController)explorer).Terrain = terrain;
         terrain.Call("set_camera", explorer.GetNode<Camera3D>("Camera3D"));
+        GetNode<WildernessCave>("Content/Cave").Initialize(terrain, Settings);
         GetNode<TerrainGrass>("Vegetation").Initialize(terrain, (ExplorationController)explorer);
         GetNode<TreePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);
         foreach (var child in GetNode("Content").GetChildren())

@@ -262,3 +262,7 @@ Implemented: procedural conifers, F9 runtime environment panel, and a separate 2
 ## Scoped content preview
 
 Relocated WORLD/Vegetation into WORLD/Content/Vegetation. Added category-owned procedural flowers, shrubs, fallen logs and rocks using a shared event-driven Terrain3D scatterer, integrated in TestWorld and F9 tuning. Decorative only; saved terrain unchanged. Awaiting user visual/performance validation; this does not implement or accept the remaining full vegetation phases.
+
+## Scoped walking / cave preview
+
+Implemented a switchable first-person capsule (F6/top-right button) alongside free flight, with walk/sprint/jump and terrain/cave collision. Added a separate winding, sloped, crystal-lit rock-outcrop cave near spawn using the demo's collidable mesh/light approach. Saved landscape and original demo unchanged. Source/reference checks only; compilation and user runtime acceptance pending because Godot/.NET is unavailable here. Decorative scatter still has no individual collision. This does not mark full cave/world phases accepted.

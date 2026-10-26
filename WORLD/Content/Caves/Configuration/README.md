@@ -1,0 +1,1 @@
+CaveMaster.tres controls the TestWorld cave. SpawnOffset is measured from WorldMaster's spawn; X is east and positive Y is south. Length extends north with sinusoidal bends. HeightVariation controls gentle rises/dips. Editing requires relaunch; F9 vegetation rebuild does not rebuild the cave.

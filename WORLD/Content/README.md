@@ -12,3 +12,5 @@ Each new category owns its `C`, `Configuration` and `Artwork` folders. Its maste
 TestWorld initializes all categories directly. Runtime copies protect source masters. F9 exposes activation, density, size and range; Apply/Rebuild updates transient content only. No collision, harvesting or persistent gameplay state is provided by these decorative previews.
 
 Placement wakes on chunk crossings, explicit settings application or terrain height changes. Empty/disabled categories have no meshes; no per-object nodes, frame callbacks or physics. Small 32m batches use native frustum/range culling, with conservative ranges and shadows off by default. Shapes are deliberately low-poly and currently have one detail level with distance culling, rather than multiple LODs. Terrain is read-only. Large logs align to the local slope but do not conform to every bump; art acceptance and FPS are deferred to the user.
+
+`Caves/` now owns an independently generated, collidable rocky passage with crystal lights near spawn. Unlike decorative scatter categories, it builds once and is not affected by vegetation rebuilds. See Caves/README.md.

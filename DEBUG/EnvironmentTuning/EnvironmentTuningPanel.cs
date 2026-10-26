@@ -88,7 +88,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         bool opening = !_panel.Visible;
         if (opening) { _previousMouse = Input.MouseMode; _sky.Settings.StartHour = _sky.Sky.Get("current_time").AsSingle(); Refresh(); }
         _panel.Visible = opening; _explorer.ControlsBlocked = opening;
-        _explorer.SetPhysicsProcess(false);
+        _explorer.SetPhysicsProcess(!opening && _explorer.FirstPerson);
         Input.MouseMode = opening ? Input.MouseModeEnum.Visible : _previousMouse;
         GetViewport().SetInputAsHandled();
     }

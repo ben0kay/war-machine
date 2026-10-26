@@ -22,3 +22,5 @@ The top-left FPS counter is configured in `../DEBUG/Configuration/DebugMaster.tr
 F9 opens the runtime environment tuning panel. See `../DEBUG/EnvironmentTuning/README.md`. Current pine/panel/terrain work awaits user visual and performance validation.
 
 Decorative flowers, bushes, fallen logs and rocks now live in `Content/`, alongside relocated pines. All are integrated into TestWorld, with configuration resources and F9 controls. See `Content/README.md`.
+
+F6/top-right button switches free flight and a first-person capsule (WASD/arrows, Shift sprint, Space jump). Terrain and cave have collision. A winding, height-varying, crystal-lit cave outcrop is near spawn; look 48m east / 28m north for the CAVE marker. See `Content/Caves/README.md`. This revision awaits local compilation/runtime validation.
