@@ -20,7 +20,7 @@ public partial class ScanBeam : Node3D
 
     // =========================================================
     // Called only on configuration changes; the full cone angle matches the nonvisual sensor convention.
-    public void Configure(float length, float fullAngle, Color color, float opacity, float brightness, float lineSpeed)
+    public void Configure(float length, float fullAngle, Color color, float opacity, float brightness, float lineSpeed, float bandContrast = 1.5f)
     {
         float distance = Mathf.Max(0.1f, length);
         float radius = distance * Mathf.Tan(Mathf.DegToRad(Mathf.Clamp(fullAngle, 1, 150)) * 0.5f);
@@ -30,6 +30,7 @@ public partial class ScanBeam : Node3D
         _material.SetShaderParameter("opacity", Mathf.Clamp(opacity, 0, 1));
         _material.SetShaderParameter("brightness", Mathf.Max(0, brightness));
         _material.SetShaderParameter("line_speed", lineSpeed);
+        _material.SetShaderParameter("band_contrast", Mathf.Max(0, bandContrast));
     }
 
     // =========================================================

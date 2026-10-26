@@ -1,6 +1,6 @@
 # RM — Reusable Entity, Mechanical Walker and Scanning Prototype
 
-> **State:** **RM0–RM4 implemented, Awaiting Validation; RM5 Planned.** Latest job authorized RM2–RM4 together. RM0/RM1 were pushed first.
+> **State:** **RM0–RM5 implemented, Awaiting Validation.** Owner confirmed patrol/scanning after grounding correction. Latest job authorized RM5 plus organic cave noise; new visuals/controls/audio still need local acceptance.
 >
 > **Purpose:** In the existing Godot C# **War Machine** project, add one memorable non-hostile, original giant mechanical walker that **walks → stops → scans → resumes** in the real `WORLD/testworld.tscn`. Build small shared components so future robots and other entity types can reuse movement, waypoints, sensing and visuals where appropriate.
 >
@@ -15,7 +15,7 @@
 | **RM2** | Shared waypoint patrol and stop/turn/dwell lifecycle | Codex / ChatGPT Work | **Awaiting Validation** |
 | **RM3** | Shared logical scan sensor and Robot-only cyan 3D beam effect | Codex / ChatGPT Work | **Awaiting Validation** |
 | **RM4** | Integrate an end-to-end walk/stop/scan loop into TestWorld | Codex / ChatGPT Work | **Awaiting Validation** |
-| **RM5** | Performance, reusable authoring, F9 controls and visual/audio polish | Codex / ChatGPT Work, Copilot local checks | **Planned** |
+| **RM5** | Performance, reusable authoring, F9 controls and visual/audio polish | Codex / ChatGPT Work, Copilot local checks | **Awaiting Validation** |
 
 **State vocabulary:** Planned → In Progress → Implemented → Awaiting Validation → Accepted. An implementation commit or a headless compile is not visual acceptance. **Do not automatically start another RM phase.** If the user authorizes the full RM0–RM4 feature as one job, complete only that explicitly scoped job; otherwise implement the selected phase and stop.
 
@@ -226,6 +226,14 @@ Authorized as one job after pushing RM0/RM1. Implemented:
 - **Performance:** Profile idle, walking, scanning, out-of-range, hide/disable/reactivate and two robot instances. Verify GPU transparent overdraw from cone and shadow costs from large models. If using throttles/LOD, record actual distance thresholds and avoid scan update work while inactive. Optional audio must likewise sleep when disabled.
 - **Pass:** F9 edits produce predictable results without fighting current controls; look and sound are convincing in daytime, fog and rain; settings reset; base scene works for a second robot with a modified master; CPU/GPU measurements are recorded as **measured or deferred**, not guessed.
 - **Assistant:** Codex for targeted tuning/integration; Copilot for repeatable local build and profiler checks; Regular Chat for reviewing art direction and documentation.
+
+### RM5 implementation handoff — 2026-10-26
+
+Implemented the existing F9 panel's robot category, explicit scale Apply, patrol/beam/sensor edits, force scan, reset and event-only status. Beam defaults now opacity 0.30 / brightness 2.0 / contrast 1.5, with stronger baseline/grazing-angle visibility and no stacked cone/light. More upright default rig (3.7m stance, 7.6m hips). Original quiet synthesized/cached spatial footstep and active-scan servo cues; explicit shutdown and independent audio toggle. Shared gait publishes one pair-landing event; no extra limb update loops. Runtime config update APIs preserve route/candidates without changing saved masters. See Robot_001/README.md and DEBUG/EnvironmentTuning/README.md.
+
+The same authorized job adds seeded broad/detail cave geometry and an organic shared-rim terrain apron under WORLD/Content/Caves; that is separate from entity ownership. No folder relocation.
+
+Source/resource/binding checks and geometry arithmetic performed. No Godot/.NET executable available: **build, visual/audio acceptance, UI reset/scale, one/two-instance runtime and actual CPU/GPU profiling are deferred**. No performance measurements claimed. Owner should briefly check F5/F6/F9, walking/scanning/offscreen/disable/reactivation, cone through fog/foliage and cave entrance/floor/seams. One commit covers this authorized job. No later feature work is implied.
 
 ## 9. Recommended first milestone and simplifications
 

@@ -17,6 +17,7 @@ public sealed class MechanicalLegs
     public float Bob { get; set; }
     public float PitchDegrees { get; set; }
     public float SettleSeconds { get; set; }
+    public event System.Action? FootPlanted;
     public bool IsSettling => _settle > 0;
     // Optional world-space foot placement correction, called only when selecting a target.
     public System.Func<Vector3, Vector3>? ResolveFootTarget { get; set; }
@@ -64,6 +65,7 @@ public sealed class MechanicalLegs
         float weight = settling ? _settle / Mathf.Max(0.01f, SettleSeconds) : 1;
         _body.Position = Vector3.Up * (_height + Mathf.Sin(_phase * Mathf.Tau * 2) * Bob * weight);
         _body.Rotation = new Vector3(Mathf.DegToRad(PitchDegrees) * Mathf.Sin(_phase * Mathf.Tau) * weight, 0, 0);
+        bool planted = false;
         float stance = Mathf.Clamp(StanceFraction, 0.5f, 0.9f);
         for (int i = 0; i < 4; i++)
         {
@@ -86,7 +88,7 @@ public sealed class MechanicalLegs
             }
             else
             {
-                if (_swinging[i]) _planted[i] = _to[i];
+                if (_swinging[i]) { _planted[i] = _to[i]; planted = true; }
                 // Preview uses a treadmill stance; real locomotion leaves feet planted in world space.
                 if (preview) _planted[i] = _visual.ToGlobal(_anchors[i] + Vector3.Forward * StrideLength * (0.5f - phase / stance));
             }
@@ -94,6 +96,7 @@ public sealed class MechanicalLegs
             _swinging[i] = swing;
             Solve(i, _planted[i]);
         }
+        if (planted) FootPlanted?.Invoke();
     }
 
     // =========================================================

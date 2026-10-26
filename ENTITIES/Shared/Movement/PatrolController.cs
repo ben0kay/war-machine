@@ -45,6 +45,11 @@ public partial class PatrolController : Node
     }
 
     // =========================================================
+    // UI changes update the isolated motion settings without resetting the route or dwell timer.
+    public void ApplySettings(PatrolSettings settings)
+    { if (_initialized) _settings = (PatrolSettings)settings.Duplicate(true); }
+
+    // =========================================================
     // Start is idempotent; it never silently resets an already-running route.
     public void StartPatrol()
     {

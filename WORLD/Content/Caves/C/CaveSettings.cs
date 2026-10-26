@@ -3,13 +3,26 @@ using Godot;
 [GlobalClass]
 public partial class CaveSettings : Resource
 {
+    [ExportGroup("Layout")]
     [Export] public Vector2 SpawnOffset { get; set; } = new(48, -28);
     [Export] public float Length { get; set; } = 90;
     [Export] public float Width { get; set; } = 3.5f;
     [Export] public float Height { get; set; } = 4.8f;
     [Export] public float Bend { get; set; } = 11;
     [Export] public float HeightVariation { get; set; } = 3;
-    [Export] public int Sections { get; set; } = 48;
+    [Export] public int Sections { get; set; } = 72;
+    [ExportGroup("Seeded organic shape")]
+    [Export] public int Seed { get; set; } = 7131;
+    [Export] public float ShapeFrequency { get; set; } = 0.055f;
+    [Export] public float RockFrequency { get; set; } = 0.65f;
+    [Export(PropertyHint.Range, "0,0.4,0.01")] public float WidthNoise { get; set; } = 0.24f;
+    [Export(PropertyHint.Range, "0,0.4,0.01")] public float HeightNoise { get; set; } = 0.28f;
+    [Export] public float WallRelief { get; set; } = 0.35f;
+    [Export] public float FloorRelief { get; set; } = 0.1f;
+    [Export(PropertyHint.Range, "12,40,1")] public int ArchSegments { get; set; } = 24;
+    [Export] public float EntranceBlendRadius { get; set; } = 14;
+    [Export] public float RidgeFeather { get; set; } = 32;
+    [ExportGroup("Lighting")]
     [Export] public float LightEnergy { get; set; } = 2;
     [Export] public Color LightColor { get; set; } = new(0.35f, 0.65f, 1);
 }

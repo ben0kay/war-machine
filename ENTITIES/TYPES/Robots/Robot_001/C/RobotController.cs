@@ -8,6 +8,7 @@ public partial class RobotController : EntityCore
     public Node3D HeadPivot { get; private set; } = null!;
     public Node3D SensorSocket { get; private set; } = null!;
     private MechanicalLegs? _legs;
+    private RobotAudio _audio = null!;
     private VisibleOnScreenNotifier3D _visibility = null!;
     public event System.Action<string>? StageChanged;
     public string Stage { get; private set; } = "Idle";
@@ -16,7 +17,7 @@ public partial class RobotController : EntityCore
     private ScanSensor _sensor = null!;
     private ScanBeam _beam = null!;
     private Timer _stageTimer = null!;
-    private bool _encounter, _hiddenWasActive;
+    private bool _encounter, _hiddenWasActive, _lastAnimateLegs = true;
     private float _scanElapsed;
     private float _motionSpeed;
     private bool _preview, _relevant = true, _built;
@@ -51,6 +52,8 @@ public partial class RobotController : EntityCore
                 StrideLength = s.StrideLength, CyclesPerSecond = s.GaitSpeed, Lift = s.LegLift,
                 StanceFraction = s.StanceFraction, Bob = s.BodyBob, PitchDegrees = s.BodyPitchDegrees, SettleSeconds = s.SettleSeconds
             };
+            _audio = new RobotAudio(this);
+            _audio.Configure(s.AudioEnabled, s.AudioVolumeDb);
             var collision = GetNode<CollisionShape3D>("CollisionShape3D");
             float scale = Mathf.Max(0.25f, s.ModelScale);
             float height = Mathf.Max(2, s.HipHeight + s.BodySize.Y + 2) * scale;
@@ -63,9 +66,9 @@ public partial class RobotController : EntityCore
             _beam = GD.Load<PackedScene>("res://ENTITIES/TYPES/Robots/Shared/Scanning/ScanBeam.tscn").Instantiate<ScanBeam>();
             SensorSocket.AddChild(_beam);
             _beam.Scale = Vector3.One / Mathf.Max(0.001f, SensorSocket.GlobalBasis.X.Length());
-            _beam.Configure(s.Sensor.Range, s.Sensor.FullAngleDegrees, s.SensorColor, s.BeamOpacity, s.BeamBrightness, s.LineSpeed);
+            _beam.Configure(s.Sensor.Range, s.Sensor.FullAngleDegrees, s.SensorColor, s.BeamOpacity, s.BeamBrightness, s.LineSpeed, s.BandContrast);
             _stageTimer = new Timer { Name = "EncounterStage", OneShot = true }; AddChild(_stageTimer);
-            _preview = s.PreviewWalking; _built = true;
+            _preview = s.PreviewWalking; _lastAnimateLegs = s.AnimateLegs; _built = true;
         }
         _visibility.ScreenEntered += OnScreenEntered; _visibility.ScreenExited += OnScreenExited;
         VisibilityChanged += OnVisibilityChanged;
@@ -74,6 +77,7 @@ public partial class RobotController : EntityCore
         _patrol.Arrived += OnArrived;
         _patrol.ReadyToDepart += BeginScan;
         _stageTimer.Timeout += OnStageTimeout;
+        _legs!.FootPlanted += OnFootPlanted;
         base._Ready();
     }
 
@@ -89,6 +93,54 @@ public partial class RobotController : EntityCore
         _encounter = true;
         if (IsActive && RuntimeRobotSettings.EncounterEnabled) _patrol.StartPatrol();
     }
+
+    // =========================================================
+    // Inspector/F9 updates are event-driven; no saved master is mutated and no route is restarted.
+    public void ApplyRuntimeSettings()
+    {
+        var s = RuntimeRobotSettings;
+        _patrol.ApplySettings(s.Patrol); _sensor.ApplySettings(s.Sensor);
+        if (IsActive && Stage == "Scanning")
+        {
+            _sensor.StartScan();
+            _stageTimer.Start(Mathf.Max(0.01f, s.ScanSeconds - _scanElapsed));
+        }
+        _beam.Configure(s.Sensor.Range, s.Sensor.FullAngleDegrees, s.SensorColor, s.BeamOpacity, s.BeamBrightness, s.LineSpeed, s.BandContrast);
+        _beam.SetScanning(IsActive && Stage == "Scanning" && s.BeamEnabled);
+        _audio.Configure(s.AudioEnabled, s.AudioVolumeDb);
+        _audio.Scan(IsActive && _relevant && Stage == "Scanning" && s.BeamEnabled);
+        _legs!.StrideLength = s.StrideLength; _legs.CyclesPerSecond = s.GaitSpeed;
+        _legs.Lift = s.LegLift; _legs.StanceFraction = s.StanceFraction;
+        if (_lastAnimateLegs != s.AnimateLegs && VisualRoot.IsInsideTree()) _legs.ResetPose();
+        _lastAnimateLegs = s.AnimateLegs;
+        RefreshProcessing();
+    }
+
+    // =========================================================
+    // Scale is staged behind an Apply button so dragging a slider never repeatedly rebuilds/settles art.
+    public void ApplyModelScale()
+    {
+        bool active = IsActive; if (active) Deactivate();
+        float scale = Mathf.Clamp(RuntimeRobotSettings.ModelScale, 0.25f, 4);
+        VisualRoot.Scale = Vector3.One * scale;
+        _beam.Scale = Vector3.One / Mathf.Max(0.001f, SensorSocket.GlobalBasis.X.Length());
+        var collision = GetNode<CollisionShape3D>("CollisionShape3D");
+        float height = Mathf.Max(2, RuntimeRobotSettings.HipHeight + RuntimeRobotSettings.BodySize.Y + 2) * scale;
+        collision.Shape = new CapsuleShape3D { Radius = 1.8f * scale, Height = Mathf.Max(height, 3.6f * scale) };
+        collision.Position = Vector3.Up * height * 0.5f;
+        _visibility.Aabb = new Aabb(new Vector3(-7, 0, -7) * scale, new Vector3(14, 13, 14) * scale);
+        if (active) Activate(); else _legs?.ResetPose();
+    }
+
+    // =========================================================
+    // Debug scan pauses the current route without resetting its waypoint; repeated requests are harmless.
+    public void ForceScan()
+    { if (IsActive && _encounter && Stage != "Scanning" && Stage != "Recovering") BeginScan(); }
+
+    // =========================================================
+    // Landings wake a one-shot spatial sound only while art is active/relevant.
+    private void OnFootPlanted()
+    { if (IsActive && _relevant && RuntimeRobotSettings.AnimateLegs) _audio.Step(); }
 
     // =========================================================
     // Nonvisual candidates are explicitly registered, independently of beam visibility.
@@ -120,7 +172,7 @@ public partial class RobotController : EntityCore
     public void SetVisualRelevant(bool relevant)
     {
         if (relevant && !_relevant && IsActive && VisualRoot.IsInsideTree()) _legs?.ResetPose();
-        _relevant = relevant; RefreshProcessing();
+        _relevant = relevant; _audio.Scan(relevant && IsActive && Stage == "Scanning" && RuntimeRobotSettings.BeamEnabled); RefreshProcessing();
     }
 
     // =========================================================
@@ -136,7 +188,7 @@ public partial class RobotController : EntityCore
     public override void _Process(double delta)
     {
         float dt = (float)delta;
-        if (_relevant && IsVisibleInTree() && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)))
+        if (RuntimeRobotSettings.AnimateLegs && _relevant && IsVisibleInTree() && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)))
             _legs?.Tick(dt, _preview ? 1 : _motionSpeed / 2, _preview);
         if (Stage == "Scanning")
         {
@@ -168,7 +220,7 @@ public partial class RobotController : EntityCore
         _patrol.PausePatrol(); _scanElapsed = 0;
         SetHeadYaw(-RuntimeRobotSettings.SweepDegrees * 0.5f);
         HeadPivot.Rotation = new Vector3(Mathf.DegToRad(RuntimeRobotSettings.ScanPitchDegrees), HeadPivot.Rotation.Y, 0);
-        _beam.SetScanning(true); _sensor.StartScan(); SetStage("Scanning");
+        _beam.SetScanning(RuntimeRobotSettings.BeamEnabled); _sensor.StartScan(); _audio.Scan(_relevant && RuntimeRobotSettings.BeamEnabled); SetStage("Scanning");
         _stageTimer.Start(Mathf.Max(0.1f, RuntimeRobotSettings.ScanSeconds)); RefreshProcessing();
     }
 
@@ -178,7 +230,7 @@ public partial class RobotController : EntityCore
     {
         if (Stage == "Scanning")
         {
-            _beam.SetScanning(false); _sensor.StopScan();
+            _beam.SetScanning(false); _sensor.StopScan(); _audio.Scan(false);
             _recoveryRotation = HeadPivot.Rotation; SetStage("Recovering");
             _stageTimer.Start(Mathf.Max(0.01f, RuntimeRobotSettings.RecoverySeconds));
         }
@@ -215,7 +267,7 @@ public partial class RobotController : EntityCore
     // Hard disable freezes a settled neutral rig immediately and sleeps without a fade callback.
     protected override void OnDeactivated()
     {
-        _stageTimer.Stop(); _beam.SetScanning(false); _sensor.StopScan();
+        _stageTimer.Stop(); _beam.SetScanning(false); _sensor.StopScan(); _audio.Stop();
         if (VisualRoot.IsInsideTree()) _legs?.ResetPose();
         // Interrupted scans restart as a normal departure; there is no stale timer or visible beam.
         if (Stage == "Scanning" || Stage == "Recovering") SetStage("Paused");
@@ -231,7 +283,8 @@ public partial class RobotController : EntityCore
         _patrol.SpeedChanged -= SetMotionSpeed;
         _patrol.WalkingStarted -= OnWalking; _patrol.Arrived -= OnArrived;
         _patrol.ReadyToDepart -= BeginScan; _stageTimer.Timeout -= OnStageTimeout;
-        _stageTimer.Stop(); _beam.SetScanning(false); _sensor.StopScan();
+        _legs!.FootPlanted -= OnFootPlanted;
+        _stageTimer.Stop(); _beam.SetScanning(false); _sensor.StopScan(); _audio.Stop();
         _encounter = false;
     }
 
@@ -255,5 +308,5 @@ public partial class RobotController : EntityCore
     // =========================================================
     // Logical head sweep runs during scans; gait alone is visibility-gated.
     private void RefreshProcessing() => SetProcess(IsActive && (Stage == "Scanning" || Stage == "Recovering"
-        || (_relevant && IsVisibleInTree() && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)))));
+        || (RuntimeRobotSettings.AnimateLegs && _relevant && IsVisibleInTree() && (_preview || _motionSpeed > 0 || (_legs?.IsSettling ?? false)))));
 }

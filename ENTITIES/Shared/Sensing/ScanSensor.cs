@@ -42,6 +42,17 @@ public partial class ScanSensor : Node
     }
 
     // =========================================================
+    // Configuration changes preserve candidates and stop/wake only when scanning was already requested.
+    public void ApplySettings(ScanSensorSettings settings)
+    {
+        if (_timer == null) return;
+        bool resume = _scanning;
+        StopScan(); _settings = (ScanSensorSettings)settings.Duplicate(true);
+        _ray.CollisionMask = _settings.CollisionMask;
+        if (resume) StartScan();
+    }
+
+    // =========================================================
     // Registration may wake an already-requested scan, but does not begin scanning by itself.
     public void RegisterCandidate(Node3D candidate)
     {

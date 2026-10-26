@@ -5,12 +5,14 @@ public partial class WildernessCave : Node3D
 {
     [Export] public CaveSettings Settings { get; set; } = null!;
     private Vector3[] _centers = System.Array.Empty<Vector3>();
+    private float[] _widths = System.Array.Empty<float>(), _heights = System.Array.Empty<float>();
     public Vector3 Entrance { get; private set; }
 
     // =========================================================
     // Build and embed once after saved terrain loads. Runtime maps only; no region saves or frame callbacks.
     public void Initialize(Node3D terrain, WorldConfig world)
     {
+        using var noise = new CaveShapeNoise(Settings);
         var data = terrain.Get("data").AsGodotObject();
         Vector2 origin = world.SpawnXZ + Settings.SpawnOffset;
         int sections = Mathf.Clamp(Settings.Sections, 16, 96);
@@ -18,8 +20,9 @@ public partial class WildernessCave : Node3D
         for (int i = 0; i <= sections; i++)
         {
             float t = (float)i / sections;
-            float x = origin.X + Mathf.Sin(t * Mathf.Tau * 1.1f) * Settings.Bend;
             float z = origin.Y - t * Settings.Length;
+            float x = origin.X + Mathf.Sin(t * Mathf.Tau * 1.1f) * Settings.Bend
+                + noise.Broad(new Vector3(origin.X, 0, z)) * Settings.Bend * 0.3f * Mathf.SmoothStep(0, 0.15f, t);
             float h = data.Call("get_height", new Vector3(x, 0, z)).AsSingle();
             if (!float.IsFinite(h)) { GD.PushError("Cave path outside saved terrain."); return; }
             highest = Mathf.Max(highest, h); centers[i] = new Vector3(x, h, z);
@@ -32,27 +35,40 @@ public partial class WildernessCave : Node3D
             float rise = Mathf.SmoothStep(0, 0.35f, t);
             pos.Y = Mathf.Lerp(entryHeight + 0.06f, highest + 0.5f, rise)
                 + (1 - Mathf.Cos(t * Mathf.Tau * 1.5f)) * 0.5f * Settings.HeightVariation;
-            pos.Y = Mathf.Max(pos.Y, centers[i].Y + 0.06f);
+            pos.Y = Mathf.Max(pos.Y, centers[i].Y + 0.06f)
+                + noise.Broad(pos + Vector3.Right * 23) * Mathf.Clamp(Settings.FloorRelief, 0, 0.2f);
             centers[i] = pos;
         }
         _centers = centers;
+        _widths = new float[sections + 1]; _heights = new float[sections + 1];
         Entrance = centers[0];
-        EmbedInTerrain(terrain, data, centers);
         var material = (Material)GD.Load<Material>("res://WORLD/Content/Rocks/Configuration/StoneMaterial.tres").Duplicate();
         using var inside = new ContentMeshBuilder(material);
-        // Flat floor plus arched roof: winding without abrupt stair steps.
-        Vector2[] profile = { new(-1, 0), new(1, 0), new(1, 0.5f), new(0.7f, 0.86f), new(0, 1), new(-0.7f, 0.86f), new(-1, 0.5f) };
+        int arch = Mathf.Clamp(Settings.ArchSegments, 12, 40);
+        var profile = new Vector2[arch + 4];
+        profile[0] = new Vector2(-1, 0); profile[1] = new Vector2(1, 0);
+        for (int j = 0; j <= arch; j++)
+        {
+            float angle = (float)j / arch * Mathf.Pi;
+            profile[j + 2] = new Vector2(Mathf.Cos(angle), 0.22f + 0.78f * Mathf.Sin(angle));
+        }
+        profile[^1] = new Vector2(-1, 0.12f);
         var rings = new Vector3[sections + 1, profile.Length];
         for (int i = 0; i <= sections; i++)
         {
             Vector3 tangent = centers[Mathf.Min(sections, i + 1)] - centers[Mathf.Max(0, i - 1)]; tangent.Y = 0;
             var right = tangent.Normalized().Cross(Vector3.Up);
+            _widths[i] = noise.Width(centers[i]); _heights[i] = noise.Height(centers[i]);
             for (int j = 0; j < profile.Length; j++)
             {
-                rings[i, j] = centers[i] + right * profile[j].X * Settings.Width + Vector3.Up * profile[j].Y * Settings.Height;
-
+                Vector2 p = profile[j];
+                Vector3 point = centers[i] + right * p.X * _widths[i] + Vector3.Up * p.Y * _heights[i];
+                float relief = noise.Detail(point) * Mathf.Clamp(Settings.WallRelief, 0, 0.6f) * Mathf.SmoothStep(0, 0.3f, p.Y);
+                rings[i, j] = point + (right * p.X + Vector3.Up * p.Y).Normalized() * relief;
             }
         }
+        // The outer terrain and entrance use this exact cached noisy rim, never independent random offsets.
+        EmbedInTerrain(terrain, data, centers, noise);
         for (int i = 0; i < sections; i++) for (int j = 0; j < profile.Length; j++)
         {
             int next = (j + 1) % profile.Length;
@@ -64,43 +80,7 @@ public partial class WildernessCave : Node3D
         for (int j = 1; j < profile.Length - 1; j++)
             Inward(inside, rings[sections, 0], rings[sections, j], rings[sections, j + 1], centers[sections - 1] + Vector3.Up * 2);
         AddSolid("Tunnel", inside.Finish());
-        // Seal the full mouth-to-heightfield gap, including the space above the tunnel roof.
-        using (var collar = new ContentMeshBuilder(material))
-        {
-            for (int section = 0; section < Mathf.Min(5, sections); section++)
-            {
-                var outsideA = new Vector3[profile.Length]; var outsideB = new Vector3[profile.Length];
-                for (int side = 0; side < profile.Length; side++)
-                {
-                    outsideA[side] = CollarEdge(data, centers, rings, section, side, profile[side]);
-                    outsideB[side] = CollarEdge(data, centers, rings, section + 1, side, profile[side]);
-                }
-                for (int side = 0; side < profile.Length; side++)
-                {
-                    int next = (side + 1) % profile.Length;
-                    if (section == 0)
-                    {
-                        collar.Face(rings[0, side], outsideA[side], rings[0, next], Colors.Gray);
-                        collar.Face(rings[0, next], outsideA[side], outsideA[next], Colors.Gray);
-                    }
-                    collar.Face(outsideA[side], outsideB[side], outsideA[next], Colors.Gray);
-                    collar.Face(outsideA[next], outsideB[side], outsideB[next], Colors.Gray);
-                }
-            }
-            AddSolid("EntranceRockCollar", collar.Finish());
-        }
-        var random = new RandomNumberGenerator { Seed = 7131 };
-        var rockSettings = new ContentScatterSettings { Size = 1.6f, PrimaryColor = Colors.Gray, AccentColor = Colors.DarkGray };
-        for (int i = 0; i < 6; i++)
-        {
-            var rock = RockGenerator.Create(rockSettings, random, material);
-            var portal = new Node3D { Position = Entrance + new Vector3(i < 3 ? -Settings.Width - 0.8f : Settings.Width + 0.8f, (i % 3) * 1.7f, -0.8f) };
-            AddChild(portal);
-            var body = new StaticBody3D(); portal.AddChild(body);
-            body.AddChild(new MeshInstance3D { Mesh = rock });
-            var shape = rock.CreateTrimeshShape(); shape.BackfaceCollision = true;
-            body.AddChild(new CollisionShape3D { Shape = shape });
-        }
+        BuildEntrance(data, centers, rings, profile, material, noise);
         for (int i = sections / 4; i < sections; i += sections / 4)
         {
             var crystal = new MeshInstance3D { Position = centers[i] + new Vector3(Settings.Width * 0.65f, 0.7f, 0),
@@ -117,31 +97,79 @@ public partial class WildernessCave : Node3D
     }
 
     // =========================================================
-    // Outer collar follows real height-map pixels even where the mouth's hole hides that surface.
-    private Vector3 CollarEdge(GodotObject data, Vector3[] centers, Vector3[,] rings, int section, int side, Vector2 profile)
+    // A curved noisy apron spans the mouth-to-heightfield boundary; no long extruded rock box.
+    private void BuildEntrance(GodotObject data, Vector3[] centers, Vector3[,] rings, Vector2[] profile,
+        Material material, CaveShapeNoise noise)
     {
-        Vector3 offset = rings[section, side] - centers[section]; offset.Y = 0;
-        if (offset.LengthSquared() > 0.001f) offset = offset.Normalized() * (Settings.Width + 8f);
-        var pos = centers[section] + offset;
-        float height = data.Call("get_pixel", 0, pos).AsColor().R;
-        if (!float.IsFinite(height)) height = centers[section].Y + Settings.Height + 6;
-        pos.Y = profile.Y <= 0 ? centers[section].Y - 1f
-            : Mathf.Max(height + 0.3f, rings[section, side].Y + 1.8f);
-        return pos;
+        const int bands = 8;
+        int count = profile.Length;
+        float radius = Mathf.Max(Settings.Width * 2.5f + 3, Settings.EntranceBlendRadius);
+        Vector3 forward = centers[0] - centers[1]; forward.Y = 0; forward = forward.Normalized();
+        Vector3 right = Vector3.Up.Cross(forward);
+        var surface = new Vector3[bands + 1, count];
+        for (int j = 0; j < count; j++)
+        {
+            Vector2 p = profile[j];
+            // Upper arch wraps behind the mouth into the hillside; floor apron extends towards the approach.
+            float edgeRadius = radius * (1 + noise.Broad(centers[0] + new Vector3(p.X * 9, p.Y * 7, 13)) * 0.12f);
+            float behind = p.Y > 0 ? Mathf.Sqrt(Mathf.Max(0, 1 - p.X * p.X)) * edgeRadius : -3;
+            Vector3 edge = centers[0] + right * p.X * edgeRadius - forward * behind;
+            float terrainHeight = data.Call("get_pixel", 0, edge).AsColor().R;
+            if (!float.IsFinite(terrainHeight)) terrainHeight = centers[0].Y;
+            edge.Y = terrainHeight - 0.15f;
+            for (int band = 0; band <= bands; band++)
+            {
+                float t = (float)band / bands;
+                Vector3 point = rings[0, j].Lerp(edge, t);
+                float mask = Mathf.Sin(t * Mathf.Pi) * Mathf.SmoothStep(0, 0.25f, p.Y);
+                point += Vector3.Up * noise.Detail(point) * 0.6f * mask;
+                surface[band, j] = point;
+            }
+        }
+        using var mesh = new ContentMeshBuilder(material);
+        Vector3 center = Entrance + Vector3.Up * Settings.Height * 0.4f;
+        for (int band = 0; band < bands; band++) for (int j = 0; j < count; j++)
+        {
+            int next = (j + 1) % count;
+            if (j == 0)
+            {
+                // The approach floor faces the walker rather than the underside of the cliff.
+                Inward(mesh, surface[band, j], surface[band + 1, j], surface[band, next], center);
+                Inward(mesh, surface[band, next], surface[band + 1, j], surface[band + 1, next], center);
+            }
+            else
+            {
+                mesh.RockFace(surface[band, j], surface[band + 1, j], surface[band, next], Colors.Gray, center);
+                mesh.RockFace(surface[band, next], surface[band + 1, j], surface[band + 1, next], Colors.Gray, center);
+            }
+        }
+        // Bury a short edge skirt in the heightfield so interpolation cannot expose a thin daylight seam.
+        for (int j = 0; j < count; j++)
+        {
+            int next = (j + 1) % count;
+            Vector3 a = surface[bands, j], b = surface[bands, next];
+            mesh.Face(a, b, a + Vector3.Down * 0.8f, Colors.Gray);
+            mesh.Face(b, b + Vector3.Down * 0.8f, a + Vector3.Down * 0.8f, Colors.Gray);
+        }
+        AddSolid("OrganicEntrance", mesh.Finish());
     }
 
     // =========================================================
     // One bounded runtime authoring pass raises the actual heightfield over the passage; source regions stay untouched.
-    private void EmbedInTerrain(Node3D terrain, GodotObject data, Vector3[] path)
+    private void EmbedInTerrain(Node3D terrain, GodotObject data, Vector3[] path, CaveShapeNoise noise)
     {
-        float feather = 32;
+        float feather = Mathf.Clamp(Settings.RidgeFeather, 16, 64);
+        float maxWidth = Mathf.Max(2, Settings.Width) * (1 + Mathf.Clamp(Settings.WidthNoise, 0, 0.4f)) + Mathf.Clamp(Settings.WallRelief, 0, 0.6f);
+        float maxHeight = Mathf.Max(3, Settings.Height) * (1 + Mathf.Clamp(Settings.HeightNoise, 0, 0.4f)) + Mathf.Clamp(Settings.WallRelief, 0, 0.6f);
         float minX = float.MaxValue, maxX = float.MinValue;
         foreach (var point in path) { minX = Mathf.Min(minX, point.X); maxX = Mathf.Max(maxX, point.X); }
         int regionSize = terrain.Get("region_size").AsInt32();
         float spacing = terrain.Get("vertex_spacing").AsSingle();
+        Vector3 entryDirection = path[1] - path[0]; entryDirection.Y = 0; entryDirection = entryDirection.Normalized();
+        Vector3 entryRight = entryDirection.Cross(Vector3.Up);
         var regions = new System.Collections.Generic.Dictionary<Vector2I, (Image heights, Image control)>();
-        for (int z = Mathf.FloorToInt((path[^1].Z - feather) / spacing); z <= Mathf.CeilToInt((path[0].Z + 2) / spacing); z++)
-        for (int x = Mathf.FloorToInt((minX - feather - Settings.Width) / spacing); x <= Mathf.CeilToInt((maxX + feather + Settings.Width) / spacing); x++)
+        for (int z = Mathf.FloorToInt((path[^1].Z - feather) / spacing); z <= Mathf.CeilToInt((path[0].Z + maxWidth + 3) / spacing); z++)
+        for (int x = Mathf.FloorToInt((minX - feather - maxWidth) / spacing); x <= Mathf.CeilToInt((maxX + feather + maxWidth) / spacing); x++)
         {
             var pos = new Vector3(x * spacing, 0, z * spacing);
             float distance = float.MaxValue; Vector3 nearest = path[0];
@@ -153,7 +181,7 @@ public partial class WildernessCave : Node3D
                 float d = new Vector2(pos.X - point.X, pos.Z - point.Z).Length();
                 if (d < distance) { distance = d; nearest = point; }
             }
-            if (distance > Settings.Width + feather) continue;
+            if (distance > maxWidth + feather) continue;
             var key = new Vector2I(Mathf.FloorToInt((float)x / regionSize), Mathf.FloorToInt((float)z / regionSize));
             if (!regions.TryGetValue(key, out var maps))
             {
@@ -164,12 +192,15 @@ public partial class WildernessCave : Node3D
             int px = Mathf.PosMod(x, regionSize), pz = Mathf.PosMod(z, regionSize);
             float old = maps.heights.GetPixel(px, pz).R;
             float depth = path[0].Z - pos.Z;
-            float front = Mathf.SmoothStep(0, 2.5f, depth);
-            float blend = (1 - Mathf.SmoothStep(Settings.Width + 5, Settings.Width + feather, distance)) * front;
-            float ridge = nearest.Y + Settings.Height + 5 + Mathf.Sin(pos.X * 0.11f + pos.Z * 0.07f) * 1.2f;
+            float front = Mathf.SmoothStep(0, 5, depth);
+            float organicDistance = distance + noise.Broad(pos) * 3;
+            float blend = (1 - Mathf.SmoothStep(maxWidth + 5, maxWidth + feather, organicDistance)) * front;
+            float ridge = nearest.Y + maxHeight + 5 + noise.Broad(pos + Vector3.Up * 47) * 2;
             maps.heights.SetPixel(px, pz, new Color(Mathf.Lerp(old, Mathf.Max(old, ridge), blend), 0, 0));
             // Hole only at the mouth, allowing passage through the rising cliff; deeper roof is buried.
-            if (depth >= 0 && depth < 3.5f && distance < Settings.Width + 0.8f)
+            Vector3 fromEntry = pos - path[0]; fromEntry.Y = 0;
+            float entryDepth = fromEntry.Dot(entryDirection);
+            if (entryDepth >= -0.6f && entryDepth < 5.5f && Mathf.Abs(fromEntry.Dot(entryRight)) < maxWidth + 0.5f)
             {
                 var control = maps.control.GetPixel(px, pz);
                 int bits = System.BitConverter.SingleToInt32Bits(control.R) | 4;
@@ -187,8 +218,8 @@ public partial class WildernessCave : Node3D
         for (int i = 1; i < _centers.Length - 1; i++)
         {
             var point = _centers[i];
-            if (position.Y >= point.Y && position.Y < point.Y + Settings.Height
-                && new Vector2(position.X - point.X, position.Z - point.Z).Length() < Settings.Width - 0.2f) return true;
+            if (position.Y >= point.Y && position.Y < point.Y + _heights[i] * 0.9f
+                && new Vector2(position.X - point.X, position.Z - point.Z).Length() < _widths[i] - 0.3f) return true;
         }
         return false;
     }

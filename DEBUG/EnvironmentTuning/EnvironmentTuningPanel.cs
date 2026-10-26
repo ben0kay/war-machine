@@ -14,6 +14,10 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     private readonly List<Action> _refresh = new();
     private readonly List<Action> _reset = new();
     private bool _syncing;
+    private VBoxContainer _content = null!;
+    private RobotController? _robot;
+    private Label? _robotStatus;
+    private Action? _resetRobot;
     private Input.MouseModeEnum _previousMouse;
 
     // =========================================================
@@ -29,7 +33,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         var outer = new VBoxContainer(); frame.AddChild(outer);
         outer.AddChild(new Label { Text = "Environment tuning · F9 close" });
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(430, 470), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
-        outer.AddChild(scroll); var content = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; scroll.AddChild(content);
+        outer.AddChild(scroll); var content = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; scroll.AddChild(content); _content = content;
         Category(content, "Fog / Atmosphere");
         Toggle(_sky.Settings, "FogEnabled", "Enabled", _sky.ApplyMist);
         Slider(_sky.Settings, "FogDensity", "Density", 0, 0.1, 0.0001, _sky.ApplyMist);
@@ -98,8 +102,63 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         outer.AddChild(new Label { Text = "* Pending until Apply. Terrain is never modified." });
         var actions = new HBoxContainer(); outer.AddChild(actions);
         Button(actions, "Apply / Rebuild vegetation", Rebuild);
-        Button(actions, "Reset All", () => { foreach (var reset in _reset) reset(); Refresh(); _sky.ApplyTime(); _sky.ApplyCycle(); _sky.ApplyMist(); Rebuild(); });
+        Button(actions, "Reset All", () => { foreach (var reset in _reset) reset(); Refresh(); _sky.ApplyTime(); _sky.ApplyCycle(); _sky.ApplyMist(); Rebuild(); _resetRobot?.Invoke(); });
+        CallDeferred(nameof(AddRobotControls));
         _panel.Hide(); SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // All scene children are ready before deferred bindings access the robot's runtime copy.
+    public void AddRobotControls()
+    {
+        var encounter = GetParent().GetNode<RobotEncounter>("RobotEncounter");
+        _robot = encounter.Robot; var robot = _robot; var s = robot.RuntimeRobotSettings;
+        Category(_content, "Entities / Robot_001");
+        _robotStatus = new Label(); _rows.AddChild(_robotStatus);
+        robot.StageChanged += OnRobotStageChanged;
+        robot.ActiveChanged += OnRobotActiveChanged;
+        Toggle(s, "EncounterEnabled", "Encounter enabled", () => encounter.SetEncounterEnabled(s.EncounterEnabled));
+        Slider(s.Patrol, "Speed", "Patrol speed", 0.2, 6, 0.1, robot.ApplyRuntimeSettings);
+        Slider(s, "ModelScale", "Robot scale *", 0.25, 3, 0.05);
+        Button(_rows, "Apply robot scale", robot.ApplyModelScale);
+        Toggle(s, "AnimateLegs", "Animate legs", robot.ApplyRuntimeSettings);
+        Toggle(s, "BeamEnabled", "Scan beam visible", robot.ApplyRuntimeSettings);
+        Slider(s, "ScanSeconds", "Scan duration (s)", 1, 20, 0.5, robot.ApplyRuntimeSettings);
+        Slider(s.Sensor, "Range", "Cone distance (m)", 5, 80, 1, robot.ApplyRuntimeSettings);
+        Slider(s.Sensor, "FullAngleDegrees", "Full cone angle (°)", 5, 90, 1, robot.ApplyRuntimeSettings);
+        Slider(s, "BeamOpacity", "Beam opacity", 0, 0.8, 0.01, robot.ApplyRuntimeSettings);
+        Slider(s, "BeamBrightness", "Beam brightness", 0, 5, 0.05, robot.ApplyRuntimeSettings);
+        Slider(s, "BandContrast", "Band contrast", 0, 4, 0.05, robot.ApplyRuntimeSettings);
+        Slider(s, "LineSpeed", "Scan line speed", 0, 3, 0.05, robot.ApplyRuntimeSettings);
+        Slider(s, "SweepDegrees", "Head sweep (°)", 10, 120, 1, robot.ApplyRuntimeSettings);
+        Slider(s, "SweepCyclesPerSecond", "Sweep cycles/s", 0.02, 0.5, 0.01, robot.ApplyRuntimeSettings);
+        Toggle(s.Sensor, "Enabled", "Logical sensing", robot.ApplyRuntimeSettings);
+        Toggle(s, "AudioEnabled", "Mechanical sounds", robot.ApplyRuntimeSettings);
+        Slider(s, "AudioVolumeDb", "Sound level (dB)", -40, -6, 1, robot.ApplyRuntimeSettings);
+        Button(_rows, "Force scan", robot.ForceScan);
+        _resetRobot = () => { robot.ApplyRuntimeSettings(); robot.ApplyModelScale(); encounter.SetEncounterEnabled(s.EncounterEnabled); };
+        RefreshRobotStatus();
+    }
+
+    // =========================================================
+    // Hidden UI receives no per-frame status work or redundant label writes.
+    private void OnRobotStageChanged(string stage) { if (_panel.Visible) RefreshRobotStatus(); }
+
+    // =========================================================
+    // Explicit sleep/wake is meaningful status even when the patrol stage itself is unchanged.
+    private void OnRobotActiveChanged(bool active) { if (_panel.Visible) RefreshRobotStatus(); }
+
+    // =========================================================
+    // Refresh on opening or an actual stage event only.
+    private void RefreshRobotStatus()
+    { if (_robotStatus != null && _robot != null) _robotStatus.Text = "Stage: " + (_robot.IsActive ? _robot.Stage : "Dormant / disabled"); }
+
+    // =========================================================
+    // Scene unload cannot retain panel subscriptions through a reusable actor.
+    public override void _ExitTree()
+    {
+        if (_robot == null || !GodotObject.IsInstanceValid(_robot)) return;
+        _robot.StageChanged -= OnRobotStageChanged; _robot.ActiveChanged -= OnRobotActiveChanged;
     }
 
     // =========================================================
@@ -108,7 +167,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     {
         if (input is not InputEventKey key || !key.Pressed || key.Echo || key.Keycode != Key.F9) return;
         bool opening = !_panel.Visible;
-        if (opening) { _previousMouse = Input.MouseMode; _sky.Settings.StartHour = _sky.Sky.Get("current_time").AsSingle(); Refresh(); }
+        if (opening) { _previousMouse = Input.MouseMode; _sky.Settings.StartHour = _sky.Sky.Get("current_time").AsSingle(); Refresh(); RefreshRobotStatus(); }
         _panel.Visible = opening; _explorer.ControlsBlocked = opening;
         _explorer.SetPhysicsProcess(!opening && _explorer.FirstPerson);
         Input.MouseMode = opening ? Input.MouseModeEnum.Visible : _previousMouse;

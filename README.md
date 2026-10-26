@@ -56,7 +56,7 @@ The following are **planned ownership boundaries**, not a list of existing direc
 | `ASSETS/` | Organized source/imported terrain, plants, rocks, cave modules and audio |
 | `SAVE/` | Persistent seeds, authored overrides and later world-state changes |
 | `DEBUG/` | Diagnostic overlays, profiling helpers, quality and distance controls |
-| `ENTITIES/` | Reusable mobile-entity foundation and original robot patrol/scan prototype integrated in TestWorld (RM0–RM4 implemented, awaiting local validation); separate from the environment phases |
+| `ENTITIES/` | Reusable mobile-entity foundation and original robot patrol/scan prototype integrated in TestWorld (RM0–RM5 implemented, awaiting local validation); separate from the environment phases |
 | `UI/`, `FX/` | Shared interface and effects as features require them |
 
 Create folders, subfolders and scripts **when implementing their owning features**, not all at once. Major uppercase folders should have their own README and a central, easy-to-tune configuration resource or master config where useful. Avoid redundant managers, massive scene trees, duplicated settings and tight cross-system coupling.
@@ -78,7 +78,7 @@ Create folders, subfolders and scripts **when implementing their owning features
 
 **[WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md](WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md)**
 
-**[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — separate reusable entity / mechanical patrol-scanner prototype; RM0–RM4 implemented and awaiting local validation, not part of the WE environment phases.
+**[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — separate reusable entity / mechanical patrol-scanner prototype; RM0–RM5 implemented and awaiting local validation, not part of the WE environment phases.
 
 AI workflow: read this README → read CodePreferences → read the owning folder's README and plan → inspect actual scripts/scenes/assets → work only on the explicitly requested phase → validate and update owning docs. Never assume planned features already exist.
 

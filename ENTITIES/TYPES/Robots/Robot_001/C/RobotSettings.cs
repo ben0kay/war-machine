@@ -7,10 +7,10 @@ public partial class RobotSettings : Resource
     [ExportGroup("Art")]
     [Export(PropertyHint.Range, "0.25,4,0.05")] public float ModelScale { get; set; } = 1;
     [Export] public Vector3 BodySize { get; set; } = new(4.6f, 2, 5.6f);
-    [Export] public float HipHeight { get; set; } = 7;
+    [Export] public float HipHeight { get; set; } = 7.6f;
     [Export] public float UpperLegLength { get; set; } = 4.5f;
     [Export] public float LowerLegLength { get; set; } = 4.5f;
-    [Export] public float StanceWidth { get; set; } = 4.5f;
+    [Export] public float StanceWidth { get; set; } = 3.7f;
     [Export] public Color ArmourColor { get; set; } = new(0.075f, 0.095f, 0.11f);
     [Export] public Color JointColor { get; set; } = new(0.19f, 0.22f, 0.24f);
     [Export] public Color SensorColor { get; set; } = new(0.08f, 0.8f, 0.85f);
@@ -35,9 +35,15 @@ public partial class RobotSettings : Resource
     [Export] public float SweepDegrees { get; set; } = 120;
     [Export] public float SweepCyclesPerSecond { get; set; } = 0.16f;
     [Export] public float ScanPitchDegrees { get; set; } = -25;
-    [Export] public float BeamOpacity { get; set; } = 0.12f;
-    [Export] public float BeamBrightness { get; set; } = 1.2f;
+    [Export] public float BeamOpacity { get; set; } = 0.3f;
+    [Export] public float BeamBrightness { get; set; } = 2.0f;
     [Export] public float LineSpeed { get; set; } = 0.8f;
+    [Export] public float BandContrast { get; set; } = 1.5f;
+    [Export] public bool BeamEnabled { get; set; } = true;
+    [Export] public bool AnimateLegs { get; set; } = true;
+    [ExportGroup("Audio")]
+    [Export] public bool AudioEnabled { get; set; } = true;
+    [Export] public float AudioVolumeDb { get; set; } = -18;
     [ExportGroup("Relevance")]
     [Export] public bool EncounterEnabled { get; set; } = true;
     [Export] public float WakeDistance { get; set; } = 180;
