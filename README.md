@@ -56,7 +56,7 @@ The following are **planned ownership boundaries**, not a list of existing direc
 | `ASSETS/` | Organized source/imported terrain, plants, rocks, cave modules and audio |
 | `SAVE/` | Persistent seeds, authored overrides and later world-state changes |
 | `DEBUG/` | Diagnostic overlays, profiling helpers, quality and distance controls |
-| `ENTITIES/` | Reserved for future machines, NPCs and world interactions; **not initial scope** |
+| `ENTITIES/` | Planned reusable mobile-entity foundation and original robot patrol/scan prototype; separate from the environment phases |
 | `UI/`, `FX/` | Shared interface and effects as features require them |
 
 Create folders, subfolders and scripts **when implementing their owning features**, not all at once. Major uppercase folders should have their own README and a central, easy-to-tune configuration resource or master config where useful. Avoid redundant managers, massive scene trees, duplicated settings and tight cross-system coupling.
@@ -77,6 +77,8 @@ Create folders, subfolders and scripts **when implementing their owning features
 **Implementation plans do not belong in this root README.** The active environment-first plan, its phase status, dependencies and test criteria live here:
 
 **[WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md](WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md)**
+
+**[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — separate planned reusable entity / mechanical patrol-scanner prototype, not part of the WE environment phases.
 
 AI workflow: read this README → read CodePreferences → read the owning folder's README and plan → inspect actual scripts/scenes/assets → work only on the explicitly requested phase → validate and update owning docs. Never assume planned features already exist.
 
