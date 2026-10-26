@@ -54,7 +54,7 @@ public partial class ContentScatter : Node3D
                 material = _wind; ApplyWind();
             }
             else material = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < (Settings.Kind == ContentScatterSettings.ContentKind.Rocks ? 9 : 3); i++)
             {
                 var random = new RandomNumberGenerator { Seed = Seed(Settings.Seed, i, 41) };
                 meshes.Add(Settings.Kind switch {

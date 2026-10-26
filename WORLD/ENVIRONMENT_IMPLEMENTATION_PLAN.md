@@ -266,3 +266,7 @@ Relocated WORLD/Vegetation into WORLD/Content/Vegetation. Added category-owned p
 ## Scoped walking / cave preview
 
 Implemented a switchable first-person capsule (F6/top-right button) alongside free flight, with walk/sprint/jump and terrain/cave collision. Added a separate winding, sloped, crystal-lit rock-outcrop cave near spawn using the demo's collidable mesh/light approach. Saved landscape and original demo unchanged. Source/reference checks only; compilation and user runtime acceptance pending because Godot/.NET is unavailable here. Decorative scatter still has no individual collision. This does not mark full cave/world phases accepted.
+
+## Scoped embedding / variation / weather preview
+
+Authorized refinement embeds the cave under a one-time runtime-shaped Terrain3D ridge/entrance hole, removes its exposed outer shell and dresses the opening with rocks. Saved region files remain unchanged. Trees default to 1.5x height; nine rock variants and instance-oriented texture coordinates reduce repetition. Project-owned C#/GDScript bridge integrates weather_atmosphere rain/snow/mist/motes and quality/wind controls into TestWorld/F9, with Sky3D retaining time/sun/fog ownership and inactive weather disabled. Full weather automation, accumulation/audio/lightning/terrain splashes and general shelter remain out of scope. Source/reference checks only; local compile/visual/performance acceptance pending.

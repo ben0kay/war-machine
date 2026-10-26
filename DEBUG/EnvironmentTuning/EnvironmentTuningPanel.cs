@@ -42,6 +42,23 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         Toggle(_sky.Settings, "StartPaused", "Pause time", _sky.ApplyCycle);
         Slider(_sky.Settings, "GrassWindStrength", "Shared wind strength", 0, 2, 0.01, ApplyWind);
         Slider(_sky.Settings, "GrassWindSpeed", "Shared wind speed", 0, 0.15, 0.001, ApplyWind);
+        Slider(_sky.Settings, "WindHeading", "Wind heading (°)", 0, 360, 1, () =>
+        {
+            float angle = Mathf.DegToRad(_sky.Settings.WindHeading);
+            _sky.Settings.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); ApplyWind();
+        });
+        Category(content, "Weather");
+        var weather = world.GetNode<WeatherBridge>("Weather");
+        Toggle(_sky.Settings, "WeatherEnabled", "Weather enabled", weather.ApplySettings);
+        Slider(_sky.Settings, "RainIntensity", "Rain intensity", 0, 1, 0.01, weather.ApplySettings);
+        Slider(_sky.Settings, "SnowIntensity", "Snow intensity", 0, 1, 0.01, weather.ApplySettings);
+        Slider(_sky.Settings, "LocalMistIntensity", "Local mist", 0, 1, 0.01, weather.ApplySettings);
+        Slider(_sky.Settings, "AirborneIntensity", "Drifting motes", 0, 1, 0.01, weather.ApplySettings);
+        Slider(_sky.Settings, "WeatherGusts", "Gusts", 0, 1, 0.01, weather.ApplySettings);
+        Slider(_sky.Settings, "WeatherTurbulence", "Turbulence", 0, 2, 0.01, weather.ApplySettings);
+        Slider(_sky.Settings, "WeatherParticleSize", "Particle size", 0.1, 3, 0.05, weather.ApplySettings);
+        Slider(_sky.Settings, "WeatherFallSpeed", "Fall speed", 0.1, 3, 0.05, weather.ApplySettings);
+        Slider(_sky.Settings, "WeatherQuality", "Quality 0/1/2", 0, 2, 1, weather.ApplySettings);
         Category(content, "Grass");
         Slider(_grass.Settings, "Height", "Height", 0.1, 3, 0.05, _grass.ApplyAppearance);
         Slider(_grass.Settings, "Density", "Density *", 0, 2, 0.05);
@@ -141,6 +158,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     private void ApplyWind()
     {
         _grass.ApplyAppearance(); _trees.ApplyWind();
+        GetParent().GetNode<WeatherBridge>("Weather").ApplySettings();
         foreach (var child in GetParent().GetNode("Content").GetChildren()) if (child is ContentScatter scatter) scatter.ApplyWind();
     }
     // =========================================================

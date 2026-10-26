@@ -19,3 +19,5 @@ F9 exposes tuft length/thickness, LOD/render distances and a tree-shadow toggle 
 ## Distant silhouette correction
 
 Far meshes now retain every branch tier and all six radial branches. Only tuft count/detail reduces; coarser, wider foliage preserves canopy coverage. Branch-local seeds keep branch positions identical across LODs. Default distant mesh is 1,600 triangles (144 tufts plus full branch skeleton), versus 5,920 near. This deliberately spends a little more distant geometry to retain the pine outline. Native LOD still chooses by batch centre, so two trees can differ in detail despite their individual distances; 48m batches limit, but do not eliminate, that approximation. No claim of per-tree LOD. User visual/FPS validation pending.
+
+Default HeightMultiplier is now 1.5, also reflected by TreeMaster and the F9 initial reset value. Placement density/range and mesh budgets are unchanged.

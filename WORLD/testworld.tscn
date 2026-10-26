@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 [ext_resource type="Script" path="res://WORLD/TestWorld.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -22,6 +22,7 @@
 [ext_resource type="Script" path="res://PLAYER/CameraModeButton.cs" id="21"]
 [ext_resource type="Script" path="res://WORLD/Content/Caves/C/WildernessCave.cs" id="22"]
 [ext_resource type="Resource" path="res://WORLD/Content/Caves/Configuration/CaveMaster.tres" id="23"]
+[ext_resource type="Script" path="res://ENVIRONMENT/Weather/WeatherBridge.cs" id="24"]
 [node name="TestWorld" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
@@ -100,3 +101,6 @@ script = ExtResource("21")
 [node name="Cave" type="Node3D" parent="Content"]
 script = ExtResource("22")
 Settings = ExtResource("23")
+
+[node name="Weather" type="Node" parent="."]
+script = ExtResource("24")

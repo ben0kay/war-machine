@@ -31,7 +31,7 @@ DistanceFadeMargin = 8.0
 FarLeafStride = 6
 FarCastShadows = false
 
-HeightMultiplier = 1.0
+HeightMultiplier = 1.5
 TrunkTaper = 0.94
 BranchTierCount = 12
 BranchLengthFalloff = 1.1

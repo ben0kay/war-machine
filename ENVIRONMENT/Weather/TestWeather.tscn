@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://ENVIRONMENT/Weather/TestWeatherController.gd" id="1"]
+[ext_resource type="Script" path="res://addons/weather_atmosphere/components/precipitation_3d.gd" id="2"]
+[ext_resource type="Script" path="res://addons/weather_atmosphere/components/atmosphere_particles_3d.gd" id="3"]
+[node name="WeatherEffects" type="Node3D"]
+script = ExtResource("1")
+manage_environment = false
+duplicate_environment_on_ready = false
+apply_initial_profile_on_ready = false
+quality = 1
+[node name="Precipitation" type="Node3D" parent="."]
+script = ExtResource("2")
+follow_camera_height = true
+[node name="AtmosphereParticles" type="Node3D" parent="."]
+script = ExtResource("3")
+follow_camera_height = true

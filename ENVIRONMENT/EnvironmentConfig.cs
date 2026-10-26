@@ -16,6 +16,18 @@ public partial class EnvironmentConfig : Resource
     [Export(PropertyHint.Range, "0,500,1")] public float FogStart { get; set; } = 0f;
     [Export(PropertyHint.Range, "1,2000,1")] public float FogEnd { get; set; } = 200f;
     [Export(PropertyHint.Range, "0,50,0.1")] public float FogFalloff { get; set; } = 3f;
+    [ExportGroup("Weather Preview")]
+    [Export] public bool WeatherEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float RainIntensity { get; set; }
+    [Export(PropertyHint.Range, "0,1,0.01")] public float SnowIntensity { get; set; }
+    [Export(PropertyHint.Range, "0,1,0.01")] public float LocalMistIntensity { get; set; }
+    [Export(PropertyHint.Range, "0,1,0.01")] public float AirborneIntensity { get; set; }
+    [Export(PropertyHint.Range, "0,1,0.01")] public float WeatherGusts { get; set; } = 0.3f;
+    [Export(PropertyHint.Range, "0,2,0.01")] public float WeatherTurbulence { get; set; } = 0.2f;
+    [Export(PropertyHint.Range, "0,2,1")] public float WeatherQuality { get; set; } = 1;
+    [Export(PropertyHint.Range, "0.1,3,0.05")] public float WeatherParticleSize { get; set; } = 1;
+    [Export(PropertyHint.Range, "0.1,3,0.05")] public float WeatherFallSpeed { get; set; } = 1;
+    [Export(PropertyHint.Range, "0,360,1")] public float WindHeading { get; set; } = 22;
     [ExportGroup("Shared Wind")]
     [Export] public Vector2 WindDirection { get; set; } = new(1, 0.4f);
     [Export] public float GrassWindStrength { get; set; } = 1f;

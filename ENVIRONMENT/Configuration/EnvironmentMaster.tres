@@ -17,3 +17,15 @@ FogDensity = 0.025
 FogStart = 0.0
 FogEnd = 200.0
 FogFalloff = 3.0
+
+WeatherEnabled = true
+RainIntensity = 0.0
+SnowIntensity = 0.0
+LocalMistIntensity = 0.0
+AirborneIntensity = 0.0
+WeatherQuality = 1.0
+WeatherGusts = 0.3
+WeatherTurbulence = 0.2
+WeatherParticleSize = 1.0
+WeatherFallSpeed = 1.0
+WindHeading = 22.0

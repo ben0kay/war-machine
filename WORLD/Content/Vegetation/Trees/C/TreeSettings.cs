@@ -29,7 +29,7 @@ public partial class TreeSettings : Resource
     [Export(PropertyHint.Range, "0.3,2,0.05")] public float NeedleClusterLength { get; set; } = 0.95f;
     [Export(PropertyHint.Range, "0.05,0.5,0.01")] public float NeedleClusterThickness { get; set; } = 0.19f;
     [ExportGroup("Pine Silhouette")]
-    [Export(PropertyHint.Range, "0.5,2,0.05")] public float HeightMultiplier { get; set; } = 1f;
+    [Export(PropertyHint.Range, "0.5,2,0.05")] public float HeightMultiplier { get; set; } = 1.5f;
     [Export(PropertyHint.Range, "0.5,0.99,0.01")] public float TrunkTaper { get; set; } = 0.94f;
     [Export(PropertyHint.Range, "3,24,1")] public int BranchTierCount { get; set; } = 12;
     [Export(PropertyHint.Range, "0.5,3,0.05")] public float BranchLengthFalloff { get; set; } = 1.1f;
