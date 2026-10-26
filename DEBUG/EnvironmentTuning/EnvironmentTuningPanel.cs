@@ -36,6 +36,11 @@ public partial class EnvironmentTuningPanel : CanvasLayer
         Slider(_sky.Settings, "FogStart", "Start (m)", 0, 500, 1, _sky.ApplyMist);
         Slider(_sky.Settings, "FogEnd", "End (m)", 25, 2000, 1, _sky.ApplyMist);
         Slider(_sky.Settings, "FogFalloff", "Falloff", 0, 50, 0.1, _sky.ApplyMist);
+        Category(content, "Ground haze (Forward+)");
+        var haze = world.GetNode<GroundHaze>("GroundHaze");
+        Toggle(_sky.Settings, "GroundHazeEnabled", "Ground haze enabled", haze.ApplySettings);
+        Slider(_sky.Settings, "GroundHazeDensity", "Haze density", 0, 0.3, 0.001, haze.ApplySettings);
+        Slider(_sky.Settings, "GroundHazeHeight", "Layer height (m)", 0.25, 8, 0.05, haze.ApplySettings);
         Category(content, "Sky / Time / Wind");
         Slider(_sky.Settings, "StartHour", "Hour", 0, 24, 0.01, _sky.ApplyTime);
         Slider(_sky.Settings, "DayLengthMinutes", "Day length (minutes)", 1, 1440, 1, _sky.ApplyCycle);

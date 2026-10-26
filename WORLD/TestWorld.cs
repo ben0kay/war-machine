@@ -44,6 +44,7 @@ public partial class TestWorld : Node3D
         ((ExplorationController)explorer).Terrain = terrain;
         terrain.Call("set_camera", explorer.GetNode<Camera3D>("Camera3D"));
         GetNode<WildernessCave>("Content/Cave").Initialize(terrain, Settings);
+        GetNode<GroundHaze>("GroundHaze").Initialize(terrain, (ExplorationController)explorer, GetNode<SkyController>("Environment").Settings, GetNode("Sky3D"), GetNode<WildernessCave>("Content/Cave"));
         GetNode<WeatherBridge>("Weather").Initialize((ExplorationController)explorer, GetNode<SkyController>("Environment").Settings, GetNode<WildernessCave>("Content/Cave"));
         GetNode<TerrainGrass>("Vegetation").Initialize(terrain, (ExplorationController)explorer);
         GetNode<TreePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);

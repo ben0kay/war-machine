@@ -9,3 +9,11 @@ The addon is a useful prototype: layered GPU precipitation, quality budgets, mis
 Cave shelter is checked on explorer movement, with state reapplied only on shelter changes. Local rain/snow/mist/motes are suppressed within the cave. This is a local tunnel test, not a general roof/occlusion solution. Rain/snow outside do not collide individually with arbitrary roofs or terrain. Splash, lightning and audio components are not instantiated yet; snow accumulation and automatic storm/cloud/ground-wetness changes are not included. These need a separate, deliberate integration rather than blindly enabling every demo component.
 
 Initial source/reference checks only; Godot/.NET are unavailable here. Test rain/snow separately and together, wind heading/strength, quality, zero/reactivation, cave shelter and FPS locally. No compiled/runtime/visual acceptance claimed.
+
+## Ground haze (separate from distance fog)
+
+F9 has a Ground haze (Forward+) category: enable, density and layer height. It is OFF by default; try density 0.06 and height 2.5m. This uses native Godot FogVolumes on Sky3D's existing Environment, alongside its untouched distance-fog shader. Volumetric base density is zero: only local terrain-anchored volumes contribute. The prior volumetric enabled/density settings restore when disabling haze. Other Sky3D time/sky/sun/fog settings remain owned by Sky3D.
+
+Nine small box volumes follow nearby terrain in 24m tiles, sampling heights only when crossing a tile boundary. Camera altitude does not raise the layer. Shelter transitions hide the volumes inside the cave. No per-frame C# haze callback; off frees all volumes. This adds native volumetric GPU cost and requires Forward+. Height anchoring is approximate on steep slopes, not a full terrain-conforming fog simulation. Tiles may show height transitions on rough ground. It is distinct from the addon's camera-following Local mist particles, which remain separately adjustable.
+
+Source/resource checks only; Godot/.NET unavailable here, so compilation, shader/renderer compatibility, cave join appearance and haze/FPS checks remain local.

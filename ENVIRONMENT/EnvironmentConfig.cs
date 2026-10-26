@@ -16,6 +16,10 @@ public partial class EnvironmentConfig : Resource
     [Export(PropertyHint.Range, "0,500,1")] public float FogStart { get; set; } = 0f;
     [Export(PropertyHint.Range, "1,2000,1")] public float FogEnd { get; set; } = 200f;
     [Export(PropertyHint.Range, "0,50,0.1")] public float FogFalloff { get; set; } = 3f;
+    [ExportGroup("Ground Haze / Forward+")]
+    [Export] public bool GroundHazeEnabled { get; set; }
+    [Export(PropertyHint.Range, "0,0.3,0.001")] public float GroundHazeDensity { get; set; } = 0.06f;
+    [Export(PropertyHint.Range, "0.25,8,0.05")] public float GroundHazeHeight { get; set; } = 2.5f;
     [ExportGroup("Weather Preview")]
     [Export] public bool WeatherEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "0,1,0.01")] public float RainIntensity { get; set; }

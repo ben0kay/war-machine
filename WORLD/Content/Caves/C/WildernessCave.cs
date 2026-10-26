@@ -64,6 +64,31 @@ public partial class WildernessCave : Node3D
         for (int j = 1; j < profile.Length - 1; j++)
             Inward(inside, rings[sections, 0], rings[sections, j], rings[sections, j + 1], centers[sections - 1] + Vector3.Up * 2);
         AddSolid("Tunnel", inside.Finish());
+        // Seal the full mouth-to-heightfield gap, including the space above the tunnel roof.
+        using (var collar = new ContentMeshBuilder(material))
+        {
+            for (int section = 0; section < Mathf.Min(5, sections); section++)
+            {
+                var outsideA = new Vector3[profile.Length]; var outsideB = new Vector3[profile.Length];
+                for (int side = 0; side < profile.Length; side++)
+                {
+                    outsideA[side] = CollarEdge(data, centers, rings, section, side, profile[side]);
+                    outsideB[side] = CollarEdge(data, centers, rings, section + 1, side, profile[side]);
+                }
+                for (int side = 0; side < profile.Length; side++)
+                {
+                    int next = (side + 1) % profile.Length;
+                    if (section == 0)
+                    {
+                        collar.Face(rings[0, side], outsideA[side], rings[0, next], Colors.Gray);
+                        collar.Face(rings[0, next], outsideA[side], outsideA[next], Colors.Gray);
+                    }
+                    collar.Face(outsideA[side], outsideB[side], outsideA[next], Colors.Gray);
+                    collar.Face(outsideA[next], outsideB[side], outsideB[next], Colors.Gray);
+                }
+            }
+            AddSolid("EntranceRockCollar", collar.Finish());
+        }
         var random = new RandomNumberGenerator { Seed = 7131 };
         var rockSettings = new ContentScatterSettings { Size = 1.6f, PrimaryColor = Colors.Gray, AccentColor = Colors.DarkGray };
         for (int i = 0; i < 6; i++)
@@ -89,6 +114,20 @@ public partial class WildernessCave : Node3D
         }
         var marker = new Label3D { Text = "CAVE →", Position = Entrance + new Vector3(-5, 2.5f, 4), PixelSize = 0.025f, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled };
         AddChild(marker); SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // Outer collar follows real height-map pixels even where the mouth's hole hides that surface.
+    private Vector3 CollarEdge(GodotObject data, Vector3[] centers, Vector3[,] rings, int section, int side, Vector2 profile)
+    {
+        Vector3 offset = rings[section, side] - centers[section]; offset.Y = 0;
+        if (offset.LengthSquared() > 0.001f) offset = offset.Normalized() * (Settings.Width + 8f);
+        var pos = centers[section] + offset;
+        float height = data.Call("get_pixel", 0, pos).AsColor().R;
+        if (!float.IsFinite(height)) height = centers[section].Y + Settings.Height + 6;
+        pos.Y = profile.Y <= 0 ? centers[section].Y - 1f
+            : Mathf.Max(height + 0.3f, rings[section, side].Y + 1.8f);
+        return pos;
     }
 
     // =========================================================

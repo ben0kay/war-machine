@@ -29,3 +29,7 @@ WeatherTurbulence = 0.2
 WeatherParticleSize = 1.0
 WeatherFallSpeed = 1.0
 WindHeading = 22.0
+
+GroundHazeEnabled = false
+GroundHazeDensity = 0.06
+GroundHazeHeight = 2.5

@@ -9,3 +9,7 @@ The old exposed concrete-like outer tunnel shell has been removed. A bounded, on
 Edits affect runtime height/control maps only: no saved .res region is overwritten and no rebake is required. Each fresh launch reapplies the same ridge to the saved starting data. This intentionally changes the landscape in the running game, including terrain-based placement atop it. There is no live cave rebuild control; calling Initialize repeatedly on already modified data is unsupported. No global terrain regeneration or voxel excavation.
 
 WeatherBridge suppresses local precipitation/mist/motes while the camera is within the passage; no per-frame cave callbacks. The cave remains a single tunnel with a sealed end, not a branching network. Local compilation, entrance fit, terrain seams, hidden roof, walking collision, weather shelter and lighting need user validation; Godot/.NET unavailable here. No ambient-light trigger is implemented yet.
+
+## Entrance seam correction
+
+The heightfield mouth hole could reveal sky above/beside the smaller inner tunnel profile. A solid triangulated rock collar now fills between the arched mouth and a wider outer perimeter following actual heightmap pixels, with a short overlapping return into the hillside. It shares the stone material and has static collision. This bridges the opening rather than merely raising terrain or stacking loose rocks. User visual/walking validation pending.
