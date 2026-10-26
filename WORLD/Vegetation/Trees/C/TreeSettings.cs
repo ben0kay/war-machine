@@ -27,6 +27,14 @@ public partial class TreeSettings : Resource
     [Export(PropertyHint.Range, "0.4,1.5,0.05")] public float MinimumScale { get; set; } = 0.8f;
     [Export(PropertyHint.Range, "0.4,2,0.05")] public float MaximumScale { get; set; } = 1.25f;
 
+    [ExportGroup("Individual Leaves / GPU Wind")]
+    [Export(PropertyHint.Range, "12,128,1")] public int LeavesPerCluster { get; set; } = 48;
+    [Export(PropertyHint.Range, "0.2,1.5,0.05")] public float LeafLength { get; set; } = 0.78f;
+    [Export(PropertyHint.Range, "0.08,0.8,0.01")] public float LeafWidth { get; set; } = 0.34f;
+    [Export(PropertyHint.Range, "0,2,0.05")] public float LeafWindStrength { get; set; } = 0.55f;
+    [Export(PropertyHint.Range, "0,6,0.1")] public float LeafWindSpeed { get; set; } = 1.8f;
+    [Export(PropertyHint.Range, "0,2,0.05")] public float LeafFlutter { get; set; } = 0.65f;
+
     [ExportGroup("Future Model Replacement")]
     [Export] public Godot.Collections.Array<Mesh> ImportedMeshes { get; set; } = new();
 }

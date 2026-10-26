@@ -33,6 +33,7 @@ EnvironmentSettings = ExtResource("8")
 [node name="Trees" type="Node3D" parent="."]
 script = ExtResource("11")
 Settings = ExtResource("12")
+EnvironmentSettings = ExtResource("8")
 [node name="Controls" type="CanvasLayer" parent="."]
 [node name="Help" type="Label" parent="Controls"]
 offset_left = 18.0

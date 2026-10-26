@@ -1,22 +1,8 @@
-// Builds reusable, deterministic low-poly oak meshes (wood and leafy canopy); runs only during initialization/settings changes.
+// Builds deterministic tapered-bark oaks with hundreds of individually shaped leaf polygons; no per-leaf nodes.
 using Godot;
 
 public static class TreeGenerator
 {
-    private static readonly Vector3[] Icosahedron =
-    {
-        new(-1, 1.618034f, 0), new(1, 1.618034f, 0), new(-1, -1.618034f, 0), new(1, -1.618034f, 0),
-        new(0, -1, 1.618034f), new(0, 1, 1.618034f), new(0, -1, -1.618034f), new(0, 1, -1.618034f),
-        new(1.618034f, 0, -1), new(1.618034f, 0, 1), new(-1.618034f, 0, -1), new(-1.618034f, 0, 1)
-    };
-    private static readonly int[] Faces =
-    {
-        0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11,
-        1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
-        3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9,
-        4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1
-    };
-
     // =========================================================
     // Create two material surfaces per tree so branches and foliage can be replaced by authored art later.
     public static ArrayMesh CreateOak(TreeSettings settings, int variation, Material woodMaterial, Material leafMaterial)
@@ -26,6 +12,9 @@ public static class TreeGenerator
             Mathf.Max(settings.MinimumHeight, settings.MaximumHeight));
         float trunkRadius = Mathf.Max(0.1f, settings.TrunkRadius) * random.RandfRange(0.8f, 1.2f);
         float clusterSize = Mathf.Max(0.4f, settings.LeafClusterSize);
+        int leavesPerCluster = Mathf.Clamp(settings.LeavesPerCluster, 12, 128);
+        float leafLength = Mathf.Clamp(settings.LeafLength, 0.2f, 1.5f);
+        float leafWidth = Mathf.Clamp(settings.LeafWidth, 0.08f, 0.8f);
         var woodColor = new Color(0.34f, 0.23f, 0.14f);
         using var wood = new SurfaceTool();
         using var leaves = new SurfaceTool();
@@ -42,7 +31,7 @@ public static class TreeGenerator
         AddTaper(wood, middle, upper, trunkRadius * 0.74f, trunkRadius * 0.27f, woodColor);
         AddTaper(wood, upper, tip, trunkRadius * 0.27f, trunkRadius * 0.06f, woodColor);
 
-        // Offset branches rise from different points on the trunk; overlapping leaf masses build an irregular crown.
+        // Offset branches support hundreds of separate, tapering leaves, not opaque geometric canopy balls.
         int count = Mathf.Clamp(settings.BranchCount, 3, 16);
         for (int i = 0; i < count; i++)
         {
@@ -59,13 +48,16 @@ public static class TreeGenerator
             AddTaper(wood, elbow, end, radius * 0.60f, radius * 0.07f, woodColor);
             float foliage = clusterSize * random.RandfRange(0.75f, 1.2f);
             AddLeafCluster(leaves, end + Vector3.Up * foliage * 0.23f,
-                new Vector3(foliage * 1.05f, foliage * 0.85f, foliage), random);
+                new Vector3(foliage * 1.05f, foliage * 0.85f, foliage), random,
+                leavesPerCluster, leafLength, leafWidth);
             if (i % 2 == 0)
                 AddLeafCluster(leaves, elbow + Vector3.Up * foliage * 0.5f,
-                    new Vector3(foliage * 0.76f, foliage * 0.88f, foliage * 0.78f), random);
+                    new Vector3(foliage * 0.76f, foliage * 0.88f, foliage * 0.78f), random,
+                    Mathf.Max(12, leavesPerCluster / 2), leafLength, leafWidth);
         }
         AddLeafCluster(leaves, tip + Vector3.Up * clusterSize * 0.18f,
-            new Vector3(clusterSize * 1.15f, clusterSize * 1.05f, clusterSize * 1.15f), random);
+            new Vector3(clusterSize * 1.15f, clusterSize * 1.05f, clusterSize * 1.15f), random,
+            leavesPerCluster * 2, leafLength, leafWidth);
 
         var mesh = new ArrayMesh();
         wood.Commit(mesh); leaves.Commit(mesh);
@@ -94,24 +86,53 @@ public static class TreeGenerator
     }
 
     // =========================================================
-    // Build a subtly distorted 20-face leaf cluster with natural green shade differences.
-    private static void AddLeafCluster(SurfaceTool surface, Vector3 center, Vector3 radius, RandomNumberGenerator random)
+    // Place individual pointed leaf diamonds throughout a loose irregular crown, with no per-leaf nodes.
+    private static void AddLeafCluster(SurfaceTool surface, Vector3 center, Vector3 radius,
+        RandomNumberGenerator random, int count, float leafLength, float leafWidth)
     {
-        float red = random.RandfRange(0.12f, 0.22f);
-        float green = random.RandfRange(0.29f, 0.45f);
-        float blue = random.RandfRange(0.07f, 0.16f);
-        var color = new Color(red, green, blue);
-        var tilt = new Vector3(random.RandfRange(-0.2f, 0.2f), 0, random.RandfRange(-0.2f, 0.2f));
-        var vertices = new Vector3[Icosahedron.Length];
-        for (int i = 0; i < vertices.Length; i++)
+        for (int i = 0; i < count; i++)
         {
-            Vector3 unit = Icosahedron[i].Normalized();
-            float roughness = random.RandfRange(0.86f, 1.14f);
-            vertices[i] = center + new Vector3(unit.X * radius.X, unit.Y * radius.Y, unit.Z * radius.Z) * roughness
-                + tilt * unit.Y;
+            Vector3 radial = RandomDirection(random);
+            float depth = Mathf.Pow(random.Randf(), 0.55f); // Dense outer shell with some interior foliage.
+            var anchor = center + new Vector3(radial.X * radius.X, radial.Y * radius.Y, radial.Z * radius.Z) * depth;
+            var outward = (radial * 0.66f + Vector3.Up * 0.2f + RandomDirection(random) * 0.55f).Normalized();
+            var spin = RandomDirection(random);
+            Vector3 side = outward.Cross(spin).Normalized();
+            if (side.LengthSquared() < 0.01f) side = outward.Cross(Vector3.Right).Normalized();
+            float length = leafLength * random.RandfRange(0.65f, 1.3f);
+            float width = leafWidth * random.RandfRange(0.65f, 1.15f);
+            var start = anchor - outward * (length * 0.24f);
+            var shoulders = start + outward * (length * 0.45f);
+            var left = shoulders + side * (width * 0.5f);
+            var right = shoulders - side * (width * 0.5f);
+            var tip = start + outward * length + Vector3.Up * (length * random.RandfRange(-0.09f, 0.14f));
+            float variation = random.RandfRange(0.8f, 1.15f);
+            var shade = new Color(random.RandfRange(0.13f, 0.2f), random.RandfRange(0.28f, 0.43f), random.RandfRange(0.055f, 0.13f));
+            var color = new Color(shade.R * variation, shade.G * variation, shade.B * variation);
+
+            // UV.y encodes stiffness: attached base is fixed, shoulders bend, outer tip flutters most.
+            AddLeafFace(surface, start, left, tip, color, 0f, 0.45f, 1f);
+            AddLeafFace(surface, start, tip, right, color, 0f, 1f, 0.45f);
         }
-        for (int i = 0; i < Faces.Length; i += 3)
-            AddFace(surface, vertices[Faces[i]], vertices[Faces[i + 1]], vertices[Faces[i + 2]], color);
+    }
+
+    // =========================================================
+    // Generate deterministic leaf orientations without allocations or a runtime leaf update loop.
+    private static Vector3 RandomDirection(RandomNumberGenerator random)
+    {
+        var direction = new Vector3(random.RandfRange(-1f, 1f), random.RandfRange(-1f, 1f), random.RandfRange(-1f, 1f));
+        return direction.LengthSquared() > 0.0001f ? direction.Normalized() : Vector3.Up;
+    }
+
+    // =========================================================
+    // Encode each triangle's leaf attachment weighting for independent GPU wind bending.
+    private static void AddLeafFace(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c,
+        Color color, float anchorWeight, float middleWeight, float tipWeight)
+    {
+        Vector3 normal = (b - a).Cross(c - a).Normalized();
+        surface.SetNormal(normal); surface.SetColor(color); surface.SetUV(new Vector2(0.5f, anchorWeight)); surface.AddVertex(a);
+        surface.SetNormal(normal); surface.SetColor(color); surface.SetUV(new Vector2(0f, middleWeight)); surface.AddVertex(b);
+        surface.SetNormal(normal); surface.SetColor(color); surface.SetUV(new Vector2(1f, tipWeight)); surface.AddVertex(c);
     }
 
     // =========================================================

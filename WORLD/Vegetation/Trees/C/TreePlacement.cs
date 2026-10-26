@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public partial class TreePlacement : Node3D
 {
     [Export] public TreeSettings Settings { get; set; } = null!;
+    [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
 
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
@@ -51,7 +52,14 @@ public partial class TreePlacement : Node3D
         else
         {
             var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
-            var foliage = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 0.92f };
+            var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Vegetation/Trees/Shaders/LeafWind.gdshader") };
+            Vector2 wind = EnvironmentSettings.WindDirection;
+            wind = wind.LengthSquared() > 0.0001f ? wind.Normalized() : Vector2.Right;
+            foliage.SetShaderParameter("wind_direction", wind);
+            foliage.SetShaderParameter("wind_strength", Mathf.Max(0f, Settings.LeafWindStrength)
+                * Mathf.Clamp(EnvironmentSettings.GrassWindStrength, 0f, 2f));
+            foliage.SetShaderParameter("wind_speed", Mathf.Max(0f, Settings.LeafWindSpeed));
+            foliage.SetShaderParameter("flutter_strength", Mathf.Max(0f, Settings.LeafFlutter));
             int count = Mathf.Clamp(Settings.Variants, 1, 12);
             _meshes = new Mesh[count];
             for (int i = 0; i < count; i++) _meshes[i] = TreeGenerator.CreateOak(Settings, i, bark, foliage);
