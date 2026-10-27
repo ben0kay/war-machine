@@ -13,8 +13,8 @@ public partial class TestWorld : Node3D
         environment.Settings = (EnvironmentConfig)environment.Settings.Duplicate();
         var grass = GetNode<TerrainGrass>("Vegetation");
         grass.Settings = (VegetationConfig)grass.Settings.Duplicate(); grass.EnvironmentSettings = environment.Settings;
-        var trees = GetNode<TreePlacement>("Trees");
-        trees.Settings = (TreeSettings)trees.Settings.Duplicate(); trees.EnvironmentSettings = environment.Settings;
+        var trees = GetNode<PinePlacement>("Trees");
+        trees.Settings = (PineSettings)trees.Settings.Duplicate(); trees.EnvironmentSettings = environment.Settings;
         foreach (var child in GetNode("Content").GetChildren())
         {
             if (child is not ContentScatter scatter) continue;
@@ -47,7 +47,7 @@ public partial class TestWorld : Node3D
         GetNode<GroundHaze>("GroundHaze").Initialize(terrain, (ExplorationController)explorer, GetNode<SkyController>("Environment").Settings, GetNode("Sky3D"), GetNode<WildernessCave>("Content/Cave"));
         GetNode<WeatherBridge>("Weather").Initialize((ExplorationController)explorer, GetNode<SkyController>("Environment").Settings, GetNode<WildernessCave>("Content/Cave"));
         GetNode<TerrainGrass>("Vegetation").Initialize(terrain, (ExplorationController)explorer);
-        GetNode<TreePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);
+        GetNode<PinePlacement>("Trees").Initialize(terrain, (ExplorationController)explorer, Settings);
         foreach (var child in GetNode("Content").GetChildren())
             if (child is ContentScatter scatter) scatter.Initialize(terrain, (ExplorationController)explorer, Settings);
         GetNode<RobotEncounter>("RobotEncounter").Initialize(terrain, (ExplorationController)explorer, Settings);

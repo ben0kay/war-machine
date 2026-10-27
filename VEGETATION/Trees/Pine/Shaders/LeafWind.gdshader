@@ -13,7 +13,8 @@ void vertex() {
     float phase = dot(world_vertex.xz, vec2(0.73, 1.19)) + world_vertex.y * 0.41;
     float breeze = sin(TIME * wind_speed + phase * 0.52) * 0.65
         + sin(TIME * wind_speed * 0.67 + phase * 0.91) * 0.28;
-    float flutter = sin(TIME * wind_speed * 3.6 + phase * 3.4) * flutter_strength;
+    float flutter = 0.0;
+    if (flutter_strength > 0.001) flutter = sin(TIME * wind_speed * 3.6 + phase * 3.4) * flutter_strength;
     vec2 direction = normalize(wind_direction + vec2(0.00001));
     // Displace in world direction so rotated MultiMesh trees all bend with the same breeze.
     vec3 movement_world = vec3(direction.x, breeze * 0.16, direction.y)

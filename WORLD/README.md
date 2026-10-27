@@ -18,3 +18,7 @@ Active defaults are split between WORLD/Configuration/WorldMaster, PLAYER/Config
 ## Grass
 
 The existing VEGETATION/Grass/TerrainGrass renderer is now initialized around the active player using the shared VegetationMaster (simplified overhead defaults). The tuning panel exposes enabled/density/height/wind and copies those values. Coverage adapts to projection/zoom within a bounded radius/budget. No rebake required; see VEGETATION/README.md for defaults and pending local checks.
+
+## Pine integration
+
+Pine trees now use VEGETATION/Trees/Pine: lighter shared meshes/settings, event-driven player-centred batches and tuning controls. No rebake required; see the pine README for limits and pending local checks.

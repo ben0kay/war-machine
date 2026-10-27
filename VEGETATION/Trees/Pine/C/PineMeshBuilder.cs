@@ -1,11 +1,11 @@
 // Builds deterministic straight-trunk conifers with budgeted, layered foliage and connected leafy sprigs; no per-leaf nodes.
 using Godot;
 
-public static class TreeGenerator
+public static class PineMeshBuilder
 {
     // =========================================================
     // Create two material surfaces per tree so branches and foliage can be replaced by authored art later.
-    public static ArrayMesh CreatePine(TreeSettings settings, int variation, Material woodMaterial, Material leafMaterial, int leafStride = 1)
+    public static ArrayMesh CreatePine(PineSettings settings, int variation, Material woodMaterial, Material leafMaterial, int leafStride = 1)
     {
         var random = new RandomNumberGenerator { Seed = Mix(settings.Seed, variation, 19) };
         float height = random.RandfRange(Mathf.Min(settings.MinimumHeight, settings.MaximumHeight), Mathf.Max(settings.MinimumHeight, settings.MaximumHeight)) * settings.HeightMultiplier;

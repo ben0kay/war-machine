@@ -9,7 +9,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     private VBoxContainer _rows = null!;
     private SkyController _sky = null!;
     private TerrainGrass _grass = null!;
-    private TreePlacement _trees = null!;
+    private PinePlacement _trees = null!;
     private ExplorationController _explorer = null!;
     private readonly List<Action> _refresh = new();
     private readonly List<Action> _reset = new();
@@ -26,7 +26,7 @@ public partial class EnvironmentTuningPanel : CanvasLayer
     {
         var world = GetParent();
         _sky = world.GetNode<SkyController>("Environment"); _grass = world.GetNode<TerrainGrass>("Vegetation");
-        _trees = world.GetNode<TreePlacement>("Trees"); _explorer = world.GetNode<ExplorationController>("Explorer");
+        _trees = world.GetNode<PinePlacement>("Trees"); _explorer = world.GetNode<ExplorationController>("Explorer");
         Layer = 20;
         var frame = new PanelContainer { Position = new Vector2(16, 115), CustomMinimumSize = new Vector2(430, 0) };
         AddChild(frame); _panel = frame;

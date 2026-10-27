@@ -2,15 +2,18 @@
 using Godot;
 using System.Collections.Generic;
 
-public partial class TreePlacement : Node3D
+public partial class PinePlacement : Node3D
 {
-    [Export] public TreeSettings Settings { get; set; } = null!;
+    [Export] public PineSettings Settings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
 
     private ShaderMaterial? _foliage;
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
-    private WorldConfig _world = null!;
+    private Node3D _anchor = null!;
+    private int _worldSize;
+    private Vector2 _spawn;
+    private float _focusDistance;
     private FastNoiseLite _forest = null!;
     private Mesh[] _meshes = System.Array.Empty<Mesh>(), _farMeshes = System.Array.Empty<Mesh>();
     private sealed class TreeChunk
@@ -29,9 +32,16 @@ public partial class TreePlacement : Node3D
     // Use the already-loaded, saved Terrain3D region and the same movement signal as the grass system.
     public void Initialize(Node3D terrain, ExplorationController explorer, WorldConfig world)
     {
-        if (_initialized) DisconnectSignals();
-        _data = terrain.Get("data").AsGodotObject(); _explorer = explorer; _world = world;
-        _explorer.ViewPositionChanged += OnViewMoved;
+        _explorer = explorer;
+        _explorer.ViewPositionChanged += UpdateAnchor;
+        InitializeView(terrain, explorer, world.Size, world.SpawnXZ);
+    }
+
+    // =========================================================
+    // Active-world placement depends on terrain and an explicit anchor, not the legacy explorer/world config.
+    public void InitializeView(Node3D terrain, Node3D anchor, int worldSize, Vector2 spawn)
+    {
+        _data = terrain.Get("data").AsGodotObject(); _anchor = anchor; _worldSize = worldSize; _spawn = spawn;
         _data.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
         _initialized = true;
         SetProcess(false); SetPhysicsProcess(false);
@@ -45,11 +55,12 @@ public partial class TreePlacement : Node3D
         foreach (var chunk in _active.Values)
             foreach (var instance in chunk.Nodes) { RemoveChild(instance); instance.QueueFree(); }
         _active.Clear(); _center = new Vector2I(int.MinValue, int.MinValue); ActiveTrees = 0;
-        _meshes = _farMeshes = System.Array.Empty<Mesh>();
+        _meshes = _farMeshes = System.Array.Empty<Mesh>(); _foliage = null;
         if (!_initialized || Settings == null || !Settings.Enabled || Settings.Density <= 0) return;
 
         _chunkSize = Mathf.Clamp(Settings.ChunkSize, 32, 192);
-        _chunkCount = Mathf.CeilToInt((float)_world.Size / _chunkSize);
+        _chunkCount = Mathf.CeilToInt((float)_worldSize / _chunkSize);
+        _forest?.Dispose();
         _forest = new FastNoiseLite { Seed = Settings.Seed + 17, Frequency = Mathf.Max(0.0001f, Settings.ForestNoiseFrequency) };
         var imported = new List<Mesh>();
         foreach (Mesh candidate in Settings.ImportedMeshes)
@@ -58,7 +69,7 @@ public partial class TreePlacement : Node3D
         else
         {
             var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
-            var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Content/Vegetation/Trees/Shaders/LeafWind.gdshader") };
+            var foliage = new ShaderMaterial { Shader = GD.Load<Shader>("res://VEGETATION/Trees/Pine/Shaders/LeafWind.gdshader") };
             _foliage = foliage;
             Vector2 wind = EnvironmentSettings.WindDirection;
             wind = wind.LengthSquared() > 0.0001f ? wind.Normalized() : Vector2.Right;
@@ -72,13 +83,13 @@ public partial class TreePlacement : Node3D
             if (Settings.UseGeneratedLod) _farMeshes = new Mesh[count];
             for (int i = 0; i < count; i++)
             {
-                _meshes[i] = TreeGenerator.CreatePine(Settings, i, bark, foliage);
+                _meshes[i] = PineMeshBuilder.CreatePine(Settings, i, bark, foliage);
                 if (_farMeshes.Length > 0)
-                    _farMeshes[i] = TreeGenerator.CreatePine(Settings, i, bark, foliage, Mathf.Clamp(Settings.FarLeafStride, 2, 8));
+                    _farMeshes[i] = PineMeshBuilder.CreatePine(Settings, i, bark, foliage, Mathf.Clamp(Settings.FarLeafStride, 2, 8));
             }
         }
         ApplyWind();
-        OnViewMoved(_explorer.GlobalPosition);
+        UpdateAnchor(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -86,13 +97,35 @@ public partial class TreePlacement : Node3D
     public void ApplyWind()
     {
         if (_foliage == null) return;
+        Vector2 direction = EnvironmentSettings.WindDirection.Normalized();
+        if (direction.LengthSquared() < 0.0001f) direction = Vector2.Right;
+        _foliage.SetShaderParameter("wind_direction", direction);
         _foliage.SetShaderParameter("wind_strength", Settings.LeafWindStrength * EnvironmentSettings.GrassWindStrength);
         _foliage.SetShaderParameter("wind_speed", Settings.LeafWindSpeed * EnvironmentSettings.GrassWindSpeed / 0.025f);
     }
 
     // =========================================================
+    // Native distance ranges include the elevated camera offset; explicit zoom edits update batches, not geometry.
+    public void UpdateView(float focusDistance)
+    {
+        if (Mathf.IsEqualApprox(_focusDistance, focusDistance)) return;
+        _focusDistance = Mathf.Max(0, focusDistance);
+        float end = Mathf.Clamp(Settings.RenderDistance, 64, 512) + _focusDistance;
+        float margin = Mathf.Min(end * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4, 48));
+        float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 32, end - margin);
+        foreach (var chunk in _active.Values)
+            foreach (var node in chunk.Nodes)
+            {
+                bool far = node.Name.ToString().EndsWith("_Far");
+                bool hasLod = _farMeshes.Length == _meshes.Length;
+                node.VisibilityRangeBegin = far ? lod : 0;
+                node.VisibilityRangeEnd = far || !hasLod ? end : lod;
+            }
+    }
+
+    // =========================================================
     // Crossing a chunk boundary loads/evicts only nearby tree MultiMeshes; standing still does nothing.
-    private void OnViewMoved(Vector3 position)
+    public void UpdateAnchor(Vector3 position)
     {
         if (_meshes.Length == 0) return;
         var next = new Vector2I(Mathf.FloorToInt(position.X / _chunkSize), Mathf.FloorToInt(position.Z / _chunkSize));
@@ -147,8 +180,8 @@ public partial class TreePlacement : Node3D
                 if (random.Randf() > Mathf.Clamp(Settings.Density, 0, 1)) continue;
                 float x = key.X * _chunkSize + (a + 0.5f + random.RandfRange(-0.35f, 0.35f)) * step;
                 float z = key.Y * _chunkSize + (b + 0.5f + random.RandfRange(-0.35f, 0.35f)) * step;
-                if (x < 3 || z < 3 || x >= _world.Size - 3 || z >= _world.Size - 3) continue;
-                if (new Vector2(x, z).DistanceSquaredTo(_world.SpawnXZ) < clearing * clearing) continue;
+                if (x < 3 || z < 3 || x >= _worldSize - 3 || z >= _worldSize - 3) continue;
+                if (new Vector2(x, z).DistanceSquaredTo(_spawn) < clearing * clearing) continue;
                 if (_forest.GetNoise2D(x, z) < Settings.ForestThreshold) continue;
                 float height = SampleHeight(x, z);
                 if (!float.IsFinite(height)) continue;
@@ -166,9 +199,9 @@ public partial class TreePlacement : Node3D
         for (int i = 0; i < bins.Length; i++)
         {
             if (bins[i].Count == 0) continue;
-            float distance = Mathf.Clamp(Settings.RenderDistance, 64, 512);
+            float distance = Mathf.Clamp(Settings.RenderDistance, 64, 512) + _focusDistance;
             float margin = Mathf.Min(distance * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4, 48));
-            float lod = Mathf.Clamp(Settings.LodDistance, 32, distance - margin);
+            float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 32, distance - margin);
             bool hasLod = _farMeshes.Length == _meshes.Length;
             float averageHeight = 0;
             foreach (var transform in bins[i]) averageHeight += transform.Origin.Y;
@@ -243,7 +276,7 @@ public partial class TreePlacement : Node3D
     // Clean up movement/height callbacks on world unload; Godot frees the active GPU instances.
     private void DisconnectSignals()
     {
-        if (IsInstanceValid(_explorer)) _explorer.ViewPositionChanged -= OnViewMoved;
+        if (IsInstanceValid(_explorer)) _explorer.ViewPositionChanged -= UpdateAnchor;
         if (IsInstanceValid(_data)) _data.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));
     }
 
@@ -253,5 +286,6 @@ public partial class TreePlacement : Node3D
     {
         if (_initialized) DisconnectSignals();
         _initialized = false;
+        _forest?.Dispose(); _forest = null!;
     }
 }

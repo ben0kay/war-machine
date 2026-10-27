@@ -46,3 +46,7 @@ World initializes grass after selecting saved terrain and placing the explorer. 
 Terrain map signals coalesce into one deferred binding upload/restart. Height/control/colour RIDs, region map and AABBs are **not** rewritten per frame. Bounds include terrain height range and configured blade/wind margin; normal Godot frustum culling applies. Zero wind skips the GPU wind-noise lookup; active grass still retains particle/rendering cost. Off/zero density has no emitters. Child resources and subscriptions clean up on world unload. This is localized decorative rendering, not persistent world streaming or vegetation gameplay.
 
 See [validation results](Validation/README.md), including before/after/reference captures and the target-PC checks still required. All project gameplay glue is C#; the optional GDScript validation harness is diagnostic only.
+
+## Pine integration
+
+Pine trees are now integrated under Trees/Pine/. Mesh code lives in C/, future models in Artwork/, placement/settings in the pine root. Shared defaults are tuned for overhead rendering, with enabled/density/size/wind controls.

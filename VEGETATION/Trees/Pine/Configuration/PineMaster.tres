@@ -1,39 +1,39 @@
-[gd_resource type="Resource" script_class="TreeSettings" load_steps=2 format=3]
-[ext_resource type="Script" path="res://WORLD/Content/Vegetation/Trees/C/TreeSettings.cs" id="1"]
+[gd_resource type="Resource" script_class="PineSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Trees/Pine/PineSettings.cs" id="1"]
 
 [resource]
 script = ExtResource("1")
 Enabled = true
 Seed = 78341
-Density = 0.72
-Spacing = 16.0
-RenderDistance = 240.0
-ChunkSize = 48
-ForestThreshold = -0.25
+Density = 0.55
+Spacing = 20
+RenderDistance = 96
+ChunkSize = 32
+ForestThreshold = -1
 ForestNoiseFrequency = 0.003
 MaximumSlope = 0.55
-SpawnClearingRadius = 34.0
-CastShadows = true
-Variants = 4
-MinimumHeight = 14.0
-MaximumHeight = 22.0
+SpawnClearingRadius = 12
+CastShadows = false
+Variants = 3
+MinimumHeight = 12
+MaximumHeight = 18
 TrunkRadius = 0.42
 MinimumScale = 0.8
 MaximumScale = 1.25
-LeafWindStrength = 0.18
+LeafWindStrength = 0.15
 LeafWindSpeed = 1.8
-LeafFlutter = 0.08
+LeafFlutter = 0
 ImportedMeshes = Array[Mesh]([])
-LeafBudget = 900
+LeafBudget = 320
 UseGeneratedLod = true
-LodDistance = 60.0
+LodDistance = 48
 DistanceFadeMargin = 8.0
 FarLeafStride = 6
 FarCastShadows = false
 
-HeightMultiplier = 1.5
+HeightMultiplier = 1
 TrunkTaper = 0.94
-BranchTierCount = 12
+BranchTierCount = 7
 BranchLengthFalloff = 1.1
 FoliageDensity = 1.0
 ConicalWidth = 0.18

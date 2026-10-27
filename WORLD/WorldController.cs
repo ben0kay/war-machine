@@ -8,6 +8,7 @@ public partial class WorldController : Node3D
     [Export] public PlayerSettings PlayerSettings { get; set; } = null!;
     [Export] public CameraSettings CameraSettings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
+    private PinePlacement _pines = null!;
     private TerrainGrass _grass = null!;
     private PlayerController _player = null!;
     private WeatherBridge _weather = null!;
@@ -66,6 +67,11 @@ public partial class WorldController : Node3D
             EnvironmentSettings = EnvironmentSettings };
         AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
+        _pines = new PinePlacement { Name = "Pines",
+            Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
+            EnvironmentSettings = EnvironmentSettings };
+        AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
+        player.PositionChanged += _pines.UpdateAnchor;
         _weather = new WeatherBridge { Name = "Weather" }; AddChild(_weather);
         _weather.InitializeView(camera, player, EnvironmentSettings);
         camera.SettingsChanged += UpdateWeatherCoverage;
@@ -73,7 +79,7 @@ public partial class WorldController : Node3D
         UpdateWeatherCoverage();
         var cameraControls = new WorldTuningPanel();
         GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
-        cameraControls.Initialize(camera, CameraSettings, GetNode<SkyController>("Environment"), _weather, _grass);
+        cameraControls.Initialize(camera, CameraSettings, GetNode<SkyController>("Environment"), _weather, _grass, _pines);
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene"
@@ -104,12 +110,14 @@ public partial class WorldController : Node3D
     {
         _weather.SetOrthographicCoverage(_camera.ViewHeight);
         _grass.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);
+        _pines.UpdateView(CameraSettings.CameraDistance);
     }
 
     // =========================================================
     public override void _ExitTree()
     {
         if (IsInstanceValid(_camera)) _camera.SettingsChanged -= UpdateWeatherCoverage;
+        if (IsInstanceValid(_player) && IsInstanceValid(_pines)) _player.PositionChanged -= _pines.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_grass)) _player.PositionChanged -= _grass.UpdateAnchor;
         GetViewport().SizeChanged -= UpdateWeatherCoverage;
     }

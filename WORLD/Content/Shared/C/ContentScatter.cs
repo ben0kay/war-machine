@@ -50,7 +50,7 @@ public partial class ContentScatter : Node3D
             }
             else if (plant)
             {
-                _wind = new ShaderMaterial { Shader = GD.Load<Shader>("res://WORLD/Content/Vegetation/Trees/Shaders/LeafWind.gdshader") };
+                _wind = new ShaderMaterial { Shader = GD.Load<Shader>("res://VEGETATION/Trees/Pine/Shaders/LeafWind.gdshader") };
                 material = _wind; ApplyWind();
             }
             else material = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1, CullMode = BaseMaterial3D.CullModeEnum.Disabled };

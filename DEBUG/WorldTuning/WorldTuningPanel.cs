@@ -14,6 +14,7 @@ public partial class WorldTuningPanel : PanelContainer
     private Label _pitchLabel = null!, _zoomLabel = null!;
     private Button _copy = null!;
     private SkyController _sky = null!;
+    private PinePlacement _pines = null!;
     private TerrainGrass _grass = null!;
     private EnvironmentConfig _environment = null!;
     private Node _clock = null!;
@@ -23,9 +24,9 @@ public partial class WorldTuningPanel : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines)
     {
-        _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass;
+        _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
         SetProcess(false); SetPhysicsProcess(false);
         Position = new Vector2(16, 90);
         CustomMinimumSize = new Vector2(330, 0);
@@ -69,10 +70,10 @@ public partial class WorldTuningPanel : PanelContainer
         AddBoundSlider(rows, "Local mist", 0, 1, 0.01, _environment.LocalMistIntensity,
             value => { _environment.LocalMistIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Wind strength", 0, 2, 0.01, _environment.GrassWindStrength,
-            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); grass.ApplyAppearance(); });
+            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
         AddBoundSlider(rows, "Wind heading (degrees)", 0, 360, 1, _environment.WindHeading,
             value => { _environment.WindHeading = value; float angle = Mathf.DegToRad(value);
-                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); grass.ApplyAppearance(); });
+                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
         AddBoundSlider(rows, "Gusts", 0, 1, 0.01, _environment.WeatherGusts,
             value => { _environment.WeatherGusts = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Turbulence", 0, 2, 0.01, _environment.WeatherTurbulence,
@@ -86,12 +87,21 @@ public partial class WorldTuningPanel : PanelContainer
         rows.AddChild(new Label { Text = "Grass · release density/height slider to apply" });
         var grassEnabled = new CheckButton { Text = "Grass enabled", ButtonPressed = grass.Settings.Enabled, FocusMode = FocusModeEnum.None };
         rows.AddChild(grassEnabled); grassEnabled.Toggled += value => { grass.Settings.Enabled = value; grass.ApplySettings(); _copy.Text = "Copy settings"; };
-        AddGrassSlider(rows, "Grass density", 0, 2, 0.05, grass.Settings.Density,
+        AddDeferredSlider(rows, "Grass density", 0, 2, 0.05, grass.Settings.Density,
             value => grass.Settings.Density = value, grass.ApplySettings);
-        AddGrassSlider(rows, "Grass height", 0.1, 1.5, 0.05, grass.Settings.Height,
+        AddDeferredSlider(rows, "Grass height", 0.1, 1.5, 0.05, grass.Settings.Height,
             value => grass.Settings.Height = value, grass.ApplyAppearance);
         AddBoundSlider(rows, "Grass wind multiplier", 0, 2, 0.05, grass.Settings.WindMultiplier,
             value => { grass.Settings.WindMultiplier = value; grass.ApplyAppearance(); });
+        rows.AddChild(new Label { Text = "Pine trees · release density/size to apply" });
+        var pineEnabled = new CheckButton { Text = "Pine trees enabled", ButtonPressed = pines.Settings.Enabled, FocusMode = FocusModeEnum.None };
+        rows.AddChild(pineEnabled); pineEnabled.Toggled += value => { pines.Settings.Enabled = value; pines.ApplySettings(); _copy.Text = "Copy settings"; };
+        AddDeferredSlider(rows, "Pine density", 0, 1, 0.05, pines.Settings.Density,
+            value => pines.Settings.Density = value, pines.ApplySettings);
+        AddDeferredSlider(rows, "Pine size multiplier", 0.5, 1.5, 0.05, pines.Settings.HeightMultiplier,
+            value => pines.Settings.HeightMultiplier = value, pines.ApplySettings);
+        AddBoundSlider(rows, "Pine wind", 0, 1, 0.05, pines.Settings.LeafWindStrength,
+            value => { pines.Settings.LeafWindStrength = value; pines.ApplyWind(); });
         _copy = new Button { Text = "Copy settings", FocusMode = FocusModeEnum.None }; outer.AddChild(_copy);
         _clock = _sky.Sky.GetNode("TimeOfDay");
         _timeChanged = Callable.From<float>(OnTimeChanged);
@@ -125,7 +135,7 @@ public partial class WorldTuningPanel : PanelContainer
 
     // =========================================================
     // Rebuild/reseed only on drag release, avoiding a fresh GPU pool for every mouse movement.
-    private void AddGrassSlider(VBoxContainer rows, string title, double minimum, double maximum, double step,
+    private void AddDeferredSlider(VBoxContainer rows, string title, double minimum, double maximum, double step,
         float initial, Action<float> store, Action apply)
     {
         var label = new Label { Text = $"{title}: {initial:0.##}" }; rows.AddChild(label);
@@ -170,6 +180,10 @@ public partial class WorldTuningPanel : PanelContainer
     {
         var values = new Dictionary<string, object>
         {
+            ["PineEnabled"] = _pines.Settings.Enabled,
+            ["PineDensity"] = _pines.Settings.Density,
+            ["PineHeightMultiplier"] = _pines.Settings.HeightMultiplier,
+            ["PineWindStrength"] = _pines.Settings.LeafWindStrength,
             ["GrassEnabled"] = _grass.Settings.Enabled,
             ["GrassDensity"] = _grass.Settings.Density,
             ["GrassHeight"] = _grass.Settings.Height,
