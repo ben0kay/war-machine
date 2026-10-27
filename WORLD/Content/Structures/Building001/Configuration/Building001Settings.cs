@@ -4,6 +4,8 @@ using Godot;
 [GlobalClass]
 public partial class Building001Settings : Resource
 {
+    [ExportGroup("Outside obstruction")]
+    [Export(PropertyHint.Range, "0,1,0.01")] public float OutsideBuildingOpacity { get; set; } = 0.15f;
     [ExportGroup("Footprint")]
     [Export(PropertyHint.Range, "16,32,1")] public float Width { get; set; } = 20f;
     [Export(PropertyHint.Range, "10,24,1")] public float Depth { get; set; } = 14f;

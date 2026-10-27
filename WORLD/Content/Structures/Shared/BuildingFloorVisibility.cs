@@ -3,13 +3,8 @@
 using Godot;
 using System.Collections.Generic;
 
-public partial class BuildingFloorVisibility : Node3D, ICameraOcclusionProvider, ICameraFadeTarget
+public partial class BuildingFloorVisibility : Node3D
 {
-    public event System.Action? OcclusionChanged;
-    public bool IsValid => _initialized && IsInsideTree() && !IsQueuedForDeletion();
-    private readonly List<CameraOccluder> _allSections = new();
-    private Aabb _buildingBounds;
-    private float _outsideOpacity = 1;
     public enum Occupancy { Outside, Ground, OnStairs, Upper }
     public Occupancy CurrentFloor { get; private set; } = Occupancy.Outside;
     private Building002Mesh _building = null!;
@@ -29,14 +24,6 @@ public partial class BuildingFloorVisibility : Node3D, ICameraOcclusionProvider,
         _settings = (Building002Settings)building.Settings.Duplicate(true);
         _width = Mathf.Clamp(_settings.Width, 14, 24); _depth = Mathf.Clamp(_settings.Depth, 10, 18);
         _height = building.GetNode<Node3D>("Generated/Level_1").GetMeta("floor_elevation").AsSingle();
-        // Bounds cached once in building space; queries transform their endpoints instead of scanning meshes.
-        bool first = true;
-        foreach (Node node in building.FindChildren("*", "MeshInstance3D", true, false))
-        {
-            var mesh = (MeshInstance3D)node;
-            var bounds = CameraOcclusionMath.TransformBounds(mesh.GetAabb(), building.GlobalTransform.AffineInverse() * mesh.GlobalTransform);
-            _buildingBounds = first ? bounds : _buildingBounds.Merge(bounds); first = false;
-        }
         const string ground = "Generated/Level_0/Visuals/", upper = "Generated/Level_1/Visuals/";
         _lowerWalls.Add(Section(ground + "Exterior", true));
         _lowerWalls.Add(Section(ground + "Partitions", true));
@@ -60,22 +47,17 @@ public partial class BuildingFloorVisibility : Node3D, ICameraOcclusionProvider,
         var section = new CameraOccluder { Name = path.Replace('/', '_'),
             ObjectRoot = _building.GetNode<Node3D>(path), CreateObstructionProxy = proxy,
             FadeIndividualMeshes = path.EndsWith("Exterior") || path.EndsWith("ExteriorWalls") || path.EndsWith("Partitions") };
-        AddChild(section); section.InitializeBounds(); _allSections.Add(section); return section;
+        AddChild(section); section.InitializeBounds(); return section;
     }
 
     // =========================================================
     // Local feet position respects terrain placement/rotation. Hysteresis avoids boundary/landing oscillation.
     private void OnPlayerMoved(Vector3 position)
     {
-        bool wasInside = _inside;
         Vector3 local = _building.ToLocal(position);
         float margin = _inside ? 0.15f : -0.05f;
         _inside = Mathf.Abs(local.X) < _width * 0.5f + margin
             && Mathf.Abs(local.Z) < _depth * 0.5f + margin && local.Y > -0.5f && local.Y < _height + 2.5f;
-        if (wasInside != _inside)
-        {
-            ApplyOutsideOpacity(); OcclusionChanged?.Invoke();
-        }
         float hysteresis = Mathf.Clamp(_settings.LandingHysteresis, 0.1f, 0.6f);
         _upstairs = _inside && local.Y >= _height - (_upstairs ? hysteresis : 0.12f);
         CurrentFloor = !_inside ? Occupancy.Outside : _upstairs ? Occupancy.Upper
@@ -88,26 +70,6 @@ public partial class BuildingFloorVisibility : Node3D, ICameraOcclusionProvider,
         foreach (var wall in _lowerWalls) wall.SetCameraFadeEnabled(!_upstairs);
         if (_upperOpacity != _upperGoal || _roofOpacity != _roofGoal) SetProcess(true);
     }
-
-    // =========================================================
-    // Same bounded camera corridor check as trees; no new physics proxy, polling, or raycast.
-    public void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results)
-    {
-        if (!IsValid || _inside) return;
-        // Current buildings use unit scale. Conservative inverse-scale radius also supports later scaled placements.
-        var inverse = _building.GlobalTransform.AffineInverse();
-        float localRadius = radius * Mathf.Max(inverse.Basis.X.Length(), Mathf.Max(inverse.Basis.Y.Length(), inverse.Basis.Z.Length()));
-        if (CameraOcclusionMath.Intersects(inverse * from, inverse * to, _buildingBounds, localRadius)) results.Add(this);
-    }
-
-    // =========================================================
-    // Existing CameraOcclusion owns interpolation and restoration when the house no longer blocks the view.
-    public void SetCameraOpacity(float opacity)
-    { _outsideOpacity = Mathf.Clamp(opacity, 0, 1); ApplyOutsideOpacity(); }
-
-    // =========================================================
-    private void ApplyOutsideOpacity()
-    { foreach (var section in _allSections) section.SetBuildingOpacity(_inside ? 1 : _outsideOpacity); }
 
     // =========================================================
     // Only transitioning presentation runs per frame; composed camera factors cannot restore a hidden storey.
@@ -130,7 +92,6 @@ public partial class BuildingFloorVisibility : Node3D, ICameraOcclusionProvider,
         foreach (var section in _upper) if (IsInstanceValid(section)) section.SetPresentationOpacity(1);
         foreach (var section in _lowerWalls) if (IsInstanceValid(section)) section.SetCameraFadeEnabled(true);
         if (IsInstanceValid(_roof)) _roof.SetPresentationOpacity(1);
-        foreach (var section in _allSections) if (IsInstanceValid(section)) section.SetBuildingOpacity(1);
         _initialized = false;
     }
 }

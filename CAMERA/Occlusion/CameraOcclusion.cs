@@ -72,14 +72,19 @@ public partial class CameraOcclusion : Node
                 && area.GetMeta("camera_occluder").AsGodotObject() is ICameraFadeTarget target && target.IsValid) _hits.Add(target);
         }
         foreach (var provider in _providers) provider.CollectObstructions(from, to, radius, _hits);
-        foreach (var pair in _fades) pair.Value.Goal = _hits.Contains(pair.Key) ? Mathf.Clamp(_settings.ObstructedOpacity, 0, 1) : 1;
+        foreach (var pair in _fades) pair.Value.Goal = _hits.Contains(pair.Key) ? TargetOpacity(pair.Key) : 1;
         foreach (var target in _hits)
-            if (!_fades.ContainsKey(target)) _fades.Add(target, new Fade { Goal = Mathf.Clamp(_settings.ObstructedOpacity, 0, 1) });
+            if (!_fades.ContainsKey(target)) _fades.Add(target, new Fade { Goal = TargetOpacity(target) });
         bool transitioning = false;
         foreach (var pair in _fades)
             if (!pair.Key.IsValid || pair.Value.Current != pair.Value.Goal) { transitioning = true; break; }
         SetProcess(transitioning);
     }
+
+    // =========================================================
+    // Buildings can request a stronger reveal without changing trees, walls or the global fade duration.
+    private float TargetOpacity(ICameraFadeTarget target)
+        => Mathf.Clamp(target is ICameraOpacityOverride custom ? custom.ObstructedOpacity : _settings.ObstructedOpacity, 0, 1);
 
     // =========================================================
     // Only transitioning objects receive writes; settled faded objects stay tracked without frame callbacks.

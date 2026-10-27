@@ -13,3 +13,9 @@ public interface ICameraOcclusionProvider
     event System.Action? OcclusionChanged;
     void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results);
 }
+
+// Optional target-specific opacity; ordinary scenery continues using CameraMaster's global default.
+public interface ICameraOpacityOverride
+{
+    float ObstructedOpacity { get; }
+}

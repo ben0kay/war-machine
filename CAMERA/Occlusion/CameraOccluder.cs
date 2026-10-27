@@ -12,11 +12,13 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     private readonly List<float> _meshCameraOpacity = new();
     private bool _allowed;
     private float _cameraOpacity = 1, _presentationOpacity = 1, _buildingOpacity = 1;
-    private bool _cameraFadeEnabled = true;
+    private bool _cameraFadeEnabled = true, _wholeBuildingMode;
+    public System.Collections.Generic.IReadOnlyList<MeshInstance3D> Meshes => _meshes;
+    public HashSet<MeshInstance3D> ExcludedMeshes { get; } = new();
     [Export] public NodePath VisualRootPath { get; set; } = new NodePath("");
     [Export] public bool FadeIndividualMeshes { get; set; }
     [Export] public bool CreateObstructionProxy { get; set; } = true;
-    public bool IsValid => _allowed && IsInsideTree() && !IsQueuedForDeletion();
+    public bool IsValid => _allowed && !_wholeBuildingMode && IsInsideTree() && !IsQueuedForDeletion();
 
     // =========================================================
     // Collect this object's mesh renderers once, excluding nested characters; ordinary gameplay collision is unchanged.
@@ -79,7 +81,7 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     private void CollectMeshes(Node root)
     {
         if (root is CharacterBody3D || root is CameraOccluder) return;
-        if (root is MeshInstance3D mesh) _meshes.Add(mesh);
+        if (root is MeshInstance3D mesh && !ExcludedMeshes.Contains(mesh)) _meshes.Add(mesh);
         foreach (var child in root.GetChildren()) CollectMeshes(child);
     }
 
@@ -115,6 +117,16 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     }
 
     // =========================================================
+    // Outside buildings participate as one target. Ignore and unregister sectional camera factors until entry.
+    public void SetWholeBuildingMode(bool whole)
+    {
+        if (_wholeBuildingMode == whole) return;
+        _wholeBuildingMode = whole; _cameraOpacity = 1;
+        for (int i = 0; i < _meshCameraOpacity.Count; i++) _meshCameraOpacity[i] = 1;
+        ApplyOpacity(); RegistryChanged?.Invoke();
+    }
+
+    // =========================================================
     private void ApplyOpacity()
     { for (int i = 0; i < _meshes.Count; i++) ApplyMeshOpacity(i); }
 
@@ -128,7 +140,7 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     {
         if (!IsInstanceValid(_meshes[index])) return;
         float camera = FadeIndividualMeshes ? _meshCameraOpacity[index] : _cameraOpacity;
-        float opacity = _buildingOpacity * _presentationOpacity * (_cameraFadeEnabled ? camera : 1);
+        float opacity = _buildingOpacity * _presentationOpacity * (_cameraFadeEnabled && !_wholeBuildingMode ? camera : 1);
         _meshes[index].Transparency = 1 - (1 - _originalTransparency[index]) * opacity;
     }
 

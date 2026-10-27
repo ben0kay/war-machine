@@ -134,11 +134,40 @@ public partial class WorldController : Node3D
         occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
         // One startup pass over authored placements; floor visibility never runs in the FPS override.
         foreach (Node child in GetNode("WorldActorsRoot/PersistentPropsRoot/Structures").GetChildren())
+        {
+            BuildingFloorVisibility? floors = null;
+            float opacity;
+            Aabb[] zones;
             if (child is Building002Mesh lodge)
             {
-                var floors = new BuildingFloorVisibility { Name = "FloorVisibility" };
-                lodge.AddChild(floors); floors.Initialize(lodge, player); occlusion.RegisterProvider(floors);
+                floors = new BuildingFloorVisibility { Name = "FloorVisibility" };
+                lodge.AddChild(floors); floors.Initialize(lodge, player);
+                var profile = (Building002Settings)lodge.Settings.Duplicate(true);
+                opacity = profile.OutsideBuildingOpacity; zones = System.Array.Empty<Aabb>();
             }
+            else if (child is Building001Mesh depot)
+            {
+                var profile = (Building001Settings)depot.Settings.Duplicate(true);
+                float w = Mathf.Clamp(profile.Width, 16, 32), d = Mathf.Clamp(profile.Depth, 10, 24);
+                opacity = profile.OutsideBuildingOpacity;
+                zones = new[] { new Aabb(new Vector3(-w * 0.5f, -0.5f, -d * 0.5f), new Vector3(w, 9, d)) };
+            }
+            else if (child is Building003Mesh station)
+            {
+                var profile = (Building003Settings)station.Settings.Duplicate(true);
+                float w = Mathf.Clamp(profile.Width, 18, 28), d = Mathf.Clamp(profile.Depth, 10, 17);
+                opacity = profile.OutsideBuildingOpacity;
+                // Treat the open forecourt/canopy as occupied too: standing at pumps never fades their contents.
+                zones = new[] {
+                    new Aabb(new Vector3(-w * 0.5f, -0.5f, -d * 0.5f), new Vector3(w, 7, d)),
+                    new Aabb(new Vector3(-0.6f - (w + 1.75f) * 0.5f, -0.5f, d * 0.5f - 0.3f), new Vector3(w + 1.75f, 7, 13.2f)) };
+            }
+            else continue;
+            var building = (Node3D)child;
+            var outside = new BuildingObstructionVisibility { Name = "OutsideVisibility" }; building.AddChild(outside);
+            System.Func<bool>? occupancy = floors == null ? null : () => floors.CurrentFloor != BuildingFloorVisibility.Occupancy.Outside;
+            outside.Initialize(building, player, opacity, zones, occupancy); occlusion.RegisterProvider(outside);
+        }
     }
 
     // =========================================================
