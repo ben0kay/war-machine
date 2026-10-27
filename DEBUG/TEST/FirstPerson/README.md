@@ -4,7 +4,7 @@ Open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`, build C#, then press **F6**.
 
 ## Controls
 
-WASD walk, Shift run, Right Ctrl toggle crouch, mouse look, left click/hold fire. Escape releases the pointer; click to capture again (that click does not fire). Focus loss releases the pointer and cancels firing. A centre crosshair marks the camera aim ray; the real muzzle/cover obstruction still decides the shot.
+arrow-key walk, Shift run, Right Ctrl toggle crouch, mouse look, left click/hold fire. Escape releases the pointer; click to capture again (that click does not fire). Focus loss releases the pointer and cancels firing. A centre crosshair marks the camera aim ray; the real muzzle/cover obstruction still decides the shot.
 
 ## Ownership
 
@@ -12,7 +12,7 @@ All new FPS-specific implementation lives here:
 
 - `FirstPersonWorld.cs`: only composition differences, no copied world generator or entity logic.
 - `CAMERA/`: eye camera, mouse look/capture and event-driven crouch height.
-- `PLAYER/`: WASD and camera-yaw movement adapter. Reuses shared acceleration, gravity, collision and standing-clearance crouch; hides the third-person mesh.
+- `PLAYER/`: arrow-key and camera-yaw movement adapter. Reuses shared acceleration, gravity, collision and standing-clearance crouch; hides the third-person mesh.
 - `EQUIPMENT/`: centre-screen aiming/trigger adapter. Instances the configured shared firearm under the eye camera; reuses damage, hit masks, cooldown and effects.
 - `CONFIGURATION/FirstPersonMaster.tres`: FOV, mouse sensitivity, pitch limit, eye inset and gun offset.
 - `VEGETATION/GrassMaster.tres`: independent FPS grass settings, shared renderer/shaders. 32m radius, narrower blades, four sections and 30Hz GPU simulation; overhead footprint expansion is bypassed.

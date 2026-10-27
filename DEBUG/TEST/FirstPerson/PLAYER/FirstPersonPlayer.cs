@@ -1,4 +1,4 @@
-// Test-only WASD adapter. Shared player still owns gravity, capsule collision, acceleration and crouching.
+// Test-only arrow-key adapter. Shared player still owns gravity, capsule collision, acceleration and crouching.
 using Godot;
 
 public partial class FirstPersonPlayer : PlayerController
@@ -12,10 +12,8 @@ public partial class FirstPersonPlayer : PlayerController
 
     // =========================================================
     // Releases and camera capture changes wake the shared movement driver so velocity can settle.
-    protected override bool IsMovementKey(Key key) => key == Key.W || key == Key.A || key == Key.S || key == Key.D || key == Key.Shift;
-    protected override Vector2 ReadMovementInput() => Input.MouseMode != Input.MouseModeEnum.Captured ? Vector2.Zero : new(
-        (Input.IsPhysicalKeyPressed(Key.D) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.A) ? 1 : 0),
-        (Input.IsPhysicalKeyPressed(Key.W) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.S) ? 1 : 0));
+    protected override Vector2 ReadMovementInput() => Input.MouseMode == Input.MouseModeEnum.Captured
+        ? base.ReadMovementInput() : Vector2.Zero;
 
     // =========================================================
     // Read current yaw only while moving; looking up/down cannot change walking speed or introduce flight.
