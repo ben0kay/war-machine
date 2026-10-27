@@ -1,7 +1,5 @@
-// Minimal hit contract for weapons, actors and future destructible scenery; no rifle dependency.
-using Godot;
-
+// Shared target entry point. Detection sends a packet; target health resolves it and owns its reactions.
 public interface IDamageReceiver
 {
-    void ReceiveHit(float damage, Vector3 position, Vector3 direction, Node3D source);
+    void ReceiveHit(DamagePacket hit);
 }

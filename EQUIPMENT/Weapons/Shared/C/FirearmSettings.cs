@@ -9,7 +9,8 @@ public partial class FirearmSettings : Resource
     [ExportGroup("Firing")]
     [Export(PropertyHint.Range, "0.03,5,0.01")] public float ShotInterval { get; set; } = 0.65f;
     [Export] public bool Automatic { get; set; } = true;
-    [Export] public float Damage { get; set; } = 25;
+    [Export] public float Damage { get; set; } = 95;
+    [Export] public DamageType DamageKind { get; set; } = DamageType.Physical;
     [Export] public float Range { get; set; } = 90;
     [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 5;
     [ExportGroup("Feedback")]

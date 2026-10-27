@@ -55,7 +55,7 @@ The following are **planned ownership boundaries**, not a list of existing direc
 | `ASSETS/` | Organized source/imported terrain, plants, rocks, cave modules and audio |
 | `SAVE/` | Persistent seeds, authored overrides and later world-state changes |
 | `DEBUG/` | Diagnostic overlays, profiling helpers, quality and distance controls |
-| `ENTITIES/` | Shared robot foundation, heavy cyan biped locomotion, patrol and scanning; reused by both the top-down prototype and parked first-person world |
+| `ENTITIES/` | Shared robot foundation, zombies and reusable packet/resolver/health mechanics under Shared/Combat; each actor owns its reactions. Robot damage remains unimplemented. |
 | `EQUIPMENT/` | Future reusable firearms, melee weapons and tools; `C/` houses Godot C# procedural mesh builders and scripts, `Artwork/` holds later imported assets. Rifle_001 is implemented using shared firearm mechanics and editable `.tres` stats; active top-down player equips it by default. Awaiting local validation. |
 | `UI/`, `FX/` | Shared interface and effects as features require them |
 

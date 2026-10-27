@@ -97,7 +97,7 @@ The preview now equips the scene from EQUIPMENT/Configuration/EquipmentMaster.tr
 Mouse aims; click/hold left mouse fires a slow hitscan rifle. Shared firing/effects
 and per-weapon stats live under EQUIPMENT, input bridging under PLAYER/Equipment.
 The player owns its upper-body socket/holding pose, configured by TopDownTestMaster.
-Zombie health is in ZombieMaster; default 25 damage against 50 health takes two hits.
+Zombie health is in ZombieMaster; default 95 damage against 100 health takes two hits.
 No robot damage, ammo/reload/inventory or FPS changes. See
 [EQUIPMENT rifle handoff](../../EQUIPMENT/Weapons/Rifles/Rifle_001/README.md).
 Source checks only here; local .NET build, pose/aim/hit and performance checks pending.

@@ -8,7 +8,8 @@ controller nor the player input adapter knows which firearm is equipped.
 An actor calls `Equip(CollisionObject3D)` after the firearm enters the tree.
 Call `TryFire(aimPoint, shoulderProbeOrigin)` **from physics**. It enforces its
 cooldown, checks the shoulder-to-muzzle segment for cover, casts to the range
-limit, and forwards damage to the nearest ancestor implementing `IDamageReceiver`.
+limit, and sends a typed DamagePacket to the nearest ancestor implementing `IDamageReceiver`.
+The target health component/resolver owns armour, resistances and health loss.
 Non-damageable collision still blocks shots. `ReadyToFire` lets an adapter request
 another held-trigger shot without polling. `Unequip()` shuts down cooldown,
 feedback and audio. Timing/resources are per instance, not mutable shared masters.

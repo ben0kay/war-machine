@@ -13,7 +13,7 @@ preview, selected by `EQUIPMENT/Configuration/EquipmentMaster.tres`.
 | Setting | Value |
 | --- | --- |
 | Shot interval | 0.65 seconds (about 92 rounds/minute) |
-| Damage | 25 |
+| Damage | 95 physical |
 | Range | 90 metres |
 | Trigger | Click once or hold left mouse for slow repeating fire |
 | Hit mask | 5: world layer 1 + zombie layer 3; player layer 2 excluded |
@@ -23,7 +23,7 @@ Mouse aims toward a physics surface using the active camera in either projection
 Empty space falls back to a hand-height plane. The player faces the cursor while
 walking/crouching, with holding pose/socket settings in TopDownTestMaster.tres.
 Shots use the muzzle, not the camera, and check shoulder-to-barrel obstruction.
-Zombies have editable 50 health: two default-rifle hits remove one. Dead actors
+Zombies have editable 100 health: two default-rifle hits remove one. Dead actors
 stop their brain/movement and leave the scene; no ragdolls, drops or respawns.
 Robot/scenery can block a shot but have no damage response added in this pass.
 

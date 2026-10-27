@@ -58,7 +58,7 @@ public partial class FirearmController : Node3D
         {
             for (Node? node = hit["collider"].AsGodotObject() as Node; node != null; node = node.GetParent())
                 if (node is IDamageReceiver receiver)
-                { receiver.ReceiveHit(Mathf.Max(0, RuntimeSettings.Damage), end, direction, _holder!); break; }
+                { receiver.ReceiveHit(new DamagePacket(RuntimeSettings.Damage, RuntimeSettings.DamageKind, _holder, end, direction)); break; }
         }
         _effects.ShowShot(start, end);
         if (_audio.Stream != null) _audio.Play();

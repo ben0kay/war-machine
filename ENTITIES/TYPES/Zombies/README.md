@@ -16,9 +16,15 @@ Source/resource paths, inherited scene wiring, collision masks and whitespace re
 
 ## Incoming weapon hits
 
-Zombies implement the shared IDamageReceiver contract. MaxHealth (50 by default)
+Zombies forward DamagePacket hits through HealthComponent and DamageResolver via the shared IDamageReceiver contract. HealthProfile.MaxHealth (100 by default)
 lives in ZombieMaster.tres and resets when InitializeTarget configures the actor.
 A lethal hit immediately deactivates its brain/movement, clears collision and frees
-the actor; no death animation/loot/respawn or outgoing damage. The default 25-damage
+the actor; no death animation/loot/respawn or outgoing damage. The default 95-damage
 rifle takes two hits. Existing wandering/pursuit remains unchanged.
 Awaiting local compilation and physics/gameplay validation.
+
+Health/defence rules now live in [Shared/Combat](../../Shared/Combat/README.md),
+not in ZombieController. The controller owns hit eligibility and its death
+reaction. Rifle damage is 95; zombie HealthProfile.MaxHealth is 100 with zero
+defences, so the first hit leaves 5 HP. HealthProfile is embedded in the existing
+ZombieMaster.tres; no separate per-zombie health file is required.
