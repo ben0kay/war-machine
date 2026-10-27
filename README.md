@@ -79,6 +79,8 @@ Create folders, subfolders and scripts **when implementing their owning features
 
 **[WORLD/README.md](WORLD/README.md)** — current working scene, run instructions and priority: player, orthographic camera and robot mechanics.
 
+**[NOTES/ideas.md](NOTES/ideas.md)** — brainstorming bank split into major and minor feature ideas; **not** an authorized implementation roadmap.
+
 **[WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md)** — TD0–TD2 implemented on `implement-td0-td1` with local validation/feel checks outstanding; TD3 planned. **The old ZS combat plan remains cancelled; the newly authorized basic wander/chase zombies are documented under ENTITIES/TYPES/Zombies.**
 
 **[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — historical reusable robot implementation notes. Existing robot functionality can be refined for the top-down prototype when explicitly requested.
