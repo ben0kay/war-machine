@@ -133,7 +133,7 @@ public partial class WorldController : Node3D
             if (child is Building002Mesh lodge)
             {
                 var floors = new BuildingFloorVisibility { Name = "FloorVisibility" };
-                lodge.AddChild(floors); floors.Initialize(lodge, player);
+                lodge.AddChild(floors); floors.Initialize(lodge, player); occlusion.RegisterProvider(floors);
             }
     }
 

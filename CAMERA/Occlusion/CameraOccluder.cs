@@ -11,7 +11,7 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     private readonly List<float> _originalTransparency = new();
     private readonly List<float> _meshCameraOpacity = new();
     private bool _allowed;
-    private float _cameraOpacity = 1, _presentationOpacity = 1;
+    private float _cameraOpacity = 1, _presentationOpacity = 1, _buildingOpacity = 1;
     private bool _cameraFadeEnabled = true;
     [Export] public NodePath VisualRootPath { get; set; } = new NodePath("");
     [Export] public bool FadeIndividualMeshes { get; set; }
@@ -98,6 +98,15 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     }
 
     // =========================================================
+    // Outside whole-building fallback multiplies through the existing owner; no competing mesh writer.
+    public void SetBuildingOpacity(float opacity)
+    {
+        opacity = Mathf.Clamp(opacity, 0, 1);
+        if (Mathf.IsEqualApprox(opacity, _buildingOpacity)) return;
+        _buildingOpacity = opacity; ApplyOpacity();
+    }
+
+    // =========================================================
     // Lower-storey walls restore upstairs even when a broad camera proxy still intersects the sight corridor.
     public void SetCameraFadeEnabled(bool enabled)
     {
@@ -119,7 +128,7 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     {
         if (!IsInstanceValid(_meshes[index])) return;
         float camera = FadeIndividualMeshes ? _meshCameraOpacity[index] : _cameraOpacity;
-        float opacity = _presentationOpacity * (_cameraFadeEnabled ? camera : 1);
+        float opacity = _buildingOpacity * _presentationOpacity * (_cameraFadeEnabled ? camera : 1);
         _meshes[index].Transparency = 1 - (1 - _originalTransparency[index]) * opacity;
     }
 
@@ -130,5 +139,5 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
 
     // =========================================================
     public override void _ExitTree()
-    { if (_allowed) { _presentationOpacity = 1; _cameraFadeEnabled = false; SetCameraOpacity(1); _allowed = false; RegistryChanged?.Invoke(); } }
+    { if (_allowed) { _buildingOpacity = 1; _presentationOpacity = 1; _cameraFadeEnabled = false; SetCameraOpacity(1); _allowed = false; RegistryChanged?.Invoke(); } }
 }
