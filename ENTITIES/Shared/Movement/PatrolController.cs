@@ -38,9 +38,8 @@ public partial class PatrolController : Node
         if (_timer == null)
         {
             _timer = new Timer { OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
-            AddChild(_timer);
+            AddChild(_timer); _timer.Timeout += OnTimeout;
         }
-        _timer.Timeout -= OnTimeout; _timer.Timeout += OnTimeout;
         _actor.ActiveChanged += OnActorActiveChanged; _initialized = true;
     }
 

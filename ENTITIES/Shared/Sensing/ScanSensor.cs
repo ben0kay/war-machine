@@ -35,9 +35,8 @@ public partial class ScanSensor : Node
         if (_timer == null)
         {
             _timer = new Timer { ProcessCallback = Timer.TimerProcessCallback.Physics };
-            AddChild(_timer);
+            AddChild(_timer); _timer.Timeout += Tick;
         }
-        _timer.Timeout -= Tick; _timer.Timeout += Tick;
         _actor.ActiveChanged += OnActorActiveChanged;
     }
 

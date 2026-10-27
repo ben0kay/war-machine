@@ -135,11 +135,11 @@ void start() {
 	pos.z += ((r.z * 2.0) - 1.0) * random_spacing * instance_spacing;
 
     // Test the randomized blade root before any terrain sampling. Rejected slots never simulate wind or draw.
+    bool excluded = false;
     for (int i = 0; i < exclusion_count; i++) {
         vec4 bounds = exclusion_bounds[i];
         if (all(greaterThanEqual(pos.xz, bounds.xy)) && all(lessThanEqual(pos.xz, bounds.zw))) {
-            ACTIVE = false;
-            return;
+            excluded = true;
         }
     }
 
@@ -164,8 +164,8 @@ void start() {
 
 	// Never sample a missing texture-array layer, including across region edges.
     bool valid_region = index[0].z >= 0 && index[1].z >= 0 && index[2].z >= 0 && index[3].z >= 0;
-    ACTIVE = valid_region;
-    if (valid_region) {
+    ACTIVE = valid_region && !excluded;
+    if (ACTIVE) {
     highp float h[8];
 	h[0] = texelFetch(_height_maps, index[0], 0).r; // 0 (0,1)
 	h[1] = texelFetch(_height_maps, index[1], 0).r; // 1 (1,1)
@@ -279,7 +279,7 @@ void start() {
 	CUSTOM.rg = r.rg;
 	// Save Y component scale pre-rotation
 	CUSTOM[3] = scale.y;
-    } // valid region: do not sample absent GPU terrain layers.
+    } // Valid, unmasked region: do not sample absent GPU terrain layers.
 }
 
 void process() {
