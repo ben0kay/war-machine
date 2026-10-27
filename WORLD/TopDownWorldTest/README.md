@@ -19,7 +19,7 @@ Long-term goal: a fully 3D, painterly/low-poly orthographic survival game balanc
 
 1. Open the repository in your Godot **.NET** editor and build the C# project (`dotnet build war-machine.csproj` also works with its configured Godot SDK available).
 2. Open `WORLD/TopDownWorldTest/Terrain/BakePreviewTerrain.tscn` and **Run Current Scene (F6)** once. It writes one native Terrain3D region only to this preview's `Terrain/Data/`, then exits. No overwrite: existing `.res` files cause a deliberate error.
-3. Open `WORLD/TopDownWorldTest/topdownWorldTest.tscn` and **Run Current Scene (F6)**. Use **WASD** in screen directions, **Shift** to run and **mouse wheel** to zoom. Cursor stays visible. F5 still launches the original main world.
+3. Open `WORLD/TopDownWorldTest/topdownWorldTest.tscn` and **Run Current Scene (F6)**. Use **arrow keys** in screen directions, **Shift** to run and **mouse wheel** to zoom. Cursor stays visible. F5 still launches the original main world.
 
 Command-line alternative after building/importing, replacing `godot` with your Godot .NET executable:
 
@@ -51,7 +51,7 @@ Movement key/focus changes wake player PhysicsProcess. It runs during movement/d
 
 Here: source review, resource/path/ID checks, camera-axis and hill-slope calculations, C# delimiter smoke checks and `git diff --check`. **No build, native terrain bake, scene load or runtime/render check was possible**: Godot/.NET absent. These phases are implemented but **Awaiting Validation**.
 
-Brief local check: bake once and confirm the second bake refuses overwrite; run preview; test W/A/S/D screen directions, diagonal speed, Shift, stopping, focus loss, wheel bounds, steady follow and walking over the hill without falling. Check idle callbacks settle. Confirm F5 still opens the original world. Appearance/FPS acceptance stays with the owner; no extensive test suite was added.
+Brief local check: bake once and confirm the second bake refuses overwrite; run preview; test arrow-key screen directions, diagonal speed, Shift, stopping, focus loss, wheel bounds, steady follow and walking over the hill without falling. Check idle callbacks settle. Confirm F5 still opens the original world. Appearance/FPS acceptance stays with the owner; no extensive test suite was added.
 
 Camera tuning follow-up: source wiring and whitespace reviewed; Godot/.NET still unavailable here. Locally drag tilt to both limits, adjust view size and use wheel zoom off the panel, confirm walking still works after clicking sliders, then click Copy settings and paste into a text editor/chat to compare the numeric values with the labels. Reopening the scene should restore authored defaults. No terrain rebake is needed for camera tuning.
 
@@ -72,3 +72,9 @@ The scrollable camera panel now also has **hour (00:00–23:59), day length, pau
 `Configuration/TopDownEnvironmentMaster.tres` is a separate EnvironmentConfig copied at runtime. No terrain rebake is needed. Saved normal-world settings remain untouched. Rain/snow follow the player at ground level, not the elevated camera; zoom and viewport resize explicitly widen emission coverage/AABBs while quality keeps particle allocations bounded. A wide view spreads the same particle budget over more space. Weather intensity zero disables corresponding emitters and clear weather disables the effects subtree. There are no new per-frame C# callbacks; Sky3D's existing timer drives the hour label by signal, and active addon precipitation follows its anchor. Both subscriptions and viewport/camera coverage subscriptions disconnect on unload.
 
 This reuses the existing visual weather preview: no rain audio, splashes, roof collision, ground wetness, snow accumulation or automatic storm-cloud coupling. Brief checks here: source wiring, resource paths/scene counts and whitespace; **build, GDScript/C# integration and appearance remain unverified because Godot/.NET are unavailable**. Locally check dawn/noon/night, pause/unpause and day length, rain/snow zero → on → zero, zoom/resize while raining, walking after clicking sliders, and paste Copy settings into chat. The parked first-person scene should keep its existing sky/weather behaviour.
+
+## Readable nights and movement follow-up
+
+Movement now uses **arrow keys**, with Shift to run. Walk speed is **5m/s** (previously 4); run is **8m/s** with the unchanged 1.6 multiplier. Camera-relative directions, diagonal normalization and idle wake/sleep apply to arrows as before. The original FPS controls are unchanged.
+
+Sky3D already supplies its MoonLight, faded by altitude and phase. The preview now sets SkyDome moon_light_energy to **0.8** and uses colour-based ambient light at **0.8** energy with zero sky contribution, preserving Sky3D's time-driven ambient tint. This gives ambient fill even when the moon is below the horizon/new, without adding a second sun or clock. Preview-only TopDownTestMaster owns AmbientLightEnergy and MoonlightEnergy. Source/input/property wiring and whitespace checked; local compilation and night appearance remain pending. Check 18:50, midnight and noon, then arrow movement/Shift and idle wake after stopping. No terrain rebake is needed.

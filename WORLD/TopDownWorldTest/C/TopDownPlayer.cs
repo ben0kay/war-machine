@@ -32,8 +32,8 @@ public partial class TopDownPlayer : CharacterBody3D
     public override void _UnhandledInput(InputEvent input)
     {
         if (!_initialized || input is not InputEventKey key || key.Echo) return;
-        if (key.PhysicalKeycode == Key.W || key.PhysicalKeycode == Key.A || key.PhysicalKeycode == Key.S
-            || key.PhysicalKeycode == Key.D || key.PhysicalKeycode == Key.Shift)
+        if (key.PhysicalKeycode == Key.Up || key.PhysicalKeycode == Key.Left || key.PhysicalKeycode == Key.Down
+            || key.PhysicalKeycode == Key.Right || key.PhysicalKeycode == Key.Shift)
             SetPhysicsProcess(true);
     }
 
@@ -50,8 +50,8 @@ public partial class TopDownPlayer : CharacterBody3D
     {
         float dt = (float)delta;
         Vector2 keys = GetWindow().HasFocus() ? new Vector2(
-            (Input.IsPhysicalKeyPressed(Key.D) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.A) ? 1 : 0),
-            (Input.IsPhysicalKeyPressed(Key.W) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.S) ? 1 : 0)) : Vector2.Zero;
+            (Input.IsPhysicalKeyPressed(Key.Right) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Left) ? 1 : 0),
+            (Input.IsPhysicalKeyPressed(Key.Up) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Down) ? 1 : 0)) : Vector2.Zero;
         keys = keys.Normalized();
         Vector3 direction = (_screenRight * keys.X + _screenForward * keys.Y).Normalized();
         float speed = Mathf.Max(0.1f, _settings.WalkSpeed) * (Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1, _settings.RunMultiplier) : 1);

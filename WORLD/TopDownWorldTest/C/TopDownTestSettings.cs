@@ -15,11 +15,14 @@ public partial class TopDownTestSettings : Resource
     [Export] public float HillHeight { get; set; } = 5;
     [Export] public float HillRadius { get; set; } = 24;
     [ExportGroup("Player")]
-    [Export] public float WalkSpeed { get; set; } = 4;
+    [Export] public float WalkSpeed { get; set; } = 5;
     [Export] public float RunMultiplier { get; set; } = 1.6f;
     [Export] public float Acceleration { get; set; } = 24;
     [Export] public float Gravity { get; set; } = 20;
     [Export] public float GaitRate { get; set; } = 1.8f;
+    [ExportGroup("Preview lighting")]
+    [Export] public float AmbientLightEnergy { get; set; } = 0.8f;
+    [Export] public float MoonlightEnergy { get; set; } = 0.8f;
     [ExportGroup("Orthographic camera")]
     [Export] public float CameraYawDegrees { get; set; } = 45;
     [Export] public float CameraPitchDegrees { get; set; } = 55;

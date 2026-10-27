@@ -9,7 +9,7 @@ Relief = 0.15
 HillOffset = Vector2(30, -10)
 HillHeight = 5.0
 HillRadius = 24.0
-WalkSpeed = 4.0
+WalkSpeed = 5.0
 RunMultiplier = 1.6
 GaitRate = 1.8
 CameraYawDegrees = 45.0
@@ -19,3 +19,6 @@ CameraSize = 48.0
 MinimumZoom = 20.0
 MaximumZoom = 80.0
 FollowSmoothing = 8.0
+
+AmbientLightEnergy = 0.8
+MoonlightEnergy = 0.8

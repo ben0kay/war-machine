@@ -17,6 +17,12 @@ public partial class TopDownWorldTest : Node3D
         EnvironmentSettings = (EnvironmentConfig)EnvironmentSettings.Duplicate(true);
         var sky = GD.Load<PackedScene>("res://ENVIRONMENT/Sky/WildernessSky.tscn").Instantiate<Node>();
         AddChild(sky);
+        // A readable ambient floor survives a below-horizon/new moon; Sky3D still owns its colour and sun/moon motion.
+        var environment = ((WorldEnvironment)sky).Environment;
+        environment.AmbientLightSource = Godot.Environment.AmbientSource.Color;
+        environment.AmbientLightSkyContribution = 0;
+        environment.AmbientLightEnergy = Mathf.Max(0, Settings.AmbientLightEnergy);
+        sky.GetNode("SkyDome").Set("moon_light_energy", Mathf.Max(0, Settings.MoonlightEnergy));
         var skyController = new SkyController { Name = "Environment", Sky = sky, Settings = EnvironmentSettings };
         AddChild(skyController);
         // This panel owns time controls; leave the parked FPS world's P/F8 shortcuts untouched.
@@ -54,7 +60,7 @@ public partial class TopDownWorldTest : Node3D
         GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
         cameraControls.Initialize(camera, Settings, GetNode<SkyController>("Environment"), _weather);
         bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
-        status.Text = "Top-down test · WASD screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene"
+        status.Text = "Top-down test · Arrows screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
