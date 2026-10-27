@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public partial class CameraOcclusion : Node
 {
     private Camera _camera = null!;
+    // The registered view is shared with building providers; no extra lookup or camera owner.
+    public Camera ViewCamera => _camera;
     private PlayerController _player = null!;
     private CameraSettings _settings = null!;
     private Timer _check = null!;

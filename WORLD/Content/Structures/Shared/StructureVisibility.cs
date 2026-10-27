@@ -35,7 +35,7 @@ public partial class StructureVisibility : Node
         _floors = new BuildingFloorVisibility { Name = "FloorVisibility" }; building.AddChild(_floors);
         _floors.Initialize(building, _player!, profile, layout);
         _outside = new BuildingObstructionVisibility { Name = "OutsideVisibility" }; building.AddChild(_outside);
-        _outside.Initialize(building, _player!, profile.OutsideBuildingOpacity, profile.OutsideObstructionRadius, layout.Zones.ToArray(), () => _floors.IsInside);
+        _outside.Initialize(building, _player!, _camera.ViewCamera, profile.OutsideBuildingOpacity, profile.OutsideObstructionRadius, layout.Zones.ToArray(), () => _floors.IsInside);
         _camera.RegisterProvider(_outside);
     }
 
