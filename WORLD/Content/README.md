@@ -5,6 +5,7 @@
 - `Vegetation/Bushes`: low woody shrubs with folded leaves.
 - `Vegetation/FallenLogs`: tapered logs with cut ends, snapped branch stubs and moss.
 - `Rocks`: asymmetric low-poly boulders.
+- `Objects/Cars/Car001`: standalone stationary low-poly compact car with an already-swung-open driver door and static collision; prefab only, not yet placed.
 - `Structures/Building001`: existing maintenance depot with interior/collision and an active-world placement.
 - `Structures/Building002`: new procedural timber ranger lodge with covered porch, walk-in door, actual window apertures and divided interior; **standalone scene, not placed**.
 - `Structures/Building003`: new procedural roadside fuel station with walk-in shop, closed garage shutter, rear exit, pump canopy and colliding fuel pumps; **standalone scene, not placed**.

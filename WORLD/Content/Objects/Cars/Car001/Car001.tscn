@@ -1,0 +1,11 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Objects/Cars/Car001/C/Car001Mesh.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/Content/Objects/Cars/Car001/Configuration/Car001Master.tres" id="2"]
+[ext_resource type="Script" path="res://CAMERA/Occlusion/CameraOccluder.cs" id="3"]
+
+[node name="Car001" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+
+[node name="CameraOccluder" type="Node3D" parent="."]
+script = ExtResource("3")
