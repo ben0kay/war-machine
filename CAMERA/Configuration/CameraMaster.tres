@@ -2,9 +2,11 @@
 [ext_resource type="Script" path="res://CAMERA/CameraSettings.cs" id="1"]
 [resource]
 script = ExtResource("1")
+UsePerspective = true
+PerspectiveFov = 50.5
 CameraYawDegrees = 45.0
-CameraPitchDegrees = 55.0
-CameraDistance = 36.0
+CameraPitchDegrees = 40.0
+CameraDistance = 36.5
 CameraSize = 48.0
 MinimumZoom = 20.0
 MaximumZoom = 80.0

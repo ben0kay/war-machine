@@ -13,10 +13,7 @@ public static class PineMeshBuilder
         using var wood = new SurfaceTool(); using var leaves = new SurfaceTool();
         wood.Begin(Mesh.PrimitiveType.Triangles); leaves.Begin(Mesh.PrimitiveType.Triangles);
         wood.SetMaterial(woodMaterial); leaves.SetMaterial(leafMaterial);
-        var trunkRandom = new RandomNumberGenerator { Seed = Mix(settings.Seed, variation, 7741) };
-        float low = Mathf.Max(0.1f, Mathf.Min(settings.MinimumTrunkThickness, settings.MaximumTrunkThickness));
-        float high = Mathf.Max(low, Mathf.Max(settings.MinimumTrunkThickness, settings.MaximumTrunkThickness));
-        float trunkRadius = radius * Mathf.Max(0.1f, settings.TrunkThicknessMultiplier) * trunkRandom.RandfRange(low, high);
+        float trunkRadius = GetTrunkRadius(settings, variation);
         var bark = new Color(0.25f, 0.19f, 0.14f);
         AddTaper(wood, Vector3.Zero, Vector3.Up * height, trunkRadius, trunkRadius * (1 - settings.TrunkTaper), bark, 8);
         int fullTiers = Mathf.Clamp(settings.BranchTierCount, 3, 24);
@@ -71,6 +68,16 @@ public static class PineMeshBuilder
             }
         }
         var mesh = new ArrayMesh(); wood.Commit(mesh); leaves.Commit(mesh); return mesh;
+    }
+
+    // =========================================================
+    // Rendering and trunk collision share the same seeded thickness, including authored trunk variations.
+    public static float GetTrunkRadius(PineSettings settings, int variation)
+    {
+        var random = new RandomNumberGenerator { Seed = Mix(settings.Seed, variation, 7741) };
+        float low = Mathf.Max(0.1f, Mathf.Min(settings.MinimumTrunkThickness, settings.MaximumTrunkThickness));
+        float high = Mathf.Max(low, Mathf.Max(settings.MinimumTrunkThickness, settings.MaximumTrunkThickness));
+        return Mathf.Max(0.05f, settings.TrunkRadius) * Mathf.Max(0.1f, settings.TrunkThicknessMultiplier) * random.RandfRange(low, high);
     }
 
     // =========================================================

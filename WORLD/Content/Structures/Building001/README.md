@@ -43,3 +43,7 @@
 ## Camera obstruction fading
 
 Building001.tscn now includes CAMERA/Occlusion/CameraOccluder.cs. Once placed, its meshes opt into the active camera's scenery-only fade query. The component defers bounds collection until the procedural mesh is built. Solid collision remains unchanged. This does not place the prefab or implement indoor roof hiding; see CAMERA/Occlusion/README.md.
+
+## Building placement and trunk collision
+
+The active WORLD/World.tscn now places this prefab via WorldController.PlaceBuilding at offset (4,-32) from spawn. Ground height is sampled once, no saved terrain is changed. Pine exclusion bounds cover the building, loading apron and approach. Existing solid walls/open doorway and CameraOccluder remain in use. Default placement is safely separate from the robot patrol.

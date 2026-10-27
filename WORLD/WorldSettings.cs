@@ -14,6 +14,13 @@ public partial class WorldSettings : Resource
     [Export] public Vector2 HillOffset { get; set; } = new(30, -10);
     [Export] public float HillHeight { get; set; } = 5;
     [Export] public float HillRadius { get; set; } = 24;
+    [ExportGroup("Structures")]
+    [Export] public Vector2 Building001Offset { get; set; } = new(4, -32);
     [ExportGroup("Zombie placement")]
-    [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[] { new(8, 6), new(12, 10), new(-8, -10), new(-13, -8), new(4, -15), new(16, 16) };
+    // Twelve preview zombies, spread around spawn and clear of the robot's initial patrol route.
+    [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[]
+    {
+        new(8, 6), new(12, 10), new(-8, -10), new(-13, -8), new(4, -15), new(16, 16),
+        new(20, -20), new(26, 4), new(8, 29), new(-9, 23), new(-20, -22), new(-29, -7)
+    };
 }
