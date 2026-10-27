@@ -29,7 +29,7 @@ Validation: resource paths, inherited scene node overrides, input/capture and li
 
 ## Shared hierarchy update — SO1
 
-The inherited Player override now targets WorldActorsRoot/PersistentEntitiesRoot/Player (index 0). Camera remains at World/Camera (root index 2). Crosshair setup uses the shared DebugUIRoot/Controls accessor. No FPS controls/settings or gameplay changes. Source path/index checks passed; local build/F6 is pending. Runtime objects retain their current parents until SO2.
+The inherited Player override now targets WorldActorsRoot/PersistentEntitiesRoot/Player (index 0). Camera remains at World/Camera (root index 2). Crosshair setup uses the shared DebugUIRoot/Controls accessor. No FPS controls/settings or gameplay changes. Source path/index checks passed; local build/F6 is pending. SO2 now routes runtime objects into the shared scene roots.
 
 ## FPS movement/camera refinement
 
@@ -58,3 +58,5 @@ All FPS overrides stay here. Shared PlayerController gained only one virtual hor
 Validation: source/resource/Inspector binding checks, interpolation endpoint/idle lifecycle review, preserved inverted direction and shared default formula, and git diff --check. Godot/.NET unavailable, so build, inherited scene loading and runtime feel remain unverified. Locally run `dotnet build war-machine.csproj`, then F6 FirstPersonTest: strafe while turning, reverse/stop/run, crouch while stationary/moving, traverse the hill and doorway/trunks, shoot near cover, release/capture and alt-tab. Compare InterpolateTranslation OFF/ON; inspect camera processing settling at idle. Briefly F6 WORLD/World.tscn to confirm top-down feel remains unchanged. No rebake needed.
 
 Implementation references: Godot's advanced physics interpolation camera guidance and InputEventMouseMotion ScreenRelative documentation. No measured FPS or visual-quality claim.
+
+SO2 preserves this inherited camera index and FPS input/aiming. Environment/vegetation/zombies/props now use shared organizational roots. The new top-down PlayerDistanceFog is explicitly omitted by the FPS composition hook. Local inherited-scene and shutdown validation remains pending.

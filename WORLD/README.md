@@ -68,4 +68,12 @@ Validation: source review of mask packing/comparisons, initialization ordering, 
 
 World.tscn now organizes authored nodes as TerrainRoot/Terrain3D, WorldActorsRoot/PersistentEntitiesRoot/{Player,RobotPatrol}, root Camera, and DebugUIRoot/Controls/Status. The inherited FPS player override and both debug UI paths were updated. Original transforms, resources and robot subtree data were preserved; no terrain rebake needed.
 
-SO0 audit complete; SO1 implemented, awaiting local Godot validation. Runtime-created buildings/car, zombies, vegetation and environment intentionally remain at World until SO2 routes them into stable roots. No new managers, idle callbacks or settings. Source scene/property/path/index and whitespace checks passed; build/F6 both views and visual checks remain local. See WORLD_SCENE_RESTRUCTURE_PLAN.md for the audit map and handoff.
+SO0 audit complete; SO1 implemented, awaiting local Godot validation. SO2 now routes runtime buildings/car, zombies, vegetation and environment into the stable roots described below. No new managers, idle callbacks or settings. Source scene/property/path/index and whitespace checks passed; build/F6 both views and visual checks remain local. See WORLD_SCENE_RESTRUCTURE_PLAN.md for the audit map and handoff.
+
+## SO2 runtime roots and top-down edge fog
+
+Buildings spawn beneath WorldActorsRoot/PersistentPropsRoot/Structures; Car001 beneath PersistentPropsRoot/Objects/Cars; zombies beneath PersistentEntitiesRoot/Zombies. SystemsRoot/VegetationRoot owns Grass/Pines; SystemsRoot/EnvironmentRoot owns sky/controller/weather. Authored containers are reused, with no duplicate roots. Both views inherit this organization; Camera remains root child index 2. Props still spawn at runtime, using the same placement/grounding/exclusion rules.
+
+Top-down now adds player-centred visibility fog: clear within 24m, progressively opaque by 48m, with soft irregular edges. Tune enable/radii/opacity/variation/color in the live panel or GameplayEnvironmentMaster; Copy settings includes these values. FPS omits this effect. Visual fog does not stop hidden zombies simulating or change detection/spawning. See ENVIRONMENT/Fog/README.md for depth limitations, lifecycle and local validation. Enabled cost is one fullscreen depth overlay, no C# frame loops; disabled/zero opacity removes draw and movement subscription.
+
+Source/scene/path/uniform/whitespace checks passed; C# build, shader compilation, both F6 views, night tint, tree/prop masks and Remote tree remain locally unverified. No rebake required.

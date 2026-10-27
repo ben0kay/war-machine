@@ -17,6 +17,10 @@ public partial class FirstPersonWorld : WorldController
     protected override void InitializeOcclusion(Camera camera, PlayerController player) { }
 
     // =========================================================
+    // Player-centred edge fog belongs only to the overhead presentation.
+    protected override void InitializeDistanceFog(Camera camera, PlayerController player) { }
+
+    // =========================================================
     // Keep overhead tuning controls out of mouse-look input; a tiny non-interactive crosshair is sufficient here.
     protected override void InitializeControls(Camera camera)
     {

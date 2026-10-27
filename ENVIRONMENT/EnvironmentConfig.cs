@@ -7,6 +7,13 @@ public partial class EnvironmentConfig : Resource
     [ExportGroup("Gameplay lighting")]
     [Export] public float AmbientLightEnergy { get; set; } = 0.8f;
     [Export] public float MoonlightEnergy { get; set; } = 0.8f;
+    [ExportGroup("Top-down visibility fog")]
+    [Export] public bool DistanceFogEnabled { get; set; }
+    [Export(PropertyHint.Range, "5,150,1")] public float DistanceFogStart { get; set; } = 24;
+    [Export(PropertyHint.Range, "6,200,1")] public float DistanceFogEnd { get; set; } = 48;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float DistanceFogOpacity { get; set; } = 1;
+    [Export] public Color DistanceFogColor { get; set; } = new(0.39f, 0.46f, 0.48f);
+    [Export(PropertyHint.Range, "0,8,0.1")] public float DistanceFogEdgeVariation { get; set; } = 2;
     [ExportGroup("Sky3D Time")]
     [Export(PropertyHint.Range, "0,23.99,0.01")] public float StartHour { get; set; } = 9f;
     [Export(PropertyHint.Range, "1,1440,1")] public float DayLengthMinutes { get; set; } = 24f;

@@ -19,3 +19,7 @@ Sky3D 2.1 is MIT licensed; retain `addons/sky_3d/LICENSE.txt` and its third-part
 - **WE6:** Weather can temporarily deepen or lighten the haze, but returning to normal restores the misty baseline.
 
 Keep static settings event-driven and dormant, avoid duplicated competing global fog effects or unnecessary per-frame C# updates, and profile expensive volumetrics before enabling them broadly. **No robots or enemies are authorized by this visual direction.** See [environment implementation plan](../WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md) for future phase scopes and pass criteria.
+
+## Active top-down visibility fog
+
+Fog/PlayerDistanceFog provides the separately authorized player-centred edge fog, controlled by GameplayEnvironmentMaster and the world tuning panel. Clear radius 24m, full radius 48m; FPS omits it. This lightweight depth overlay is separate from parked Sky3D mist and volumetric ground haze. See Fog/README.md for activation/idle cost, transparent-depth limitations and pending local checks.

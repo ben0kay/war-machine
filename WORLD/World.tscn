@@ -70,3 +70,13 @@ theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 text = "Loading saved preview terrain…"
 mouse_filter = 2
+
+[node name="PersistentPropsRoot" type="Node3D" parent="WorldActorsRoot"]
+[node name="Structures" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
+[node name="Objects" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
+[node name="Cars" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot/Objects"]
+[node name="Zombies" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot"]
+
+[node name="SystemsRoot" type="Node" parent="."]
+[node name="VegetationRoot" type="Node3D" parent="SystemsRoot"]
+[node name="EnvironmentRoot" type="Node3D" parent="SystemsRoot"]

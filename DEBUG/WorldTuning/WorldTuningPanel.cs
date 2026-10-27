@@ -24,7 +24,7 @@ public partial class WorldTuningPanel : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null)
     {
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
         SetProcess(false); SetPhysicsProcess(false);
@@ -53,6 +53,24 @@ public partial class WorldTuningPanel : PanelContainer
         _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
         _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
             Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
+        if (distanceFog != null)
+        {
+            rows.AddChild(new Label { Text = "Visibility fog · distance from player" });
+            var enabled = new CheckButton { Text = "Edge fog enabled", ButtonPressed = _environment.DistanceFogEnabled, FocusMode = FocusModeEnum.None };
+            rows.AddChild(enabled);
+            enabled.Toggled += value => { _environment.DistanceFogEnabled = value; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
+            AddBoundSlider(rows, "Clear radius (m)", 5, 100, 1, _environment.DistanceFogStart,
+                value => { _environment.DistanceFogStart = value; distanceFog.ApplySettings(); });
+            AddBoundSlider(rows, "Full fog radius (m)", 6, 160, 1, _environment.DistanceFogEnd,
+                value => { _environment.DistanceFogEnd = value; distanceFog.ApplySettings(); });
+            AddBoundSlider(rows, "Fog opacity", 0, 1, 0.01, _environment.DistanceFogOpacity,
+                value => { _environment.DistanceFogOpacity = value; distanceFog.ApplySettings(); });
+            AddBoundSlider(rows, "Fog edge variation (m)", 0, 8, 0.1, _environment.DistanceFogEdgeVariation,
+                value => { _environment.DistanceFogEdgeVariation = value; distanceFog.ApplySettings(); });
+            var tint = new ColorPickerButton { Text = "Fog color", Color = _environment.DistanceFogColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+            rows.AddChild(tint);
+            tint.ColorChanged += color => { _environment.DistanceFogColor = color; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
+        }
         rows.AddChild(new Label { Text = "Day / night" });
         _hourLabel = new Label(); rows.AddChild(_hourLabel);
         _hour = AddSlider(rows, 0, 23.99, 0.01);
@@ -180,6 +198,12 @@ public partial class WorldTuningPanel : PanelContainer
     {
         var values = new Dictionary<string, object>
         {
+            [nameof(_environment.DistanceFogEnabled)] = _environment.DistanceFogEnabled,
+            [nameof(_environment.DistanceFogStart)] = _environment.DistanceFogStart,
+            [nameof(_environment.DistanceFogEnd)] = _environment.DistanceFogEnd,
+            [nameof(_environment.DistanceFogOpacity)] = _environment.DistanceFogOpacity,
+            [nameof(_environment.DistanceFogEdgeVariation)] = _environment.DistanceFogEdgeVariation,
+            [nameof(_environment.DistanceFogColor)] = new[] { _environment.DistanceFogColor.R, _environment.DistanceFogColor.G, _environment.DistanceFogColor.B, _environment.DistanceFogColor.A },
             ["PineEnabled"] = _pines.Settings.Enabled,
             ["PineDensity"] = _pines.Settings.Density,
             ["PineHeightMultiplier"] = _pines.Settings.HeightMultiplier,

@@ -1,6 +1,6 @@
 # War Machine — World scene root hierarchy restructuring plan
 
-**Status: SO0 implemented; SO1 implemented, awaiting local validation.** Target branch: `implement-td0-td1`. SO2–SO4 remain planned. The handoff below records the actual staged hierarchy and checks.
+**Status: SO0 implemented; SO1/SO2 implemented, awaiting local validation.** Target branch: `implement-td0-td1`. Optional SO3 and local acceptance SO4 remain planned. The handoff below records the actual staged hierarchy and checks.
 
 ## Goal and agreed direction
 
@@ -42,7 +42,7 @@ Future streamed props/entities should live under `WorldActorsRoot/ChunkActorsRoo
 | --- | --- | --- | --- |
 | SO0 | Audit node paths, runtime parenting, inherited FPS overrides and cleanup; record the exact reparent map before editing scenes. | Codex/ChatGPT Work: cross-file dependency review | Implemented |
 | SO1 | Add the essential authored roots; move Terrain3D, Player, complete RobotPatrol and debug UI; update all affected paths in both views. | Codex/ChatGPT Work: scene and code integration | Awaiting Validation (implemented) |
-| SO2 | Route existing runtime entities, scenery, vegetation and environment into stable destinations. Keep procedural spawning and prevent duplicate containers/objects. | Codex/ChatGPT Work: initialization/lifecycle integration | Planned |
+| SO2 | Route existing runtime entities, scenery, vegetation and environment into stable destinations. Keep procedural spawning and prevent duplicate containers/objects. | Codex/ChatGPT Work: initialization/lifecycle integration | Awaiting Validation (implemented) |
 | SO3 | Optional editor-authored showcase placement, only if later requested. Keep it independent of procedural placement. | Codex/ChatGPT Work; Regular Chat can review layout | Planned (optional) |
 | SO4 | Brief local build/F6 and Local/Remote inspection in both views; record acceptance and limitations. Documentation/source checks also accompany each earlier phase. | Copilot for local diagnostics; owner for visuals | Planned |
 
@@ -123,4 +123,12 @@ The new 3D containers have default identity transforms; DebugUIRoot is a plain N
 
 Checks run: parsed authored node paths for unique names and parent-before-child ordering; compared every original node property body before/after the move; checked FPS inherited override paths/indices and robot relative paths; reviewed affected code lookups and ran git diff --check. Godot/.NET are unavailable here, so no C# build, engine scene-load or visual/performance claim is made. Local validation: build and F6 both scenes, check player/crouch/aim, camera, robot patrol, status/panel/crosshair, terrain, props and clear grass; inspect Local/Remote roots. No rebake needed.
 
-Remaining staged limitation: dynamic content is not yet routed into organizational roots. SO2 is the next planned step and requires separate authorization. This change does not implement SO2, optional SO3 authored props or SO4 runtime acceptance.
+At the SO1 checkpoint, runtime routing was deferred. That limitation is resolved by the authorized SO2 follow-up below; optional SO3 and SO4 runtime acceptance remain unimplemented.
+
+## SO2 implementation handoff
+
+SO2 now authors and reuses PersistentPropsRoot/Structures, PersistentPropsRoot/Objects/Cars, PersistentEntitiesRoot/Zombies and SystemsRoot/{VegetationRoot,EnvironmentRoot}. WorldController instances the same three buildings and car into those destinations, rather than creating root-level Structures/Objects groups. Zombies use their authored group. Sky, SkyController and Weather go into EnvironmentRoot; Grass/Pines go into VegetationRoot. Tuning-panel SkyController lookup was updated. Camera remains root sibling index 2, preserving the inherited FPS override.
+
+All containers are identity transforms. Existing prop offsets, one-shot terrain grounding, prefab collision, grass/tree masks, enemy target references and explicit cleanup subscriptions are preserved. Scenery still precedes grass initialization. No duplicated spawner/manager or new hierarchy update loop. New visibility fog was separately authorized in the same job: its owner is in EnvironmentRoot and its fullscreen draw mesh intentionally remains camera-local. FPS overrides this presentation hook to omit it.
+
+Checks: authored parent/order/unique paths, controller destination lookups, inherited FPS override indices, unchanged existing scene property bodies, four prop placement calls and scenery-before-grass ordering, fog settings/uniform bindings and whitespace. Godot/.NET unavailable; build/F6, shader compilation, Remote-tree layout, node counts, shutdown and visual checks remain local. This commit handoff supplies the implementation SHA. No rebake required. SO3 is optional, not the next required step for procedural content.

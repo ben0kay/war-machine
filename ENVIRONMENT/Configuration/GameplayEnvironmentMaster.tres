@@ -14,3 +14,10 @@ GrassWindStrength = 0.2
 
 AmbientLightEnergy = 0.8
 MoonlightEnergy = 0.8
+
+DistanceFogEnabled = true
+DistanceFogStart = 24.0
+DistanceFogEnd = 48.0
+DistanceFogOpacity = 1.0
+DistanceFogColor = Color(0.39, 0.46, 0.48, 1)
+DistanceFogEdgeVariation = 2.0

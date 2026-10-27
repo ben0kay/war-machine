@@ -14,6 +14,7 @@ public partial class WorldController : Node3D
     private PlayerController _player = null!;
     protected WeatherBridge _weather = null!;
     protected Camera _camera = null!;
+    private PlayerDistanceFog? _distanceFog;
 
     // =========================================================
     // Shared by the overhead panel and inherited FPS crosshair; resolved only during startup.
@@ -29,7 +30,7 @@ public partial class WorldController : Node3D
         GameplayTerrainStorage.CopyLegacyBakeIfNeeded();
         EnvironmentSettings = (EnvironmentConfig)EnvironmentSettings.Duplicate(true);
         var sky = GD.Load<PackedScene>("res://ENVIRONMENT/Sky/WildernessSky.tscn").Instantiate<Node>();
-        AddChild(sky);
+        GetNode("SystemsRoot/EnvironmentRoot").AddChild(sky);
         // A readable ambient floor survives a below-horizon/new moon; Sky3D still owns its colour and sun/moon motion.
         var environment = ((WorldEnvironment)sky).Environment;
         environment.AmbientLightSource = Godot.Environment.AmbientSource.Color;
@@ -37,7 +38,7 @@ public partial class WorldController : Node3D
         environment.AmbientLightEnergy = Mathf.Max(0, EnvironmentSettings.AmbientLightEnergy);
         sky.GetNode("SkyDome").Set("moon_light_energy", Mathf.Max(0, EnvironmentSettings.MoonlightEnergy));
         var skyController = new SkyController { Name = "Environment", Sky = sky, Settings = EnvironmentSettings };
-        AddChild(skyController);
+        GetNode("SystemsRoot/EnvironmentRoot").AddChild(skyController);
         // This panel owns time controls; leave the parked FPS world's P/F8 shortcuts untouched.
         skyController.SetProcessUnhandledInput(false);
         SetProcess(false); SetPhysicsProcess(false); CallDeferred(nameof(InitializeWorld));
@@ -73,7 +74,7 @@ public partial class WorldController : Node3D
             Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
         _grass.SetExclusionAreas(grassClearings);
-        AddChild(_grass); _grass.InitializeView(terrain, player, camera);
+        GetNode("SystemsRoot/VegetationRoot").AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
         _pines = new PinePlacement { Name = "Pines",
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
@@ -82,14 +83,15 @@ public partial class WorldController : Node3D
         // Keep initial zombie positions free of newly solid trunks.
         foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
             _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
-        AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
+        GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
         InitializeOcclusion(camera, player);
-        _weather = new WeatherBridge { Name = "Weather" }; AddChild(_weather);
+        _weather = new WeatherBridge { Name = "Weather" }; GetNode("SystemsRoot/EnvironmentRoot").AddChild(_weather);
         _weather.InitializeView(camera, player, EnvironmentSettings);
         camera.SettingsChanged += UpdateWeatherCoverage;
         GetViewport().SizeChanged += UpdateWeatherCoverage;
         UpdateWeatherCoverage();
+        InitializeDistanceFog(camera, player);
         InitializeControls(camera);
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
@@ -114,10 +116,19 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    // Top-down visibility atmosphere is optional presentation; FPS overrides this hook without changing its world.
+    protected virtual void InitializeDistanceFog(Camera camera, PlayerController player)
+    {
+        _distanceFog = new PlayerDistanceFog { Name = "PlayerDistanceFog" };
+        GetNode("SystemsRoot/EnvironmentRoot").AddChild(_distanceFog);
+        _distanceFog.Initialize(camera, player, EnvironmentSettings);
+    }
+
+    // =========================================================
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = new WorldTuningPanel(); DebugControls.AddChild(panel);
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("Environment"), _weather, _grass, _pines);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog);
     }
 
     // =========================================================
@@ -150,8 +161,8 @@ public partial class WorldController : Node3D
     {
         var clearings = new Godot.Collections.Array<Rect2>();
         grassClearings = new Godot.Collections.Array<Rect2>();
-        var structures = new Node3D { Name = "Structures" }; AddChild(structures);
-        var objects = new Node3D { Name = "Objects" }; AddChild(objects);
+        var structures = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures");
+        var objects = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Objects/Cars");
         PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings, grassClearings);
         PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings, grassClearings);
         PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings, grassClearings);
@@ -195,7 +206,7 @@ public partial class WorldController : Node3D
     // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.
     private void SpawnZombies(GodotObject terrainData, PlayerController player)
     {
-        var group = new Node3D { Name = "Zombies" }; AddChild(group);
+        var group = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies");
         var scene = GD.Load<PackedScene>("res://ENTITIES/TYPES/Zombies/Zombie.tscn");
         for (int i = 0; i < Settings.ZombieSpawnOffsets.Length; i++)
         {
