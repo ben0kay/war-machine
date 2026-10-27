@@ -40,3 +40,18 @@ Validation for this follow-up: source/resource paths, collision masks, shared th
 ## Alternate first-person test
 
 DEBUG/TEST/FirstPerson/FirstPersonTest.tscn inherits World.tscn. Small virtual composition hooks let it replace presentation/input adapters and supply its own grass profile without copying world/entity logic. The normal scene keeps its existing defaults. See the test README for controls and pending local validation.
+
+## Shared scenery layout (top-down and FPS)
+
+Both WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn now use the same four prefabs, placed once by WorldController:
+
+| Prefab | Offset from player spawn | Direction |
+| --- | --- | --- |
+| Building001 maintenance depot | (4, -32) | North |
+| Building002 ranger lodge | (-34, -42) | Northwest |
+| Building003 fuel station | (42, 32) | Southeast |
+| Car001, driver door already open | (24, 42) | Beside the fuel station |
+
+Offsets live in Configuration/WorldMaster.tres. Each root samples saved terrain height; no terrain editing/rebake. Building entrances face +Z (south). All are clear of the default robot patrol west/southwest and initial player/zombie positions. One startup-only subtree bounds pass reserves pine clearings around all visible prefab geometry, plus walking approaches. This includes the lodge veranda, station forecourt/sign and swung car door, and respects prefab dimension changes. Prefab collision and overhead camera fading are reused; FPS continues to omit the fading manager.
+
+Validation: source/resource references, default layout and whitespace checks. Godot/.NET unavailable; local compilation, grounding, entrances, collision and both camera views remain unverified. No added processing loops; placement/bounds work ends after startup, existing entity/vegetation streaming remains shared.

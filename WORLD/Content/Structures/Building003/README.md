@@ -1,6 +1,6 @@
 # Building003 — Abandoned roadside fuel/service station
 
-**Status:** Complete standalone procedural scene source; **not placed in the active world**. Built from Godot C# primitives with solid shell and interior collisions for the top-down War Machine game.
+**Status:** Reusable procedural scene, now placed by WorldController in both the active top-down world and inherited FPS test. Source complete; local build/render/physics validation pending.
 
 ## Scene and silhouette
 
@@ -22,8 +22,8 @@ Main shop/service hall: about **22m × 12m**, **4.4m** walls, flat industrial ro
 
 `SetRoofVisible(false)` hides the flat roof and pump canopy for an interior view, but leaves collision in place. This prefab is a **visual/physics test**, not a fuel/refueling system. No dynamic lights, NPCs, loot, doors opening, interaction, stock simulation, or save logic.
 
-## Handoff to Codex
+## Active placement
 
-When requested, instance `Building003.tscn` in `WORLD/World.tscn` on sufficiently flat Terrain3D. Take its **full canopy + forecourt** into account for tree-exclusion and zombie/robot clearance. Do not put it directly next to Building001 unless deliberately laying out a street.
+WorldController instances this prefab on saved terrain in both WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Its offset is editable in WORLD/Configuration/WorldMaster.tres. Actual generated bounds plus approach margins exclude pines, including external porch/canopy geometry. Terrain is read-only and the parked legacy FPS world is unchanged. See WORLD/README.md for the shared layout.
 
-The code and resource paths were source-reviewed; **build/render/physics are unverified**, since Godot/.NET is unavailable here. Local checks: confirm both access gaps, obstructed shutter, shop-to-garage passage, stable static colliders, correct roof hide and camera fading.
+Godot/.NET are unavailable here; compile, grounding, interior access, collider and camera checks remain for local validation.

@@ -11,3 +11,6 @@ HillHeight = 5.0
 HillRadius = 24.0
 
 Building001Offset = Vector2(4, -32)
+Building002Offset = Vector2(-34, -42)
+Building003Offset = Vector2(42, 32)
+Car001Offset = Vector2(24, 42)

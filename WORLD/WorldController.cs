@@ -69,11 +69,11 @@ public partial class WorldController : Node3D
             EnvironmentSettings = EnvironmentSettings };
         AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
-        Rect2 buildingClearing = PlaceBuilding(data);
+        var sceneryClearings = PlaceScenery(data);
         _pines = new PinePlacement { Name = "Pines",
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
-        if (buildingClearing.Size != Vector2.Zero) _pines.ExclusionAreas.Add(buildingClearing);
+        foreach (Rect2 clearing in sceneryClearings) _pines.ExclusionAreas.Add(clearing);
         // Keep initial zombie positions free of newly solid trunks.
         foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
             _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
@@ -89,7 +89,7 @@ public partial class WorldController : Node3D
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = ControlsHelp
-            + (patrolReady ? " · Robot patrol west/southwest of spawn · Building001 north of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
+            + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
     // =========================================================
@@ -140,19 +140,46 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
-    // Place the reusable depot on existing terrain, east of the robot's route and north of the player; never reshape terrain.
-    private Rect2 PlaceBuilding(GodotObject terrainData)
+    // One shared placement pass serves both top-down and inherited FPS views; no terrain is edited.
+    private Godot.Collections.Array<Rect2> PlaceScenery(GodotObject terrainData)
     {
-        Vector2 location = Settings.SpawnXZ + Settings.Building001Offset;
-        float height = terrainData.Call("get_height", new Vector3(location.X, 0, location.Y)).AsSingle();
-        if (!float.IsFinite(height)) { GD.PushError("Building001 placement has no terrain; structure skipped."); return default; }
-        var building = GD.Load<PackedScene>("res://WORLD/Content/Structures/Building001/Building001.tscn").Instantiate<Building001Mesh>();
+        var clearings = new Godot.Collections.Array<Rect2>();
         var structures = new Node3D { Name = "Structures" }; AddChild(structures);
-        building.Position = new Vector3(location.X, height, location.Y); structures.AddChild(building);
-        float width = Mathf.Clamp(building.Settings.Width, 16, 32), depth = Mathf.Clamp(building.Settings.Depth, 10, 24);
-        GD.Print($"Building001 placed at {building.GlobalPosition}; offset {Settings.Building001Offset} from spawn.");
-        // Include the front (+Z) loading apron and walking approach, not just the wall footprint.
-        return new Rect2(location - new Vector2(width * 0.5f + 3, depth * 0.5f + 3), new Vector2(width + 6, depth + 11));
+        var objects = new Node3D { Name = "Objects" }; AddChild(objects);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings);
+        PlaceObject(terrainData, objects, "res://WORLD/Content/Objects/Cars/Car001/Car001.tscn", Settings.Car001Offset, 2, 0, clearings);
+        return clearings;
+    }
+
+    // =========================================================
+    // Ground each prefab once, then reserve its actual generated mesh bounds including porches, pumps and open doors.
+    private void PlaceObject(GodotObject terrainData, Node3D parent, string scenePath, Vector2 offset,
+        float margin, float approach, Godot.Collections.Array<Rect2> clearings)
+    {
+        Vector2 location = Settings.SpawnXZ + offset;
+        float height = terrainData.Call("get_height", new Vector3(location.X, 0, location.Y)).AsSingle();
+        if (!float.IsFinite(height)) { GD.PushError($"No terrain for {scenePath}; scenery skipped."); return; }
+        var instance = GD.Load<PackedScene>(scenePath).Instantiate<Node3D>();
+        instance.Position = new Vector3(location.X, height, location.Y); parent.AddChild(instance);
+        Vector2 low = location, high = location;
+        // Prefabs build synchronously in Ready; inspect only these four subtrees, once at startup.
+        foreach (Node child in instance.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            var mesh = (MeshInstance3D)child;
+            if (mesh.Mesh == null) continue;
+            Aabb bounds = mesh.GetAabb();
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 point = mesh.GlobalTransform * bounds.GetEndpoint(i);
+                var xz = new Vector2(point.X, point.Z); low = low.Min(xz); high = high.Max(xz);
+            }
+        }
+        // All building doors face +Z. The car receives symmetric clearance for its swung-open driver door.
+        low -= Vector2.One * margin; high += Vector2.One * margin + new Vector2(0, approach);
+        clearings.Add(new Rect2(low, high - low));
+        GD.Print($"{instance.Name} placed at {instance.GlobalPosition}; offset {offset} from spawn.");
     }
 
     // =========================================================

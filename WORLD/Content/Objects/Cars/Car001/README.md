@@ -1,6 +1,6 @@
 # Car001 — Abandoned compact hatchback
 
-**Standalone stationary scene, not yet placed into WORLD/World.tscn.** Car001 is a simple, weathered, boxy Earth-like car made using Godot C# procedural meshes. The **front-left driver door is already swung outward 58 degrees** when spawned. This is a fixed open pose, **not an animated or interactive opening mechanism**.
+**Reusable stationary scene, now placed in both the active top-down world and inherited FPS test.** Car001 is a simple, weathered, boxy Earth-like car made using Godot C# procedural meshes. The **front-left driver door is already swung outward 58 degrees** when spawned. This is a fixed open pose, **not an animated or interactive opening mechanism**.
 
 Scene: `res://WORLD/Content/Objects/Cars/Car001/Car001.tscn`.
 
@@ -10,6 +10,10 @@ The body is approximately **4.35m long × 1.83m wide × 1.81m tall**. Local forw
 
 **Folder convention:** `C/Car001Mesh.cs` exclusively builds the temporary 3D geometry (also `[Tool]` for Godot editor preview after C# build), `Configuration/Car001Settings.cs` and `Car001Master.tres` store tweakable dimensions, body/glass colours and door angle; `Artwork/` is reserved for an eventual imported model. `Car001.tscn` uses the existing CameraOccluder component for scenery fade.
 
-**Codex placement instructions:** Instance `Car001.tscn` in the active world at a reasonably level terrain position. Ground the car root via Terrain3D height, clear of the player/robot routes and at least 2m of free space on its **-X driver-door side**. Keep the same reusable prefab under Objects. Do not touch the parked first-person world. Coordinate future camera fading with the already included occluder child.
+**Reusable placement guidance:** Instance `Car001.tscn` in the active world at a reasonably level terrain position. Ground the car root via Terrain3D height, clear of the player/robot routes and at least 2m of free space on its **-X driver-door side**. Keep the same reusable prefab under Objects. Do not touch the parked first-person world. Coordinate future camera fading with the already included occluder child.
 
 **Validation left for Godot:** C# compile, editor mesh preview, player/robot collision, outward open-door silhouette, terrain grounding and occluder behaviour. Source/resources reviewed only; no local Godot runtime used.
+
+## Active placement
+
+WorldController places the car beside the southeast fuel station at spawn offset (24,42), editable as Car001Offset in WORLD/Configuration/WorldMaster.tres. Root height is sampled once; generated mesh bounds include the open door when reserving tree clearance. Shared static collision and overhead fade are reused; no driving or door animation added. No rebake required. Local build/render/collision checks remain pending.

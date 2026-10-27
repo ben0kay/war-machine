@@ -1,6 +1,6 @@
 # Building002 — Forest ranger lodge
 
-**Status:** Complete standalone procedural scene source; not yet placed in the active world. `[Tool]` generates temporary low-poly art from Godot C#, and the building has native 3D collision. This prefab is distinct from the earlier industrial depot.
+**Status:** Reusable procedural scene, now placed by WorldController in both the active top-down world and inherited FPS test. Source complete; local build/render/physics validation pending.
 
 ## Scene and silhouette
 
@@ -23,8 +23,8 @@ Approximate footprint **17m × 13m**, wall height **4m**, gable roof peak **6.6m
 
 `ShowRoof=false` (or `SetRoofVisible(false)` at runtime) hides the roof and veranda canopy for testing the interior, while leaving their solid physics unchanged. The existing camera-fading component applies to the building as one object; no automatic player-indoor detection is included.
 
-## Handoff to Codex
+## Active placement
 
-This commit **does not** instance Building002 in `WORLD/World.tscn`. When authorized, load this PackedScene, choose a non-overlapping, fairly flat spot, sample terrain height once for its root transform, reserve enough clearance for the veranda and keep it away from the robot path and zombie starts. Avoid writing native terrain or modifying the parked FPS scene.
+WorldController instances this prefab on saved terrain in both WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Its offset is editable in WORLD/Configuration/WorldMaster.tres. Actual generated bounds plus approach margins exclude pines, including external porch/canopy geometry. Terrain is read-only and the parked legacy FPS world is unchanged. See WORLD/README.md for the shared layout.
 
-Build the Godot C# project, open this scene for the mesh preview and perform brief walk-through/collision and roof-toggle checks. No Godot/.NET runtime was available when authoring, so visuals/build/physics have **not** been validated locally.
+Godot/.NET are unavailable here; compile, grounding, interior access, collider and camera checks remain for local validation.
