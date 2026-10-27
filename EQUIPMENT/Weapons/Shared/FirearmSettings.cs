@@ -12,7 +12,7 @@ public partial class FirearmSettings : Resource
     [Export] public float Damage { get; set; } = 95;
     [Export] public DamageType DamageKind { get; set; } = DamageType.Physical;
     [Export] public float Range { get; set; } = 90;
-    [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 5;
+    [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 21;
     [ExportGroup("Feedback")]
     [Export] public float EffectDuration { get; set; } = 0.07f;
     [Export] public float FlashRadius { get; set; } = 0.08f;

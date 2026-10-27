@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public partial class PinePlacement : Node3D, ICameraOcclusionProvider
 {
+    public const uint TrunkLayer = 1u << 4; // Physics layer 5: small actors/weapon rays; giant robot ignores it.
+    public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
     public event System.Action? OcclusionChanged;
     [Export] public PineSettings Settings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
@@ -21,6 +23,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     {
         public readonly List<MultiMeshInstance3D> Nodes = new();
         public int TreeCount;
+        public StaticBody3D? Trunks;
         public readonly List<PineFadeTarget> Occluders = new();
         public Aabb Bounds;
         public bool HasBounds;
@@ -56,11 +59,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     // Rebuild only when explicitly requested or the terrain height map changes; OFF frees all instances.
     public void ApplySettings()
     {
-        foreach (var chunk in _active.Values)
-        {
-            foreach (var target in chunk.Occluders) target.Alive = false;
-            foreach (var instance in chunk.Nodes) { RemoveChild(instance); instance.QueueFree(); }
-        }
+        foreach (var chunk in _active.Values) ReleaseChunk(chunk);
         OcclusionChanged?.Invoke();
         _active.Clear(); _center = new Vector2I(int.MinValue, int.MinValue); ActiveTrees = 0;
         _meshes = _farMeshes = System.Array.Empty<Mesh>(); _foliage = null;
@@ -159,11 +158,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 > distance + _chunkSize * 2.5f) remove.Add(key);
         foreach (var key in remove)
         {
-            foreach (var target in _active[key].Occluders) target.Alive = false;
-            foreach (var instance in _active[key].Nodes)
-            {
-                RemoveChild(instance); instance.QueueFree();
-            }
+            ReleaseChunk(_active[key]);
             ActiveTrees -= _active[key].TreeCount;
             _active.Remove(key);
         }
@@ -192,6 +187,9 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 float x = key.X * _chunkSize + (a + 0.5f + random.RandfRange(-0.35f, 0.35f)) * step;
                 float z = key.Y * _chunkSize + (b + 0.5f + random.RandfRange(-0.35f, 0.35f)) * step;
                 if (x < 3 || z < 3 || x >= _worldSize - 3 || z >= _worldSize - 3) continue;
+                bool excluded = false;
+                foreach (var area in ExclusionAreas) if (area.HasPoint(new Vector2(x, z))) { excluded = true; break; }
+                if (excluded) continue;
                 if (new Vector2(x, z).DistanceSquaredTo(_spawn) < clearing * clearing) continue;
                 if (_forest.GetNoise2D(x, z) < Settings.ForestThreshold) continue;
                 float height = SampleHeight(x, z);
@@ -210,6 +208,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         for (int i = 0; i < bins.Length; i++)
         {
             if (bins[i].Count == 0) continue;
+            if (Settings.TrunkCollisionEnabled && chunk.Trunks == null)
+            { chunk.Trunks = new StaticBody3D { Name = $"Trunks_{key.X}_{key.Y}", CollisionLayer = TrunkLayer, CollisionMask = 0 }; AddChild(chunk.Trunks); }
             float distance = Mathf.Clamp(Settings.RenderDistance, 64, 512) + _focusDistance;
             float margin = Mathf.Min(distance * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4, 48));
             float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 32, distance - margin);
@@ -240,10 +240,29 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                     chunk.Bounds = chunk.HasBounds ? chunk.Bounds.Merge(bounds) : bounds; chunk.HasBounds = true;
                 }
             }
+            if (chunk.Trunks != null)
+                foreach (var transform in bins[i])
+                {
+                    float scale = transform.Basis.X.Length();
+                    float radius = PineMeshBuilder.GetTrunkRadius(Settings, i) * scale;
+                    float height = Mathf.Max(radius * 2, Settings.TrunkCollisionHeight * scale);
+                    chunk.Trunks.AddChild(new CollisionShape3D { Position = transform.Origin + Vector3.Up * (height * 0.5f),
+                        Shape = new CapsuleShape3D { Radius = radius, Height = height } });
+                }
             chunk.TreeCount += bins[i].Count;
         }
         ActiveTrees += chunk.TreeCount;
         _active.Add(key, chunk);
+    }
+
+    // =========================================================
+    // One body per active chunk, one simple shape per trunk; free collision alongside its visual batch on OFF/eviction.
+    private void ReleaseChunk(TreeChunk chunk)
+    {
+        foreach (var target in chunk.Occluders) target.Alive = false;
+        foreach (var instance in chunk.Nodes) { RemoveChild(instance); instance.QueueFree(); }
+        if (GodotObject.IsInstanceValid(chunk.Trunks))
+        { chunk.Trunks!.CollisionLayer = 0; RemoveChild(chunk.Trunks); chunk.Trunks.QueueFree(); }
     }
 
     // =========================================================

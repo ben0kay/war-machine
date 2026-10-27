@@ -32,3 +32,7 @@ ZombieMaster.tres; no separate per-zombie health file is required.
 ## Ownership cleanup
 
 Controllers/settings now live directly in this folder. Procedural geometry is in C/ZombieMeshBuilder.cs and future imported models in Artwork/. World placement is now WORLD/WorldController.cs.
+
+## Building placement and trunk collision
+
+Zombies now collide with pine trunks via physics layer 5. This prevents walking through trees; movement remains a direct slow approach, without navigation around obstacles. Spawn locations receive small pine clearings. The robot does not collide with this trunk layer.

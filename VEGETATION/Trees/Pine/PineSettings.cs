@@ -17,6 +17,9 @@ public partial class PineSettings : Resource
     [Export(PropertyHint.Range, "0,100,1")] public float SpawnClearingRadius { get; set; } = 12f;
     [Export] public bool CastShadows { get; set; } = false;
 
+    [ExportGroup("Trunk collision")]
+    [Export] public bool TrunkCollisionEnabled { get; set; } = true;
+    [Export] public float TrunkCollisionHeight { get; set; } = 4;
     [ExportGroup("Generated Pine Shape")]
     [Export(PropertyHint.Range, "1,12,1")] public int Variants { get; set; } = 3;
     [Export(PropertyHint.Range, "4,20,0.5")] public float MinimumHeight { get; set; } = 12f;

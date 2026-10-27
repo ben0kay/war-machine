@@ -9,3 +9,5 @@ Relief = 0.15
 HillOffset = Vector2(30, -10)
 HillHeight = 5.0
 HillRadius = 24.0
+
+Building001Offset = Vector2(4, -32)

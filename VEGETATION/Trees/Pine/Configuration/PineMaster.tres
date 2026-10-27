@@ -45,3 +45,6 @@ NeedleClusterThickness = 0.19
 TrunkThicknessMultiplier = 2.0
 MinimumTrunkThickness = 0.85
 MaximumTrunkThickness = 1.25
+
+TrunkCollisionEnabled = true
+TrunkCollisionHeight = 4.0

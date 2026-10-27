@@ -19,3 +19,7 @@ Implemented, **Awaiting Local Validation**. Scope authorized: reuse pines in the
 ## Camera obstruction fading
 
 CameraOcclusion now queries cached canopy/chunk bounds and fades only the blocking tree through MultiMesh custom data in both LODs. Bark stays solid; foliage uses opaque ordered stipple coverage at 50% by default. Geometry rebuilds/evictions invalidate the camera. No per-tree physics collider or process node is added. See CAMERA/Occlusion/README.md; local shader/visual checks pending.
+
+## Building placement and trunk collision
+
+Trunks now have collision on physics layer 5 (bit 16), with one StaticBody3D per populated active chunk and one simple capsule per trunk. Radius shares the exact seeded visual thickness and per-tree scale; default collision height is 4m. Bodies/shapes are created once per chunk and removed on rebuild/OFF/eviction, with no per-tree callbacks. Player/zombie masks include trunks; the robot ignores them for now. Rifle rays also stop on trunks; trees have no damage/falling mechanic yet. World-owned exclusion rectangles keep building approaches and initial zombie positions clear. This supersedes the earlier visual-only note: canopy collision, pathfinding and robot tree destruction remain unimplemented.

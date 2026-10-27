@@ -69,9 +69,14 @@ public partial class WorldController : Node3D
             EnvironmentSettings = EnvironmentSettings };
         AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
+        Rect2 buildingClearing = PlaceBuilding(data);
         _pines = new PinePlacement { Name = "Pines",
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
+        if (buildingClearing.Size != Vector2.Zero) _pines.ExclusionAreas.Add(buildingClearing);
+        // Keep initial zombie positions free of newly solid trunks.
+        foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
+            _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
         AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
         var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
@@ -87,7 +92,7 @@ public partial class WorldController : Node3D
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene"
-            + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
+            + (patrolReady ? " · Robot patrol west/southwest of spawn · Building001 north of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
     // =========================================================
@@ -112,6 +117,22 @@ public partial class WorldController : Node3D
         material.Set("show_colormap", false);
         GD.Print($"Active terrain: {count} texture layers bound; checker debug view disabled.");
         return true;
+    }
+
+    // =========================================================
+    // Place the reusable depot on existing terrain, east of the robot's route and north of the player; never reshape terrain.
+    private Rect2 PlaceBuilding(GodotObject terrainData)
+    {
+        Vector2 location = Settings.SpawnXZ + Settings.Building001Offset;
+        float height = terrainData.Call("get_height", new Vector3(location.X, 0, location.Y)).AsSingle();
+        if (!float.IsFinite(height)) { GD.PushError("Building001 placement has no terrain; structure skipped."); return default; }
+        var building = GD.Load<PackedScene>("res://WORLD/Content/Structures/Building001/Building001.tscn").Instantiate<Building001Mesh>();
+        var structures = new Node3D { Name = "Structures" }; AddChild(structures);
+        building.Position = new Vector3(location.X, height, location.Y); structures.AddChild(building);
+        float width = Mathf.Clamp(building.Settings.Width, 16, 32), depth = Mathf.Clamp(building.Settings.Depth, 10, 24);
+        GD.Print($"Building001 placed at {building.GlobalPosition}; offset {Settings.Building001Offset} from spawn.");
+        // Include the front (+Z) loading apron and walking approach, not just the wall footprint.
+        return new Rect2(location - new Vector2(width * 0.5f + 3, depth * 0.5f + 3), new Vector2(width + 6, depth + 11));
     }
 
     // =========================================================
