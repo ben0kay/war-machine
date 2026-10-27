@@ -8,7 +8,9 @@ public partial class TopDownCameraControls : PanelContainer
 {
     private TopDownCamera _camera = null!;
     private TopDownTestSettings _settings = null!;
-    private HSlider _pitch = null!, _zoom = null!;
+    private HSlider _pitch = null!, _zoom = null!, _fov = null!;
+    private Label _fovLabel = null!;
+    private OptionButton _projection = null!;
     private Label _pitchLabel = null!, _zoomLabel = null!;
     private Button _copy = null!;
     private SkyController _sky = null!;
@@ -37,6 +39,12 @@ public partial class TopDownCameraControls : PanelContainer
         var rows = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         rows.AddThemeConstantOverride("separation", 8); scroll.AddChild(rows);
         rows.AddChild(new Label { Text = "Camera · live preview" });
+        _projection = new OptionButton { FocusMode = FocusModeEnum.None };
+        _projection.AddItem("Orthographic"); _projection.AddItem("Perspective"); rows.AddChild(_projection);
+        _projection.ItemSelected += index => _camera.SetProjectionMode(index == 1);
+        _fovLabel = new Label(); rows.AddChild(_fovLabel);
+        _fov = AddSlider(rows, 25, 90, 0.5);
+        _fov.ValueChanged += value => _camera.SetPerspectiveFov((float)value);
         _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
         _pitch = AddSlider(rows, 25, 80, 0.5);
         rows.AddChild(new Label { Text = "25° low angle → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
@@ -123,9 +131,15 @@ public partial class TopDownCameraControls : PanelContainer
     private void Refresh()
     {
         _pitch.SetValueNoSignal(_settings.CameraPitchDegrees);
-        _zoom.SetValueNoSignal(_settings.CameraSize);
+        _projection.Select(_settings.UsePerspective ? 1 : 0);
+        _fov.Visible = _fovLabel.Visible = _settings.UsePerspective;
+        _fov.SetValueNoSignal(_settings.PerspectiveFov);
+        _fovLabel.Text = $"Perspective FOV: {_settings.PerspectiveFov:0.0}°";
+        _zoom.MinValue = _settings.UsePerspective ? 20 : Mathf.Max(5, Mathf.Min(_settings.MinimumZoom, _settings.MaximumZoom));
+        _zoom.MaxValue = _settings.UsePerspective ? 100 : Mathf.Max(5, Mathf.Max(_settings.MinimumZoom, _settings.MaximumZoom));
+        _zoom.SetValueNoSignal(_settings.UsePerspective ? _settings.CameraDistance : _settings.CameraSize);
         _pitchLabel.Text = $"Tilt downward: {_settings.CameraPitchDegrees:0.0}°";
-        _zoomLabel.Text = $"Zoom / view size: {_settings.CameraSize:0.0} m";
+        _zoomLabel.Text = _settings.UsePerspective ? $"Camera distance: {_settings.CameraDistance:0.0} m" : $"Zoom / view size: {_settings.CameraSize:0.0} m";
         _copy.Text = "Copy settings";
     }
 
@@ -135,6 +149,8 @@ public partial class TopDownCameraControls : PanelContainer
     {
         var values = new Dictionary<string, object>
         {
+            [nameof(_settings.UsePerspective)] = _settings.UsePerspective,
+            [nameof(_settings.PerspectiveFov)] = _settings.PerspectiveFov,
             [nameof(_settings.CameraPitchDegrees)] = _settings.CameraPitchDegrees,
             [nameof(_settings.CameraYawDegrees)] = _settings.CameraYawDegrees,
             [nameof(_settings.CameraSize)] = _settings.CameraSize,

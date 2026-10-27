@@ -20,7 +20,8 @@ public partial class TopDownCamera : Camera3D
     {
         if (_initialized) _player.PositionChanged -= OnPlayerMoved;
         _player = player; _settings = settings;
-        Projection = ProjectionType.Orthogonal; Current = true; Near = 0.1f; Far = 1800;
+        Projection = settings.UsePerspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
+        Fov = Mathf.Clamp(settings.PerspectiveFov, 25, 90); KeepAspect = KeepAspectEnum.Height; Current = true; Near = 0.1f; Far = 1800;
         settings.CameraPitchDegrees = Mathf.Clamp(settings.CameraPitchDegrees, 25, 80);
         RotationDegrees = new Vector3(-settings.CameraPitchDegrees, settings.CameraYawDegrees, 0);
         _zoomTarget = ClampZoom(settings.CameraSize); Size = _zoomTarget;
@@ -43,7 +44,7 @@ public partial class TopDownCamera : Camera3D
         if (!_initialized || input is not InputEventMouseButton mouse || !mouse.Pressed) return;
         int direction = mouse.ButtonIndex == MouseButton.WheelUp ? -1 : mouse.ButtonIndex == MouseButton.WheelDown ? 1 : 0;
         if (direction == 0) return;
-        SetZoom(_zoomTarget + direction * Mathf.Max(0.1f, _settings.ZoomStep));
+        SetZoom((_settings.UsePerspective ? _settings.CameraDistance : _zoomTarget) + direction * Mathf.Max(0.1f, _settings.ZoomStep));
         GetViewport().SetInputAsHandled();
     }
 
@@ -63,11 +64,35 @@ public partial class TopDownCamera : Camera3D
     public void SetZoom(float size)
     {
         if (!_initialized) return;
-        _zoomTarget = ClampZoom(size);
-        _settings.CameraSize = _zoomTarget;
+        if (_settings.UsePerspective) _settings.CameraDistance = Mathf.Clamp(size, 20, 100);
+        else { _zoomTarget = ClampZoom(size); _settings.CameraSize = _zoomTarget; }
         SetProcess(true);
         SettingsChanged?.Invoke();
     }
+
+    // =========================================================
+    // Match framing at the player plane when switching, while preserving the same angle and follow target.
+    public void SetProjectionMode(bool perspective)
+    {
+        if (!_initialized || _settings.UsePerspective == perspective) return;
+        if (perspective)
+            _settings.CameraDistance = Mathf.Clamp(_settings.CameraSize / (2 * Mathf.Tan(Mathf.DegToRad(Fov * 0.5f))), 20, 100);
+        else { _zoomTarget = ClampZoom(ViewHeight); _settings.CameraSize = _zoomTarget; Size = _zoomTarget; }
+        _settings.UsePerspective = perspective;
+        Projection = perspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
+        GlobalPosition = DesiredPosition(); SetProcess(true); SettingsChanged?.Invoke();
+    }
+
+    // =========================================================
+    // FOV is vertical (Keep Height), independently adjustable from perspective camera distance.
+    public void SetPerspectiveFov(float degrees)
+    {
+        _settings.PerspectiveFov = Mathf.Clamp(degrees, 25, 90); Fov = _settings.PerspectiveFov;
+        SettingsChanged?.Invoke();
+    }
+
+    public float ViewHeight => _settings.UsePerspective
+        ? 2 * _settings.CameraDistance * Mathf.Tan(Mathf.DegToRad(Fov * 0.5f)) : _settings.CameraSize;
 
     // =========================================================
     // Continue only until both follow and zoom settle; no constant transform/uniform assignments at rest.
@@ -84,7 +109,7 @@ public partial class TopDownCamera : Camera3D
 
     // =========================================================
     // Offset follows the camera's backwards axis so its optical axis remains centred on the player.
-    private Vector3 DesiredPosition() => _target + Vector3.Up * 0.9f + GlobalBasis.Z * Mathf.Clamp(_settings.CameraDistance, 20, 60);
+    private Vector3 DesiredPosition() => _target + Vector3.Up * 0.9f + GlobalBasis.Z * Mathf.Clamp(_settings.CameraDistance, 20, 100);
 
     // =========================================================
     // Reversed authored limits remain safe and predictable.

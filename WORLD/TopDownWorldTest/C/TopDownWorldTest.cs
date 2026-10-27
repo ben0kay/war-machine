@@ -60,13 +60,13 @@ public partial class TopDownWorldTest : Node3D
         GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
         cameraControls.Initialize(camera, Settings, GetNode<SkyController>("Environment"), _weather);
         bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
-        status.Text = "Top-down test · Arrows screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene"
+        status.Text = "Top-down test · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
     // =========================================================
     // Coverage changes only on zoom/pitch input or viewport resize; clear weather remains dormant.
-    private void UpdateWeatherCoverage() => _weather.SetOrthographicCoverage(Settings.CameraSize);
+    private void UpdateWeatherCoverage() => _weather.SetOrthographicCoverage(_camera.ViewHeight);
 
     // =========================================================
     public override void _ExitTree()
