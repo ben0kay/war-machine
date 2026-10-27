@@ -1,7 +1,7 @@
 // Active 1.8m player: physical walking and one visual gait driver, dormant when grounded/idle.
 using Godot;
 
-public partial class PlayerController : CharacterBody3D
+public partial class PlayerController : CharacterBody3D, IPerceptionTarget
 {
     public event System.Action<Vector3>? PositionChanged;
     private PlayerSettings _settings = null!;
@@ -130,6 +130,9 @@ public partial class PlayerController : CharacterBody3D
     protected virtual Vector3 GetMovementDirection(Vector2 keys) => (_screenRight * keys.X + _screenForward * keys.Y).Normalized();
     protected Node3D VisualRoot => _art;
     public float CapsuleHeight => _capsule.Height;
+    // Actual transitioning capsule height keeps standing/crouching samples consistent in both camera modes.
+    public Vector3 PerceptionHead => GlobalPosition + Vector3.Up * Mathf.Max(0.1f, CapsuleHeight - 0.1f);
+    public Vector3 PerceptionTorso => GlobalPosition + Vector3.Up * (CapsuleHeight * 0.6f);
 
     // =========================================================
     // The actor owns its holding pose and socket; equipment owns everything about firing.

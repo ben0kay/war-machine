@@ -222,6 +222,8 @@ public partial class WorldController : Node3D
     private void SpawnZombies(GodotObject terrainData, PlayerController player)
     {
         var group = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies");
+        var visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
+        GetNode("DebugUIRoot").AddChild(visionDebug);
         var scene = GD.Load<PackedScene>("res://ENTITIES/TYPES/Zombies/Zombie.tscn");
         for (int i = 0; i < Settings.ZombieSpawnOffsets.Length; i++)
         {
@@ -233,6 +235,7 @@ public partial class WorldController : Node3D
             group.AddChild(zombie); zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
             zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + i * 7919)),
                 point => terrainData.Call("get_height", point).AsSingle());
+            visionDebug.Register(zombie);
         }
     }
 

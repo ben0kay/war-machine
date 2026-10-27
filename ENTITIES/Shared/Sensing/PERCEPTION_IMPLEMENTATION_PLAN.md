@@ -1,6 +1,6 @@
 # PER — Shared perception, crouch cover and species-specific sensing
 
-> **Status: PROPOSED / DOCUMENTATION ONLY. No PER phases have been implemented by this plan.**
+> **Status: PER0 and PER1 implemented, awaiting local validation. Later phases remain proposed.**
 >
 > **Target branch:** `implement-td0-td1`. **First gameplay target:** zombies detecting or losing a crouching player behind genuinely solid cover in `WORLD/World.tscn` and its inherited FPS test. **Long-term consumers:** robots, zombies, deer, wolves, humans and other entities.
 >
@@ -104,8 +104,8 @@ A visibility query is **not the same as a movement collision test**. Recommended
 
 | Pass | Work | Status |
 | --- | --- | --- |
-| **PER0 — shared contract** | Inventory existing ray masks/opaque colliders; introduce target height sampling and `VisibilityResolver`, a no-AI line-of-sight helper. Preserve `ScanSensor` behaviour and public hooks. | Not started |
-| **PER1 — zombie vision/cover** | Extend zombie `Think()` with cheap gating and ray checks (through reusable resolver), species settings, realistic crouch detection behind solid cover, preserved health/movement. Reuse zombie timer. Keep robot logic/visuals unchanged. | Not started |
+| **PER0 — shared contract** | Inventory existing ray masks/opaque colliders; introduce target height sampling and `VisibilityResolver`, a no-AI line-of-sight helper. Preserve `ScanSensor` behaviour and public hooks. | Implemented; local validation pending |
+| **PER1 — zombie vision/cover** | Extend zombie `Think()` with cheap gating and ray checks (through reusable resolver), species settings, realistic crouch detection behind solid cover, preserved health/movement. Reuse zombie timer. Keep robot logic/visuals unchanged. | Implemented; local validation pending |
 | **PER2 — last seen** | Add short last-known-position investigative behaviour, no instant clairvoyance through walls and no navigation rewrite. | Not started |
 | **PER3 — obstruction polish/debug** | Audit and fix relevant glass/solid collision layering, verify vehicle/rocks/tree/terrain cover, add **optional dormant** LOS debug visual (head/torso blocked/clear) in DEBUG; no always-on draw loop. | Not started |
 | **PER4 — scanner integration** | When explicitly requested, adapt existing robot `ScanSensor` to the shared target samples/visibility helper **without changing mechanical beam/patrol or enabling combat**. Verify range/cone and no robot regressions. | Not started |
@@ -128,3 +128,7 @@ Brief build/smoke checks at the active `WORLD/World.tscn` and inherited `DEBUG/T
 - Sleep/unload/reactivation: no stale candidate references/timers. Compare FPS behaviour and idle versus active cost, don't claim measured gains without Godot profiling.
 
 **Do not rewrite the procedural buildings, physics gameplay, rifle, robot scanning artwork, save system, FPS camera or overall world hierarchy.** Keep all added C# code under the appropriate `ENTITIES/Shared/Sensing/` and species folders, README docs current, and push **one commit per authorized implementation job** to `implement-td0-td1`.
+
+## PER0/PER1 implementation note
+
+Authorized together with a faint frontal debug cone. Shared IPerceptionTarget/VisibilityResolver, dynamic player head/torso samples, zombie visual-facing cone and bounded LOS now implemented. Existing zombie timer reused; no separate VisionSensor needed. Loss immediately returns to wandering at the next sight tick (no hidden position tracking); investigative memory remains PER2. Mask 17 intentionally uses existing world + trunk layers; glass still blocks pending PER3. DEBUG/Perception owns optional F8 fan display; it shows potential FOV, not clipped ray results. The rest of PER3, including glass audit and sample-ray diagnostics, remains unimplemented. Source review/whitespace checks only: no Godot/.NET available here.

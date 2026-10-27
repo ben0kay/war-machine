@@ -1,4 +1,4 @@
-// Dumb reusable zombie: staggered range decisions, slow wandering/chasing, and one shambling animation driver.
+// Dumb reusable zombie: staggered frontal eyesight decisions, slow wandering/chasing, and one shambling animation driver.
 using Godot;
 
 public partial class ZombieController : EntityCore, IDamageReceiver
@@ -7,6 +7,11 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private HealthComponent _health = null!;
     public bool IsChasing { get; private set; }
     private Node3D? _target;
+    private IPerceptionTarget? _sightTarget;
+    private VisibilityResolver? _visibility;
+    private MeshInstance3D? _visionCone;
+    private bool _showVisionCone;
+    public float VisionRange => IsChasing ? Mathf.Max(_config.DetectionRange, _config.LoseRange) : _config.DetectionRange;
     private ZombieSettings _config = null!;
     private Timer _brain = null!;
     private readonly RandomNumberGenerator _random = new();
@@ -49,6 +54,10 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
         Deactivate(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
+        _sightTarget = player as IPerceptionTarget;
+        _visibility = player is CollisionObject3D body && _sightTarget != null
+            ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;
+        if (_visibility == null) GD.PushWarning("Zombie target must provide body samples and a physics body; eyesight disabled.");
         _health.Configure(_config.HealthProfile);
         _configured = true; _hasGoal = false; IsChasing = false; _restUntil = 0; Activate();
     }
@@ -65,24 +74,28 @@ public partial class ZombieController : EntityCore, IDamageReceiver
 
     // =========================================================
     protected override void OnActivated()
-    { if (_configured) { _brain.Start(_random.RandfRange(0.05f, 0.4f)); SetPhysicsProcess(true); } }
+    { if (_configured) { _brain.Start(_random.RandfRange(0.05f, Mathf.Max(0.05f, _config.SightIntervalSeconds))); SetPhysicsProcess(true); } UpdateVisionDebug(); }
 
     // =========================================================
     protected override void OnDeactivated()
-    { _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); }
+    { _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); UpdateVisionDebug(); }
 
     // =========================================================
-    // Range-only awareness, intentionally no LOS/stealth/attack logic. Hysteresis avoids boundary flicker.
+    // Cheap range and visual-facing gates precede bounded head/torso LOS. No hidden live-position pursuit.
     private void Think()
     {
         if (!IsActive || !_configured) return;
         CheckGroundPenetration();
         bool chasing = false;
-        if (IsInstanceValid(_target))
+        if (IsInstanceValid(_target) && _target!.IsInsideTree() && _visibility != null && _sightTarget != null)
         {
-            Vector3 offset = _target!.GlobalPosition - GlobalPosition; offset.Y = 0;
-            float range = IsChasing ? Mathf.Max(_config.DetectionRange, _config.LoseRange) : _config.DetectionRange;
-            chasing = offset.LengthSquared() <= Mathf.Max(0, range) * Mathf.Max(0, range);
+            Vector3 offset = _target.GlobalPosition - GlobalPosition; offset.Y = 0;
+            float squared = offset.LengthSquared(), range = Mathf.Max(0, VisionRange);
+            Vector3 forward = -VisualRoot.GlobalBasis.Z; forward.Y = 0; forward = forward.Normalized();
+            float threshold = Mathf.Cos(Mathf.DegToRad(Mathf.Clamp(_config.VisionAngleDegrees, 1, 180)) * 0.5f);
+            if (squared <= range * range && (squared < 0.000001f || forward.Dot(offset / Mathf.Sqrt(squared)) >= threshold))
+                chasing = _visibility.CanSee(GetWorld3D().DirectSpaceState,
+                    GlobalPosition + Vector3.Up * _config.EyeHeight, _sightTarget);
         }
         if (chasing != IsChasing) { IsChasing = chasing; _hasGoal = false; Pose(0); }
         if (IsChasing)
@@ -95,7 +108,28 @@ public partial class ZombieController : EntityCore, IDamageReceiver
             _hasGoal = true;
         }
         if (_hasGoal || !IsOnFloor()) SetPhysicsProcess(true);
-        _brain.Start(0.4);
+        UpdateVisionDebug();
+        _brain.Start(Mathf.Max(0.1f, _config.SightIntervalSeconds));
+    }
+
+    // =========================================================
+    // Debug owns mesh construction/input; species owns visibility lifecycle. No debug frame callback.
+    public void AttachVisionDebug(MeshInstance3D cone)
+    { _visionCone = cone; _showVisionCone = _config.ShowVisionCone; UpdateVisionDebug(); }
+
+    // =========================================================
+    public void SetVisionDebugVisible(bool visible)
+    { _showVisionCone = visible; UpdateVisionDebug(); }
+
+    // =========================================================
+    private void UpdateVisionDebug()
+    {
+        if (_visionCone == null) return;
+        bool visible = IsActive && _showVisionCone;
+        if (_visionCone.Visible != visible) _visionCone.Visible = visible;
+        float range = Mathf.Max(0, VisionRange);
+        var scale = new Vector3(range, 1, range);
+        if (_visionCone.Scale != scale) _visionCone.Scale = scale;
     }
 
     // =========================================================

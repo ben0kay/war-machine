@@ -1,0 +1,3 @@
+# Zombie vision debug
+
+ZombieVisionDebug is installed by WorldController under DebugUIRoot in both gameplay views. F8 toggles faint red horizontal eye-height cone sectors attached to zombie VisualRoots. No process/physics callback or extra LOS checks. ShowVisionCone in ZombieMaster controls initial display. Potential FOV is shown through scenery intentionally; actual cover can still hide a target inside the fan. Arms-out pursuit indicates acquisition. The sector uses acquire/retain range and current visual facing. Deactivation hides it; actor deletion frees its mesh, and world unload frees the input owner. Disable with F8 to remove debug draws. Local visual validation pending.

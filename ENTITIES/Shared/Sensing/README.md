@@ -1,6 +1,6 @@
 # Optional sensors and shared perception — RM3 and proposed PER stages
 
-> **Implementation status:** The existing `ScanSensor` remains implemented as documented below. Shared natural eyesight, crouch/cover target sampling, visibility-memory and hearing are **not yet implemented**. See [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) for the Codex-ready staged design, reusable code layout, performance constraints and zombie-first test criteria.
+> **Implementation status:** The existing `ScanSensor` remains implemented as documented below. PER0/PER1 shared natural eyesight and crouch/cover sampling are implemented, awaiting local validation. Memory/hearing and robot resolver integration remain unimplemented. See [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) for the Codex-ready staged design, reusable code layout, performance constraints and zombie-first test criteria.
 
 Initialize ScanSensor with an actor, socket and ScanSensorSettings. RegisterCandidate/UnregisterCandidate explicitly supply Node3D targets; no groups, world enumeration or beam hitboxes. The full cone angle is in degrees, forward is socket -Z, range is world metres.
 
@@ -11,3 +11,9 @@ TargetEntered, TargetSeen and TargetExited are demonstration events, not combat.
 Godot's ray query returns a result dictionary; there can be engine/query allocation at the bounded active tick. No allocation-free or measured profiler claim is made. Configure CollisionMask for the terrain/walls you need.
 
 Validation is awaiting local build/runtime. Briefly check an in-cone target, out-of-cone/range target, wall occlusion, zero candidates, stop/restart and actor unload. Main-world integration registers only the explorer camera. No pursuit/damage is implemented.
+
+## PER0 shared geometry contract
+
+IPerceptionTarget provides world-space PerceptionHead/PerceptionTorso. PlayerController derives them from current interpolating capsule height, independently of either camera. VisibilityResolver owns one cached blocker-only ray query with observer/target excluded. CanSee must run in physics context after caller range/cone gates: clear head OR clear torso succeeds, max two rays per call. No timers, scene scans, target ownership, AI reactions or deferred budget state. Callers must budget two rays; this zombie pass checks just one explicitly registered target per timer tick.
+
+PER1 zombies reuse their staggered brain timer and visual heading, with mask 17 (world + trunks). Movement masks are untouched. Glass remains a known blocker classification limitation for PER3. Existing robot ScanSensor below remains unchanged; PER4 will integrate it deliberately.
