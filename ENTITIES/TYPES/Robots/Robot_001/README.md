@@ -67,3 +67,19 @@ Brief source/reference checks, two-leg IK/phase calculations and resource checks
 ## Ownership cleanup
 
 RobotController.cs, RobotSettings.cs and RobotAudio.cs live directly here. C/ retains RobotMeshBuilder.cs only.
+
+
+## Industrial intimidation visual pass — 2026-10-27
+
+Robot_001's **existing original C# biped** receives additional industrial/mechanical art, not a new actor or a separate model. Only `C/RobotMeshBuilder.cs`, art settings and this README change. The existing cyan cone scanner, logical LOS, movement, audio, damage assumptions, physical capsule, two-hip IK rig and head rotation remain untouched.
+
+- **Stronger silhouette:** interlocking angled chest plating, raised shoulder overhangs, stronger lower-leg/foot plating, bulky engine side housings, dorsal cooler fins and rear grilles.
+- **Industrial detail:** rivet/bolt caps, guarded sensor pod cowls, ventilator ribs, leg pistons/hydraulic-looking rods, knee/foot reinforcement and underbelly bracing.
+- **Power cabling:** short dark/steel cylinder links form bent cable runs on the torso, each upper leg and shin. They are **attached to the matching BodyRoot / LeftHip / RightHip / Knee** transform (not stretched between joints), so the standard gait follows them without any per-frame cable simulation.
+- **Restrained cyan accents:** tiny head dots, side reactor/engine status lines, pod windows and knee indicators, all using one muted emissive accent material built once. The bright scanner optics, original `SensorSocket` and `ScanBeam` remain the dominant cyan effect. Small muted gold/khaki service ID panels and slash markings suggest military hazard markings without glowing neon stripes.
+
+**Inspector defaults:** `RobotSettings.ExtraMeshDetail = true` enables the added pieces. Set it false (and respawn the robot) to return to its previous art silhouette. `DetailGlowMultiplier = 0.30` scales only new small indicator emission relative to the existing main sensor energy, and can be set to 0 for non-glowing detail while leaving the scanner intact. These are **spawn-time** visual settings in `Configuration/RobotMaster.tres`; they don't require continuous processor calls or redraw logic.
+
+**Socket/rig contract:** unchanged `BodyRoot`, `HeadPivot/SensorSocket`, `LeftHip/Knee/Foot` and `RightHip/Knee/Foot` names and coordinates. The original scene, `ArtOverride` path, raycaster, animated pivot geometry, `ModelScale`, collision, camera relevance and scan VFX setup are untouched. Decorative accents have no collision and must not occlude gameplay vision physics. The additional meshes share cached unit primitives/material instances within each robot, with no extra timers or CPU update callbacks. However, **more mesh surfaces increase render submissions/draw cost**; the detail toggle is provided for comparison and future LOD/batching if robot counts increase.
+
+**Local validation required:** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn`, inspect from the top-down angle and FPS test, and observe a full walk/stop/scan cycle. Look particularly at the side pod silhouette, foot clearances, bent cable attachment and cyan brightness in fog/night. Turn `ExtraMeshDetail` off on a test resource then reload to compare the original. If any geometry intersects awkwardly while bending, adjust only its local art offset—never a gait pivot or scanner socket. Code-review-only changes: no Godot/.NET compile or render pass was performed in this environment.

@@ -15,6 +15,10 @@ public partial class RobotSettings : Resource
     [Export] public Color JointColor { get; set; } = new(0.28f, 0.33f, 0.36f);
     [Export] public Color SensorColor { get; set; } = new(0.04f, 0.85f, 1.0f);
     [Export] public float EmissionEnergy { get; set; } = 1.8f;
+    [ExportGroup("Mesh detail")]
+    [Export] public bool ExtraMeshDetail { get; set; } = true;
+    // Relative to existing sensor emission; small fixed highlights should remain much dimmer.
+    [Export(PropertyHint.Range, "0,1.0,0.05")] public float DetailGlowMultiplier { get; set; } = 0.30f;
     [Export] public PackedScene? ArtOverride { get; set; }
     [ExportGroup("Gait")]
     [Export] public float StrideLength { get; set; } = 2.4f;
