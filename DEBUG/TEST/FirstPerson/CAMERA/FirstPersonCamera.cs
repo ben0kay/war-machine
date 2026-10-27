@@ -4,6 +4,7 @@ using Godot;
 public partial class FirstPersonCamera : Camera
 {
     [Export] public FirstPersonSettings TestSettings { get; set; } = null!;
+    public bool DebugControlsOpen { get; set; }
     private PlayerController _actor = null!;
     private bool _ready;
     private Vector3 _previousEye, _currentEye;
@@ -32,7 +33,7 @@ public partial class FirstPersonCamera : Camera
         if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.Escape)
         { ReleaseMouse(); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseButton mouse && mouse.Pressed && mouse.ButtonIndex == MouseButton.Left
-            && Input.MouseMode != Input.MouseModeEnum.Captured)
+            && Input.MouseMode != Input.MouseModeEnum.Captured && !DebugControlsOpen)
         { Input.MouseMode = Input.MouseModeEnum.Captured; _actor.SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {

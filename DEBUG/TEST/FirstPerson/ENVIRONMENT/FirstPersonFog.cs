@@ -11,7 +11,6 @@ public partial class FirstPersonFog : Node
     private PanelContainer _panel = null!;
     private Label _readout = null!;
     private float _originalFar;
-    private bool _recapture;
 
     // =========================================================
     // Local profile copies isolate FPS edits from top-down masters and the existing sky/weather owner.
@@ -74,16 +73,9 @@ public partial class FirstPersonFog : Node
     }
 
     // =========================================================
-    // Release mouse while tuning; existing player/weapon capture guards prevent aiming or firing through the panel.
-    public override void _UnhandledKeyInput(InputEvent @event)
-    {
-        if (_panel == null || @event is not InputEventKey key || !key.Pressed || key.Echo || key.PhysicalKeycode != Key.F9) return;
-        _panel.Visible = !_panel.Visible;
-        if (_panel.Visible)
-        { _recapture = Input.MouseMode == Input.MouseModeEnum.Captured; Input.MouseMode = Input.MouseModeEnum.Visible; }
-        else if (_recapture) Input.MouseMode = Input.MouseModeEnum.Captured;
-        GetViewport().SetInputAsHandled();
-    }
+    // FPS world coordinates F8/F9 and capture; this component controls only its own visible content.
+    public bool IsOpen => IsInstanceValid(_panel) && _panel.Visible;
+    public void SetPanelVisible(bool visible) { if (IsInstanceValid(_panel)) _panel.Visible = visible; }
 
     // =========================================================
     public override void _ExitTree()
