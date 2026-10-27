@@ -72,3 +72,53 @@ When an object, character, building, vehicle, tree or other asset is being **mod
 - For a newly built code-generated object, prefer a simple structure like `<Asset>/C/<Asset>Mesh.cs`, `<Asset>/Artwork/README.md`, `<Asset>/<Asset>.tscn`, and `<Asset>/Configuration/` for tweakable authoring settings as appropriate. Don't create unnecessary empty files or extra managers.
 
 This is a **source-art versus future-imported-art convention**, not an instruction to move every C# class into `C/`. For example, the active camera remains `CAMERA/Camera.cs` and the player controller remains `PLAYER/PlayerController.cs`.
+
+## C# syntax guardrails — loops and collection iteration (mandatory)
+
+**Recurring compile error: `Syntax error, 'foreach' expected`**. This happened in procedural C# mesh generation when a collection traversal was mistakenly written as `for (float x in new[] { ... })`. **This is not valid C#**; `in` collection iteration requires the `foreach` keyword. Two such mistakes were corrected in `EQUIPMENT/Weapons/MachineGuns/MachineGun_001/C/MachineGunMeshBuilder.cs` (cooling-vent positions and bipod positions).
+
+**Use `foreach` to visit the elements of an array, list or enumerable:**
+
+```csharp
+// Correct: enumerate fixed positions (typed variable).
+foreach (float x in new[] { -0.114f, 0.114f })
+{
+    // Build the vent/leg at this x position.
+}
+
+// Correct: infer the element type when appropriate.
+foreach (var item in items)
+{
+    Process(item);
+}
+```
+
+**Use `for` only with initializer, condition and iterator separated by semicolons** (or another genuinely valid C# `for` form):
+
+```csharp
+// Correct: count/index iteration.
+for (int i = 0; i < 4; i++)
+{
+    BuildPart(i);
+}
+
+// Correct: enumerate an array by index when the index is needed.
+float[] offsets = { -0.114f, 0.114f };
+for (int i = 0; i < offsets.Length; i++)
+{
+    float x = offsets[i];
+    BuildAt(x);
+}
+```
+
+**Never write the invalid hybrid syntax below:**
+
+```csharp
+// INVALID C# — triggers "'foreach' expected".
+for (float x in new[] { -0.114f, 0.114f })
+{
+    BuildAt(x);
+}
+```
+
+**Pre-commit requirement for all C# changes:** check every new/edited `for` and `foreach` loop, particularly loops over literal `new[] { ... }` collections. Search changed `.cs` files for suspicious `for (... in ...)` constructs and correct them to `foreach (... in ...)` before committing. Prefer `dotnet build war-machine.csproj` if the Godot C# SDK is available; build errors must be fixed before reporting a successful compile. If the environment cannot build, perform at least a focused syntax review and explicitly report **compilation not verified**. Don't assume an editor screenshot or successful GitHub push means the code compiled.

@@ -45,7 +45,7 @@ public partial class MachineGunMeshBuilder : Node3D
         // Front shroud and external heavy barrel, including heat vents and muzzle brake.
         Part(art, "Handguard", new(0, 0.060f, -0.56f), new(0.21f, 0.16f, 0.35f), stock);
         Part(art, "ShroudTop", new(0, 0.150f, -0.56f), new(0.20f, 0.033f, 0.31f), dark);
-        for (float x in new[] { -0.114f, 0.114f })
+        foreach (float x in new[] { -0.114f, 0.114f })
             for (int i = 0; i < 4; i++)
                 Part(art, "CoolingVent", new(x, 0.068f, -0.44f - i * 0.075f),
                     new(0.018f, 0.036f, 0.045f), dark);
@@ -60,7 +60,7 @@ public partial class MachineGunMeshBuilder : Node3D
         Part(art, "CarryHandleTop", new(0, 0.326f, -0.205f), new(0.06f, 0.045f, 0.35f), accent);
         Part(art, "RearSight", new(0, 0.196f, 0.015f), new(0.105f, 0.09f, 0.04f), dark);
         Part(art, "FrontSight", new(0, 0.151f, -1.04f), new(0.07f, 0.15f, 0.035f), dark);
-        for (float x in new[] { -0.09f, 0.09f })
+        foreach (float x in new[] { -0.09f, 0.09f })
         {
             Part(art, "FoldedBipodLeg", new(x, -0.081f, -0.77f),
                 new(0.028f, 0.07f, 0.36f), gunmetal);
