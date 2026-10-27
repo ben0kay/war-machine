@@ -116,7 +116,7 @@ public partial class MachineGunMeshBuilder : Node3D
 
         // Protective sight ears, rails and a distinctly folded bipod under the front shroud.
         Part(art, "RearSight", new(0, 0.204f, 0.004f), new(0.098f, 0.066f, 0.047f), Dark);
-        for (float x in new[] { -0.046f, 0.046f })
+        foreach (float x in new[] { -0.046f, 0.046f })
             Part(art, "FrontSightEar", new(x, 0.162f, -1.030f),
                 new(0.018f, 0.151f, 0.039f), Gunmetal);
         Part(art, "FrontSightPost", new(0, 0.172f, -1.030f),
