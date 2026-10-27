@@ -38,6 +38,8 @@ public partial class Building003Mesh : Node3D
         var interior = StructureGeometry.Group(generated, "ShopAndServiceInterior");
         var props = StructureGeometry.Group(generated, "ExteriorProps");
         _roof = StructureGeometry.Group(generated, "RoofAndCanopy"); _roof.Visible = ShowRoof;
+        var stationRoof = StructureGeometry.Group(_roof, "StationRoof");
+        var canopy = StructureGeometry.Group(_roof, "PumpCanopy");
         var body = StructureGeometry.Body(generated);
 
         var wall = StructureGeometry.Paint(s.Walls);
@@ -160,30 +162,30 @@ public partial class Building003Mesh : Node3D
                 new(0.17f, 0.35f, 0.17f), red);
 
         // Roof/parapet/HVAC are separate from the open ground-floor interior.
-        StructureGeometry.Box(_roof, body, "FlatRoof", new(0, h + 0.10f, 0),
+        StructureGeometry.Box(stationRoof, body, "FlatRoof", new(0, h + 0.10f, 0),
             new(w + 0.50f, 0.22f, d + 0.50f), metal);
-        StructureGeometry.Box(_roof, null, "RoofParapetFront", new(0, h + 0.42f, front),
+        StructureGeometry.Box(stationRoof, null, "RoofParapetFront", new(0, h + 0.42f, front),
             new(w + 0.45f, 0.58f, 0.25f), trim);
-        StructureGeometry.Box(_roof, null, "RoofParapetRear", new(0, h + 0.42f, back),
+        StructureGeometry.Box(stationRoof, null, "RoofParapetRear", new(0, h + 0.42f, back),
             new(w + 0.45f, 0.58f, 0.25f), trim);
         foreach (float x in new[] { -hx, hx })
-            StructureGeometry.Box(_roof, null, "RoofParapetSide", new(x, h + 0.42f, 0),
+            StructureGeometry.Box(stationRoof, null, "RoofParapetSide", new(x, h + 0.42f, 0),
                 new(0.25f, 0.58f, d + 0.40f), trim);
-        StructureGeometry.Box(_roof, null, "ACUnit", new(-hx * 0.48f, h + 0.62f, -1.5f),
+        StructureGeometry.Box(stationRoof, null, "ACUnit", new(-hx * 0.48f, h + 0.62f, -1.5f),
             new(2.1f, 0.88f, 1.50f), trimLight);
         for (int i = 0; i < 5; i++)
-            StructureGeometry.Box(_roof, null, "ACVentSlots", new(-hx * 0.48f - 0.74f + i * 0.37f,
+            StructureGeometry.Box(stationRoof, null, "ACVentSlots", new(-hx * 0.48f - 0.74f + i * 0.37f,
                 h + 1.11f, -1.5f), new(0.20f, 0.06f, 1.13f), rubber);
 
         // Deep independent gas-station canopy: a conspicuous roofline in the top-down distance.
         float canopyZ = front + 7.3f, canopyFront = canopyZ + 5.6f;
-        StructureGeometry.Box(_roof, null, "PumpCanopy", new(-0.6f, 5.65f, canopyZ),
+        StructureGeometry.Box(canopy, null, "PumpCanopy", new(-0.6f, 5.65f, canopyZ),
             new(w + 1.6f, 0.28f, 11.2f), metal);
-        StructureGeometry.Box(_roof, null, "CanopyFrontFascia", new(-0.6f, 5.36f, canopyFront),
+        StructureGeometry.Box(canopy, null, "CanopyFrontFascia", new(-0.6f, 5.36f, canopyFront),
             new(w + 1.75f, 0.75f, 0.32f), trim);
-        StructureGeometry.Box(_roof, null, "CanopyRedBand", new(-0.6f, 5.45f, canopyFront + 0.18f),
+        StructureGeometry.Box(canopy, null, "CanopyRedBand", new(-0.6f, 5.45f, canopyFront + 0.18f),
             new(w + 1.75f, 0.18f, 0.045f), red);
-        StructureGeometry.Box(_roof, null, "CanopyRearFascia", new(-0.6f, 5.37f, canopyZ - 5.6f),
+        StructureGeometry.Box(canopy, null, "CanopyRearFascia", new(-0.6f, 5.37f, canopyZ - 5.6f),
             new(w + 1.75f, 0.65f, 0.25f), trim);
         for (int side = -1; side <= 1; side += 2)
             for (int depth = -1; depth <= 1; depth += 2)

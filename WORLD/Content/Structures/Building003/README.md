@@ -27,3 +27,7 @@ Main shop/service hall: about **22m × 12m**, **4.4m** walls, flat industrial ro
 WorldController instances this prefab on saved terrain in both WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Its offset is editable in WORLD/Configuration/WorldMaster.tres. Actual generated bounds plus approach margins exclude pines, including external porch/canopy geometry. Terrain is read-only and the parked legacy FPS world is unchanged. See WORLD/README.md for the shared layout.
 
 Godot/.NET are unavailable here; compile, grounding, interior access, collider and camera checks remain for local validation.
+
+## Roof-only camera fading
+
+The former whole-building proxy is replaced with two independent roof camera-only section proxies: Generated/RoofAndCanopy/StationRoof and /PumpCanopy. Standing below the pump canopy fades its roof/fascia, leaving pumps, hoses, supports, signs and forecourt solid. Shop roof fading leaves shelves, counter and tools solid. StationShell walls use individual camera-only bounds proxies: only wall pieces obstructing the camera-to-player corridor fade, while other walls remain solid. Both roofs restore through existing camera obstruction timing/opacity settings when clear. No new ticking script or changes to collision, zombie LOS, interior simulation or FPS. SetRoofVisible still controls the parent RoofAndCanopy group. Source checks passed; visual/load validation pending locally.

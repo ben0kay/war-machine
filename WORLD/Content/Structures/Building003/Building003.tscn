@@ -9,5 +9,15 @@ script = ExtResource("1")
 Settings = ExtResource("2")
 ShowRoof = true
 
-[node name="CameraOccluder" type="Node3D" parent="."]
+[node name="RoofOccluder" type="Node3D" parent="."]
 script = ExtResource("3")
+VisualRootPath = NodePath("Generated/RoofAndCanopy/StationRoof")
+
+[node name="CanopyOccluder" type="Node3D" parent="."]
+script = ExtResource("3")
+VisualRootPath = NodePath("Generated/RoofAndCanopy/PumpCanopy")
+
+[node name="WallOccluder" type="Node3D" parent="."]
+script = ExtResource("3")
+VisualRootPath = NodePath("Generated/StationShell")
+FadeIndividualMeshes = true

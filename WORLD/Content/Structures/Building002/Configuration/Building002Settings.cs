@@ -11,6 +11,11 @@ public partial class Building002Settings : Resource
     [Export(PropertyHint.Range, "1.4,3.5,0.1")] public float RoofRise { get; set; } = 2.6f;
     [ExportGroup("Upper floor")]
     [Export(PropertyHint.Range, "2.5,3.4,0.1")] public float UpperWallHeight { get; set; } = 2.8f;
+    [ExportGroup("Top-down visibility")]
+    [Export] public float HiddenUpperOpacity { get; set; } = 0.12f;
+    [Export] public float IndoorRoofOpacity { get; set; } = 0.1f;
+    [Export] public float FloorFadeSeconds { get; set; } = 0.25f;
+    [Export] public float LandingHysteresis { get; set; } = 0.3f;
     [ExportGroup("Colours")]
     [Export] public Color Timber { get; set; } = new(0.45f, 0.40f, 0.32f);
     [Export] public Color Roof { get; set; } = new(0.26f, 0.34f, 0.29f);

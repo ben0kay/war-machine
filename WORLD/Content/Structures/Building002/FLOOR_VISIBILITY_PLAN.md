@@ -1,6 +1,6 @@
 # Building002 — floor-aware camera visibility handoff for Codex
 
-> **Status: PLANNED ONLY.** Geometry and metadata are already authored in `Building002Mesh.cs`: ground floor, collidable upper floor, open stairwell, visual stairs, separate walkable ramp collision and floor tags. **Automatic level changes and fade logic are NOT implemented by this document.** Keep existing roof, stair and player physics intact.
+> **Status: FL0–FL3 source implementation complete; local Godot validation pending.** Geometry and metadata are already authored in `Building002Mesh.cs`: ground floor, collidable upper floor, open stairwell, visual stairs, separate walkable ramp collision and floor tags. Automatic level changes/fade logic now live in Shared/BuildingFloorVisibility.cs. Keep existing roof, stair and player physics intact.
 
 ## Goal
 
@@ -65,3 +65,9 @@ Floor metadata is set at generator runtime. `Building002Mesh.SetFloorOpacity(flo
 - Performance: idle does no repeated ray/scene scans; only event/tween transition frames wake.
 
 **Codex handoff:** Read root `README.md`, `CodePreferences.md`, `WORLD/Content/Structures/Building002/README.md`, `Building002Mesh.cs`, `CAMERA/Occlusion/CameraOccluder.cs`, `CameraOcclusion.cs` and this plan. Begin with **FL0–FL1** only when authorized. Commit/push one focused change to `implement-td0-td1`; keep validation brief per project preferences.
+
+## Implemented first pass
+
+FL0 metadata inspected in source; Godot stair/collision verification pending. FL1 local-space player movement occupancy with Outside/Ground/OnStairs/Upper and footprint/landing hysteresis. FL2 configurable upper-content/roof presentation with landing blend and settled-idle sleep. FL3 disjoint section CameraOccluder owners compose authored × presentation × obstruction, excluding occupied furniture/decks from obstruction; lower walls restore upstairs. Static geometry/collision/LOS unchanged. FPS skips integration. FL4 debug UI remains optional/unimplemented; CurrentFloor can be inspected remotely. Runtime visual acceptance pending; see Building002 README. No interior simulation/culling policy introduced.
+
+Owner refinement: occupied-floor walls fade only where individual wall-mesh proxies intersect the existing camera-to-player corridor. Entering a floor does not force all its walls transparent. Roof/upper-storey presentation remains occupancy-based.

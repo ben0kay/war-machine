@@ -14,7 +14,7 @@ The ground-storey reception, office, equipment room and porch are retained. Insi
 
 ```text
 Building002
-├── CameraOccluder                           (existing whole-building occlusion proxy)
+├── FloorVisibility                          (top-down runtime section fade owner)
 └── Generated
     ├── Level_0                              floor_level=0, floor_elevation=0
     │   ├── Visuals
@@ -39,11 +39,11 @@ Building002
 
 Both level roots have Godot groups `building_floor_0` and `building_floor_1` for discovery, plus metadata `floor_level` and `floor_elevation` (local metres above building origin). Stair root uses metadata `lower_elevation`, `upper_elevation`, `connects_floor_from` and `connects_floor_to`, plus `building_stairs` group. These tags describe each floor's **geometry ownership**, not an automatic player floor-state detector.
 
-`SetFloorOpacity(int floor, float opacity)` is a **manual visual-only hook** (0=transparent, 1=opaque) for future floor-aware camera logic. It changes only meshes under that floor's `Visuals`; collision under either `Collision` remains enabled. `ShowRoof`/`SetRoofVisible` remain independent of floor visual opacity. **Automatic floor detection/fading is not implemented in this geometry pass.**
+`SetFloorOpacity(int floor, float opacity)` is a **manual visual-only hook** (0=transparent, 1=opaque) for future floor-aware camera logic. It changes only meshes under that floor's `Visuals`; collision under either `Collision` remains enabled. `ShowRoof`/`SetRoofVisible` remain independent of floor visual opacity. Automatic top-down floor detection/fading is now implemented by Shared/BuildingFloorVisibility.cs. Do not call the manual SetFloorOpacity hook while that controller owns presentation.
 
-Read [FLOOR_VISIBILITY_PLAN.md](FLOOR_VISIBILITY_PLAN.md) before building the camera integration. The existing `CAMERA/Occlusion/CameraOccluder.cs` still fades the **entire building**; a future floor controller must coordinate those fades rather than letting two independent transparency writers fight. Glass physics and line-of-sight classification are a separate consideration from floor cosmetic fade.
+Read [FLOOR_VISIBILITY_PLAN.md](FLOOR_VISIBILITY_PLAN.md) before building the camera integration. Top-down composition replaces whole-building fading with disjoint section fade owners, composing floor opacity with camera obstruction. Glass physics and line-of-sight classification are a separate consideration from floor cosmetic fade.
 
-**Local validation required:** pull, compile C#, F6 `WORLD/World.tscn`, approach Building002 northwest of spawn, walk up/down stairs and around upstairs furniture in top-down and inherited FPS test. In the remote tree, inspect `Generated/Level_0`, `Level_1` and `Stairs_0_to_1`. Test camera occlusion separately; no automatic floor fade yet.
+**Local validation required:** pull, compile C#, F6 `WORLD/World.tscn`, approach Building002 northwest of spawn, walk up/down stairs and around upstairs furniture in top-down and inherited FPS test. In the remote tree, inspect `Generated/Level_0`, `Level_1` and `Stairs_0_to_1`. Test camera occlusion separately; automatic floor visibility now enabled in top-down.
 
 ## Scene and silhouette
 
@@ -62,7 +62,7 @@ Approximate footprint **17m × 13m**, ground wall height **4m**, upper wall heig
 - `Configuration/Building002Master.tres`: inspector-editable defaults.
 - `Artwork/`: future imported `.glb` or texture assets; none supplied.
 - Shared primitive routines live in `../Shared/C/StructureGeometry.cs`.
-- `Building002.tscn` also includes the existing `CAMERA/Occlusion/CameraOccluder.cs` scene child, just like Building001.
+- `Building002.tscn` uses runtime section CameraOccluder owners installed by the top-down composition; no whole-building scene proxy.
 
 `ShowRoof=false` (or `SetRoofVisible(false)` at runtime) hides the roof and veranda canopy for testing the interior, while leaving their solid physics unchanged. The existing camera-fading component applies to the building as one object; no automatic player-indoor detection is included.
 
@@ -86,3 +86,17 @@ This is a practical example of developing a prop in layers: **shell → usable r
 ### Doorway visibility correction
 
 The interior ranger-map prop is now mounted wholly on the solid front-wall section between the left window and the entrance; it no longer overlaps the open door. The added clapboard/weatherboard strips are split around the pedestrian doorway **at all heights below its header**, and around window openings, so no decorative horizontal beam cuts through an opening. These are purely visual changes—building footprint, solid walls, door collision and room layout are unchanged. Verify after a Godot scene reload/F6.
+
+## Automatic top-down floor visibility (FL0–FL3 source implementation)
+
+World installs `Shared/BuildingFloorVisibility.cs` only through its top-down occlusion hook. It uses explicit player PositionChanged events, inverse building transform and tagged upper-floor elevation. Footprint entry/exit and landing hysteresis avoid boundary flicker; CurrentFloor exposes Outside/Ground/OnStairs/Upper for remote inspection. Occupancy does not depend on camera or raycasts. Local Godot stair/physics verification remains outstanding.
+
+Ground floor: upper deck, furnishings, exterior walls and partitions fade to HiddenUpperOpacity (0.12); roof to IndoorRoofOpacity (0.1). Near the upper landing, upper content restores smoothly over the final 1.8m of ascent; upstairs deck/furnishings are fully opaque. Roof stays faded and upper obstructing wall sections retain normal camera fading. Ground walls restore upstairs. Descending reverses the transition, leaving restores presentation. Stairs and every collider remain intact throughout. Roof includes the porch roof; furniture on the occupied floor never receives camera obstruction fades.
+
+CameraOccluder owns disjoint mesh sets; final opacity = authored opacity × floor presentation × camera obstruction. This avoids competing transparency writes. Lower partition art moved into Level_0/Visuals/Partitions, separate from Rooms furniture. Exterior details keep their existing appearance; walls use individual mesh bounds, so only wall pieces intersecting the existing camera-to-player corridor fade. This is the first visual pass, not per-room visibility or navigation.
+
+Tune Building002Master: HiddenUpperOpacity, IndoorRoofOpacity, FloorFadeSeconds (0.25), LandingHysteresis (0.3m). Settings are copied on initialization. Wake on player movement; processing runs only during a fade and sleeps when settled. No building polling, physics query or whole-world scan. Exit releases player subscription/restores presentation; scene owns proxies. FPS skips the controller and keeps opaque geometry; manual roof toggle remains.
+
+Checks here: source/path/group ownership review, numeric boundary/transition checks and git diff --check. No Godot/.NET executable: build, actual stair alignment, visuals/shadows and inherited FPS load remain pending. Locally build and F6 World; enter lodge, ascend/descend slowly, stop midway/at landing, leave, crouch, test camera angles, and check FPS remains normal. No rebake required.
+
+Wall fading follows camera obstruction, not indoor proximity: individual opaque wall pieces/partitions have camera-only bounds proxies. Other walls stay solid. Upstairs restores ground walls. No additional wall raycasts/timers; these targets join the existing capped camera capsule query. Static per-piece proxies add scene/physics bounds overhead, not script callbacks.

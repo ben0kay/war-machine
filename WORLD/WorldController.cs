@@ -128,6 +128,13 @@ public partial class WorldController : Node3D
     {
         var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
         occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
+        // One startup pass over authored placements; floor visibility never runs in the FPS override.
+        foreach (Node child in GetNode("WorldActorsRoot/PersistentPropsRoot/Structures").GetChildren())
+            if (child is Building002Mesh lodge)
+            {
+                var floors = new BuildingFloorVisibility { Name = "FloorVisibility" };
+                lodge.AddChild(floors); floors.Initialize(lodge, player);
+            }
     }
 
     // =========================================================

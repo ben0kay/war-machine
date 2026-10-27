@@ -69,7 +69,7 @@ public partial class CameraOcclusion : Node
         {
             var collider = hit["collider"].AsGodotObject();
             if (collider is Area3D area && area.HasMeta("camera_occluder")
-                && area.GetMeta("camera_occluder").AsGodotObject() is CameraOccluder target && target.IsValid) _hits.Add(target);
+                && area.GetMeta("camera_occluder").AsGodotObject() is ICameraFadeTarget target && target.IsValid) _hits.Add(target);
         }
         foreach (var provider in _providers) provider.CollectObstructions(from, to, radius, _hits);
         foreach (var pair in _fades) pair.Value.Goal = _hits.Contains(pair.Key) ? Mathf.Clamp(_settings.ObstructedOpacity, 0, 1) : 1;

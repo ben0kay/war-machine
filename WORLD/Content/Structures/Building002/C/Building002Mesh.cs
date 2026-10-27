@@ -69,6 +69,7 @@ public partial class Building002Mesh : Node3D
         var shell = StructureGeometry.Group(_level0Visuals, "Exterior");
         var detail = StructureGeometry.Group(_level0Visuals, "TimberAndProps");
         var rooms = StructureGeometry.Group(_level0Visuals, "Rooms");
+        var partitions = StructureGeometry.Group(_level0Visuals, "Partitions");
         _roof = StructureGeometry.Group(_level1Visuals, "RoofVisuals"); _roof.Visible = ShowRoof;
         var body = StructureGeometry.Body(lower);
         var upperBody = StructureGeometry.Body(upper);
@@ -126,16 +127,16 @@ public partial class Building002Mesh : Node3D
 
         // A partition to make the right side into a separate room, with its own real door gap.
         const float dividingX = 2.7f, gapA = -0.8f, gapB = 1.35f;
-        StructureGeometry.WallZ(rooms, body, "PartitionRear", dividingX, -hz + 0.25f, gapA, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallZ(rooms, body, "PartitionFront", dividingX, gapB, hz - 0.25f, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallZ(rooms, body, "PartitionHeader", dividingX, gapA, gapB, 2.65f, 2.95f, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, body, "PartitionRear", dividingX, -hz + 0.25f, gapA, 0, 2.95f, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, body, "PartitionFront", dividingX, gapB, hz - 0.25f, 0, 2.95f, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, body, "PartitionHeader", dividingX, gapA, gapB, 2.65f, 2.95f, woodLight, 0.15f);
         // Rear left office/bedroom: a second partition with a different walk-through gap.
         float partitionZ = -hz + 3.35f;
-        StructureGeometry.WallX(rooms, body, "RearOfficeLeft", -hx + 0.25f, -4.8f,
+        StructureGeometry.WallX(partitions, body, "RearOfficeLeft", -hx + 0.25f, -4.8f,
             partitionZ, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallX(rooms, body, "RearOfficeRight", -2.9f, dividingX - 0.2f,
+        StructureGeometry.WallX(partitions, body, "RearOfficeRight", -2.9f, dividingX - 0.2f,
             partitionZ, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallX(rooms, body, "RearOfficeLintel", -4.8f, -2.9f,
+        StructureGeometry.WallX(partitions, body, "RearOfficeLintel", -4.8f, -2.9f,
             partitionZ, 2.6f, 2.95f, woodLight, 0.15f);
         // Interior furniture is modest but gives the rooms real gameplay scale.
         StructureGeometry.Box(rooms, body, "ReceptionDesk", new(-3.1f, 0.66f, hz - 2.15f),
