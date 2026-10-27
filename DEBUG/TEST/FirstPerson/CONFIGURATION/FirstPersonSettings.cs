@@ -14,9 +14,9 @@ public partial class FirstPersonSettings : Resource
     [Export] public float TeleportResetDistance { get; set; } = 8;
     [ExportGroup("Fog and render distance")]
     [Export] public bool DistanceFogEnabled { get; set; } = true;
-    [Export] public float FogStartDistance { get; set; } = 25;
-    [Export] public float FogEndDistance { get; set; } = 60;
-    [Export] public float FogCullBuffer { get; set; } = 12;
+    [Export] public float FogStartDistance { get; set; } = 1;
+    [Export] public float FogEndDistance { get; set; } = 100;
+    [Export] public float FogCullBuffer { get; set; } = 120;
     [Export] public Color FogColor { get; set; } = new(0.39f, 0.46f, 0.48f);
     [ExportGroup("Movement")]
     [Export] public float WalkSpeed { get; set; } = 5;

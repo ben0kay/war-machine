@@ -33,7 +33,7 @@ public partial class FirstPersonFog : Node
     {
         float start = Mathf.Clamp(_settings.FogStartDistance, 1, 250);
         float end = Mathf.Clamp(_settings.FogEndDistance, start + 1, 300);
-        float buffer = Mathf.Clamp(_settings.FogCullBuffer, 8, 100);
+        float buffer = Mathf.Clamp(_settings.FogCullBuffer, 8, 200);
         _fogSettings.DistanceFogEnabled = _settings.DistanceFogEnabled;
         _fogSettings.DistanceFogStart = start; _fogSettings.DistanceFogEnd = end;
         _fogSettings.DistanceFogOpacity = 1; _fogSettings.DistanceFogEdgeVariation = 0;
@@ -55,13 +55,13 @@ public partial class FirstPersonFog : Node
         enabled.Toggled += value => { _settings.DistanceFogEnabled = value; Apply(); }; box.AddChild(enabled);
         Slider(box, "Fog starts (m)", 1, 150, _settings.FogStartDistance, value => _settings.FogStartDistance = value);
         Slider(box, "Fog fully opaque (m)", 10, 250, _settings.FogEndDistance, value => _settings.FogEndDistance = value);
-        Slider(box, "Hidden render buffer (m)", 8, 100, _settings.FogCullBuffer, value => _settings.FogCullBuffer = value);
+        Slider(box, "Hidden render buffer (m)", 8, 200, _settings.FogCullBuffer, value => _settings.FogCullBuffer = value);
         var color = new ColorPickerButton { Color = _settings.FogColor, EditAlpha = false, Text = "Fog colour" };
         color.ColorChanged += value => { _settings.FogColor = value; Apply(); }; box.AddChild(color);
         _readout = new Label(); box.AddChild(_readout);
         var copy = new Button { Text = "Copy fog settings" };
         copy.Pressed += () => DisplayServer.ClipboardSet(System.FormattableString.Invariant(
-            $"DistanceFogEnabled = {_settings.DistanceFogEnabled}\nFogStartDistance = {_fogSettings.DistanceFogStart}\nFogEndDistance = {_fogSettings.DistanceFogEnd}\nFogCullBuffer = {Mathf.Clamp(_settings.FogCullBuffer, 8, 100)}\nFogColor = Color({_settings.FogColor.R}, {_settings.FogColor.G}, {_settings.FogColor.B}, 1)"));
+            $"DistanceFogEnabled = {_settings.DistanceFogEnabled}\nFogStartDistance = {_fogSettings.DistanceFogStart}\nFogEndDistance = {_fogSettings.DistanceFogEnd}\nFogCullBuffer = {Mathf.Clamp(_settings.FogCullBuffer, 8, 200)}\nFogColor = Color({_settings.FogColor.R}, {_settings.FogColor.G}, {_settings.FogColor.B}, 1)"));
         box.AddChild(copy);
     }
 
