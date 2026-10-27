@@ -25,6 +25,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private ulong _restUntil;
     private float _phase, _stuck;
     private HitReaction _reaction;
+    private bool _shoveReaction;
     private float _recoveryRemaining;
     private Vector3 _reactionPose;
     protected Node3D _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
@@ -97,17 +98,41 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     { if (IsActive && _configured) _health.ApplyDamage(hit); }
 
     // =========================================================
-    // Damage has already resolved when dispatched together. Immunity/reaction policy stays with the target.
+    // Damage has already resolved when dispatched together. Shove is impact-only and pushes
+    // through CharacterBody3D motion; bullets keep their original velocity-damping behaviour.
     public void ReceiveImpact(in CombatImpact impact)
     {
-        if (!IsActive || !_configured || _health.IsDead || IsQueuedForDeletion() || _awaitingSpawnGround
-            || !_config.BulletReactionsEnabled || impact.Kind != CombatImpactKind.Bullet) return;
-        if (!_reaction.TryStart(impact, _config.ImpactResistance, _config.FlinchThreshold, _config.MaxStaggerSeconds,
-            _config.MinFlinchInterval, _config.MinRecoverySeconds, Time.GetTicksMsec())) return;
-        float keep = Mathf.Clamp(_config.ImpactVelocityRetention, 0, 1);
-        Velocity = new Vector3(Velocity.X * keep, Velocity.Y, Velocity.Z * keep);
+        if (!IsActive || !_configured || _health.IsDead || IsQueuedForDeletion() || _awaitingSpawnGround) return;
+        if (impact.Kind == CombatImpactKind.Bullet)
+        {
+            if (!_config.BulletReactionsEnabled || !_reaction.TryStart(impact, _config.ImpactResistance,
+                _config.FlinchThreshold, _config.MaxStaggerSeconds, _config.MinFlinchInterval,
+                _config.MinRecoverySeconds, Time.GetTicksMsec())) return;
+            _shoveReaction = false;
+            float keep = Mathf.Clamp(_config.ImpactVelocityRetention, 0, 1);
+            Velocity = new Vector3(Velocity.X * keep, Velocity.Y, Velocity.Z * keep);
+        }
+        else if (impact.Kind == CombatImpactKind.Shove)
+        {
+            if (!_config.ShoveReactionsEnabled || !_reaction.TryStart(impact, _config.ShoveResistance,
+                _config.ShoveStrengthThreshold, _config.ShoveMaxStaggerSeconds, _config.MinFlinchInterval,
+                _config.MinRecoverySeconds, Time.GetTicksMsec())) return;
+            _shoveReaction = true;
+            float perStrength = SafePushValue(_config.ShovePushSpeed, 20f);
+            float cap = SafePushValue(_config.ShoveMaxPushSpeed, 20f);
+            float pushSpeed = Mathf.Min(cap, _reaction.Strength * perStrength);
+            Vector3 push = _reaction.Direction * pushSpeed;
+            Velocity = new Vector3(push.X, Velocity.Y, push.Z);
+        }
+        else return;
+
         _recoveryRemaining = 0; _stuck = 0; SetPhysicsProcess(true);
     }
+
+    // =========================================================
+    // Keep accidental non-finite authoring values out of velocity without allocating per impact.
+    private static float SafePushValue(float value, float max)
+    { return float.IsFinite(value) ? Mathf.Clamp(value, 0f, max) : 0f; }
 
     // =========================================================
     // Remove only the additive hit pose, preserving the species' normal lean/yaw/gait.
@@ -119,7 +144,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     private void ClearReaction()
-    { RemoveReactionPose(); _reaction.Reset(); _recoveryRemaining = 0; }
+    { RemoveReactionPose(); _reaction.Reset(); _shoveReaction = false; _recoveryRemaining = 0; }
 
     // =========================================================
     private void ApplyReactionPose()
@@ -264,23 +289,40 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         float dt = (float)delta;
         RemoveReactionPose();
         bool reacting = _reaction.IsActive;
+        bool pushing = reacting && _shoveReaction;
         if (reacting)
         {
             _reaction.Advance(dt, Time.GetTicksMsec());
-            if (!_reaction.IsActive) _recoveryRemaining = Mathf.Clamp(_config.RecoverySeconds, 0, 1);
+            if (!_reaction.IsActive)
+            {
+                _shoveReaction = false;
+                _recoveryRemaining = Mathf.Clamp(_config.RecoverySeconds, 0, 1);
+            }
         }
         bool recovering = !reacting && _recoveryRemaining > 0;
         if (recovering) _recoveryRemaining = Mathf.Max(0, _recoveryRemaining - dt);
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance) : 0.4f;
         bool walking = _hasGoal && offset.LengthSquared() > stop * stop;
-        if (_hasGoal && !walking && !IsChasing) Rest();
-        Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
-        float speed = Mathf.Max(0, IsChasing ? _config.ChaseSpeed : _config.WanderSpeed);
-        if (reacting) speed *= Mathf.Clamp(_config.StaggerMoveMultiplier, 0, 1);
-        float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
-            : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
-        Vector3 horizontal = new Vector3(Velocity.X, 0, Velocity.Z).MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
+        if (_hasGoal && !walking && !IsChasing && !pushing) Rest();
+        Vector3 currentHorizontal = new(Velocity.X, 0, Velocity.Z);
+        Vector3 horizontal;
+        if (pushing)
+        {
+            // Do not let the next pursuit decision cancel pushback. MoveAndSlide still resolves
+            // walls, ground and neighbouring bodies; never teleport or apply vertical lift.
+            horizontal = currentHorizontal.MoveToward(Vector3.Zero, dt * Mathf.Max(0.1f,
+                SafePushValue(_config.ShoveBrakingAcceleration, 40f)));
+        }
+        else
+        {
+            Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
+            float speed = Mathf.Max(0, IsChasing ? _config.ChaseSpeed : _config.WanderSpeed);
+            if (reacting) speed *= Mathf.Clamp(_config.StaggerMoveMultiplier, 0, 1);
+            float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
+                : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
+            horizontal = currentHorizontal.MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
+        }
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - 20 * dt, horizontal.Z);
         MoveAndSlide();
@@ -288,8 +330,12 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         bool moved = travel.LengthSquared() > 0.000001f;
         if (moved)
         {
-            float yaw = Mathf.Atan2(-travel.X, -travel.Z);
-            VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
+            // A shoved zombie slides backward while continuing to face its attacker.
+            if (!pushing)
+            {
+                float yaw = Mathf.Atan2(-travel.X, -travel.Z);
+                VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
+            }
             _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter);
             // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
             float swing = Mathf.Cos(_phase);

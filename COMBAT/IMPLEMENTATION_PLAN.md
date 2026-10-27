@@ -1,6 +1,6 @@
 # CM — Melee, shove and hit-reaction implementation plan
 
-> **Current status: CM0 and CM1 implemented, awaiting local validation; CM2–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
+> **Current status: CM0 and CM1 implemented; CM2-B recipient pushback implemented in source, awaiting local validation; CM2-A/C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
 
 ## Phase overview
 
@@ -148,6 +148,10 @@ These are **design-test starting points**, not implemented stats or decisions ab
 **Pass:** Rifle and MG both cause a short recoverable interruption on living zombie and runner; no reaction on miss/solid cover/dead target; run/turn and stationary cases; fast MG bursts cannot lock one zombie forever; dead zombie still disappears once; horde of ~20 causes bounded work. **Codex / Work** integration; **Copilot** build/F6 visuals; **Regular Chat** balance review.
 
 ## CM2 — Reusable quick-melee shove (revised scope)
+
+> **Partial progress (CM2-B, 2026-10-27):** Receiver-side zombie and runner physical pushback, `Shove` impact acceptance, configurable braking/resistance and recovery are implemented in source; compilation and Godot validation pending. CM2-A detection/profile, CM2-C both-view player inputs/aim and CM2-D procedural animation are **not** implemented. Full CM2 remains planned; the existing `CombatImpactKind.Shove` can be dispatched through CM0 without creating a second damage pipeline. Bullet behaviour remains unchanged. See `COMBAT/README.md` for test values/handoff.
+
+
 
 **Objective:** Dedicated Quick Melee button performs a short defensive push independent of currently equipped weapon. With a gun it looks like a gun-butt strike; with a bat/knife/sword later it is a held-weapon push, while left-click is reserved for that equipped weapon's main attack. Implement the player's quick shove in **both overhead and first-person views** against one zombie/runner, with an **actor-neutral attack interface** future NPCs can call.
 
