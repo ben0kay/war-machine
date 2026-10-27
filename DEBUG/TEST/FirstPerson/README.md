@@ -90,3 +90,7 @@ Shared test equipment/population: **1 = Rifle_001, 2 = MachineGun_001**; rifle s
 The FPS test now has a **F8 weather/time** debug panel separate from **F9 fog/render distance**. The F8 scroll panel can set the hour, pause/unpause time, day length, weather enabled, rain, snow, local mist, airborne motes, wind, gusts, turbulence, particle size/fall speed and quality. "Copy weather & time settings" exports runtime values to the clipboard; none are written to authoring resources. This reuses the exact shared Sky3D/weather/vegetation owners used by the top-down world.
 
 F8/F9 are mutually exclusive. Opening releases mouse capture, swapping panels keeps it released, closing restores capture only if it was captured beforehand. Escape closes the panel while leaving the mouse released. UI clicks cannot trigger camera recapture/weapon fire. Everything is input/signal-driven; no new update loop. See [FPS environment README](ENVIRONMENT/README.md). **Local validation pending:** build, F6 FPS, test day/night and weather toggles, swap F8/F9, escape/focus/input, and briefly load the overhead world.
+
+## Scene parse correction
+
+Removed an invalid hash-prefixed explanatory comment from FirstPersonTest.tscn. Godot treated '#' as a colour token and failed before the inherited root node ("Invalid color code: #" / "Expected '['"). The hierarchy/shared environment is unchanged. Source scene-token/resource-ID checks completed; reopen the scene and F6 locally. Actual Godot loading and C# compilation remain unverified here.

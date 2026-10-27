@@ -6,7 +6,6 @@
 [ext_resource type="Resource" path="res://DEBUG/TEST/FirstPerson/CONFIGURATION/FirstPersonMaster.tres" id="5"]
 [ext_resource type="Resource" path="res://DEBUG/TEST/FirstPerson/VEGETATION/GrassMaster.tres" id="6"]
 
-# EnvironmentRoot inherits the single shared ENVIRONMENT/Environment.tscn instance from World.
 [node name="FirstPersonTest" instance=ExtResource("1")]
 script = ExtResource("2")
 GrassSettings = ExtResource("6")

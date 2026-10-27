@@ -12,6 +12,19 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
     private PlayerController _player = null!;
     private readonly List<CameraOccluder> _sections = new();
     private Aabb _bounds;
+    private readonly struct Part
+    {
+        public readonly MeshInstance3D Mesh;
+        public readonly Transform3D ToMesh;
+        public readonly Aabb Bounds;
+        public readonly float RadiusScale;
+        public Part(MeshInstance3D mesh, Transform3D toMesh)
+        {
+            Mesh = mesh; ToMesh = toMesh; Bounds = mesh.GetAabb();
+            RadiusScale = Mathf.Max(toMesh.Basis.X.Length(), Mathf.Max(toMesh.Basis.Y.Length(), toMesh.Basis.Z.Length()));
+        }
+    }
+    private readonly List<Part> _parts = new();
     private Aabb[] _occupiedZones = System.Array.Empty<Aabb>();
     private System.Func<bool>? _isInsideFloor;
     private bool _inside, _initialized, _occupancySet;
@@ -32,6 +45,7 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
         {
             var bounds = CameraOcclusionMath.TransformBounds(mesh.GetAabb(), building.GlobalTransform.AffineInverse() * mesh.GlobalTransform);
             _bounds = first ? bounds : _bounds.Merge(bounds); first = false;
+            _parts.Add(new Part(mesh, mesh.GlobalTransform.AffineInverse() * building.GlobalTransform));
         }
         SetProcess(false); SetPhysicsProcess(false);
         _initialized = !first; _player.PositionChanged += OnPlayerMoved;
@@ -63,13 +77,21 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
     }
 
     // =========================================================
-    // Existing camera cadence supplies one allocation-free bounds test per building, and no outside query indoors.
+    // Broad reject first, then cached mesh-local boxes exclude empty space in the overall building envelope.
     public void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results)
     {
         if (!IsValid || _inside) return;
         var inverse = _building.GlobalTransform.AffineInverse();
         float localRadius = radius * Mathf.Max(inverse.Basis.X.Length(), Mathf.Max(inverse.Basis.Y.Length(), inverse.Basis.Z.Length()));
-        if (CameraOcclusionMath.Intersects(inverse * from, inverse * to, _bounds, localRadius)) results.Add(this);
+        Vector3 localFrom = inverse * from, localTo = inverse * to;
+        if (!CameraOcclusionMath.Intersects(localFrom, localTo, _bounds, localRadius)) return;
+        foreach (var part in _parts)
+        {
+            if (!GodotObject.IsInstanceValid(part.Mesh) || !part.Mesh.IsVisibleInTree()) continue;
+            if (!CameraOcclusionMath.Intersects(part.ToMesh * localFrom, part.ToMesh * localTo,
+                part.Bounds, localRadius * part.RadiusScale)) continue;
+            results.Add(this); return;
+        }
     }
 
     // =========================================================
