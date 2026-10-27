@@ -62,7 +62,7 @@ public static class ZombieAppearance
                     case "Skull": case "Jaw": case "Nose": case "Brow":
                         mesh.MaterialOverride = appearance.Face; break;
                     case "ExposedNeck": case "BentNeck": case "ExposedForearm":
-                    case "Forearm": case "Hand":
+                    case "Forearm": case "Hand": case "Finger":
                         mesh.MaterialOverride = appearance.Skin; break;
                     case "SlouchedTorso": case "LeanTorso": case "ShoulderShape":
                     case "NarrowShoulders": case "TornCollar": case "ShirtHem":

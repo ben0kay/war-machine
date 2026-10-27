@@ -19,3 +19,7 @@ WorldMaster.RunnerSpawnOffsets now contains three runners at offsets (18,22), (-
 ## ZMAT0 appearance
 
 Runners now reuse the standard zombie's `../C/ZombieAppearance.cs` generated material palette for skin, facial mottling, shirt, trousers, and occasional muted dried blood. The runner keeps its narrower, independently built skeleton and runner gait. `ZombieRunnerMaster.tres` exposes `AppearanceVariationEnabled=true` and `BloodChance=0.45`. Appearance selection is seeded from `InitializeTarget` and shared across actors; no runner-specific texture allocation or additional runtime update.
+
+### Refined Runner art
+
+Shares closed UV-mapped anatomy meshes with Zombie 001, with narrower skull, human-sized eye slits, tapered forearms/knees, smaller shoes and minimal hand digits. `ZombieRunnerController` and its faster speed are not changed. Visual FPS and top-down comparison still needs local checking.

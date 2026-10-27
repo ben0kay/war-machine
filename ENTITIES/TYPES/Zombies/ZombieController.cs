@@ -356,11 +356,12 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     protected virtual void Pose(float step, float leftLift = 0, float rightLift = 0)
     {
         VisualRoot.Position = Vector3.Up * (Mathf.Abs(step) * 0.015f);
-        _leftArm.Rotation = new Vector3((IsChasing ? 1.4f : 0.15f) - step * 0.08f, 0, -0.08f);
-        _rightArm.Rotation = new Vector3((IsChasing ? 1.4f : 0.15f) + step * 0.08f, 0, 0.08f);
-        _leftLeg.Rotation = new Vector3(step * 0.22f, 0, 0); _rightLeg.Rotation = new Vector3(-step * 0.22f, 0, 0);
-        _leftKnee.Rotation = new Vector3(-leftLift * 0.32f, 0, 0);
-        _rightKnee.Rotation = new Vector3(-rightLift * 0.25f, 0, 0);
+        _leftArm.Rotation = new Vector3((IsChasing ? 1.31f : 0.12f) - step * 0.10f, 0, -0.11f);
+        _rightArm.Rotation = new Vector3((IsChasing ? 1.40f : 0.20f) + step * 0.07f, 0, 0.07f);
+        _leftLeg.Rotation = new Vector3(step * 0.22f, 0.02f, -0.025f);
+        _rightLeg.Rotation = new Vector3(-step * 0.19f, -0.02f, 0.018f);
+        _leftKnee.Rotation = new Vector3(-0.10f - leftLift * 0.30f, 0, 0);
+        _rightKnee.Rotation = new Vector3(-rightLift * 0.22f, 0, 0);
     }
 
 }

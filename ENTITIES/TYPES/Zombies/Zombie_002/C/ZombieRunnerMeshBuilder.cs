@@ -13,7 +13,7 @@ public sealed class ZombieRunnerMeshBuilder
     public Node3D RightKnee { get; private set; } = null!;
 
     private static readonly SphereMesh Rounded = new() { Radius = 0.5f, Height = 1, RadialSegments = 10, Rings = 5 };
-    private static readonly CylinderMesh Torso = new() { TopRadius = 0.5f, BottomRadius = 0.36f, Height = 1, RadialSegments = 10, Rings = 1 };
+    private static readonly Mesh Torso = ZombieHumanGeometry.Torso;
     private static readonly BoxMesh Box = new() { Size = Vector3.One };
     private static readonly Material Skin = Paint(new Color(0.48f, 0.49f, 0.39f));
     private static readonly Material SkinShadow = Paint(new Color(0.31f, 0.34f, 0.29f));
@@ -22,7 +22,7 @@ public sealed class ZombieRunnerMeshBuilder
     private static readonly Material Pants = Paint(new Color(0.25f, 0.27f, 0.28f));
     private static readonly Material Boots = Paint(new Color(0.13f, 0.16f, 0.16f));
     private static readonly Material Bruise = Paint(new Color(0.31f, 0.20f, 0.20f));
-    private static readonly Material Eyes = Paint(new Color(0.70f, 0.69f, 0.54f));
+    private static readonly Material Eyes = Paint(new Color(0.30f, 0.34f, 0.29f));
 
     // =========================================================
     public ZombieRunnerMeshBuilder(Node3D root) { _root = root; Build(); }
@@ -43,12 +43,12 @@ public sealed class ZombieRunnerMeshBuilder
         // Slightly smaller angular head, sunken eye sockets, prominent brow and discoloured cheek.
         var head = Pivot(_root, "Head", new(0.014f, 1.54f, -0.055f));
         head.RotationDegrees = new Vector3(-8, -7, -7);
-        Part(head, "Skull", Vector3.Zero, new(0.266f, 0.318f, 0.270f), Skin, Rounded);
-        Part(head, "Jaw", new(0, -0.127f, -0.035f), new(0.211f, 0.114f, 0.20f), SkinShadow, Rounded);
-        Part(head, "Brow", new(0, 0.072f, -0.124f), new(0.233f, 0.072f, 0.08f), SkinShadow, Rounded);
-        Part(head, "LeftEye", new(-0.068f, 0.024f, -0.141f), new(0.037f, 0.028f, 0.014f), Eyes, Rounded);
-        Part(head, "RightEye", new(0.074f, 0.022f, -0.143f), new(0.035f, 0.028f, 0.014f), Eyes, Rounded);
-        Part(head, "OpenMouth", new(0, -0.131f, -0.139f), new(0.114f, 0.038f, 0.021f), Boots, Rounded);
+        Part(head, "Skull", Vector3.Zero, new(0.236f, 0.315f, 0.225f), Skin, Rounded);
+        Part(head, "Jaw", new(0, -0.127f, -0.035f), new(0.165f, 0.119f, 0.167f), SkinShadow, Rounded);
+        Part(head, "Brow", new(0, 0.072f, -0.124f), new(0.190f, 0.036f, 0.043f), SkinShadow, Rounded);
+        Part(head, "LeftEye", new(-0.068f, 0.024f, -0.141f), new(0.016f, 0.011f, 0.008f), Eyes, Rounded);
+        Part(head, "RightEye", new(0.074f, 0.022f, -0.143f), new(0.016f, 0.011f, 0.008f), Eyes, Rounded);
+        Part(head, "OpenMouth", new(0, -0.131f, -0.139f), new(0.072f, 0.016f, 0.014f), Boots, Rounded);
         Part(head, "BruisedCheek", new(-0.107f, -0.045f, -0.092f), new(0.057f, 0.10f, 0.036f), Bruise, Rounded);
 
         LeftArm = Pivot(_root, "LeftArm", new(-0.302f, 1.305f, 0));
@@ -70,7 +70,10 @@ public sealed class ZombieRunnerMeshBuilder
         Part(arm, "Sleeve", new(0, left ? -0.145f : -0.19f, 0),
             new(0.162f, left ? 0.21f : 0.285f, 0.182f), left ? ShirtDark : Shirt, Rounded);
         Part(arm, "Forearm", new(0, -0.368f, 0), new(0.123f, 0.298f, 0.142f), Skin, Rounded);
-        Part(arm, "Hand", new(0, -0.531f, -0.024f), new(0.133f, 0.136f, 0.145f), SkinShadow, Rounded);
+        Part(arm, "Hand", new(0, -0.531f, -0.024f), new(0.104f, 0.123f, 0.116f), SkinShadow, Rounded);
+        for (int i = 0; i < 2; i++)
+            Part(arm, "Finger", new(i == 0 ? -0.027f : 0.024f, -0.612f + i * 0.01f, -0.030f),
+                new(0.030f, 0.068f - i * 0.012f, 0.034f), Skin, ZombieHumanGeometry.LowerLimb);
         Part(arm, "ElbowBruise", new(left ? -0.06f : 0.065f, -0.324f, -0.018f),
             new(0.028f, 0.085f, 0.08f), Bruise, Rounded);
     }
@@ -83,11 +86,13 @@ public sealed class ZombieRunnerMeshBuilder
         if (left) Part(leg, "TornKnee", new(-0.052f, -0.303f, -0.104f),
             new(0.093f, 0.09f, 0.026f), SkinShadow, Rounded);
         var knee = Pivot(leg, "Knee", new(0, -0.36f, 0));
-        Part(knee, "KneeJoint", Vector3.Zero, new(0.163f, 0.173f, 0.185f), Pants, Rounded);
-        Part(knee, "LongShin", new(0, -0.163f, 0), new(0.161f, 0.347f, 0.188f), Pants, Rounded);
-        var ankle = Pivot(knee, "Ankle", new(0, -0.34f, 0));
-        Part(ankle, "Shoe", new(0, 0.008f, -0.047f), new(0.19f, 0.158f, 0.270f), Boots, Rounded);
-        Part(ankle, "Toe", new(0, -0.04f, -0.127f), new(0.205f, 0.09f, 0.18f), Boots, Rounded);
+        Part(knee, "KneeJoint", Vector3.Zero, new(0.141f, 0.125f, 0.158f), Pants, Rounded);
+        var lower = Pivot(knee, "LowerLegShape", Vector3.Zero);
+        lower.Rotation = new Vector3(left ? -0.045f : 0.025f, 0, left ? 0.025f : -0.020f);
+        Part(lower, "LongShin", new(0, -0.163f, 0), new(0.154f, 0.347f, 0.171f), Pants, Rounded);
+        var ankle = Pivot(lower, "Ankle", new(0, -0.34f, 0));
+        Part(ankle, "Shoe", new(0, 0.008f, -0.047f), new(0.177f, 0.135f, 0.255f), Boots, Rounded);
+        Part(ankle, "Toe", new(0, -0.04f, -0.127f), new(0.188f, 0.067f, 0.178f), Boots, Rounded);
         return knee;
     }
 
@@ -102,7 +107,7 @@ public sealed class ZombieRunnerMeshBuilder
     private static void Part(Node3D parent, string name, Vector3 pos, Vector3 scale, Material material,
         Mesh? mesh = null, Vector3? rotation = null)
     {
-        parent.AddChild(new MeshInstance3D { Name = name, Mesh = mesh ?? Box, Position = pos,
+        parent.AddChild(new MeshInstance3D { Name = name, Mesh = ZombieHumanGeometry.Shape(name, mesh ?? Box), Position = pos,
             Scale = scale, MaterialOverride = material, RotationDegrees = rotation ?? Vector3.Zero });
     }
 }

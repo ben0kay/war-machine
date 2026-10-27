@@ -95,3 +95,7 @@ These settings are read **only at spawn/initialize time**; edit, reload and rein
 **Memory budget:** 28 × 64 × 64 × 4 RGBA bytes × approximately 1.33 for mipmaps = **~0.58 MiB raw pixel storage**, shared by all zombies and runner variants (excluding texture resource and driver overhead). No new shaders, per-frame CPU loops, per-actor texture/image allocations, PNG files, mesh nodes or material instances are created by variation selection. It does not solve draw-call scaling for future hundred-actor hordes.
 
 **Quick owner check:** rebuild .NET scripts; F6 `WORLD/World.tscn` and inherited first-person test; approach several standard zombies and runners to compare skin/shirt colours, facial smears, clothing stains and clean variants. Check blood is unobtrusive at a distance, the original animation pivots remain correct, and reloads preserve a spawn-seeded appearance. Try `BloodChance=0` and `BloodChance=1` (reload) to compare. Full Godot runtime/render testing not performed here.
+
+## Refined human-like procedural geometry
+
+Zombie 001 and Runner 002 now use a small shared cached profile mesh library `C/ZombieHumanGeometry.cs` with human-shaped shoulder/waist and skull contours, thin eyes, slimmer limb and foot silhouettes, and short hanging fingers. The original animation pivots, speed and combat AI remain in place, and spawn-seeded material variation is retained. The shambler has slight left-knee/arm asymmetry; runner keeps its chase animations. No imported models or new material pass. Godot visual and build validation pending.

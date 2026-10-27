@@ -18,10 +18,10 @@ public sealed class ZombieMeshBuilder
     // are generated only once by ZombieAppearance and reused across ordinary zombies and runners.
     private static readonly BoxMesh Box = new() { Size = Vector3.One };
     private static readonly SphereMesh Rounded = new() { Radius = 0.5f, Height = 1f, RadialSegments = 10, Rings = 5 };
-    private static readonly CylinderMesh Torso = new() { TopRadius = 0.5f, BottomRadius = 0.37f, Height = 1f, RadialSegments = 10, Rings = 1 };
+    private static readonly Mesh Torso = ZombieHumanGeometry.Torso;
     private static readonly Material Bruise = Solid(new(0.24f, 0.26f, 0.23f));
     private static readonly Material Wound = Solid(new(0.34f, 0.19f, 0.20f));
-    private static readonly Material Eye = Solid(new(0.73f, 0.72f, 0.53f));
+    private static readonly Material Eye = Solid(new(0.30f, 0.32f, 0.28f));
     private static readonly Material Hair = Solid(new(0.17f, 0.18f, 0.15f));
     private static readonly Material Boots = Solid(new(0.15f, 0.16f, 0.15f));
 
@@ -49,16 +49,16 @@ public sealed class ZombieMeshBuilder
         // Small head tilt, sunken sockets, discoloured jaw and imperfect hairline.
         var head = Joint(_root, "Head", new(0.022f, 1.55f, -0.047f));
         head.RotationDegrees = new Vector3(-8, 0, 8);
-        Part(head, "Skull", Vector3.Zero, new(0.295f, 0.34f, 0.295f), face, Rounded);
-        Part(head, "Jaw", new(0.0f, -0.126f, -0.042f), new(0.235f, 0.125f, 0.223f), face, Rounded);
-        Part(head, "Nose", new(0.0f, -0.005f, -0.156f), new(0.083f, 0.105f, 0.08f), face, Rounded);
-        Part(head, "LeftSocket", new(-0.082f, 0.041f, -0.129f), new(0.105f, 0.088f, 0.034f), Bruise, Rounded);
-        Part(head, "RightSocket", new(0.085f, 0.025f, -0.129f), new(0.102f, 0.097f, 0.035f), Bruise, Rounded);
-        Part(head, "LeftEye", new(-0.083f, 0.037f, -0.153f), new(0.039f, 0.03f, 0.016f), Eye, Rounded);
-        Part(head, "RightEye", new(0.089f, 0.022f, -0.154f), new(0.03f, 0.024f, 0.015f), Eye, Rounded);
-        Part(head, "OpenMouth", new(-0.002f, -0.119f, -0.149f), new(0.142f, 0.046f, 0.023f), Hair, Rounded);
+        Part(head, "Skull", Vector3.Zero, new(0.274f, 0.338f, 0.246f), face, Rounded);
+        Part(head, "Jaw", new(0.0f, -0.126f, -0.042f), new(0.178f, 0.125f, 0.174f), face, Rounded);
+        Part(head, "Nose", new(0.0f, -0.005f, -0.156f), new(0.055f, 0.085f, 0.058f), face, Rounded);
+        Part(head, "LeftSocket", new(-0.082f, 0.041f, -0.129f), new(0.071f, 0.037f, 0.019f), Bruise, Rounded);
+        Part(head, "RightSocket", new(0.085f, 0.025f, -0.129f), new(0.071f, 0.038f, 0.019f), Bruise, Rounded);
+        Part(head, "LeftEye", new(-0.083f, 0.037f, -0.153f), new(0.017f, 0.012f, 0.008f), Eye, Rounded);
+        Part(head, "RightEye", new(0.089f, 0.022f, -0.154f), new(0.016f, 0.011f, 0.008f), Eye, Rounded);
+        Part(head, "OpenMouth", new(-0.002f, -0.119f, -0.149f), new(0.083f, 0.018f, 0.014f), Hair, Rounded);
         Part(head, "TempleBruise", new(0.126f, -0.02f, -0.067f), new(0.041f, 0.09f, 0.09f), Wound, Rounded);
-        Part(head, "HairPatch", new(-0.04f, 0.15f, 0.009f), new(0.23f, 0.085f, 0.235f), Hair, Rounded);
+        Part(head, "HairPatch", new(-0.04f, 0.15f, 0.009f), new(0.165f, 0.038f, 0.166f), Hair, Rounded);
 
         // Existing animation pivots are kept exactly at shoulder/hip positions and names.
         _leftArm = Joint(_root, "LeftArm", new(-0.32f, 1.30f, 0));
@@ -81,7 +81,10 @@ public sealed class ZombieMeshBuilder
             new(0.181f, left ? 0.29f : 0.22f, 0.195f), shirt, Rounded);
         Part(arm, "ExposedForearm", new(0, left ? -0.375f : -0.34f, 0),
             new(0.142f, left ? 0.29f : 0.34f, 0.165f), skin, Rounded);
-        Part(arm, "Hand", new(0, -0.535f, -0.018f), new(0.142f, 0.145f, 0.162f), skin, Rounded, new(left ? 8 : -5, 0, left ? 7 : -7));
+        Part(arm, "Hand", new(0, -0.535f, -0.018f), new(0.113f, 0.134f, 0.125f), skin, Rounded, new(left ? 8 : -5, 0, left ? 7 : -7));
+        for (int i = 0; i < 2; i++)
+            Part(arm, "Finger", new(i == 0 ? -0.029f : 0.025f, -0.618f + i * 0.01f, -0.025f),
+                new(0.033f, 0.076f - i * 0.014f, 0.037f), skin, ZombieHumanGeometry.LowerLimb);
         Part(arm, "ArmBruise", new(left ? -0.074f : 0.073f, -0.365f, -0.008f),
             new(0.024f, 0.096f, 0.099f), left ? Wound : Bruise, Rounded);
     }
@@ -95,11 +98,13 @@ public sealed class ZombieMeshBuilder
             Part(leg, "TornTrouserPatch", new(-0.108f, -0.205f, -0.056f),
                 new(0.04f, 0.16f, 0.124f), Bruise, Rounded);
         var knee = Joint(leg, "Knee", new(0, -0.36f, 0));
-        Part(knee, "KneeJoint", Vector3.Zero, new(0.188f, 0.18f, 0.218f), pants, Rounded);
-        Part(knee, "Shin", new(0, -0.17f, 0), new(0.187f, 0.35f, 0.215f), pants, Rounded);
-        var ankle = Joint(knee, "Ankle", new(0, -0.34f, 0));
-        Part(ankle, "ShoeUpper", new(0, 0.028f, 0.003f), new(0.20f, 0.175f, 0.216f), Boots, Rounded);
-        Part(ankle, "ShoeToe", new(0, -0.035f, -0.097f), new(0.224f, 0.115f, 0.316f), Boots, Rounded);
+        Part(knee, "KneeJoint", Vector3.Zero, new(0.151f, 0.130f, 0.172f), pants, Rounded);
+        var lower = Joint(knee, "LowerLegShape", Vector3.Zero);
+        lower.Rotation = new Vector3(left ? -0.10f : 0.03f, 0, left ? -0.03f : 0);
+        Part(lower, "Shin", new(0, -0.17f, 0), new(0.178f, 0.35f, 0.195f), pants, Rounded);
+        var ankle = Joint(lower, "Ankle", new(0, -0.34f, 0));
+        Part(ankle, "ShoeUpper", new(0, 0.028f, 0.003f), new(0.187f, 0.140f, 0.216f), Boots, Rounded);
+        Part(ankle, "ShoeToe", new(0, -0.035f, -0.097f), new(0.198f, 0.077f, 0.244f), Boots, Rounded);
         return knee;
     }
 
@@ -118,7 +123,7 @@ public sealed class ZombieMeshBuilder
     {
         parent.AddChild(new MeshInstance3D
         {
-            Name = name, Mesh = shape ?? Box, Position = position, Scale = size,
+            Name = name, Mesh = ZombieHumanGeometry.Shape(name, shape ?? Box), Position = position, Scale = size,
             RotationDegrees = rotation ?? Vector3.Zero, MaterialOverride = material
         });
     }
