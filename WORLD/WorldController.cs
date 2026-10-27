@@ -70,6 +70,10 @@ public partial class WorldController : Node3D
         _audio.BindListener(player, camera);
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
+        // The shared F1 model spawner is debug-only, with no real prop physics or world placement.
+        var spawnMenu = GD.Load<PackedScene>("res://DEBUG/PlaceableSpawner/PlaceableSpawnMenu.tscn").Instantiate<PlaceableSpawnMenu>();
+        GetNode("DebugUIRoot").AddChild(spawnMenu);
+        spawnMenu.Initialize(player, camera, terrain, GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot"));
         // Build one deterministic horde layout for both placement and its tree/rock clearings.
         // The inherited first-person debug scene explicitly opts out.
         var horde = EnableHorde ? BuildHordeOffsets() : (Slow: System.Array.Empty<Vector2>(), Fast: System.Array.Empty<Vector2>());

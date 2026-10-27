@@ -7,3 +7,7 @@ One Timer samples FPS twice per second; text is assigned only when the integer c
 ## First-person experiment
 
 `TEST/FirstPerson/FirstPersonTest.tscn` inherits the active world and keeps all new FPS camera/input/aim/settings under DEBUG/TEST. Build C# then F6 it. See TEST/FirstPerson/README.md; local compilation and gameplay validation pending.
+
+## F1 placeable model previews
+
+The isolated [PlaceableSpawner](PlaceableSpawner/README.md) provides an F1 menu in the shared overhead and FPS scenes. Bookcase001 and Book001 appear as **visual-only GLB models** ahead of the player. Clear removes debug instances, and no physics/interaction is activated.

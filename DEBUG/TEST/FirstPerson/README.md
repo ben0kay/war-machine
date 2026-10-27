@@ -106,3 +106,7 @@ FPS now inherits the shared world's enabled horde instead of opting out. WorldMa
 ## CM2-C — Q quick shove
 
 Press Q while mouse is captured to attempt the same shared melee shove as overhead. The camera's full yaw/pitch aims a short 3D contact volume from the upper body; looking far above or below a zombie can miss. Existing CM2-B2 shove stagger/knockback applies with no HP loss. Mouse release/Escape, focus loss, scene unload and weapon switch cancel active shoves. No FPS shove animation yet (CM2-D). Local compilation and F6 checks pending.
+
+## F1 placeable artwork preview
+
+The shared F1 [placeable spawner](../../PlaceableSpawner/README.md) now works in FPS and overhead tests. F1 releases mouse capture for its debug menu; closing with F1/Close restores it, while Esc leaves cursor visible. The previews have no physics and are not saved to the level.

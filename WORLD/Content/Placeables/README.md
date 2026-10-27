@@ -30,3 +30,7 @@ See [PLACEABLE_CATALOG.md](PLACEABLE_CATALOG.md). Both are Godot-importable `.gl
 Existing `WORLD/Content/Objects/Cars/Car001/` is a fixed Object **at its original path**. It has working Godot/C# references; this change intentionally does **not relocate it**. A later explicit migration can update references and validate both views. Do not create a second Car001 or break existing paths.
 
 **Future instruction to an AI:** read root `README.md`, `CodePreferences.md`, this folder guide, catalogue, asset-specific README and `WORLD/Content/Structures/BUILDING_AUTHORING_README.md`. Reuse library assets when furnishing; check floor/door/stair clearance, surface grounding and physical sightlines. Don't auto-place anything in the active world without permission.
+
+## F1 visual preview in either camera mode
+
+Run `WORLD/World.tscn` or the FPS test (F6), press **F1**, and use the [Placeable Spawner menu](../../../DEBUG/PlaceableSpawner/README.md) to spawn either actual model temporarily. The bookcase appears at standing/terrain height; the book hovers slightly for inspection. Neither has collision, gravity or pickup behaviour. The menu does **not** place assets permanently or complete IX gameplay phases.
