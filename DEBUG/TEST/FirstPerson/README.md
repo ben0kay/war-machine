@@ -59,10 +59,22 @@ Validation: source/resource/Inspector binding checks, interpolation endpoint/idl
 
 Implementation references: Godot's advanced physics interpolation camera guidance and InputEventMouseMotion ScreenRelative documentation. No measured FPS or visual-quality claim.
 
-SO2 preserves this inherited camera index and FPS input/aiming. Environment/vegetation/zombies/props now use shared organizational roots. The new top-down PlayerDistanceFog is explicitly omitted by the FPS composition hook. Local inherited-scene and shutdown validation remains pending.
+SO2 preserves this inherited camera index and FPS input/aiming. Environment/vegetation/zombies/props now use shared organizational roots. The FPS composition hook now supplies its own camera-distance fog instead of the top-down ring. Local inherited-scene and shutdown validation remains pending.
 
 The shared world rock/cliff addition also appears here: collidable boulders and a ramp/plateau south of spawn, with building/path exclusions. FPS-specific movement, aiming and fog behavior are unchanged. Local collision/terrain-join checks remain pending.
 
 The shared cliff test now uses real Terrain3D heightmaps rather than a separate mesh ramp/plateau. Both views share the same south mountain and native collision; FPS camera/input remain unchanged. No rebake needed; local slope/edge tests remain pending.
 
 Top-down lodge floor presentation is installed only in World's InitializeOcclusion hook, which FPS overrides with an empty method. FPS retains normal opaque floors/walls/roofs; station section proxies have no active fading consumer in FPS. No interior content sleeping/culling added. Local inherited scene check pending.
+
+## Linked FPS distance fog and rendering
+
+F6 FirstPersonTest.tscn. **F9** opens/closes mouse-friendly fog controls: enabled, start/end metres, hidden render buffer and colour. Changes apply immediately. The readout shows effective distances (end is always at least start+1m); Copy fog settings sends the effective values to clipboard for choosing later defaults. Closing restores mouse capture if it was captured before opening. UI-consumed clicks do not shoot. Arrows/Shift/Right Ctrl and inverted mouse look remain unchanged.
+
+FirstPersonMaster owns DistanceFogEnabled=true, FogStartDistance=25, FogEndDistance=60, FogCullBuffer=12 and FogColor. The FPS-only FirstPersonFog controller copies this profile and EnvironmentConfig; no shared environment/master edits. Fog reaches full opacity in all directions at 60m, and camera Far becomes 72m. Changing end automatically changes Far; the >=8m buffer hides the clip plane. Disabling restores the previous Far (currently 1800m) and hides the overlay. Start controls the gradient, end controls the visibility/culling horizon. Re-enable reapplies the current settings.
+
+Actual main-view frustum culling now limits distant trees, rocks, buildings, terrain and actors; large/chunk bounds intersecting the far plane may still be submitted/clipped. Existing close-range grass and pine LOD remain. No per-object callback, streaming-radius rebuild, collision removal, AI sleeping or shadow-distance changes. Fog itself costs one fullscreen depth-overlay pass while enabled; this is not a measured FPS improvement. No volumetric simulation or per-frame C# fog callbacks. Runtime resources and camera-local overlay are released with the scene; camera far restores on controller exit.
+
+Shared fog gained only an optional camera-distance mode, default false. Top-down ring/configuration/fading remain unchanged, and FPS still skips building/occlusion fades. Static tint and opaque-depth limitations (glass/effects) carry over; night colour can be tuned independently in F9.
+
+Validation here: source/scene wiring, distance clamps/off restoration, no-loop lifecycle, numeric spherical-fog/clip ordering and whitespace review. No Godot/.NET installed: build and shader/runtime validation pending locally. Briefly test F9 sliders, toggle OFF/ON, copy, looking up/down/turning/zoom FOV, fog edge while moving past buildings/pines and night, plus one top-down load. No rebake needed.

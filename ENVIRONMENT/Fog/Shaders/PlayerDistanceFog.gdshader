@@ -3,6 +3,7 @@ shader_type spatial;
 render_mode unshaded, fog_disabled, cull_disabled, depth_draw_never, depth_test_disabled, shadows_disabled, blend_mix;
 
 uniform sampler2D depth_texture : hint_depth_texture, repeat_disable, filter_nearest;
+uniform bool camera_distance = false;
 uniform vec2 player_xz = vec2(0.0);
 uniform float clear_radius = 24.0;
 uniform float fog_radius = 48.0;
@@ -27,7 +28,7 @@ void fragment() {
         vec2 point = world.xz / world.w;
         // Static world-space broad variation softens the circular boundary without shader animation/polling.
         float variation = sin(point.x * 0.17 + sin(point.y * 0.19)) * sin(point.y * 0.13) * edge_variation;
-        float distance_to_player = length(point - player_xz);
+        float distance_to_player = camera_distance ? length(world.xyz / world.w - CAMERA_POSITION_WORLD) : length(point - player_xz);
         amount = smoothstep(clear_radius + variation, fog_radius + variation, distance_to_player);
     }
     ALBEDO = fog_color.rgb;

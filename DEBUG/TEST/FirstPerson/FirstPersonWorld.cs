@@ -3,7 +3,7 @@ using Godot;
 
 public partial class FirstPersonWorld : WorldController
 {
-    protected override string ControlsHelp => "FIRST PERSON TEST · arrow-key walk · Shift run · Right Ctrl crouch\nMouse look · Left click/hold fire · Esc release mouse · Click recapture";
+    protected override string ControlsHelp => "FIRST PERSON TEST · arrow-key walk · Shift run · Right Ctrl crouch\nMouse look · Left click/hold fire · Esc release mouse · Click recapture · F9 fog/render controls";
 
     // =========================================================
     protected override void InitializeEquipment(PlayerController player, Camera camera)
@@ -17,8 +17,13 @@ public partial class FirstPersonWorld : WorldController
     protected override void InitializeOcclusion(Camera camera, PlayerController player) { }
 
     // =========================================================
-    // Player-centred edge fog belongs only to the overhead presentation.
-    protected override void InitializeDistanceFog(Camera camera, PlayerController player) { }
+    // FPS uses camera-distance fog and a linked render cutoff, without changing the overhead profile.
+    protected override void InitializeDistanceFog(Camera camera, PlayerController player)
+    {
+        var fog = new FirstPersonFog { Name = "FirstPersonFog" };
+        GetNode("SystemsRoot/EnvironmentRoot").AddChild(fog);
+        fog.Initialize((FirstPersonCamera)camera, player, EnvironmentSettings, DebugControls);
+    }
 
     // =========================================================
     // Keep overhead tuning controls out of mouse-look input; a tiny non-interactive crosshair is sufficient here.
