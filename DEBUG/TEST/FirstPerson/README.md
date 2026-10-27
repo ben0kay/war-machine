@@ -98,3 +98,7 @@ Removed an invalid hash-prefixed explanatory comment from FirstPersonTest.tscn. 
 ## Shared overlay scene
 
 The test inherits DEBUG/Overlay/DebugOverlay.tscn from World. Common weather/time/haze/foliage/zombie-debug tools are built once in DebugOverlay.cs; only FPS fog/rendering is provided by FirstPersonFog's IDebugOverlayView adapter. The duplicated FPS weather panel is removed. See ../../../DEBUG/Overlay/README.md. Build and visual/input checks pending locally.
+
+## Shared horde population
+
+FPS now inherits the shared world's enabled horde instead of opting out. WorldMaster.HordeCount (currently 20) and HordeRunnerCount (6) drive the same extra 14 slow / 6 fast spawn layout, terrain placement, scenery clearings and sight-debug registration in both views. Existing scattered zombies remain. Change these shared settings once for both views. Source/default inheritance checked; local F6 population/performance verification pending. No new spawning system or terrain rebake.
