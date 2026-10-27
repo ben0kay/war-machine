@@ -1,7 +1,7 @@
 // Reusable zombie: shared sight, health, roaming and chase with overridable artwork/gait for future variants.
 using Godot;
 
-public partial class ZombieController : EntityCore, IDamageReceiver
+public partial class ZombieController : EntityCore, IDamageReceiver, IImpactReceiver
 {
     public float Health => _health == null ? 0 : _health.CurrentHealth;
     private HealthComponent _health = null!;
@@ -24,6 +24,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private bool _hasGoal, _configured;
     private ulong _restUntil;
     private float _phase, _stuck;
+    private HitReaction _reaction;
+    private float _recoveryRemaining;
+    private Vector3 _reactionPose;
     protected Node3D _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
     protected Node3D _leftKnee = null!, _rightKnee = null!;
     // =========================================================
@@ -75,7 +78,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     // World owns placement and target references; the entity has no dependency on PlayerController or Terrain3D.
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
-        Deactivate(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
+        Deactivate(); ClearReaction(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
         _sightTarget = player as IPerceptionTarget;
         _visibility = player is CollisionObject3D body && _sightTarget != null
             ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;
@@ -92,6 +95,42 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     { if (IsActive && _configured) _health.ApplyDamage(hit); }
 
     // =========================================================
+    // Damage has already resolved when dispatched together. Immunity/reaction policy stays with the target.
+    public void ReceiveImpact(in CombatImpact impact)
+    {
+        if (!IsActive || !_configured || _health.IsDead || IsQueuedForDeletion() || _awaitingSpawnGround
+            || !_config.BulletReactionsEnabled || impact.Kind != CombatImpactKind.Bullet) return;
+        if (!_reaction.TryStart(impact, _config.ImpactResistance, _config.FlinchThreshold, _config.MaxStaggerSeconds,
+            _config.MinFlinchInterval, _config.MinRecoverySeconds, Time.GetTicksMsec())) return;
+        float keep = Mathf.Clamp(_config.ImpactVelocityRetention, 0, 1);
+        Velocity = new Vector3(Velocity.X * keep, Velocity.Y, Velocity.Z * keep);
+        _recoveryRemaining = 0; _stuck = 0; SetPhysicsProcess(true);
+    }
+
+    // =========================================================
+    // Remove only the additive hit pose, preserving the species' normal lean/yaw/gait.
+    private void RemoveReactionPose()
+    {
+        if (_reactionPose == Vector3.Zero) return;
+        VisualRoot.Rotation -= _reactionPose; _reactionPose = Vector3.Zero;
+    }
+
+    // =========================================================
+    private void ClearReaction()
+    { RemoveReactionPose(); _reaction.Reset(); _recoveryRemaining = 0; }
+
+    // =========================================================
+    private void ApplyReactionPose()
+    {
+        if (!_reaction.IsActive) return;
+        float pulse = Mathf.Sin(_reaction.Progress * Mathf.Pi) * Mathf.Min(1, _reaction.Strength);
+        float angle = Mathf.DegToRad(Mathf.Clamp(_config.FlinchDegrees, 0, 20)) * pulse;
+        float side = Mathf.Clamp(_reaction.Direction.Dot(VisualRoot.GlobalBasis.X), -1, 1);
+        _reactionPose = new Vector3(angle, 0, -side * angle * 0.4f);
+        VisualRoot.Rotation += _reactionPose;
+    }
+
+    // =========================================================
     // The actor owns its death reaction; the resolver has no zombie/robot/deer-specific behaviour.
     private void OnKilled(DamagePacket hit)
     { Deactivate(); CollisionLayer = 0; CollisionMask = 0; Hide(); QueueFree(); }
@@ -102,7 +141,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
 
     // =========================================================
     protected override void OnDeactivated()
-    { _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); UpdateVisionDebug(); }
+    { ClearReaction(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); UpdateVisionDebug(); }
 
     // =========================================================
     // Cheap range and visual-facing gates precede bounded head/torso LOS. No hidden live-position pursuit.
@@ -123,7 +162,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver
                 chasing = _visibility.CanSee(GetWorld3D().DirectSpaceState,
                     GlobalPosition + Vector3.Up * _config.EyeHeight, _sightTarget);
         }
-        if (chasing != IsChasing) { IsChasing = chasing; _hasGoal = false; Pose(0); }
+        if (chasing != IsChasing)
+        { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); Pose(0); } }
         if (IsChasing)
         { _goal = _target!.GlobalPosition; _hasGoal = true; }
         else if (!_hasGoal && Time.GetTicksMsec() >= _restUntil)
@@ -220,13 +260,25 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     {
         if (_awaitingSpawnGround) { SetPhysicsProcess(false); return; }
         float dt = (float)delta;
+        RemoveReactionPose();
+        bool reacting = _reaction.IsActive;
+        if (reacting)
+        {
+            _reaction.Advance(dt, Time.GetTicksMsec());
+            if (!_reaction.IsActive) _recoveryRemaining = Mathf.Clamp(_config.RecoverySeconds, 0, 1);
+        }
+        bool recovering = !reacting && _recoveryRemaining > 0;
+        if (recovering) _recoveryRemaining = Mathf.Max(0, _recoveryRemaining - dt);
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance) : 0.4f;
         bool walking = _hasGoal && offset.LengthSquared() > stop * stop;
         if (_hasGoal && !walking && !IsChasing) Rest();
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
         float speed = Mathf.Max(0, IsChasing ? _config.ChaseSpeed : _config.WanderSpeed);
-        Vector3 horizontal = new Vector3(Velocity.X, 0, Velocity.Z).MoveToward(direction * speed, dt * Mathf.Max(0.1f, MovementAcceleration));
+        if (reacting) speed *= Mathf.Clamp(_config.StaggerMoveMultiplier, 0, 1);
+        float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
+            : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
+        Vector3 horizontal = new Vector3(Velocity.X, 0, Velocity.Z).MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - 20 * dt, horizontal.Z);
         MoveAndSlide();
@@ -242,9 +294,10 @@ public partial class ZombieController : EntityCore, IDamageReceiver
             Pose(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
             _stuck = 0;
         }
-        else { Pose(0); if (walking) _stuck += dt; }
+        else { Pose(0); if (walking && !reacting && !recovering) _stuck += dt; }
+        ApplyReactionPose();
         if (_stuck > 2) { Rest(); _stuck = 0; }
-        if ((!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())
+        if (!reacting && !recovering && (!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())
         { Velocity = Vector3.Zero; SetPhysicsProcess(false); }
     }
 

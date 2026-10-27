@@ -27,3 +27,16 @@ EyeHeight = 1.6
 SightIntervalSeconds = 0.4
 SightBlockerMask = 17
 ShowVisionCone = true
+
+BulletReactionsEnabled = true
+ImpactResistance = 0.0
+FlinchThreshold = 0.2
+MaxStaggerSeconds = 0.3
+MinFlinchInterval = 0.45
+MinRecoverySeconds = 0.2
+StaggerMoveMultiplier = 0.1
+ImpactVelocityRetention = 0.1
+StaggerBrakingAcceleration = 60.0
+RecoveryAcceleration = 12.0
+RecoverySeconds = 0.2
+FlinchDegrees = 10.0

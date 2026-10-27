@@ -23,3 +23,6 @@ ShotColor = Color(1, 0.78, 0.42, 1)
 ShotVolumeDb = -12.0
 
 EmitMuzzleLight = true
+
+BulletImpactStrength = 0.65
+BulletStaggerSeconds = 0.14

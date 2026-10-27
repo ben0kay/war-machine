@@ -1,13 +1,13 @@
 # CM — Melee, shove and hit-reaction implementation plan
 
-> **Status: CM0–CM5 Planned. DOCUMENTATION ONLY.** No gameplay code, master resources or scenes are implemented by this document. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
+> **Current status: CM0 and CM1 implemented, awaiting local validation; CM2–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
 
 ## Phase overview
 
 | Phase | Deliverable | Suggested assistant | Status |
 | --- | --- | --- | --- |
-| **CM0** | Shared impact/attack contract and zero-damage reaction path; preserve current damage | Codex / ChatGPT Work; Regular Chat reviews contracts | **Planned** |
-| **CM1** | Bullets briefly stagger/slow living zombies, then pursuit resumes | Codex / Work; Copilot checks locally | **Planned** |
+| **CM0** | Shared impact/attack contract and zero-damage reaction path; preserve current damage | Codex / ChatGPT Work; Regular Chat reviews contracts | **Awaiting Validation** |
+| **CM1** | Bullets briefly stagger/slow living zombies, then pursuit resumes | Codex / Work; Copilot checks locally | **Awaiting Validation** |
 | **CM2** | Gun-butt shove while a firearm is equipped: low/no damage and short pushback | Codex / Work; Regular Chat tunes values | **Planned** |
 | **CM3** | Baseball bat: timed swing arc hits up to three nearby zombies | Codex / Work; Regular Chat tunes feel | **Planned** |
 | **CM4** | Knife: short-range, faster, one-target strikes with distinct animation hooks | Codex / Work; Regular Chat tunes feel | **Planned** |
@@ -15,7 +15,7 @@
 
 States: Planned → In Progress → Implemented → Awaiting Validation → Accepted. These are **independent authorization gates**, not permission to build the entire combat system in one pass.
 
-## 1. Confirmed current code — 2026-10-27
+## 1. Source snapshot at planning — 2026-10-27 (CM0/CM1 changes now described in README)
 
 - **Active main game:** `WORLD/World.tscn` uses `WORLD/WorldController.cs` and the overhead view; `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` inherits the world and substitutes view-specific controls. The main game is top-down. FPS is a useful debug comparison, not the feature priority.
 - **Existing damage:** `ENTITIES/Shared/Combat/DamagePacket.cs` has `Amount`, `Type`, `Source`, world `Position` and `Direction`; `DamageResolver` performs physical armour/resistance calculations. `IDamageReceiver.ReceiveHit(DamagePacket)` is generic but currently returns `void`. `HealthComponent.ApplyDamage` notifies `Damaged(DamageResult)` and `Died(DamagePacket)` and has no always-active processing.
@@ -214,3 +214,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 **Validation baseline for every implementation phase:** focused `dotnet build war-machine.csproj` if available; F6 `WORLD/World.tscn`; retained rifle/MG shots, damage and death checks; first-person regression when shared code changes; short tests of hit timing, wall occlusion, closely clustered enemies, target removal, focus loss and idle CPU. Keep validation proportional and leave visual/performance acceptance with the owner. **This plan itself has no build or runtime test to perform.**
 
 **Work assignment:** Regular Chat can own this plan, documentation, tuning discussions and small isolated config reviews. Codex/ChatGPT Work should handle cross-file combat physics, target resolution, equipment/scene integration and animations. Copilot can run local C# and Godot debugging if asked. Re-read source before each phase, update this plan/owning READMEs and use one GitHub commit per authorized job. **Do not auto-implement later phases.**
+
+## CM0 / CM1 implementation handoff
+
+Implemented contracts, dispatcher, recipient reaction state, gun/zombie masters and docs only. No CM2+ or basement work. Damage/health files are unchanged. Actual values and the mandatory recovery-gap policy are in README; this supersedes the planning snapshot's statement that nonlethal hits cannot interrupt movement. Source and numeric checks only: local .NET build and both-view F6 acceptance pending. No permanent idle reaction callback; existing physics wakes on impact and settles normally. Future phases require separate authorization.

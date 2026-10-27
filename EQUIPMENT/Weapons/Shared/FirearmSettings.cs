@@ -17,6 +17,9 @@ public partial class FirearmSettings : Resource
     [Export(PropertyHint.Range, "0,10,0.05")] public float BaseSpreadDegrees { get; set; } = 0f;
     [ExportGroup("Firing collision")]
     [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 21;
+    [ExportGroup("Bullet impact")]
+    [Export(PropertyHint.Range, "0,3,0.05")] public float BulletImpactStrength { get; set; }
+    [Export(PropertyHint.Range, "0,0.5,0.01")] public float BulletStaggerSeconds { get; set; }
     [ExportGroup("Feedback")]
     [Export] public float EffectDuration { get; set; } = 0.07f;
     [Export(PropertyHint.Range, "1,16,1")] public int TracerPoolSize { get; set; } = 1;

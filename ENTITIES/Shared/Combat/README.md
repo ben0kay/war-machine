@@ -60,6 +60,6 @@ Confirm multiple lethal hits do not run duplicate death logic, and misses/UI
 clicks do not apply damage. Compilation/runtime checks are deferred because this
 environment has no Godot/.NET runtime; source/resource wiring was reviewed only.
 
-## Planned melee and hit reactions (not implemented)
+## CM0 / CM1 impact integration
 
-See the cross-actor [COMBAT implementation plan](../../../COMBAT/IMPLEMENTATION_PLAN.md) (CM0–CM5). It proposes a zero-HP-impact pathway for a gun-butt shove, recoverable bullet stagger and shared multi-target melee attacks. **This folder remains the only live damage implementation** until an explicitly authorized migration; `DamagePacket`, `IDamageReceiver`, `DamageResolver`, `HealthComponent` and all existing `.tres` references stay unchanged. The new COMBAT/ folder is documentation-only. Player health PH0 remains planned separately.
+COMBAT/Shared now provides a separate optional impact contract and one contact dispatcher. Firearms still send the same DamagePacket through IDamageReceiver/HealthComponent; damage resolves before impact and death wins. A zero-damage impact omits health entirely. Zombie bullet reactions are recipient-owned, not a second DamageResolver or health event hack. See ../../../COMBAT/README.md for values, anti-stun-lock and local checks. CM2+ melee remains planned. This folder remains the only damage/health implementation, unchanged by CM0/CM1.

@@ -1,27 +1,36 @@
-# COMBAT — cross-actor attacks, impacts and reactions
+# COMBAT — cross-actor impacts and reactions
 
-> **Status: planning only.** The combat roadmap is [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), phases **CM0–CM5**. No melee weapon, gun shove, bullet stagger, knockback or zombie outgoing attack is implemented by creating this folder. Implement one separately authorized phase at a time on the current development branch.
+**CM0 and CM1 implemented, awaiting local validation. CM2–CM5 remain planned.** No gun shove, bat, knife, outgoing zombie attack, player health or physical knockback is added by this pass.
 
-## Existing implementation (do not duplicate)
+## One contact, separate damage and impact
 
-The live damage contracts are currently in [ENTITIES/Shared/Combat](../ENTITIES/Shared/Combat/README.md): `DamagePacket`, `IDamageReceiver`, `DamageResolver`, `HealthSettings` and `HealthComponent`. Their types are generic even though they live under ENTITIES. A firearm sends a packet from [FirearmController](../EQUIPMENT/Weapons/Shared/FirearmController.cs), and the zombie receives it, applies mitigation and dies when health reaches zero. **Nonlethal hits currently do not interrupt zombie movement.** The shared health component publishes `Damaged`/`Died` events but no generalized reaction or zero-damage impact dispatch.
+Shared/CombatImpact.cs supplies a readonly payload and optional IImpactReceiver. DamagePacket/IDamageReceiver/HealthComponent/DamageResolver remain in ENTITIES/Shared/Combat, unchanged. Do not create a second damage pipeline.
 
-The live player shooting adapter is [PLAYER/Equipment/PlayerWeaponController.cs](../PLAYER/Equipment/PlayerWeaponController.cs). [FirstPersonWeapon](../DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs) uses the same firearm controller in the FPS test. Existing `WeaponSlots` are two test-only **firearm** slots, not an inventory or generic item hotbar. [PLAYER/IMPLEMENTATION_PLAN.md](../PLAYER/IMPLEMENTATION_PLAN.md) defines **PH0 player health**, which must precede zombie attacks that damage the player.
+Shared/HitTargetResolver.Dispatch(collider, source, nullableDamage, nullableImpact) walks at most 32 parents, resolves the first supported actor once, excludes self and applies positive damage **before** optional impact. Scenery still blocks the original hitscan; the dispatcher never adds a ray or searches behind cover. A freed/queued actor receives no subsequent impact. Receivers also guard their own dead/inactive state.
 
-## Intended ownership
+For an impact-only contact, pass null damage (or nonpositive damage) plus CombatImpact. No HP event/fake damage is needed. A damage-only contact can omit impact; legacy receivers without IImpactReceiver keep receiving damage. Bullet direction uses source-to-contact projected onto XZ, with a finite forward fallback for coincident/vertical hits. Strength/duration are finite/clamped. Future Shove/Melee/Blast kinds are payload values only; zombies currently accept Bullet, with future policies deferred.
 
-- **`COMBAT/`** owns cross-actor melee hit detection/dispatch, impact metadata, stagger/knockback policies and common attack/reaction mechanics **when those phases are authorized**. Generic damage should eventually live here as well, but moving existing `ENTITIES/Shared/Combat` files is an optional, separately validated cleanup—not a prerequisite for melee.
-- **`ENTITIES/Shared/Combat/`** remains the *single live damage implementation* until any explicit migration. Do not create duplicate `DamageResolver`, `HealthComponent`, `DamagePacket` or `IDamageReceiver` classes in COMBAT.
-- **`EQUIPMENT/`** owns gun, bat, knife and other equipment scenes, their per-weapon `.tres` profiles and presentation sockets/animation bindings. A firearm can also initiate a low-damage gun-butt shove.
-- **`PLAYER/`** owns attack intent/input, posture, stamina (future PH2), movement/animation coordination and later health, not generic hit/damage calculations.
-- **`ENTITIES/TYPES/Zombies/`** owns zombie-specific movement interruption, recoil pose, resistance, perception and any future outgoing attack scheduling; generic reaction primitives are reusable by other creatures or players.
-- **`WORLD/`** composes actors and scene references only. FPS remains an optional comparison view; shared combat must not depend on an overhead camera.
-- **`COMBAT/Configuration/`** and its master `.tres` should be added **with the first implemented mechanic that genuinely needs global tuning**. Use typed `Resource` profiles, runtime copies and per-weapon/per-target defaults rather than speculative master fields. `C/` folders remain for *procedural artwork only*, never combat controllers.
+## CM1 zombie response
 
-## Principle
+Both slow and runner controllers share reaction logic in ZombieController. Health resolves first; a survivor can accept one Bullet impact. Reactions immediately damp horizontal velocity, then target about 10% normal travel speed for the short duration. Gravity, MoveAndSlide, terrain contact, current goals and existing sight timer continue. The latest AI goal cannot bypass the reaction speed limit. A small additive visual-root recoil overlays the species gait/lean without altering its collider or permanently accumulating rotation. After expiry, movement recovers with configurable acceleration, then normal movement/sleep resumes.
 
-`Input / enemy decision → attack window → bounded hit detection → existing damage receiver (when damaging) + optional impact reaction → target-owned movement/pose response → stop and sleep`.
+Reactions/HitReaction.cs is a plain value-state helper advanced by the existing active physics callback. An active reaction is never refreshed/extended. Each accepted hit reserves at least duration + MinRecoverySeconds before re-flinch (and respects MinFlinchInterval), with a per-reaction duration cap. This guarantees recovery gaps under fast fire; damage still applies on every accepted shot even when reaction is refused. Immunity/resistance/threshold are target policy. Death/deactivate/reset clear reaction and additive pose; there is no separate reaction node/timer/idle poll.
 
-An **impact can do zero HP damage** (gun shove), and an attack can do HP damage without a stagger (immunity, resisted impact). Killing takes priority over staggering. No global combat singleton, idle target scans, per-zombie hit polling or second damage resolver.
+### Starting tuning
 
-Start with [the detailed plan](IMPLEMENTATION_PLAN.md). It contains all phase ownership, dependencies, suggested values, performance rules and handoff checks. **No code/config/scene file was changed for this documentation-only planning job.**
+| Profile | Impact strength | Requested stagger |
+| --- | --- | --- |
+| RifleMaster | 1.0 | 0.20s |
+| MachineGunMaster | 0.65 | 0.14s |
+
+Both zombie masters expose BulletReactionsEnabled, ImpactResistance, FlinchThreshold, MaxStaggerSeconds, MinFlinchInterval, MinRecoverySeconds, StaggerMoveMultiplier, ImpactVelocityRetention, StaggerBrakingAcceleration, RecoveryAcceleration, RecoverySeconds and FlinchDegrees. Runner resistance starts at 0.1; normal zombie at 0. Resistance reduces strength and duration, and 1 is immune. Default threshold 0.2, max duration 0.3s, minimum interval 0.45s and recovery gap 0.2s. Rotation amplitude is cosmetic; **no physical push** occurs yet.
+
+Damage stays rifle 95 / MG 35 against default 100HP: two rifle hits / three MG hits kill. Check the first nonlethal shot to see stagger; the lethal shot still removes the zombie normally. To inspect repeated long bursts locally, temporarily raise test HP and restore it afterward rather than changing production gun damage.
+
+### Validation handoff
+
+Focused C# loop/structure, contact ordering/self/scenery guards, settings bindings and a numeric reaction/cooldown model checked. **Compilation and Godot runtime/visual checks remain unverified: no Godot/.NET executable here.**
+
+Locally run `dotnet build war-machine.csproj`, then F6 World and FPS. Shoot a slow zombie and runner: first rifle hit flinches/slows and chase resumes, second kills once. Check MG bursts, stationary target, moving/turning target, cover/misses, immunity/disabled reaction and scene unload. Exercise Dispatch with null damage + Bullet impact: HP unchanged, eligible actor reacts; Shove does not yet move a zombie. Confirm inactive/dead actors ignore impacts, horde work stays bounded, settled actors sleep, normal animations/vision/terrain/audio/muzzle lights still work. Existing physics queries are unchanged. Exact recoil appearance and balance need owner acceptance.
+
+No combat singleton, actor registry, scene scans, added hit rays, status framework or per-hit heap allocation. New value payloads and cached actor state have zero idle callbacks. Existing ground-recovery and sensing paths are retained.

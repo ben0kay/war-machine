@@ -6,6 +6,19 @@ public partial class ZombieSettings : EntitySettings
 {
     [ExportGroup("Health")]
     [Export] public HealthSettings HealthProfile { get; set; } = null!;
+    [ExportGroup("Bullet hit reaction")]
+    [Export] public bool BulletReactionsEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ImpactResistance { get; set; }
+    [Export] public float FlinchThreshold { get; set; } = 0.2f;
+    [Export] public float MaxStaggerSeconds { get; set; } = 0.3f;
+    [Export] public float MinFlinchInterval { get; set; } = 0.45f;
+    [Export] public float MinRecoverySeconds { get; set; } = 0.2f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float StaggerMoveMultiplier { get; set; } = 0.1f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ImpactVelocityRetention { get; set; } = 0.1f;
+    [Export] public float StaggerBrakingAcceleration { get; set; } = 60;
+    [Export] public float RecoveryAcceleration { get; set; } = 12;
+    [Export] public float RecoverySeconds { get; set; } = 0.2f;
+    [Export(PropertyHint.Range, "0,20,0.5")] public float FlinchDegrees { get; set; } = 10;
     [ExportGroup("Movement")]
     [Export] public float WanderSpeed { get; set; } = 0.65f;
     [Export] public float ChaseSpeed { get; set; } = 1.15f;

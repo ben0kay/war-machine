@@ -20,3 +20,6 @@ ShotVolumeDb = -12.0
 
 EmitMuzzleLight = true
 ShotCue = ExtResource("shot_cue")
+
+BulletImpactStrength = 1
+BulletStaggerSeconds = 0.2
