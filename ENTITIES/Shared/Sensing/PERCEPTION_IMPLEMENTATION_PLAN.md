@@ -86,7 +86,7 @@ A visibility query is **not the same as a movement collision test**. Recommended
 ## 5. Awareness and memory are separate from geometry
 
 - Zombies: cheap distance gate, optional eyesight cone facing their visual heading, then LOS. Loss of sight should not keep querying the player's precise position as a chase goal. Store **last verified seen location** only; chase when visible, **investigate last seen position** briefly after losing sight, and return to wandering on timeout.
-- Initial suggested values only: Zombie range ~18m, full visual cone ~160–180°, physics sight decision every **0.4 s**, last-seen search ~3 s. Keep existing 23m `LoseRange` as hysteresis if useful; **range alone must not override occlusion**. Expose defaults in `ZombieMaster.tres` and keep current behaviour predictable.
+- Vision starting values: zombie acquire range ~18m, full cone ~160–180°, physics sight decision every **0.4 s**; current 23m `LoseRange` remains *range hysteresis only*, never permission to see through cover. **PER2 uses per-zombie randomized search commitment and a distance/speed-aware safety timeout**, rather than the older fixed ~3-second universal search. See the detailed PER2 design below. Expose tunable ranges/weights in `ZombieMaster.tres`; don't hard-code difficulty into `VisibilityResolver`.
 - ScanSensor: preserve narrow robot head scanner full cone (existing 35° authoring default) and independent beam. Only logical visibility shared; **do not convert the scanner to zombie eyes**. Robot pursuit/red alarm, damaging entities, and zombie-vs-robot fights are not authorized by this plan.
 - Hearing **future**: event-driven noise emission with position, magnitude/category and approximate target location. Gunshots/footsteps can trigger `HeardSound` without LOS; listener investigates sound position, **not clairvoyant live player coordinates**. Species hearing distance/threshold differs from visual range. Don't implement hearing in the initial crouch/LOS stage.
 
@@ -106,15 +106,70 @@ A visibility query is **not the same as a movement collision test**. Recommended
 | --- | --- | --- |
 | **PER0 — shared contract** | Inventory existing ray masks/opaque colliders; introduce target height sampling and `VisibilityResolver`, a no-AI line-of-sight helper. Preserve `ScanSensor` behaviour and public hooks. | Implemented; local validation pending |
 | **PER1 — zombie vision/cover** | Extend zombie `Think()` with cheap gating and ray checks (through reusable resolver), species settings, realistic crouch detection behind solid cover, preserved health/movement. Reuse zombie timer. Keep robot logic/visuals unchanged. | Implemented; local validation pending |
-| **PER2 — last seen** | Add short last-known-position investigative behaviour, no instant clairvoyance through walls and no navigation rewrite. | Not started |
+| **PER2 — last seen** | Snapshot the last visually confirmed position; independently sample early/mid/thorough investigation commitment and expiry per zombie; some abandon part-way, thorough zombies reach the spot and briefly look around. Reacquire LOS instantly; no navigation rewrite. | **Planned (expanded design below)** |
 | **PER3 — obstruction polish/debug** | Audit and fix relevant glass/solid collision layering, verify vehicle/rocks/tree/terrain cover, add **optional dormant** LOS debug visual (head/torso blocked/clear) in DEBUG; no always-on draw loop. | Not started |
 | **PER4 — scanner integration** | When explicitly requested, adapt existing robot `ScanSensor` to the shared target samples/visibility helper **without changing mechanical beam/patrol or enabling combat**. Verify range/cone and no robot regressions. | Not started |
 | **PER5 — sound (future)** | Separate `HearingSensor` and event-driven sound stimuli; species-specific responses. Do not implement as part of initial LOS prototype. | Future |
 | **Deer / other wildlife** | Optional Vision/Hearing capability with different cone, eye sockets and flee behaviour. No deer assets or AI created by this plan. | Future |
 
-Start with **PER0 + PER1** for the useful crouch/cover proof. Consider PER2 and PER3 after user feedback. Keep PER4 separate to avoid accidentally changing the scary robot's current scan behaviour.
+**Recommended next perception gameplay pass: PER2 alone.** PER0/PER1 already provide frontal sight and physical cover. PER2 consumes that existing perception result without requiring hearing, melee, a new global AI manager or the robot's scanner. PER3 glass/occlusion polish and PER4 robot integration remain separate tasks.
 
-## 8. Minimum functional tests and acceptance
+## 8. PER2 — individualized last-seen pursuit (expanded 2026-10-27; planned only)
+
+**Objective:** A player can break visual line of sight behind a wall. Zombies remember **where the player was last actually seen**, not the player's continuing hidden transform. Individual zombies pursuing the same player vary in their commitment: some stop part-way, others go farther, and a minority try reaching the full last-seen point and pause to look around. Reacquiring real LOS immediately returns to normal chase.
+
+### Behaviour and priorities
+
+```text
+WANDER
+  + confirmed direct LOS -> CHASE (continually refresh lastSeenPosition from verified sight)
+CHASE
+  + LOS lost -> INVESTIGATE_LAST_SEEN (freeze lastSeenPosition; sample pursuit commitment once)
+INVESTIGATE_LAST_SEEN
+  + confirmed LOS -> CHASE (discard old search commitment, renew memory)
+  + sampled travel target reached -> LOOK_AROUND (thorough) or WANDER (early/mid)
+  + bounded time expired, physically stuck or target invalid -> WANDER
+LOOK_AROUND
+  + confirmed LOS -> CHASE
+  + brief search dwell expires -> WANDER
+Future HE1: HEARD_SOUND -> separate approximate noise investigation, never a verified visual fix
+```
+
+Use the current `Think()` callback on its existing staggered one-shot `_brain` physics timer. Sight/LOS tests remain authoritative; `IsChasing` continues to mean **visible target chase**, not blind investigation. A single loss-of-LOS episode snapshots `lastSeenPosition`, `lossOrigin`, an **investigation destination/commitment** and a deadline. While investigating, never update the goal from `_target.GlobalPosition`; the target's position is readable for *sight checks* but not accepted as a pursuit clue until verified visible. Do not repeatedly reroll per brain tick.
+
+### Per-zombie random commitment — proposed starting balance
+
+| Profile (sampled per pursuit episode) | Suggested weight | Fraction of journey toward the last-seen position | On reaching its own target |
+| --- | ---: | --- | --- |
+| **Early abandoner** | ~40% | 0.40–0.60 | Return to ordinary wander |
+| **Moderately persistent** | ~35% | 0.65–0.90 | Return to wander after a brief hesitation, optional |
+| **Thorough investigator** | ~25% | 1.00 | Look around for ~0.8–2.0 seconds, then wander |
+
+These are **tuning proposals, not probabilities or values presently implemented**. For example, five zombies can independently draw very different outcomes—none of the proportions force exact counts. Seed the existing per-zombie `RandomNumberGenerator` (already initialized by `InitializeTarget(seed)`) and resample **once after each genuinely lost visual pursuit**, not globally once per spawn and not each decision tick. The baseline direct-approach goal can be a single fixed point interpolated between `lossOrigin` and `lastSeenPosition` by the sampled fraction. This makes a 50% investigator physically stop near the halfway mark on open terrain, rather than just deciding to give up after an arbitrary wall-clock delay. Future navigated routes can measure progress along the path instead.
+
+**Give-up timer:** Add a bounded **safety timeout**, separately varied per episode, so no zombie remains trapped pursuing an unreachable point. Budget it using sampled travel distance and that zombie's configured chase/investigation speed (plus a small allowance), rather than one universal 3-second timeout that always penalizes slow shamblers compared with the 8.3m/s runner. Ending conditions are **whichever occurs first**: its assigned destination reached, elapsed safety time, or existing stuck/unreachable guard. Do not choose a deadline that routinely prevents every slow zombie from reaching even its 50% waypoint. Sampled commitment is the primary source of visible variation; the timer is a fail-safe and a secondary variation.
+
+**At the remembered location:** Only the thorough profile is obliged to look around briefly. Use the already-active perception timer and a bounded pose/turn sequence; allow reacquisition during the dwell, then return to the existing wander anchor if nothing appears. Early/mid drop-out goes back to existing wandering, not automatically to sound-investigation anchor relocation. If the **future hearing phase HE1** has intentionally moved the wander anchor after an audible stimulus, preserve that hearing-specific behaviour independently.
+
+**No clairvoyance and no routing promise:** Zombies cannot currently path around a building; their `CharacterBody3D` moves directly toward `_goal` and may stop at a wall. PER2 should safely time out/stick-abandon in that case, not teleport through geometry or claim it reached the other side. A *separate future navigation/pathfinding phase* is needed to reliably route around structures. This limitation does not block the basic remembered-position investigation on an unobstructed route.
+
+### Intended ownership and implementation details
+
+- **`ENTITIES/TYPES/Zombies/ZombieController.cs`:** add a tiny bounded visual-awareness state (or flags if simpler), last visually verified XZ goal, loss origin, per-episode commitment, deadline and look-around dwell. Update on the existing `Think()` callback; keep one `_goal` driving the existing movement `_PhysicsProcess`. Preserve `_home`, wander radius, zombie-specific movement speed, `_stuck` recovery and health/death behaviour. Reset memory/episode on InitializeTarget, deactivation, death and scene unload. Do not use `Time.GetTicksMsec()` beyond an explicit expiry, and do not poll a new timer at idle.
+- **`ENTITIES/TYPES/Zombies/ZombieSettings.cs` + zombie/runner masters:** Inspector-editable `LastSeenInvestigationEnabled`, profile weights, partial-distance bands, timeout allowance/ceiling, arrival tolerance and thorough dwell range; author bounded defaults and validate impossible ranges. Prefer a small `[ExportGroup("Last seen investigation")]` to a new configuration class or global singleton. Any runner-specific override should change only policy values, not duplicate the AI implementation.
+- **`ENTITIES/Shared/Sensing/VisibilityResolver.cs`:** **no required change**; PER0/PER1 already produce true/false LOS results. Shared geometry answers visibility; zombie owns memory and willingness to search. `WorldController` remains an actor composer, not a central memory service.
+- **`DEBUG/` (optional):** If practical, add a disabled-by-default one-shot destination/last-seen marker to the existing zombie debug toggle—not a permanent marker update, per-frame draw loop or second debug window. Helpful for verifying 50%/100% commitments, but strictly optional for PER2.
+- **`HEARING_INVESTIGATION_PLAN.md`:** sound stimulus/anchor relocation remains **HE0/HE1**, not implicit in PER2; if both are later active, `confirmed LOS > deliberate recent investigation > ordinary wander` with configurable strength/recency deciding between competing *nonvisual* clues. A gunshot or damage hit does **not** reveal the hidden player's location until a sound gameplay stimulus actually exists.
+
+**Explicitly out of scope:** Implementing hearing, emitting shot noises, damage/shot stagger (COMBAT CM1), zombie attacks, navigation mesh/pathfinding, giant robot sensing, alert-sharing between zombies, AI group coordination, persistent saves and full animation overhaul. No memory of the hidden player should survive death/deactivation.
+
+**Preserve:** acquisition/hysteresis LOS, 0.4s staggered decisions, physics collision, existing wander/chase poses and speeds, runner subclass, damage/death, camera modes, F7 debug cone, weather and current audio playback. No visual/behaviour regressions in normal open-ground pursuit.
+
+**Performance contract:** Each active zombie uses only its existing short `_brain` decision tick; state updates cost O(1), with 1–2 bounded existing LOS queries only when eligible. One seeded random draw/set on LOS-loss, no `_Process` memory manager, global scene scanning, extra idle timers or per-frame allocations. Stop active movement when stable, as before. World/chunk unload or deactivation must stop existing timer and clear memory; no stale player references.
+
+**Pass criteria:** Build if available; F6 `WORLD/World.tscn` and briefly FPS. Hide behind solid wall after confirmed acquisition: multiple zombies pick visibly different partial/full goals, do not follow the moving hidden player, re-see and chase again immediately, and eventually give up. Test five or more with statistical variation over repeated attempts (do **not** require exact counts), slow and runner distances, LOS flicker, close-range near-zero distance, corner/wall trapping and no teleport. Full investigators pause/look at last-seen spot then wander; normal F7/debug, firearms, hit/death and camera-relative movement unaffected. Verify stopped/inactive actors incur no new updates. **Codex / ChatGPT Work** for multicomponent AI integration; **Regular Chat** for tuning and docs; **Copilot** for short local compilation and playtest. Mark Awaiting Validation until the owner visually accepts; this plan alone changes no gameplay.
+
+## 9. Minimum functional tests and acceptance
 
 Brief build/smoke checks at the active `WORLD/World.tscn` and inherited `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` (if runnable):
 - Open ground: standing and crouched player both visible in the allowed cone/range.
@@ -123,7 +178,7 @@ Brief build/smoke checks at the active `WORLD/World.tscn` and inherited `DEBUG/T
 - When a window is intended transparent, LOS sees through even if the pane remains physically collidable.
 - Nearby partial-body reveal: clear head OR clear torso means detectable.
 - Zombie faces away: no ordinary visual acquisition outside the configured cone; taking a shot should not silently enable hearing.
-- After initially seeing then losing target: last-seen location, not player's current hidden location (PER2).
+- After initially seeing then losing target: investigate the last-seen location (not live hidden position); independent early/mid/thorough give-up fractions and duration bounds, reacquisition, look-around, and blocked-path fallback (PER2).
 - Robot beam, scanner cone/visual and patrol unchanged in PER0–PER3.
 - Sleep/unload/reactivation: no stale candidate references/timers. Compare FPS behaviour and idle versus active cost, don't claim measured gains without Godot profiling.
 

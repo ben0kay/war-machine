@@ -1,7 +1,7 @@
 # Hearing, sound stimuli and movable investigation anchors
 
 > **Status: Proposed / reference only — nothing in this plan is implemented.**  
-> **Related roadmap:** [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) → PER5 (hearing). PER0/PER1 visual detection already exist; PER2 last-seen memory is not implemented.  
+> **Related roadmap:** [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) → PER2 (now specified as per-zombie randomized last-seen search) and PER5 (hearing). PER0/PER1 visual detection already exist; neither PER2 nor gameplay hearing is implemented.  
 > **Branch:** `implement-td0-td1`. **Primary first consumer:** zombies in `WORLD/World.tscn`. Long-term consumers could include animals, hostile humans and robots, with species-specific responses.
 
 ## Desired player-facing behaviour
@@ -30,6 +30,7 @@ INVESTIGATE
      point; never teleport or track an unseen moving source
 CHASE
    + sight lost -> follow the separately planned PER2 last-seen logic when implemented;
+     each zombie may independently abandon its visual search early, part-way or at the last-seen point
      hearing does NOT secretly preserve a live target position
 ```
 
@@ -73,7 +74,7 @@ WORLD/
 - **Hearing threshold:** each species gets `HearingSensitivity` / `MinimumAudibleIntensity` or equivalent; use a simple, predictable falloff for distance. No cone requirement (ears hear behind); advanced wall/terrain acoustic occlusion/reflection is optional later. Never confuse a 3D audio falloff curve with AI hearing logic.
 - **Reaction:** the *listener*, not the emitter/dispatcher, chooses whether to investigate, flee, ignore or change its wander anchor. Zombie `HearSound(stimulus)` stores the snapshot and wakes the existing decision/movement mechanism; no separate always-running zombie hearing loop.
 - **Approximation:** pick one seeded XZ offset within `InvestigationAccuracyRadius` at sound acceptance, and store it. Don't reroll that offset each brain tick or the goal will jitter. Distinguish `InvestigationArrivalRadius` (when to stop searching) from `WanderRadius` (future roam circle).
-- **Priority:** `confirmed visual chase > current investigation > ordinary wander`. When a stronger/newer sound supersedes the current one, use a cooldown/minimum priority difference so repeated automatic shots don't retarget every 0.65s. Do not have a remembered noise override a currently visible player.
+- **Priority:** `confirmed visual chase > deliberate nonvisual investigation > ordinary wander`. PER2 last-seen investigation and HE1 sound investigation represent **separate evidence and completion policies**: early visual give-up returns to ordinary wandering, while a sufficiently strong heard stimulus may relocate the wander anchor only after the audible investigation succeeds. Decide which new nonvisual clue may supersede a visual memory using a strength/recency rule; never read the source actor's live position. When a stronger/newer sound supersedes the current one, use a cooldown/minimum priority difference so repeated automatic shots don't retarget every 0.65s. Do not have a remembered noise override a currently visible player.
 - **Completion:** if no visual contact by arrival, use **the original recorded sound coordinate as new wander anchor**, not the inaccurate investigation offset. Thereafter random patrol destinations are sampled around that anchor until another qualifying stimulus moves it.
 - **Pathfinding limit:** current zombies use direct `MoveAndSlide()`, no navigation. Use existing stuck protection, bounded timeout and safe fallback. Do **not** attempt to cross buildings/steep cliffs with teleportation; proper navigation belongs to a future task.
 - **Sound playback is optional:** an AI noise event is not an `AudioStreamPlayer3D` and should work in silent/headless tests. Keep the real audio and gameplay hearing independently configurable.
