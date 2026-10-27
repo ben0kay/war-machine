@@ -77,9 +77,9 @@ Implemented only TD2 on the existing implement-td0-td1 branch. Direct Robot_001 
 
 Source/resource/scene wiring, route distance/camera projection calculations and whitespace checks passed. Godot/.NET unavailable: **build, saved terrain bake, two complete patrol/scan cycles, foot planting, player sensing, audio and runtime unload are unverified**. Existing first-run bake instructions still apply. TD3 remains Planned. One commit for this authorized job; published on the same feature branch, not main.
 
-## Optional robot-versus-zombie encounter expansion
+## Current priority after TD0–TD2
 
-**ZS0–ZS3 are planned only** in [ROBOT_ZOMBIE_SANDBOX_PLAN.md](ROBOT_ZOMBIE_SANDBOX_PLAN.md), intended for this existing scene on `implement-td0-td1`. They are separate from TD3 and do not alter TD0–TD2 acceptance/status.
+The project is now prioritizing **player control, orthographic camera feel and existing Robot_001 locomotion/patrol/scan quality** in this exact test scene. TD3 remains a modest polish/validation task, not permission to expand mechanics. Keep first-person world expansion parked; no combat, zombies, survival loops or building work unless separately authorized. There is **no active zombie sandbox/ZS plan**.
 
 ## Suggested Codex instruction
 

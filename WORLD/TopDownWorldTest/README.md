@@ -1,8 +1,19 @@
-# Top-down World Test — TD0/TD1
+# Top-down World Test — Active game-feel prototype
 
 **TD0–TD2 implemented, Awaiting Local Validation. TD3 remains Planned.** Standalone preview scene: `WORLD/TopDownWorldTest/topdownWorldTest.tscn`. The project's main scene remains `WORLD/testworld.tscn`.
 
-Git branch: `implement-td0-td1` (original `main` is unchanged).
+Git branch: `implement-td0-td1`. **This is the active development direction**, although `WORLD/testworld.tscn` remains the unchanged F5 main scene. The old first-person environment is parked, not deleted.
+
+## Immediate focus — player, camera, robot
+
+**Get these mechanics feeling good before adding new gameplay:**
+
+- **Player:** readable low-poly walk/run/idle animation, responsive camera-relative control, smooth starts/stops/turning and dependable Terrain3D grounding.
+- **Camera:** comfortable angled orthographic view, follow smoothing, zoom and composition; retain quick tuning controls.
+- **Robot:** refine the existing Robot_001 heavy cyan biped's gait and foot placement, body motion, patrol timing, stopping and head/scanner sweep. Reuse the same shared robot assembly and controller.
+- **No zombie work now:** the ZS sandbox plan was cancelled. Zombies, robot red targeting/weapons, survival meters, combat, crafting and base building are **future design possibilities only**, not currently authorized implementation phases.
+
+Long-term goal: a fully 3D, painterly/low-poly orthographic survival game balancing survival, combat and base building, with dominant roaming robots and later weaker zombie nuisances. For now, **movement and robot feel are the only priorities**.
 
 ## First run
 
@@ -53,7 +64,3 @@ The `RobotPatrol` node centres on spawn offset **(-24, +8)m**, with four markers
 The robot has a local EntitySettings startup resource with StartActive=false and a hidden placement root, so a missing terrain bake never starts patrol/scanning/audio at world origin. After safe positioning, the real robot is shown and explicitly activated. Its own runtime master copy, original biped gait, scan shader, sensing, spatial sounds, gravity/height support and lifecycle remain intact. Actor shutdown handles unload. No new per-frame placement/relevance loop or global manager; full test-terrain collision already covers both player and robot. The optional sensing candidate is the visible test player; no damage/chase is added.
 
 Check locally after the existing one-time terrain bake: watch two full walk → stop → scan → recover → walk cycles while moving the player around. Confirm the whole body advances, feet stay grounded, cyan beam sweeps, audio is bounded, and unloading leaves no errors. Check missing-data startup remains dormant. Source/resource/route-camera math checks passed here; Godot/.NET unavailable, so build and runtime/visual acceptance are still pending. TD3 is not automatically implemented.
-
-## Planned robot-versus-zombie sandbox (ZS0–ZS3)
-
-See [ROBOT_ZOMBIE_SANDBOX_PLAN.md](ROBOT_ZOMBIE_SANDBOX_PLAN.md). **Plan only: none of ZS0–ZS3 are implemented.** This is a future small test-only extension: low-poly shambling zombies wander around the existing top-down terrain, and the **same Robot_001** scans cyan, detects a zombie, shifts its cone RED, locks the head, fires a short visible burst, disintegrates the zombie, then resumes its original patrol. ZS3 optionally adds periodic small groups and simple performance caps. All work stays in this scene/branch and will not add zombies to the original world.

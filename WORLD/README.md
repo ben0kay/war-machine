@@ -1,10 +1,12 @@
 # WORLD — Integrated landscape
 
-`testworld.tscn` is the playable environment foundation and project main scene. **F5** runs it; open it and press **F6** to run directly. Build with a Godot .NET editor and .NET 8 SDK first. No competing WorldRoot exists.
+**Active development direction:** the fully 3D angled-orthographic/isometric-style scene in [TopDownWorldTest](TopDownWorldTest/README.md), on `implement-td0-td1`. Prioritize the **player's movement/animation and camera feel**, then the **same Robot_001's walking, stopping and cyan scanning**. TD0–TD2 are implemented with local validation outstanding; TD3 remains planned. The zombie/robot-combat sandbox plan has been cancelled. Keep new gameplay work in the top-down folder unless explicitly requested otherwise.
 
-**Standalone orthographic camera test:** [TopDownWorldTest/IMPLEMENTATION_PLAN.md](TopDownWorldTest/IMPLEMENTATION_PLAN.md) — TD0–TD2 implemented, awaiting local validation: a separate Terrain3D landscape, low-poly walking player and orthographic follow camera. TD2 directly reuses the existing Robot_001 on a nearby preview patrol. Run the preview-only bake scene once locally, then F6 the preview; see its README. Does not replace TestWorld.
+**Parked original world:** `testworld.tscn` still exists and remains the F5 project main scene, but its first-person exploration, extensive terrain, forests, caves and weather are **on hold**, not discarded. To test the current direction, bake top-down preview terrain once if necessary and open `TopDownWorldTest/topdownWorldTest.tscn` with **Run Current Scene (F6)**. See the top-down README. Build with the Godot .NET editor / .NET SDK first.
 
-**Surface terrain roadmap:** [SURFACE_IMPLEMENTATION_PLAN.md](SURFACE_IMPLEMENTATION_PLAN.md) — optional SF0–SF5 work for erosion gullies, rock outcrops, scree, forest-edge ecology and one surface landmark. All phases remain Planned; separate from the WE environment and CV cave roadmaps.
+**The following world notes document the parked first-person environment, not the current work queue.**
+
+**Surface terrain roadmap (parked):** [SURFACE_IMPLEMENTATION_PLAN.md](SURFACE_IMPLEMENTATION_PLAN.md) — optional SF0–SF5 work for erosion gullies, rock outcrops, scree, forest-edge ecology and one surface landmark. All phases remain Planned; separate from the WE environment and CV cave roadmaps.
 
 - `Configuration/WorldMaster.tres` / `WorldConfig.cs`: seed, landscape bake settings, saved-data directory, spawn and grass placement.
 - `Terrain/`: own Terrain3D material/assets, legacy grass resources, saved region data.
