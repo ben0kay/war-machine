@@ -24,7 +24,7 @@ public partial class WorldTuningPanel : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null)
     {
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
         SetProcess(false); SetPhysicsProcess(false);
@@ -35,11 +35,16 @@ public partial class WorldTuningPanel : PanelContainer
             margin.AddThemeConstantOverride("margin_" + side, 12);
         AddChild(margin);
         var outer = new VBoxContainer(); margin.AddChild(outer);
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(350, Mathf.Clamp(GetViewportRect().Size.Y - 180, 180, 520)),
+        float maximumPanelHeight = Mathf.Clamp(GetViewportRect().Size.Y - 180, 180, 520);
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(350, 120),
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         outer.AddChild(scroll);
         var rows = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         rows.AddThemeConstantOverride("separation", 8); scroll.AddChild(rows);
+        var rootRows = rows;
+        rootRows.MinimumSizeChanged += () => scroll.CustomMinimumSize = new Vector2(350,
+            Mathf.Clamp(rootRows.GetCombinedMinimumSize().Y, 120, maximumPanelHeight));
+        rows = AddSection(rootRows, "Camera");
         rows.AddChild(new Label { Text = "Camera · live preview" });
         _projection = new OptionButton { FocusMode = FocusModeEnum.None };
         _projection.AddItem("Orthographic"); _projection.AddItem("Perspective"); rows.AddChild(_projection);
@@ -53,6 +58,8 @@ public partial class WorldTuningPanel : PanelContainer
         _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
         _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
             Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
+        var environmentRows = AddSection(rootRows, "Environment");
+        rows = AddSection(environmentRows, "Distance fog");
         if (distanceFog != null)
         {
             rows.AddChild(new Label { Text = "Visibility fog · distance from player" });
@@ -71,7 +78,7 @@ public partial class WorldTuningPanel : PanelContainer
             rows.AddChild(tint);
             tint.ColorChanged += color => { _environment.DistanceFogColor = color; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
         }
-        rows.AddChild(new Label { Text = "Day / night" });
+        rows = AddSection(environmentRows, "Day / night");
         _hourLabel = new Label(); rows.AddChild(_hourLabel);
         _hour = AddSlider(rows, 0, 23.99, 0.01);
         _hour.SetValueNoSignal(_environment.StartHour);
@@ -80,7 +87,7 @@ public partial class WorldTuningPanel : PanelContainer
             value => { _environment.DayLengthMinutes = value; _sky.ApplyCycle(); });
         var pause = new CheckButton { Text = "Pause day / night", ButtonPressed = _environment.StartPaused, FocusMode = FocusModeEnum.None };
         rows.AddChild(pause); pause.Toggled += value => { _sky.SetPaused(value); _copy.Text = "Copy settings"; };
-        rows.AddChild(new Label { Text = "Weather · zero = off" });
+        rows = AddSection(environmentRows, "Weather and shared wind");
         AddBoundSlider(rows, "Rain intensity", 0, 1, 0.01, _environment.RainIntensity,
             value => { _environment.RainIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Snow intensity", 0, 1, 0.01, _environment.SnowIntensity,
@@ -88,7 +95,7 @@ public partial class WorldTuningPanel : PanelContainer
         AddBoundSlider(rows, "Local mist", 0, 1, 0.01, _environment.LocalMistIntensity,
             value => { _environment.LocalMistIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Wind strength", 0, 2, 0.01, _environment.GrassWindStrength,
-            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
+            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
         AddBoundSlider(rows, "Wind heading (degrees)", 0, 360, 1, _environment.WindHeading,
             value => { _environment.WindHeading = value; float angle = Mathf.DegToRad(value);
                 _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
@@ -102,7 +109,33 @@ public partial class WorldTuningPanel : PanelContainer
             value => { _environment.WeatherFallSpeed = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Weather quality (0 / 1 / 2)", 0, 2, 1, _environment.WeatherQuality,
             value => { _environment.WeatherQuality = value; weather.ApplySettings(); });
-        rows.AddChild(new Label { Text = "Grass · release density/height slider to apply" });
+        if (groundHaze != null)
+        {
+            rows = AddSection(environmentRows, "Ground haze");
+            var hazeEnabled = new CheckButton { Text = "Ground haze enabled", ButtonPressed = _environment.GroundHazeEnabled, FocusMode = FocusModeEnum.None };
+            rows.AddChild(hazeEnabled);
+            hazeEnabled.Toggled += value => { _environment.GroundHazeEnabled = value; groundHaze.ApplySettings(); _copy.Text = "Copy settings"; };
+            AddBoundSlider(rows, "Density", 0, 0.5, 0.01, _environment.GroundHazeDensity,
+                value => { _environment.GroundHazeDensity = value; groundHaze.ApplySettings(); });
+            AddBoundSlider(rows, "Height (m)", 0.25, 3, 0.05, _environment.GroundHazeHeight,
+                value => { _environment.GroundHazeHeight = value; groundHaze.ApplySettings(); });
+            AddBoundSlider(rows, "Noise scale", 0.05, 1, 0.01, _environment.GroundHazeNoiseScale,
+                value => { _environment.GroundHazeNoiseScale = value; groundHaze.ApplySettings(); });
+            AddBoundSlider(rows, "Drift (m/s)", 0, 2, 0.01, _environment.GroundHazeDriftSpeed,
+                value => { _environment.GroundHazeDriftSpeed = value; groundHaze.ApplySettings(); });
+            AddBoundSlider(rows, "Wisp definition", 0, 1, 0.01, _environment.GroundHazeContrast,
+                value => { _environment.GroundHazeContrast = value; groundHaze.ApplySettings(); });
+            AddBoundSlider(rows, "Haze turbulence", 0, 1, 0.01, _environment.GroundHazeTurbulence,
+                value => { _environment.GroundHazeTurbulence = value; groundHaze.ApplySettings(); });
+            AddDeferredSlider(rows, "Coverage radius (m) · release to apply", 6, 48, 1, _environment.GroundHazeCoverageRadius,
+                value => _environment.GroundHazeCoverageRadius = value, groundHaze.ApplySettings);
+            var hazeColor = new ColorPickerButton { Text = "Haze colour", Color = _environment.GroundHazeColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+            rows.AddChild(hazeColor);
+            hazeColor.ColorChanged += color => { _environment.GroundHazeColor = color; groundHaze.ApplySettings(); _copy.Text = "Copy settings"; };
+        }
+        var foliageRows = AddSection(rootRows, "Foliage");
+        rows = AddSection(foliageRows, "Grass");
+        rows.AddChild(new Label { Text = "Release density/height to apply" });
         var grassEnabled = new CheckButton { Text = "Grass enabled", ButtonPressed = grass.Settings.Enabled, FocusMode = FocusModeEnum.None };
         rows.AddChild(grassEnabled); grassEnabled.Toggled += value => { grass.Settings.Enabled = value; grass.ApplySettings(); _copy.Text = "Copy settings"; };
         AddDeferredSlider(rows, "Grass density", 0, 2, 0.05, grass.Settings.Density,
@@ -111,7 +144,8 @@ public partial class WorldTuningPanel : PanelContainer
             value => grass.Settings.Height = value, grass.ApplyAppearance);
         AddBoundSlider(rows, "Grass wind multiplier", 0, 2, 0.05, grass.Settings.WindMultiplier,
             value => { grass.Settings.WindMultiplier = value; grass.ApplyAppearance(); });
-        rows.AddChild(new Label { Text = "Pine trees · release density/size to apply" });
+        rows = AddSection(foliageRows, "Pine trees");
+        rows.AddChild(new Label { Text = "Release density/size to apply" });
         var pineEnabled = new CheckButton { Text = "Pine trees enabled", ButtonPressed = pines.Settings.Enabled, FocusMode = FocusModeEnum.None };
         rows.AddChild(pineEnabled); pineEnabled.Toggled += value => { pines.Settings.Enabled = value; pines.ApplySettings(); _copy.Text = "Copy settings"; };
         AddDeferredSlider(rows, "Pine density", 0, 1, 0.05, pines.Settings.Density,
@@ -130,6 +164,19 @@ public partial class WorldTuningPanel : PanelContainer
         _copy.Pressed += CopySettings;
         _camera.SettingsChanged += Refresh;
         Refresh();
+    }
+
+    // =========================================================
+    // Nested disclosure buttons only change visibility on input; no polling or keyboard focus capture.
+    private static VBoxContainer AddSection(VBoxContainer parent, string title)
+    {
+        var button = new Button { Text = "+ " + title, ToggleMode = true, FocusMode = FocusModeEnum.None,
+            Alignment = HorizontalAlignment.Left };
+        var body = new VBoxContainer { Visible = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        body.AddThemeConstantOverride("separation", 6);
+        parent.AddChild(button); parent.AddChild(body);
+        button.Toggled += open => { body.Visible = open; button.Text = (open ? "− " : "+ ") + title; };
+        return body;
     }
 
     // =========================================================
@@ -204,6 +251,16 @@ public partial class WorldTuningPanel : PanelContainer
             [nameof(_environment.DistanceFogOpacity)] = _environment.DistanceFogOpacity,
             [nameof(_environment.DistanceFogEdgeVariation)] = _environment.DistanceFogEdgeVariation,
             [nameof(_environment.DistanceFogColor)] = new[] { _environment.DistanceFogColor.R, _environment.DistanceFogColor.G, _environment.DistanceFogColor.B, _environment.DistanceFogColor.A },
+            [nameof(_environment.GroundHazeEnabled)] = _environment.GroundHazeEnabled,
+            [nameof(_environment.GroundHazeDensity)] = _environment.GroundHazeDensity,
+            [nameof(_environment.GroundHazeHeight)] = _environment.GroundHazeHeight,
+            [nameof(_environment.GroundHazeNoiseScale)] = _environment.GroundHazeNoiseScale,
+            [nameof(_environment.GroundHazeDriftSpeed)] = _environment.GroundHazeDriftSpeed,
+            [nameof(_environment.GroundHazeContrast)] = _environment.GroundHazeContrast,
+            [nameof(_environment.GroundHazeTurbulence)] = _environment.GroundHazeTurbulence,
+            [nameof(_environment.GroundHazeCoverageRadius)] = _environment.GroundHazeCoverageRadius,
+            [nameof(_environment.GroundHazeColor)] = new[] { _environment.GroundHazeColor.R, _environment.GroundHazeColor.G, _environment.GroundHazeColor.B, _environment.GroundHazeColor.A },
+            [nameof(_environment.WindDirection)] = new[] { _environment.WindDirection.X, _environment.WindDirection.Y },
             ["PineEnabled"] = _pines.Settings.Enabled,
             ["PineDensity"] = _pines.Settings.Density,
             ["PineHeightMultiplier"] = _pines.Settings.HeightMultiplier,

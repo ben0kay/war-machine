@@ -11,6 +11,10 @@ public partial class FirstPersonWorld : WorldController
     protected override bool EnableHorde => false; // Extra population belongs only to the top-down horde test.
 
     // =========================================================
+    // The new ground haze defaults belong only to the top-down view.
+    protected override void InitializeGroundHaze(Node3D terrain, Camera camera, PlayerController player) { }
+
+    // =========================================================
     protected override void InitializeEquipment(PlayerController player, Camera camera)
     {
         var weapon = new FirstPersonWeapon { Name = "FirstPersonEquipment" }; player.AddChild(weapon);

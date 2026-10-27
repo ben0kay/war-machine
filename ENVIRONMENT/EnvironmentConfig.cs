@@ -33,6 +33,9 @@ public partial class EnvironmentConfig : Resource
     [Export] public float GroundHazeNoiseScale { get; set; } = 0.35f;
     [Export] public float GroundHazeDriftSpeed { get; set; } = 0.3f;
     [Export] public float GroundHazeContrast { get; set; } = 0.8f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float GroundHazeTurbulence { get; set; } = 0.15f;
+    [Export(PropertyHint.Range, "6,48,1")] public float GroundHazeCoverageRadius { get; set; } = 9;
+    [Export] public Color GroundHazeColor { get; set; } = new(0.64f, 0.71f, 0.73f);
     [ExportGroup("Weather Preview")]
     [Export] public bool WeatherEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "0,1,0.01")] public float RainIntensity { get; set; }

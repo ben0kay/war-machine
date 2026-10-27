@@ -15,6 +15,7 @@ public partial class WorldController : Node3D
     protected WeatherBridge _weather = null!;
     protected Camera _camera = null!;
     private PlayerDistanceFog? _distanceFog;
+    private GroundHaze? _groundHaze;
     private ContentScatter _rocks = null!;
 
     // =========================================================
@@ -118,6 +119,7 @@ public partial class WorldController : Node3D
         GetViewport().SizeChanged += UpdateWeatherCoverage;
         UpdateWeatherCoverage();
         InitializeDistanceFog(camera, player);
+        InitializeGroundHaze(terrain, camera, player);
         InitializeControls(camera);
         SpawnZombies(data, player, horde.Slow, horde.Fast);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
@@ -154,10 +156,22 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    // Reuse the legacy haze owner with the live terrain/player and Sky3D's existing Environment.
+    protected virtual void InitializeGroundHaze(Node3D terrain, Camera camera, PlayerController player)
+    {
+        _groundHaze = new GroundHaze { Name = "GroundHaze" };
+        GetNode("SystemsRoot/EnvironmentRoot").AddChild(_groundHaze);
+        var sky = GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment").Sky;
+        var environment = (Godot.Environment)sky.GetNode("SkyDome").Get("environment").AsGodotObject();
+        _groundHaze.Initialize(terrain, player, camera, EnvironmentSettings, environment);
+        camera.SettingsChanged += _groundHaze.RefreshView;
+    }
+
+    // =========================================================
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = new WorldTuningPanel(); DebugControls.AddChild(panel);
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze);
     }
 
     // =========================================================
@@ -314,7 +328,11 @@ public partial class WorldController : Node3D
     public override void _ExitTree()
     {
         if (IsInstanceValid(_player) && IsInstanceValid(_rocks)) _player.PositionChanged -= _rocks.UpdateAnchor;
-        if (IsInstanceValid(_camera)) _camera.SettingsChanged -= UpdateWeatherCoverage;
+        if (IsInstanceValid(_camera))
+        {
+            _camera.SettingsChanged -= UpdateWeatherCoverage;
+            if (_groundHaze != null) _camera.SettingsChanged -= _groundHaze.RefreshView;
+        }
         if (IsInstanceValid(_player) && IsInstanceValid(_pines)) _player.PositionChanged -= _pines.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_grass)) _player.PositionChanged -= _grass.UpdateAnchor;
         GetViewport().SizeChanged -= UpdateWeatherCoverage;

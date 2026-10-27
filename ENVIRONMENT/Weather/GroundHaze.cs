@@ -1,4 +1,4 @@
-// Close ground wisps: nine terrain-tangent FogVolumes, shader animation only, event-driven placement/shelter.
+// Shared terrain-following ground wisps: cached local height texture, GPU animation and movement-only updates.
 using Godot;
 using System.Collections.Generic;
 
@@ -7,160 +7,189 @@ public partial class GroundHaze : Node3D
     private EnvironmentConfig _settings = null!;
     private Godot.Environment _environment = null!;
     private GodotObject _data = null!;
-    private ExplorationController _explorer = null!;
+    private Node3D _anchor = null!;
+    private ExplorationController? _explorer;
+    private PlayerController? _player;
     private Camera3D _camera = null!;
-    private WildernessCave _cave = null!;
-    private readonly List<FogVolume> _volumes = new();
-    private readonly List<ShaderMaterial> _materials = new();
+    private WildernessCave? _cave;
+    private FogVolume? _volume;
+    private ShaderMaterial _material = null!;
+    private Image? _heights;
+    private ImageTexture? _heightTexture;
+    private Dictionary<Vector2I, float> _cache = new(), _nextCache = new();
     private Vector2I _tile = new(int.MinValue, int.MinValue);
     private Vector3 _lastPosition = new(float.PositiveInfinity, 0, 0);
-    private bool _initialized, _ownsFog, _oldEnabled;
-    private float _oldDensity, _oldLength;
-    private const float TileWidth = 6;
+    private bool _initialized, _active, _ownsFog, _oldEnabled;
+    private float _oldDensity, _oldLength, _radius;
+    private const float TileWidth = 8, SampleSpacing = 4;
+    private int _halfSamples;
 
     // =========================================================
-    // Reuse Sky3D's Environment; no competing sky/distance-fog owner or camera-following floating layer.
+    // Retain the wilderness API and its cave/flight suppression.
     public void Initialize(Node3D terrain, ExplorationController explorer, EnvironmentConfig settings, Node sky, WildernessCave cave)
     {
-        if (_initialized) Disconnect();
-        _data = terrain.Get("data").AsGodotObject(); _explorer = explorer; _settings = settings; _cave = cave;
-        _camera = explorer.GetNode<Camera3D>("Camera3D");
-        _environment = (Godot.Environment)sky.GetNode("SkyDome").Get("environment").AsGodotObject();
-        _explorer.ViewPositionChanged += OnMoved; _explorer.CameraModeChanged += OnCameraMode;
-        _initialized = true; SetProcess(false); SetPhysicsProcess(false); ApplySettings();
+        Disconnect();
+        _explorer = explorer; _cave = cave;
+        Setup(terrain, explorer, explorer.GetNode<Camera3D>("Camera3D"), settings,
+            (Godot.Environment)sky.GetNode("SkyDome").Get("environment").AsGodotObject());
+        explorer.ViewPositionChanged += OnMoved; explorer.CameraModeChanged += OnCameraMode;
+        ApplySettings();
     }
 
     // =========================================================
-    // Sliders update only on change; zero/OFF releases all volumes and restores previous volumetric settings.
+    // Active world supplies its existing Sky3D environment and player; no new WorldEnvironment.
+    public void Initialize(Node3D terrain, PlayerController player, Camera3D camera, EnvironmentConfig settings, Godot.Environment environment)
+    {
+        Disconnect(); _player = player;
+        Setup(terrain, player, camera, settings, environment);
+        player.PositionChanged += OnMoved; ApplySettings();
+    }
+
+    // =========================================================
+    private void Setup(Node3D terrain, Node3D anchor, Camera3D camera, EnvironmentConfig settings, Godot.Environment environment)
+    {
+        _data = terrain.Get("data").AsGodotObject(); _anchor = anchor; _camera = camera;
+        _settings = settings; _environment = environment; _initialized = true;
+        PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off;
+        SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // Explicit UI/config changes only. OFF retains cached resources but hides all rendering and releases the fog pass.
     public void ApplySettings()
     {
         if (!_initialized) return;
-        if (!_settings.GroundHazeEnabled || _settings.GroundHazeDensity <= 0)
-        { ClearVolumes(); RestoreFog(); return; }
-        string renderer = ProjectSettings.GetSetting("rendering/renderer/rendering_method", "forward_plus").AsString();
-        if (renderer != "forward_plus") { GD.PushWarning("Ground wisps require Forward+."); ClearVolumes(); RestoreFog(); return; }
-        if (_volumes.Count == 0)
+        _active = _settings.GroundHazeEnabled && _settings.GroundHazeDensity > 0;
+        if (!_active) { if (_volume != null) _volume.Hide(); RestoreFog(); return; }
+        if (ProjectSettings.GetSetting("rendering/renderer/rendering_method", "forward_plus").AsString() != "forward_plus")
+        { _active = false; GD.PushWarning("Ground haze requires Forward+."); if (_volume != null) _volume.Hide(); RestoreFog(); return; }
+        if (_volume == null)
         {
-            var shader = GD.Load<Shader>("res://ENVIRONMENT/Weather/Shaders/GroundWisps.gdshader");
-            for (int i = 0; i < 9; i++)
-            {
-                var material = new ShaderMaterial { Shader = shader };
-                var volume = new FogVolume { Shape = RenderingServer.FogVolumeShape.Box, Material = material };
-                AddChild(volume); _volumes.Add(volume); _materials.Add(material);
-            }
+            _material = new ShaderMaterial { Shader = GD.Load<Shader>("res://ENVIRONMENT/Weather/Shaders/GroundWisps.gdshader") };
+            _volume = new FogVolume { Name = "TerrainWisps", Shape = RenderingServer.FogVolumeShape.Box, Material = _material, Visible = false };
+            AddChild(_volume);
         }
+        _radius = Mathf.Clamp(_settings.GroundHazeCoverageRadius, 6, 48);
+        int half = Mathf.CeilToInt((_radius + TileWidth) / SampleSpacing);
+        if (_heights == null || half != _halfSamples)
+        {
+            _halfSamples = half; int size = half * 2 + 1;
+            _heights = Image.CreateEmpty(size, size, false, Image.Format.Rgf);
+            _heightTexture = ImageTexture.CreateFromImage(_heights);
+            _material.SetShaderParameter("terrain_heights", _heightTexture);
+            _cache.Clear(); _nextCache.Clear();
+        }
+        _material.SetShaderParameter("density", Mathf.Clamp(_settings.GroundHazeDensity, 0, 0.5f));
+        _material.SetShaderParameter("layer_height", Mathf.Clamp(_settings.GroundHazeHeight, 0.25f, 8));
+        _material.SetShaderParameter("noise_scale", Mathf.Clamp(_settings.GroundHazeNoiseScale, 0.05f, 1));
+        _material.SetShaderParameter("drift_speed", Mathf.Clamp(_settings.GroundHazeDriftSpeed, 0, 2));
+        _material.SetShaderParameter("contrast", Mathf.Clamp(_settings.GroundHazeContrast, 0, 1));
+        _material.SetShaderParameter("turbulence", Mathf.Clamp(_settings.GroundHazeTurbulence, 0, 1));
+        _material.SetShaderParameter("fog_color", _settings.GroundHazeColor);
+        _material.SetShaderParameter("coverage_radius", _radius);
         Vector2 wind = _settings.WindDirection.LengthSquared() > 0.001f ? _settings.WindDirection.Normalized() : Vector2.Right;
-        for (int i = 0; i < _volumes.Count; i++)
-        {
-            _volumes[i].Size = new Vector3(TileWidth + 2, Mathf.Clamp(_settings.GroundHazeHeight, 0.25f, 8) + 4, TileWidth + 2);
-            var material = _materials[i];
-            material.SetShaderParameter("density", Mathf.Clamp(_settings.GroundHazeDensity, 0, 0.5f));
-            material.SetShaderParameter("layer_height", Mathf.Clamp(_settings.GroundHazeHeight, 0.25f, 8));
-            material.SetShaderParameter("noise_scale", Mathf.Clamp(_settings.GroundHazeNoiseScale, 0.05f, 1));
-            material.SetShaderParameter("drift_speed", Mathf.Clamp(_settings.GroundHazeDriftSpeed, 0, 2));
-            material.SetShaderParameter("contrast", Mathf.Clamp(_settings.GroundHazeContrast, 0, 1));
-            material.SetShaderParameter("wind_direction", wind);
-        }
-        _tile = new Vector2I(int.MinValue, int.MinValue); ForceRefresh();
+        _material.SetShaderParameter("wind_direction", wind);
+        _tile = new Vector2I(int.MinValue, int.MinValue);
+        _lastPosition = new Vector3(float.PositiveInfinity, 0, 0);
+        OnMoved(_anchor.GlobalPosition);
     }
 
     // =========================================================
-    // Camera mode changes affect eye-height shelter; wake explicitly rather than polling input mode.
-    private void OnCameraMode(bool firstPerson) => ForceRefresh();
+    private void OnCameraMode(bool firstPerson) => RefreshView();
 
     // =========================================================
-    // Meaningful UI/mode events bypass the small movement threshold directly.
-    private void ForceRefresh()
-    { _lastPosition = new Vector3(float.PositiveInfinity, 0, 0); OnMoved(_explorer.GlobalPosition); }
+    // Called explicitly on overhead framing changes; an elevated overhead camera must not suppress ground fog.
+    public void RefreshView()
+    {
+        if (!_initialized || !_active) return;
+        _lastPosition = new Vector3(float.PositiveInfinity, 0, 0); OnMoved(_anchor.GlobalPosition);
+    }
 
     // =========================================================
-    // Sample only on six-metre tile crossings; shelter/altitude checks are limited to 1.5m movement increments.
+    // No frame callback: movement threshold for coverage, eight-metre crossings for terrain texture refresh.
     private void OnMoved(Vector3 position)
     {
-        if (_volumes.Count == 0 || position.DistanceSquaredTo(_lastPosition) < 2.25f) return;
+        if (!_active || _volume == null || position.DistanceSquaredTo(_lastPosition) < 2.25f) return;
         _lastPosition = position;
-        float viewerGround = _data.Call("get_height", position).AsSingle();
-        float heightAbove = _camera.GlobalPosition.Y - viewerGround;
-        bool visible = float.IsFinite(viewerGround) && heightAbove > -0.5f && heightAbove < 35
-            && !_cave.IsSheltered(_camera.GlobalPosition);
+        bool visible = true;
+        if (_explorer != null)
+        {
+            float ground = _data.Call("get_height", position).AsSingle();
+            float altitude = _camera.GlobalPosition.Y - ground;
+            visible = float.IsFinite(ground) && altitude > -0.5f && altitude < 35 && !(_cave?.IsSheltered(_camera.GlobalPosition) ?? false);
+        }
+        if (!visible) { _volume.Hide(); RestoreFog(); return; }
         var tile = new Vector2I(Mathf.FloorToInt(position.X / TileWidth), Mathf.FloorToInt(position.Z / TileWidth));
-        bool changed = tile != _tile;
-        if (changed)
-        {
-            _tile = tile; int i = 0;
-            for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++)
-            {
-                Vector3 point = new((tile.X + x + 0.5f) * TileWidth, 0, (tile.Y + z + 0.5f) * TileWidth);
-                float height = _data.Call("get_height", point).AsSingle();
-                bool valid = float.IsFinite(height); var volume = _volumes[i];
-                volume.SetMeta("valid_ground", valid);
-                if (valid)
-                {
-                    float hx = _data.Call("get_height", point + Vector3.Right).AsSingle();
-                    float hz = _data.Call("get_height", point + Vector3.Back).AsSingle();
-                    Vector2 slope = new(float.IsFinite(hx) ? hx - height : 0, float.IsFinite(hz) ? hz - height : 0);
-                    if (slope.LengthSquared() > 0.25f) { valid = false; volume.SetMeta("valid_ground", false); }
-                    point.Y = height + _settings.GroundHazeHeight * 0.5f; volume.GlobalPosition = point;
-                    _materials[i].SetShaderParameter("ground_height", height);
-                    _materials[i].SetShaderParameter("ground_slope", slope);
-                }
-                i++;
-            }
-        }
-        bool anyVisible = false;
-        foreach (var volume in _volumes)
-        {
-            bool show = visible && volume.GetMeta("valid_ground", false).AsBool();
-            if (volume.Visible != show) volume.Visible = show;
-            anyVisible |= show;
-        }
-        if (anyVisible) EnableFog(); else RestoreFog();
+        if (tile != _tile) { _tile = tile; UpdateTerrain(tile); }
+        _material.SetShaderParameter("coverage_center", new Vector2(position.X, position.Z));
+        if (_cache.Count == 0) { _volume.Hide(); RestoreFog(); return; }
+        if (!_volume.Visible) _volume.Show(); EnableFog();
     }
 
     // =========================================================
-    // A shorter froxel range favours close detail; global density stays zero so only local wisps contribute.
+    // Reuse overlap samples and the image/texture. Only entering strips query Terrain3D; no actor/scene scans.
+    private void UpdateTerrain(Vector2I tile)
+    {
+        int size = _halfSamples * 2 + 1;
+        Vector2I center = tile * 2;
+        Vector2I origin = center - new Vector2I(_halfSamples, _halfSamples);
+        float low = float.PositiveInfinity, high = float.NegativeInfinity;
+        _nextCache.Clear();
+        for (int z = 0; z < size; z++) for (int x = 0; x < size; x++)
+        {
+            Vector2I key = origin + new Vector2I(x, z);
+            if (!_cache.TryGetValue(key, out float height))
+                height = _data.Call("get_height", new Vector3(key.X * SampleSpacing, 0, key.Y * SampleSpacing)).AsSingle();
+            _nextCache[key] = height;
+            bool valid = float.IsFinite(height);
+            _heights!.SetPixel(x, z, new Color(valid ? height : 0, valid ? 1 : 0, 0));
+            if (valid) { low = Mathf.Min(low, height); high = Mathf.Max(high, height); }
+        }
+        var previous = _cache; _cache = _nextCache; _nextCache = previous;
+        _heightTexture!.Update(_heights!);
+        _material.SetShaderParameter("terrain_origin", new Vector2(origin.X * SampleSpacing, origin.Y * SampleSpacing));
+        _material.SetShaderParameter("terrain_span", (size - 1) * SampleSpacing);
+        _material.SetShaderParameter("terrain_texels", (float)size);
+        if (!float.IsFinite(low)) { _volume!.Hide(); _cache.Clear(); return; }
+        float top = high + Mathf.Clamp(_settings.GroundHazeHeight, 0.25f, 8) * 1.5f;
+        float span = (size - 1) * SampleSpacing;
+        _volume!.Size = new Vector3(span, top - low + 0.4f, span);
+        _volume.GlobalPosition = new Vector3(center.X * SampleSpacing, (low - 0.2f + top + 0.2f) * 0.5f, center.Y * SampleSpacing);
+    }
+
+    // =========================================================
+    // Preserve an existing volumetric baseline. Only a previously disabled pass gets zero global density.
     private void EnableFog()
     {
         if (!_ownsFog)
         {
             _oldEnabled = _environment.VolumetricFogEnabled; _oldDensity = _environment.VolumetricFogDensity;
             _oldLength = _environment.VolumetricFogLength; _ownsFog = true;
-            _environment.VolumetricFogEnabled = true; _environment.VolumetricFogDensity = 0; _environment.VolumetricFogLength = 48;
+            if (!_oldEnabled) _environment.VolumetricFogDensity = 0;
+            _environment.VolumetricFogEnabled = true;
         }
+        // Overhead zoom can settle after its input event; reserve the supported 100m camera distance up front.
+        float length = Mathf.Max(_oldLength, (_player != null ? 100 : _camera.GlobalPosition.DistanceTo(_anchor.GlobalPosition)) + _radius + 12);
+        if (!Mathf.IsEqualApprox(_environment.VolumetricFogLength, length)) _environment.VolumetricFogLength = length;
     }
 
     // =========================================================
-    // No extra global fog pass is left requested by this feature when disabled, sheltered or far above the ground.
     private void RestoreFog()
     {
-        if (!_ownsFog) return;
+        if (!_ownsFog || !IsInstanceValid(_environment)) return;
         _environment.VolumetricFogEnabled = _oldEnabled; _environment.VolumetricFogDensity = _oldDensity;
         _environment.VolumetricFogLength = _oldLength; _ownsFog = false;
     }
 
     // =========================================================
-    // Cached nodes persist through shelter transitions; OFF removes them completely.
-    private void ClearVolumes()
-    {
-        foreach (var volume in _volumes) { RemoveChild(volume); volume.QueueFree(); }
-        _volumes.Clear(); _materials.Clear(); _tile = new Vector2I(int.MinValue, int.MinValue);
-    }
-
-    // =========================================================
-    // Reinitialization and unload release both movement subscriptions and temporary fog ownership.
     private void Disconnect()
     {
-        if (IsInstanceValid(_explorer)) { _explorer.ViewPositionChanged -= OnMoved; _explorer.CameraModeChanged -= OnCameraMode; }
-        RestoreFog(); ClearVolumes(); _initialized = false;
+        if (IsInstanceValid(_explorer)) { _explorer!.ViewPositionChanged -= OnMoved; _explorer.CameraModeChanged -= OnCameraMode; }
+        if (IsInstanceValid(_player)) _player!.PositionChanged -= OnMoved;
+        RestoreFog(); _active = false; _initialized = false; _explorer = null; _player = null; _cave = null;
+        _cache.Clear(); _nextCache.Clear(); _tile = new Vector2I(int.MinValue, int.MinValue);
     }
 
     // =========================================================
-    public override void _ExitTree()
-    {
-        if (!_initialized) return;
-        if (IsInstanceValid(_explorer)) { _explorer.ViewPositionChanged -= OnMoved; _explorer.CameraModeChanged -= OnCameraMode; }
-        if (IsInstanceValid(_environment)) RestoreFog();
-        // Children are already exiting here; let their parent free them rather than removing them mid-exit.
-        _volumes.Clear(); _materials.Clear(); _initialized = false;
-    }
+    public override void _ExitTree() => Disconnect();
 }

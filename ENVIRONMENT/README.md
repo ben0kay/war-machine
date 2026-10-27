@@ -23,3 +23,7 @@ Keep static settings event-driven and dormant, avoid duplicated competing global
 ## Active top-down visibility fog
 
 Fog/PlayerDistanceFog provides the separately authorized player-centred edge fog, controlled by GameplayEnvironmentMaster and the world tuning panel. Clear radius 24m, full radius 48m; FPS omits it. This lightweight depth overlay is separate from parked Sky3D mist and volumetric ground haze. See Fog/README.md for activation/idle cost, transparent-depth limitations and pending local checks.
+
+## Active ground haze 2.0
+
+The top-down world now reuses Weather/GroundHaze with an explicit player/terrain/camera initialization overload and the same Sky3D Environment. GameplayEnvironmentMaster enables the 30m local wispy layer; WorldTuning exposes its controls under Environment → Ground haze. One cached volume and terrain-height texture; GPU noise, movement/tile-only updates, dormant OFF/zero. Legacy explorer/cave initialization is retained; FPS comparison opts out. See [Weather/README.md](Weather/README.md) for defaults, cost, limitations and local checks. Implemented; build/shader/visual validation pending locally.
