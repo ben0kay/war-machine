@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AudioSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://AUDIO/AudioSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+MasterVolumeDb = 0.0
+MaxVoices = 20
+MaxOneShotVoices = 14
+MaxLoopVoices = 6
+MaxCreatureVoices = 5
+MaxPerEmitterVoices = 2
+MaxSameCueVoices = 3
+DefaultMaxDistance = 60.0
+WeaponsVolumeDb = 0.0
+CreaturesVolumeDb = -3.0
+FootstepsVolumeDb = -3.0
+WorldVolumeDb = -2.0
+WeatherVolumeDb = -5.0
+UiVolumeDb = 0.0
