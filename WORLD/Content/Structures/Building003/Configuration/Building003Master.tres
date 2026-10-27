@@ -14,3 +14,4 @@ Glass = Color(0.18, 0.33, 0.36, 1)
 Accent = Color(0.76, 0.29, 0.23, 1)
 Concrete = Color(0.46, 0.48, 0.45, 1)
 OutsideBuildingOpacity = 0.15
+OutsideObstructionRadius = 0.18

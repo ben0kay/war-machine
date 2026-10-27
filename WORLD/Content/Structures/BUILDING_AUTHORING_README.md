@@ -5,7 +5,7 @@ Use **Building002** as the multi-storey reference. Reuse shared visibility; do n
 ## Prefab and ownership
 
 - Keep `<Building>/<Building>.tscn` as the stable prefab, `C/` for procedural mesh construction, `Artwork/` for later models, and `Configuration/` for the master/settings.
-- Derive the building settings from `StructureSettings`. Its inherited exports provide OutsideBuildingOpacity, HiddenUpperOpacity, IndoorRoofOpacity, FloorFadeSeconds and LandingHysteresis. Existing master values remain in each building's `.tres`; the runtime component deep-copies them.
+- Derive the building settings from `StructureSettings`. Its inherited exports provide OutsideBuildingOpacity, OutsideObstructionRadius, HiddenUpperOpacity, IndoorRoofOpacity, FloorFadeSeconds and LandingHysteresis. Existing master values remain in each building's `.tres`; the runtime component deep-copies them.
 - Add **one direct Node child** using `Shared/StructureVisibility.cs`, with `Settings` referencing that same master. No CameraOccluder nodes are needed in a new compliant prefab: shared code builds disjoint section owners.
 - Place it beneath the world's `Structures` subtree (or its descendants). The active top-down camera discovers existing components once and listens for later prefab Ready/Exit events. It does not need a new named case. FPS does not register the context, so it keeps opaque geometry.
 
@@ -44,7 +44,7 @@ StructureLayout.Visual(stairs, "stairs");
 - **stairs:** stays readable indoors across levels; only the outside whole-building fade affects it.
 - Untagged art gets outside-house fading only. Separate decorative trim with its corresponding wall/roof role if it should follow that fade.
 
-Outside, the entire building fades coherently to its own OutsideBuildingOpacity (default 0.15). Inside/under canopy, sectional/floor presentation takes over. Tag the petrol forecourt/canopy as occupied too so pumps remain solid while underneath. Cosmetic transparency never changes collision, weapon hits or enemy perception.
+Outside, the entire building fades coherently to its own OutsideBuildingOpacity (default 0.15). The optional per-building OutsideObstructionRadius (default 0.18m) narrows camera-to-player obstruction checks near corners independently of CameraMaster's larger foliage radius; it must remain small enough to avoid premature whole-building fading, but large enough to catch genuine cover. Inside/under canopy, sectional/floor presentation takes over. Tag the petrol forecourt/canopy as occupied too so pumps remain solid while underneath. Cosmetic transparency never changes collision, weapon hits or enemy perception.
 
 ## Procedural spawning and rebuilding
 

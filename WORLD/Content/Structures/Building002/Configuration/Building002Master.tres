@@ -20,3 +20,4 @@ IndoorRoofOpacity = 0.1
 FloorFadeSeconds = 0.25
 LandingHysteresis = 0.3
 OutsideBuildingOpacity = 0.15
+OutsideObstructionRadius = 0.18

@@ -8,6 +8,7 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
     public event System.Action? OcclusionChanged;
     public bool IsValid => _initialized && IsInsideTree() && !IsQueuedForDeletion();
     public float ObstructedOpacity { get; private set; }
+    private float _obstructionRadius;
     private Node3D _building = null!;
     private PlayerController _player = null!;
     private readonly List<CameraOccluder> _sections = new();
@@ -31,9 +32,10 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
 
     // =========================================================
     // World supplies per-prefab local occupancy volumes and a copied authoring opacity, not building-name rules.
-    public void Initialize(Node3D building, PlayerController player, float opacity, Aabb[] zones, System.Func<bool>? isInsideFloor = null)
+    public void Initialize(Node3D building, PlayerController player, float opacity, float obstructionRadius, Aabb[] zones, System.Func<bool>? isInsideFloor = null)
     {
         _building = building; _player = player; ObstructedOpacity = Mathf.Clamp(opacity, 0, 1);
+        _obstructionRadius = Mathf.Clamp(obstructionRadius, 0f, 1f);
         _occupiedZones = zones; _isInsideFloor = isInsideFloor;
         CacheSections(building);
         // Cache uncovered art in one passive owner, excluding all meshes already controlled by section/floor owners.
@@ -77,12 +79,13 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
     }
 
     // =========================================================
-    // Broad reject first, then cached mesh-local boxes exclude empty space in the overall building envelope.
+    // A per-building narrow corridor avoids making the whole house transparent when grazing corners.
+    // The cached visible-mesh test remains intact; foliage keeps the full camera obstruction radius.
     public void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results)
     {
         if (!IsValid || _inside) return;
         var inverse = _building.GlobalTransform.AffineInverse();
-        float localRadius = radius * Mathf.Max(inverse.Basis.X.Length(), Mathf.Max(inverse.Basis.Y.Length(), inverse.Basis.Z.Length()));
+        float localRadius = Mathf.Min(radius, _obstructionRadius) * Mathf.Max(inverse.Basis.X.Length(), Mathf.Max(inverse.Basis.Y.Length(), inverse.Basis.Z.Length()));
         Vector3 localFrom = inverse * from, localTo = inverse * to;
         if (!CameraOcclusionMath.Intersects(localFrom, localTo, _bounds, localRadius)) return;
         foreach (var part in _parts)

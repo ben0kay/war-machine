@@ -15,3 +15,4 @@ Concrete = Color(0.52, 0.51, 0.46, 1)
 Window = Color(0.14, 0.28, 0.34, 1)
 Accent = Color(0.82, 0.63, 0.27, 1)
 OutsideBuildingOpacity = 0.15
+OutsideObstructionRadius = 0.18
