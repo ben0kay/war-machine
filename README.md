@@ -1,102 +1,121 @@
 # WAR MACHINE
 
-> **Current direction:** Fully 3D, angled **orthographic/isometric-style** survival game with stylized low-poly art.  
-> **Active development:** Player movement/camera feel and the existing giant robot's movement, patrol, and scanning.  
-> **Working branch:** `implement-td0-td1`. First-person wilderness systems are **parked, not deleted**. This README is the first stop for project vision and development priorities, not a phase implementation plan.
+> **Working title — atmospheric, top-down 3D survival on a strange, inhabited Earth.**  
+> **Primary game:** an angled overhead / isometric-style view of a fully 3D world. **First-person is a side debug prototype**, not a second production direction.  
+> **Development status:** early, evolving gameplay prototype on `implement-td0-td1`. This README describes the **game vision, current implementation and system ownership**; feature plans and validation details live in their owning folders.
 
-## Current game direction — top-down 3D first
+## Game vision
 
-**War Machine is now being developed around an angled, orthographic camera overlooking a fully 3D world.** Think isometric-style movement and interactions, not 2D sprites or a fixed-perspective 2D engine. The active scene is [World](WORLD/README.md) on the `implement-td0-td1` branch.
+**War Machine** is a sci-fi survival game about staying alive in a dangerous version of Earth. The landscape can feel recognizably earthly—forests, hills, roads, abandoned buildings, caves and changing weather—but the world is strange, unsettling and inhabited by threats the player cannot simply overpower.
 
-### The immediate priority: make movement and the robot feel right
+**Zombies, large mechanical entities and science-fiction elements** are central to the direction. Other hostile creatures may join the world later, but their nature and gameplay are not decided yet. Exploration, scavenging, stealth, combat and decisions about when to avoid danger should eventually form the core experience. The player is a vulnerable survivor, not an unstoppable action hero.
 
-1. **Player feel:** camera-relative walking/running, acceleration and braking, turning, proper ground contact, clearly readable simple low-poly human animation.
-2. **Camera feel:** smooth follow, comfortable angle, orthographic zoom and stable composition so the character and enormous robot remain easy to read.
-3. **Robot_001 feel:** continue refining the existing heavy cyan **biped**—proper forward movement, foot placement, gait, stop/settle timing, head sweeping, cyan scanning, presence and scale from the overhead camera.
-4. **Keep the experiment simple:** use the current flat-ish Terrain3D preview with a small hill. Live day/night and weather tuning reuse the existing sky and precipitation systems. No mandate to bring over trees, rocks, caves, combat or other systems yet.
+The aim is a world that encourages the player to ask: *What is out there? Is it safe to approach? Do I have the supplies and the time? Will moving quietly be better than firing?* A meaningful survival experience matters more than filling the world with disconnected mechanics.
 
-**What success looks like right now:** walking the character around the test terrain and watching the real robot patrol, stop and scan feels enjoyable and convincing **before** expanding gameplay.
+This is **not a first-person shooter being converted to top-down**. The primary game is designed for the overhead viewpoint from the outset, with readable encounters, approachable controls and a manageable development scope for a solo developer.
 
-### Longer-term vision — not an implementation order
+### Design pillars
 
-The intended destination is an **atmospheric sci-fi wilderness game balancing survival, combat and base-building**, with exploration, scavenging and a persistent home/base supporting each other. The player is vulnerable; **giant robots are the superior, intimidating threats** while **zombies may later provide smaller, recurring nuisance threats** and complicate escapes or exploration. Robots could eventually fight or obliterate zombies, but that is *future design context*, **not a current feature request or zombie implementation plan**. The owner has now authorized a small basic zombie population in the top-down preview: slow wandering and arms-out range pursuit only; combat and robot interaction remain future work.
+- **Survive by understanding the world.** Exploration, threat awareness, resource decisions, cautious movement and selective combat should reinforce one another.
+- **Stealth matters.** Cover, line of sight, crouching and eventually sound should give the player ways to avoid, misdirect or escape threats. Stealth is an important part of survival, not a requirement that every encounter be solved silently.
+- **Layered threats.** Zombies create immediate, recurring danger; large robots/machines should feel imposing and unpredictable. Future sci-fi creatures can add variety when their role is established. Different threats should eventually interact where it benefits the game.
+- **Atmosphere and geography matter.** Forests, cliffs, structures, fog, weather, lighting and distant silhouettes create a believable but eerie Earth. Locations should be interesting to discover and useful to navigate.
+- **Fully 3D, built for the overhead view.** The default presentation is angled orthographic/isometric-style, with adjustable camera options for development. Favor clear silhouettes, readable combat/animation and practical visibility through roofs, walls and vegetation.
+- **Stylized rather than photorealistic.** Consistent low-poly/procedural art, grounded proportions and atmospheric presentation are more valuable than AAA asset detail. Models can be replaced with authored artwork later.
+- **Solo-developer scope and performance first.** Build a playable loop gradually, reuse modular C# systems and configurable resources, keep inactive work dormant, and avoid sprawling features before their gameplay value is proven.
 
-Art direction should be **stylized, low-poly and readable**, with painterly landscapes, restrained palettes and atmospheric lighting reminiscent in *level of graphical ambition* of *The Long Dark*. No requirement for photorealism or extremely detailed models. Everything should remain original, and the orthographic camera should show convincing silhouettes and animation at gameplay zoom.
+### Intended survival loop — vision, not a claim of completed features
 
-### First-person work: parked, retained
+Explore and investigate locations → find useful supplies or opportunities → assess zombies, machines and environmental risks → move quietly, escape or fight → survive the consequences and continue exploring. Scavenging, broader survival needs, progression and a persistent shelter/base are **possible extensions of this loop**, not commitments to a specific crafting, hunger or building design yet.
 
-`WORLD/testworld.tscn` remains the original 3D first-person/free-flight wilderness scene, with Terrain3D, vegetation, caves, weather, sky and the existing robot encounter. **Do not delete, overwrite or continue expanding that work by default.** It is preserved as a reference/asset base for possible reuse; its first-person environmental roadmaps are **paused**. The project's F5 main-scene setting still points there until the user explicitly decides to change it; open the orthographic scene and use **Run Current Scene (F6)** to play the active prototype.
+## Primary top-down game and first-person experiments
 
-## Starting technical foundation
+### Primary: `WORLD/World.tscn`
 
-The repository was initialized as a **Godot 4 C#/.NET** project. Its checked-in `project.godot` indicates Godot **4.7** project features, **Forward+** rendering, **Direct3D 12** for Windows and **Jolt Physics**. Actual engine/addon installations must be verified in the project; the config is not proof of compatibility.
+The active game prototype uses a **3D angled overhead camera**, defaulting to orthographic projection. Camera-relative movement, mouse aiming, a player-follow camera and scenery fading are part of the top-down presentation. It is the reference view for gameplay, balance, visibility and future development decisions.
 
-**Terrain3D** is checked into `addons/terrain_3d` (v1.0.2) with its demo assets. **Sky3D 2.1** is installed and integrated as the sky/day-night owner. The parked original-world scene is `WORLD/testworld.tscn`: saved valley terrain, slope-blended cliff/grass, shared GPU wind grass and reusable free-flight exploration. **Active experimentation** is in `WORLD/World.tscn` (separate simple Terrain3D, low-poly player, orthographic camera and an instance of the same Robot_001). C# build and headless integration checks passed under Godot 4.5.1 .NET; visual/performance acceptance and the configured local 4.7/D3D12 runtime remain pending. See `WORLD/WE0_WE1_VALIDATION.md`. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
+**Develop gameplay for the top-down experience by default.** New mechanics should live in shared gameplay owners where practical rather than be tied to an FPS camera. Changing the camera for a debug comparison must not silently redefine the project's main direction.
 
-## World and gameplay philosophy
+### Side experiment: `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`
 
-The **active prototype is a small, deliberately separate scene**, to evaluate the player/robot/camera without destabilizing the older wilderness showcase. Build and tune work that is explicitly requested **inside `WORLD/`**, reusing shared robot code where appropriate. Do not automatically merge it into the legacy TestWorld or promote it to the project startup scene.
+The FPS test intentionally remains available to see how the **same playable world** looks and feels from eye level. It inherits the active world and reuses terrain, buildings, entities, equipment, weather and shared gameplay logic, while substituting first-person input/camera/presentation. It is **a debug/prototyping tool, not an alternative main game or an obligation to support every future feature equally in both views**.
 
-Terrain3D remains useful for the 3D orthographic world. Keep its preview terrain data separate from the original world; use low-poly/stylized meshes, clear lighting and restrained visual complexity while gameplay feel is being tested. The longer-term landscape may grow to include natural terrain, forests, landmarks, caves and buildable locations, but **these are not current prototype tasks**.
+Keep its specialized work under `DEBUG/TEST/FirstPerson/` whenever possible. Shared improvements can flow to both perspectives where appropriate, but **do not prioritize FPS-specific polish over top-down gameplay** without an explicit request.
 
-Avoid unrelated frameworks and polish. Prioritize responsive controls, readable robot behaviour and performance-first activation over feature count.
+### Older first-person wilderness: retained, parked
 
-## High-level system design
+`WORLD/testworld.tscn` and `PLAYER/LegacyFirstPerson/` preserve an earlier environment/free-flight experiment with terrain, vegetation, caves and robot work. Its historical environment plans and assets are useful reference material, but the old first-person roadmap is **not** the main game plan. Do not delete it or automatically resume it. This legacy scene is still set as the project's F5 startup scene; use **F6 / Run Current Scene** for the active top-down game or the dedicated FPS debug test.
 
-The following are **planned ownership boundaries**, not a list of existing directories or implemented classes.
+## Current implementation snapshot
 
-| Area | Responsibility |
+The following describes systems visible in the `implement-td0-td1` source, **not a statement that every feature has passed in-game validation**:
+
+| Area | Present in the working code | Important limits |
+| --- | --- | --- |
+| Player and camera | Reusable 3D player, walk/run, crouch, ground collision, procedural animation; angled follow camera with zoom and optional perspective projection | Core movement and visual feel continue to be tuned |
+| Weapons and damage | Reusable rifle/hitscan firing, shot spread foundation, impact feedback, damage packet/resolver and zombie health/death | No complete ammo/reload/inventory system; player survival/health is not a completed gameplay loop |
+| Zombies | Spawned reusable zombies, wandering, frontal vision, head/torso line-of-sight and cover checks, pursuit and damage reception | No attacks on the player, navigation around obstacles, hearing or last-known-position investigation yet |
+| Mechanical entities | Reusable Robot_001 patrol, movement, animated mechanical body and scanning work | Robot combat and wider threat interactions remain future work |
+| World and props | Terrain3D gameplay terrain, hills/cliff testing, pines/grass/rocks, three building prefabs, a car and collision-aware scenery placement | This is a contained prototype scene, not a finished populated or streamed survival world |
+| Visibility and atmosphere | Roof/wall/upper-floor camera fading, overhead distance fog, Sky3D day/night and weather controls | Scene visibility and many artistic/performance choices still need local visual acceptance |
+| FPS debug | Separate first-person scene using the shared world and entities | A camera/input test, with intentionally limited FPS-specific presentation |
+
+**Stealth status:** crouching, physical cover and zombie vision are real foundations. Sound-based attraction (gunshots, movement and other noise), investigation of a remembered sound/last-seen position, and more sophisticated stealth AI are **planned/proposed**, not implemented. See [shared sensing](ENTITIES/Shared/Sensing/README.md) and its hearing plan. An audible gunshot effect is **not** the same as an AI hearing system.
+
+**Still exploratory:** looting, inventory, consumable survival needs, player injury/death consequences, base-building, wider zombie/robot interactions, additional creature types and large-world persistence. They are part of the design space, not features to claim as shipped or to add automatically.
+
+## World and art direction
+
+The game should feel like an eerie, lived-in Earth with a science-fiction intrusion rather than a generic featureless test map. Aim for natural terrain and vegetation, atmospheric depth, weather, abandoned human structures and occasional signs of something unfamiliar. Mist, long shadows and distant forms can make exploration tense without requiring maximal graphical detail.
+
+Maintain a mix of procedural **world creation tools** and editable/author-placed points of interest. Terrain need not be universally destructible or voxel-based; caves and interiors may use authored meshes and separate geometry. Keep access/visibility readable from the overhead camera, especially around multi-level buildings. Procedurally generated placeholder models under `C/` should remain replaceable by future `Artwork/` assets without rewriting gameplay.
+
+The goal is not to implement everything at once. Prioritize a small, convincing survival encounter loop in the existing playable world before enlarging its geography or layering on complex systems.
+
+## Technical foundation and organization
+
+This is a **Godot 4 C#/.NET** project. The checked-in config targets Godot **4.7** features, **Forward+**, Windows **Direct3D 12** and **Jolt Physics**. Terrain3D and Sky3D are integrated; the repository also includes environment/weather tools and existing generated content. These version/configuration details are not a guarantee of local compatibility. Earlier targeted checks do not substitute for validating the current working branch in Godot.
+
+The major current or anticipated owners are:
+
+| Folder | Responsibility |
 | --- | --- |
-| `CORE/` | Application bootstrap, shared reusable utilities, common coordination |
-| `WORLD/` | Active `World.tscn` gameplay world; parked `testworld.tscn`, terrain, generation, geographic regions and landmarks |
-| `VEGETATION/` | Procedural plant placement, foliage rendering/LOD and wind response |
-| `ENVIRONMENT/` | Sky, time, light, fog, weather, environmental ambience and shared wind conditions |
-| `CAMERA/` | Active Camera.cs, reusable camera scene and projection/follow settings |
-| `PLAYER/` | Existing first-person controller (parked); active player lives under `PLAYER/`, camera under `CAMERA/` |
-| `ASSETS/` | Organized source/imported terrain, plants, rocks, cave modules and audio |
-| `SAVE/` | Persistent seeds, authored overrides and later world-state changes |
-| `DEBUG/` | Diagnostic overlays, profiling helpers, quality and distance controls |
-| `ENTITIES/` | Shared robot foundation, zombies and reusable packet/resolver/health mechanics under Shared/Combat; each actor owns its reactions. Robot damage remains unimplemented. |
-| `EQUIPMENT/` | Future reusable firearms, melee weapons and tools; `C/` houses Godot C# procedural mesh builders only, `Artwork/` holds later imported assets. Rifle_001 is implemented using shared firearm mechanics and editable `.tres` stats; active top-down player equips it by default. Awaiting local validation. |
-| `UI/`, `FX/` | Shared interface and effects as features require them |
+| `WORLD/` | Shared playable world, terrain, structures, roads/landmarks, placement, region/world work and scene composition; historical wilderness retained separately |
+| `PLAYER/` | Active player body, movement, stances, animation and player-owned equipment integration; old explorer parked under `LegacyFirstPerson/` |
+| `CAMERA/` | Primary angled camera, configuration, zoom/projection and overhead occlusion/fading |
+| `ENTITIES/` | Shared actor foundations, sensing and combat contracts; zombie and robot-specific behaviour/art |
+| `EQUIPMENT/` | Shared weapon/tool foundations, weapon scenes, tunable stats, shot and damage integration |
+| `ENVIRONMENT/` | Sky, lighting, fog, rain, snow, wind and common environmental conditions |
+| `VEGETATION/` | Shared grass and plant/tree placement, rendering and distance/idle-cost controls |
+| `DEBUG/` | Tuning tools, diagnostics and the **non-primary FPS test** |
+| `NOTES/` | Concepts, design notes and ideas; not automatically authorized implementation |
+| `UI/`, future shared owners | UI and other features when actually needed; do not create speculative folder hierarchies |
 
-Create folders, subfolders and scripts **when implementing their owning features**, not all at once. Major uppercase folders should have their own README and a central, easy-to-tune configuration resource or master config where useful. Avoid redundant managers, massive scene trees, duplicated settings and tight cross-system coupling.
+Some planned owners (for example persistence and inventory) are **not fully implemented**. Prefer folder READMEs, central configuration resources, replaceable assets and small reusable helpers over unnecessary managers or huge scene trees. Use events, staggered checks, bounded sensing, streaming/relevance and actual sleep/deactivation to keep idle cost low.
 
-### System integration principles
+## Opening and testing
 
-- **World** coordinates terrain and region/asset loading; terrain data is not the owner of weather or gameplay.
-- **Environment** holds shared conditions such as sunlight, wind and precipitation; vegetation and effects consume these conditions instead of each maintaining an independent update loop.
-- **Vegetation** owns efficient instances and distance transitions; procedural placement should respect geographic region rules.
-- **Save** handles serialization of persistent data; do not conflate generated defaults, editor overrides and runtime changes.
-- **Debug** observes the integrated world without becoming a required part of gameplay.
-- Inactive systems should be genuinely dormant: no unnecessary polling, emitter work, repeated shader writes or full-world searches.
+1. Open the project in a compatible **Godot .NET** editor and build the C# project.
+2. For the **main top-down prototype**, open `WORLD/World.tscn` and press **F6**. Arrow keys move relative to the view; Shift runs; Right Ctrl crouches; mouse aims; left click/hold fires; mouse wheel zooms. Scene-local tuning/debug controls expose further settings.
+3. For the **first-person comparison only**, open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` and press **F6**. Read its [test README](DEBUG/TEST/FirstPerson/README.md) for mouse capture and controls.
+4. **F5 currently launches the parked `WORLD/testworld.tscn`**, not the top-down game. Do not change the startup scene without authorization.
 
-## Development rules and where to look next
+If the active scene reports missing gameplay terrain, follow [WORLD/README.md](WORLD/README.md) to perform the one-time saved-terrain bake/migration. Do not overwrite existing terrain data or rebake as a normal runtime step.
 
-**[CodePreferences.md](CodePreferences.md) is authoritative for code style, documentation, performance and AI collaboration.** It calls for C#, simple/modular structure, comments above methods with visible separators, brief per-script headers, folder READMEs, clearly grouped settings, performance-first activation/sleep design, and **one commit per authorized job**.
+## Working rules and detailed references
 
-**Implementation plans do not belong in the root README.** Current focus, setup and phase status:
+**[CodePreferences.md](CodePreferences.md) is authoritative** for C# style, comments/regions, folder documentation, master configurations, performance-first execution, brief proportional validation, phased planning, assistant allocation and **one commit per authorized task**.
 
-**[WORLD/README.md](WORLD/README.md)** — current working scene, run instructions and priority: player, orthographic camera and robot mechanics.
+Start with this README for intent, then read the owning README, relevant plan and **current code/scene/config** before making changes. Distinguish implemented code, pending local validation, proposed features and ideas. Documentation updates must not silently authorize an unrelated implementation.
 
-**[NOTES/ideas.md](NOTES/ideas.md)** — brainstorming bank split into major and minor feature ideas; **not** an authorized implementation roadmap.
+- [WORLD/README.md](WORLD/README.md) — active world, terrain, structures, scenery and scene setup
+- [PLAYER/README.md](PLAYER/README.md) and [CAMERA/README.md](CAMERA/README.md) — player and main overhead camera
+- [ENTITIES/TYPES/Zombies/README.md](ENTITIES/TYPES/Zombies/README.md) — current zombies and explicit limitations
+- [ENTITIES/Shared/Sensing/README.md](ENTITIES/Shared/Sensing/README.md) — shared visibility, hearing proposal and perception phases
+- [EQUIPMENT/Weapons/README.md](EQUIPMENT/Weapons/README.md) — shared gun systems and accuracy work
+- [DEBUG/TEST/FirstPerson/README.md](DEBUG/TEST/FirstPerson/README.md) — optional FPS comparison
+- [WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md) and [WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md](WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md) — current world restructuring/validation history
+- [NOTES/ideas.md](NOTES/ideas.md) — optional ideas, not an approved roadmap
+- [ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md), [WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md](WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md) and [WORLD/Content/Caves/IMPLEMENTATION_PLAN.md](WORLD/Content/Caves/IMPLEMENTATION_PLAN.md) — feature/historical plans, not automatic next steps
 
-**[WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md)** — TD0–TD2 implemented on `implement-td0-td1` with local validation/feel checks outstanding; TD3 planned. **The old ZS combat plan remains cancelled; the newly authorized basic wander/chase zombies are documented under ENTITIES/TYPES/Zombies.**
-
-**[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — historical reusable robot implementation notes. Existing robot functionality can be refined for the top-down prototype when explicitly requested.
-
-**Parked legacy/environment plans:** [WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md](WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md), [WORLD/SURFACE_IMPLEMENTATION_PLAN.md](WORLD/SURFACE_IMPLEMENTATION_PLAN.md), and [WORLD/Content/Caves/IMPLEMENTATION_PLAN.md](WORLD/Content/Caves/IMPLEMENTATION_PLAN.md). Retain them and their assets, but do not resume by default.
-
-AI workflow: read this README → read CodePreferences → read the owning folder's README and plan → inspect actual scripts/scenes/assets → work only on the explicitly requested phase → validate and update owning docs. Never assume planned features already exist.
-
-**Current north star:** *First make the low-poly 3D player pleasant to control and the towering scanning robot convincing from the angled orthographic camera. Expand into survival, combat, building and eventually zombies only when explicitly requested.*
-
-Parked first-person world content is retained in `WORLD/Content/`: vegetation, cave and rocks. It is **not** automatically part of the simple top-down test. See `WORLD/Content/README.md`.
-
-## Active ownership after cleanup
-
-Run **WORLD/World.tscn with F6**. CAMERA/Camera.cs and Camera.tscn own the active camera; PLAYER/PlayerController.cs, Player.tscn and PlayerSettings own the player. C/ contains procedural mesh builders only; Artwork/ holds future model replacements. Player, camera, world and environment masters are separate. First-person assets are parked under PLAYER/LegacyFirstPerson; F5 remains the original world. Existing user-local top-down terrain is copied to WORLD/Terrain/Gameplay without deleting the old bake. See WORLD/RESTRUCTURE.md for the migration and pending local validation.
-
-Zombie PER0/PER1 now use frontal eyesight (160°), range and head/torso cover rays; crouch samples follow actual capsule height. F7 toggles the faint red potential-vision cones (debug only, not occlusion-clipped). Tune ENTITIES/TYPES/Zombies/Configuration/ZombieMaster.tres. Glass still blocks pending PER3; memory/hearing remain future. Both World and FPS share these checks; robot unchanged. Awaiting local Godot build/runtime checks.
-
-Top-down buildings: Building002 now detects local player floor/stairs and composes section fades; upper content restores at the landing, roof stays faded indoors, ground walls restore upstairs. Building003 fades only independent shop-roof/canopy sections, preserving pumps/furniture. Tune lodge visibility in Building002Master and camera obstruction in CameraMaster. Physics/LOS and FPS visibility unchanged; local build/visual validation pending.
+**North star:** *Build an atmospheric, mechanically interesting top-down survival game about navigating a hostile, unfamiliar Earth—using stealth, exploration and carefully chosen combat to survive zombies and science-fiction threats. Keep the first-person test useful, but keep the main game achievable for one developer.*
