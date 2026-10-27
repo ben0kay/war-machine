@@ -11,3 +11,9 @@ WorldController supplies a runtime PlayerSettings copy after safe terrain placem
 The isolated FPS experiment subclasses this controller under DEBUG/TEST/FirstPerson/PLAYER. Virtual input/direction hooks reuse this same physical movement and crouch implementation. The normal player still uses arrows and cached overhead axes.
 
 FPS refinement adds a minimal virtual UpdateHorizontalVelocity hook; its base implementation preserves the prior MoveToward acceleration formula. Only DEBUG/TEST/FirstPerson overrides braking/speeds/ground settings. Local build and top-down regression check pending.
+
+## Top-down camera-relative movement — rotation fix
+
+`PlayerController` still caches ground-plane screen-right and screen-forward axes rather than recomputing them every physics tick. The top-down `Camera.SetYaw()` now emits its existing `SettingsChanged` event, which refreshes those axes immediately. This keeps arrow-key walking relative to the *current* screen direction after the camera's 0–360° rotation slider changes, including while a movement key is held; tilt changes are handled as well. A previous camera subscription is removed on reinitialization and unload. No new update loop, movement input mapping, character acceleration, mouse aim, camera behaviour or FPS controls were changed. The FPS test overrides `GetMovementDirection()` and continues sampling the eye camera's current basis for movement.
+
+**Local check pending:** build `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn`, rotate the Camera slider to 0°, 90°, 180°, 270° and 360°, and verify arrow directions stay screen-relative while moving and after stopping. Briefly F6 the FPS test and verify arrow-key movement with mouse-look is unchanged. This was inspected statically only; no in-engine validation or terrain rebake.

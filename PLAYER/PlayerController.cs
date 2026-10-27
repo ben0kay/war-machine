@@ -21,6 +21,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     private float _crouch;
     private bool _toggleCrouch;
     private Vector3 _screenRight, _screenForward;
+    private Camera3D? _movementCamera;
     private float _phase;
     private bool _initialized;
 
@@ -29,12 +30,14 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
 
     // =========================================================
-    // Cache ground-plane camera axes and build a small original model once.
+    // Cache screen-relative movement axes and subscribe to later camera rotation/tilt changes.
     public virtual void Initialize(PlayerSettings settings, Camera3D camera)
     {
-        _settings = settings;
-        _screenRight = camera.GlobalBasis.X; _screenRight.Y = 0; _screenRight = _screenRight.Normalized();
-        _screenForward = -camera.GlobalBasis.Z; _screenForward.Y = 0; _screenForward = _screenForward.Normalized();
+        if (_movementCamera is Camera previous && IsInstanceValid(previous))
+            previous.SettingsChanged -= RefreshMovementAxes;
+        _settings = settings; _movementCamera = camera;
+        RefreshMovementAxes();
+        if (camera is Camera view) view.SettingsChanged += RefreshMovementAxes;
         FloorSnapLength = 0.5f; FloorMaxAngle = Mathf.DegToRad(46);
         if (!_initialized)
         {
@@ -53,6 +56,18 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         }
         ResetPhysicsInterpolation(); // Do not blend spawn placement/generated rig from the authored origin.
         _initialized = true; Velocity = Vector3.Zero; SetPhysicsProcess(true);
+    }
+
+    // =========================================================
+    // Refresh only on camera settings changes, not in the player physics loop.
+    // Project onto XZ so left/right/up/down stay aligned with the rotated on-screen view.
+    private void RefreshMovementAxes()
+    {
+        if (!IsInstanceValid(_movementCamera)) return;
+        _screenRight = _movementCamera!.GlobalBasis.X;
+        _screenRight.Y = 0; _screenRight = _screenRight.Normalized();
+        _screenForward = -_movementCamera.GlobalBasis.Z;
+        _screenForward.Y = 0; _screenForward = _screenForward.Normalized();
     }
 
     // =========================================================
@@ -193,4 +208,12 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         _rightFoot.Rotation = new Vector3(-_rightLeg.Rotation.X - _rightKnee.Rotation.X - footRoll * rightLift, 0, 0);
     }
 
+    // =========================================================
+    // Do not retain a camera settings subscription after the player unloads.
+    public override void _ExitTree()
+    {
+        if (_movementCamera is Camera view && IsInstanceValid(view))
+            view.SettingsChanged -= RefreshMovementAxes;
+        _movementCamera = null;
+    }
 }
