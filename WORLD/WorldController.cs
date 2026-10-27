@@ -48,6 +48,8 @@ public partial class WorldController : Node3D
         { status.Text = "Preview terrain not baked.\nRun WORLD/Generation/BakeGameplayTerrain.tscn once (F6),\nthen run this scene again. The main world is unchanged."; GD.PushWarning(status.Text); return; }
         var terrain = GetNode<Node3D>("Terrain3D");
         terrain.Set("data_directory", WorldSettings.TerrainDirectory);
+        if (!BindTerrainAppearance(terrain, out string appearanceError))
+        { status.Text = appearanceError; GD.PushError(appearanceError); return; }
         var data = terrain.Get("data").AsGodotObject();
         Vector3 spawn = new(Settings.SpawnXZ.X, 0, Settings.SpawnXZ.Y);
         float height = data.Call("get_height", spawn).AsSingle();
@@ -86,6 +88,30 @@ public partial class WorldController : Node3D
         bool patrolReady = GetNode<RobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
+    }
+
+    // =========================================================
+    // Loading an initially empty native terrain can enable its checker debug view. Bind textures first, then clear it.
+    private static bool BindTerrainAppearance(Node3D terrain, out string error)
+    {
+        error = "";
+        var sourceAssets = GD.Load<Resource>("res://WORLD/Terrain/TerrainAssets.tres");
+        var sourceMaterial = GD.Load<Resource>("res://WORLD/Terrain/TerrainMaterial.tres");
+        if (sourceAssets == null || sourceMaterial == null)
+        { error = "Terrain appearance resources could not load. See Output for missing resource/import errors."; return false; }
+        // New native resource instances force binding even if the scene's original resource reference was already assigned.
+        var assets = sourceAssets.Duplicate();
+        int count = assets.Call("get_texture_count").AsInt32();
+        if (count < 2)
+        { error = $"Terrain texture list failed to load ({count}/2 layers). Reimport project assets; see Output."; return false; }
+        terrain.Set("assets", assets);
+        var material = sourceMaterial.Duplicate();
+        terrain.Set("material", material);
+        // Set after native initialization, which can enable checkered mode while the asset list is empty.
+        material.Set("show_checkered", false);
+        material.Set("show_colormap", false);
+        GD.Print($"Active terrain: {count} texture layers bound; checker debug view disabled.");
+        return true;
     }
 
     // =========================================================

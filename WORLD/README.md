@@ -26,3 +26,7 @@ Pine trees now use VEGETATION/Trees/Pine: lighter shared meshes/settings, event-
 ## Camera obstruction fading
 
 WorldController initializes CAMERA/Occlusion/CameraOcclusion after the player/camera/pines are ready. Scenery-only fading is enabled at 50%; pine canopies support individual fades and Building001 is opted in for future placement. Entities remain opaque. No terrain rebake required.
+
+## Terrain appearance startup correction
+
+After selecting the saved gameplay data directory, WorldController explicitly binds runtime copies of the terrain asset list and material, in that order, then disables checker/colormap debug views. It checks that both texture layers loaded and displays an error if they did not. This avoids retaining an empty-terrain initialization debug state and leaves source masters/saved terrain unchanged. The Output message reports the layer count. No rebake required. Source/reference/whitespace checks only; local Godot texture rendering remains unverified.
