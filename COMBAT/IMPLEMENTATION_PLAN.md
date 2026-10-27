@@ -1,6 +1,6 @@
 # CM — Melee, shove and hit-reaction implementation plan
 
-> **Current status: CM0/CM1, CM2-A and CM2-B1 implemented in source, awaiting local validation; CM2-B2/C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
+> **Current status: CM0/CM1, CM2-A, CM2-B1 and CM2-B2 implemented in source, awaiting local validation; CM2-C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
 
 ## Phase overview
 
@@ -149,7 +149,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 ## CM2 — Reusable quick-melee shove (revised scope)
 
-> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B1 brief zombie movement halt is implemented; CM2-B2 physical knockback, CM2-C both-view player inputs/contact dispatch and CM2-D poses remain planned.** No actual shove is available in-game yet. See `COMBAT/Melee/README.md`.
+> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B1 reaction and CM2-B2 physical knockback are implemented in source; CM2-C both-view player inputs/contact dispatch and CM2-D poses remain planned.** No actual shove is available in-game yet. See `COMBAT/Melee/README.md`.
 
 
 
@@ -174,9 +174,9 @@ These are **design-test starting points**, not implemented stats or decisions ab
 | Phase | Scope | Files | Status |
 | --- | --- | --- | --- |
 | **CM2-B1** | Receive `Shove` on both zombie types, halt only horizontal velocity for existing stagger duration, recover without new animation; preserve CM1 bullet reactions | `ZombieController.cs`, `ZombieSettings.cs`, two zombie masters, combat docs | **Implemented — awaiting local validation** |
-| **CM2-B2** | Give accepted shove controlled backwards velocity/braking using existing `MoveAndSlide()`; remain facing attacker, collide with walls/terrain and resume pursuit | Primarily `ZombieController.cs`, optional profile/master tuning, docs | **Planned; separate authorization** |
+| **CM2-B2** | Give accepted shove controlled backwards velocity/braking using existing `MoveAndSlide()`; remain facing attacker, collide with walls/terrain and resume pursuit | Primarily `ZombieController.cs`, optional profile/master tuning, docs | **Implemented in source — awaiting local validation** |
 
-CM2-B1 has no new pose or attack input and can be tested through a temporary `Shove` impact dispatch. CM2-C (V input + shared melee hit dispatch for top-down and FPS) is still required for an actual player shove. Shove-specific visual animations can be added later without changing the hit receiver contract; no physical knockback is in B1.
+CM2-B1 introduced shove recognition and a stationary pause; CM2-B2 now extends it with controlled backward velocity and braking through MoveAndSlide. Neither phase wires player input or a new animation. CM2-C (V input + shared melee hit dispatch for top-down and FPS) remains required for an actual player shove; a temporary impact dispatch can validate B1/B2 until then.
 
 ## CM3 — Baseball bat sweep (multi-target)
 

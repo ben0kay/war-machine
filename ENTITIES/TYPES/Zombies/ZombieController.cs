@@ -98,7 +98,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     { if (IsActive && _configured) _health.ApplyDamage(hit); }
 
     // =========================================================
-    // Damage has already resolved when dispatched together. CM2-B1 shoves pause XZ movement,
+    // Damage has already resolved when dispatched together. CM2-B2 shoves add collision-aware backward movement,
     // while CM1 bullets retain their original damped-velocity stagger and pose.
     public void ReceiveImpact(in CombatImpact impact)
     {
@@ -120,12 +120,20 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
                     _config.ShoveMaxStaggerSeconds, _config.MinFlinchInterval, _config.MinRecoverySeconds,
                     Time.GetTicksMsec())) return;
             _shoveStagger = true;
-            // No knockback in B1: preserve vertical velocity for gravity/falling.
-            Velocity = new Vector3(0, Velocity.Y, 0);
+            // Use existing collision-aware CharacterBody3D motion, no teleport or vertical lift.
+            float pushSpeed = Mathf.Min(SafeShoveSetting(_config.ShoveMaxPushSpeed, 20f),
+                _reaction.Strength * SafeShoveSetting(_config.ShovePushSpeed, 20f));
+            Vector3 push = _reaction.Direction * pushSpeed;
+            Velocity = new Vector3(push.X, Velocity.Y, push.Z);
         }
         else return;
         _recoveryRemaining = 0; _stuck = 0; SetPhysicsProcess(true);
     }
+
+    // =========================================================
+    // Guard configurable shove speeds/acceleration against non-finite authoring values.
+    private static float SafeShoveSetting(float value, float max)
+    { return float.IsFinite(value) ? Mathf.Clamp(value, 0f, max) : 0f; }
 
     // =========================================================
     // Remove only the additive hit pose, preserving the species' normal lean/yaw/gait.
@@ -282,7 +290,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         float dt = (float)delta;
         RemoveReactionPose();
         bool reacting = _reaction.IsActive;
-        bool shovePaused = reacting && _shoveStagger;
+        bool shovePushing = reacting && _shoveStagger;
         if (reacting)
         {
             _reaction.Advance(dt, Time.GetTicksMsec());
@@ -297,15 +305,17 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance) : 0.4f;
         bool walking = _hasGoal && offset.LengthSquared() > stop * stop;
-        if (_hasGoal && !walking && !IsChasing && !shovePaused) Rest();
+        if (_hasGoal && !walking && !IsChasing && !shovePushing) Rest();
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
         float speed = Mathf.Max(0, IsChasing ? _config.ChaseSpeed : _config.WanderSpeed);
         if (reacting) speed *= Mathf.Clamp(_config.StaggerMoveMultiplier, 0, 1);
         float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
             : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
-        // The current AI goal cannot override a shove pause; collision and gravity still update.
-        Vector3 horizontal = shovePaused ? Vector3.Zero
-            : new Vector3(Velocity.X, 0, Velocity.Z).MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
+        // Chase AI cannot cancel shove travel. Use the ordinary MoveAndSlide collision path.
+        Vector3 currentHorizontal = new(Velocity.X, 0, Velocity.Z);
+        Vector3 horizontal = shovePushing
+            ? currentHorizontal.MoveToward(Vector3.Zero, dt * SafeShoveSetting(_config.ShoveBrakingAcceleration, 40f))
+            : currentHorizontal.MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - 20 * dt, horizontal.Z);
         MoveAndSlide();
@@ -313,12 +323,20 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         bool moved = travel.LengthSquared() > 0.000001f;
         if (moved)
         {
-            float yaw = Mathf.Atan2(-travel.X, -travel.Z);
-            VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
-            _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter);
-            // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
-            float swing = Mathf.Cos(_phase);
-            Pose(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
+            if (shovePushing)
+            {
+                // Slide backward without turning into the shove or walking in reverse.
+                Pose(0);
+            }
+            else
+            {
+                float yaw = Mathf.Atan2(-travel.X, -travel.Z);
+                VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
+                _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter);
+                // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
+                float swing = Mathf.Cos(_phase);
+                Pose(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
+            }
             _stuck = 0;
         }
         else { Pose(0); if (walking && !reacting && !recovering) _stuck += dt; }
