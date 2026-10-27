@@ -1,6 +1,6 @@
 # COMBAT — cross-actor impacts and reactions
 
-**CM0/CM1, CM2-A, CM2-B1 and CM2-B2 implemented in source, awaiting local validation. CM2-C/D and full CM2–CM5 remain planned.** No player shove input, bat, knife, zombie attack or player health yet.
+**CM0/CM1 and CM2-A/B1/B2/C implemented in source, awaiting local validation. CM2-D and CM3–CM5 remain planned.** Q shove is wired in both camera modes; attack animations, bat, knife, zombie attacks and player health remain future work.
 
 ## One contact, separate damage and impact
 
@@ -57,6 +57,14 @@ Both zombie masters expose `ShoveReactionsEnabled=true`, `ShoveResistance` (0 no
 
 Existing `CharacterBody3D.MoveAndSlide()` handles collisions, ground and other bodies. No transform teleport, vertical launch, new node/timer, new query or permanent idle processing. The zombie slides while keeping its prior facing and neutral gait; CM1 bullets and their flinch remain unchanged. On expiry the existing recovery acceleration resumes chase/wander; the existing anti-stun-lock, death, deactivate and spawn reset rules still apply.
 
-**CM2-C/D are not done:** No V-key shove or view-specific animation is connected; both top-down and FPS will use the same shared receiver once CM2-C dispatches impacts. CM2-B2 must currently be exercised with temporary local impact dispatch (strength 1, duration 0.4s), then removed.
+**CM2-C connects Q shove** in both top-down and FPS; CM2-D view-specific shove animation remains future work.
 
 **Local checks:** `dotnet build war-machine.csproj`, then use a temporary debug sender to dispatch `HitTargetResolver.Dispatch(zombieCollider, player, null, new CombatImpact(player, contactPoint, horizontalDirection, CombatImpactKind.Shove, 1f, 0.4f))`. Confirm both zombie types push away, do not rotate toward backward travel, collide with walls and nearby zombies, preserve falling on slopes and recover pursuit. Check immunity, disabled settings, bullet reactions and deactivation. Build/Godot runtime checks were not performed here.
+
+## CM2-C — live Q shove in overhead and FPS (2026-10-27)
+
+**Implemented in source, awaiting local build/runtime acceptance.** `PLAYER/Equipment/PlayerQuickMelee.cs` caches one player `MeleeAttack` and a duplicated `QuickShoveMaster.tres`. Both existing equipment adapters recognize the same **Q** physical key, separate from left-click firearm shooting. Top-down uses mouse-world XZ aim and the player's upper-body weapon probe; FPS uses the captured centre-screen camera ray (including pitch) and an upper-body contact origin. The shared short-lived CM2-A overlap/occlusion query returns one eligible contact, the helper dispatches zero damage and `Shove` through CM0, and CM2-B2 drives knockback/recovery. Key hold/repeat cannot re-trigger; independent cooldown applies.
+
+Only active attacks wake each adapter's existing physics callback. Weapon switching, lost focus, UI selection, FPS Escape/capture release, and scene exit cancel the attack without resetting cooldown; both views return to existing idle sleep. No second damage/physics system or new animation. CM2-D is deferred.
+
+**Local handoff:** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Face a zombie at ~1–1.5m, press Q, verify backward motion and recovery without HP loss. Check walls/doors, elevation, FPS high/low aim misses, top-down horizontal forgiveness, cooldown, one zombie per shove, firearm shots/held fire, switching 1/2, debug UI focus, FPS Escape/alt-tab and idle physics. No .NET/Godot build/runtime was performed here.

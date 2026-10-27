@@ -8,7 +8,7 @@ Open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`, build C#, then press **F6**.
 
 ## Controls
 
-arrow-key walk, Shift run, Right Ctrl toggle crouch, **inverted vertical mouse look by default** (mouse up looks down; mouse down looks up), left click/hold fire. Escape releases the pointer; click to capture again (that click does not fire). Focus loss releases the pointer and cancels firing. A centre crosshair marks the camera aim ray; the real muzzle/cover obstruction still decides the shot.
+arrow-key walk, Shift run, Right Ctrl toggle crouch, **inverted vertical mouse look by default** (mouse up looks down; mouse down looks up), left click/hold fire, **Q quick shove**. Escape releases the pointer; click to capture again (that click does not fire). Focus loss releases the pointer and cancels firing. A centre crosshair marks the camera aim ray; the real muzzle/cover obstruction still decides the shot.
 
 ## Ownership
 
@@ -102,3 +102,7 @@ The test inherits DEBUG/Overlay/DebugOverlay.tscn from World. Common weather/tim
 ## Shared horde population
 
 FPS now inherits the shared world's enabled horde instead of opting out. WorldMaster.HordeCount (currently 20) and HordeRunnerCount (6) drive the same extra 14 slow / 6 fast spawn layout, terrain placement, scenery clearings and sight-debug registration in both views. Existing scattered zombies remain. Change these shared settings once for both views. Source/default inheritance checked; local F6 population/performance verification pending. No new spawning system or terrain rebake.
+
+## CM2-C — Q quick shove
+
+Press Q while mouse is captured to attempt the same shared melee shove as overhead. The camera's full yaw/pitch aims a short 3D contact volume from the upper body; looking far above or below a zombie can miss. Existing CM2-B2 shove stagger/knockback applies with no HP loss. Mouse release/Escape, focus loss, scene unload and weapon switch cancel active shoves. No FPS shove animation yet (CM2-D). Local compilation and F6 checks pending.

@@ -10,6 +10,7 @@ public partial class PlayerWeaponController : Node
     private PhysicsRayQueryParameters3D _aimQuery = null!;
     private bool _held, _shotRequested, _aimDirty, _initialized;
     private Vector3 _aimPoint;
+    private PlayerQuickMelee? _shove;
 
     // =========================================================
     // No idle frame callbacks. The world supplies ready actor/camera and a shared equipment definition.
@@ -27,6 +28,7 @@ public partial class PlayerWeaponController : Node
         _slots.Initialize(config, player, player.WeaponMount, Vector3.Zero, audio);
         SwitchWeapon(0);
         if (_weapon == null) return;
+        _shove = new PlayerQuickMelee(player);
         player.SetWeaponPose(true);
         player.PositionChanged += OnPlayerMoved; player.WeaponPoseChanged += RequestAim;
         camera.ViewChanged += RequestAim;
@@ -39,7 +41,7 @@ public partial class PlayerWeaponController : Node
     {
         var previous = _weapon;
         if (!_slots.Select(slot)) return;
-        CancelTrigger();
+        _shove?.Cancel(); CancelTrigger();
         if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
         _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
         _aimQuery.CollisionMask = _weapon.RuntimeSettings.HitMask;
@@ -58,6 +60,13 @@ public partial class PlayerWeaponController : Node
         if (!_initialized) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
+        if (PlayerQuickMelee.Requested(input))
+        {
+            // UI has first refusal on keys, as it already does for gunfire.
+            if (GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
+            { _shove?.TryStart(); RequestAim(); GetViewport().SetInputAsHandled(); }
+            return;
+        }
         if (input is InputEventMouseMotion) RequestAim();
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
         { _held = true; _shotRequested = true; RequestAim(); GetViewport().SetInputAsHandled(); }
@@ -80,8 +89,10 @@ public partial class PlayerWeaponController : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!_initialized || !IsInstanceValid(_weapon) || !GetWindow().HasFocus()) { CancelTrigger(); return; }
-        if (GetViewport().GuiGetHoveredControl() != null) { CancelTrigger(); return; }
+        if (!_initialized || !IsInstanceValid(_weapon) || !GetWindow().HasFocus())
+        { CancelTrigger(); _shove?.Cancel(); return; }
+        if (GetViewport().GuiGetHoveredControl() != null || GetViewport().GuiGetFocusOwner() != null)
+        { CancelTrigger(); _shove?.Cancel(); return; }
         if (_aimDirty || _shotRequested)
         {
             _aimDirty = false;
@@ -99,6 +110,13 @@ public partial class PlayerWeaponController : Node
             _player.SetWeaponAim(_aimPoint);
         }
         if (_shotRequested) { _shotRequested = false; _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin); }
+        if (_shove?.IsActive == true)
+        {
+            // Use world-space horizontal aim; overhead camera height never affects contact.
+            Vector3 forward = _aimPoint - _player.GlobalPosition; forward.Y = 0;
+            _shove.Advance((float)delta, _player.WeaponProbeOrigin, forward, MeleeAimMode.Horizontal);
+            if (_shove.IsActive) SetPhysicsProcess(true);
+        }
     }
 
     // =========================================================
@@ -109,7 +127,7 @@ public partial class PlayerWeaponController : Node
     public override void _Notification(int what)
     {
         if (!_initialized) return;
-        if (what == NotificationApplicationFocusOut) { CancelTrigger(); _weapon?.CancelFeedback(); SetPhysicsProcess(false); }
+        if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); _weapon?.CancelFeedback(); SetPhysicsProcess(false); }
         else if (what == NotificationApplicationFocusIn) RequestAim();
     }
 
@@ -117,7 +135,7 @@ public partial class PlayerWeaponController : Node
     // Explicitly release cross-node subscriptions before world unload or replacing this adapter.
     public override void _ExitTree()
     {
-        CancelTrigger();
+        CancelTrigger(); _shove?.Cancel();
         if (!_initialized) return;
         if (IsInstanceValid(_player)) { _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;

@@ -9,6 +9,7 @@ public partial class FirstPersonWeapon : Node
     private WeaponSlots _slots = null!;
     private PhysicsRayQueryParameters3D _query = null!;
     private bool _held, _requested;
+    private PlayerQuickMelee? _shove;
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -24,6 +25,7 @@ public partial class FirstPersonWeapon : Node
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
         _slots.Initialize(equipment, player, camera, camera.TestSettings.WeaponOffset, audio);
         SwitchWeapon(0);
+        if (_weapon != null) _shove = new PlayerQuickMelee(player);
     }
 
     // =========================================================
@@ -31,7 +33,7 @@ public partial class FirstPersonWeapon : Node
     {
         var previous = _weapon;
         if (!_slots.Select(slot)) return;
-        CancelTrigger();
+        _shove?.Cancel(); CancelTrigger();
         if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
         _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
         // =========================================================
@@ -47,7 +49,8 @@ public partial class FirstPersonWeapon : Node
     public override void _Input(InputEvent input)
     {
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && !mouse.Pressed) _held = false;
-        if (input is InputEventKey key && key.Pressed && key.PhysicalKeycode == Key.Escape) CancelTrigger();
+        if (input is InputEventKey key && key.Pressed && key.PhysicalKeycode == Key.Escape)
+        { CancelTrigger(); _shove?.Cancel(); }
     }
 
     // =========================================================
@@ -57,6 +60,12 @@ public partial class FirstPersonWeapon : Node
         if (_weapon == null || Input.MouseMode != Input.MouseModeEnum.Captured) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
+        if (PlayerQuickMelee.Requested(input))
+        {
+            if (GetViewport().GuiGetFocusOwner() == null)
+            { _shove?.TryStart(); SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
+            return;
+        }
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
         { _held = true; RequestShot(); GetViewport().SetInputAsHandled(); }
     }
@@ -71,25 +80,36 @@ public partial class FirstPersonWeapon : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!_requested || !IsInstanceValid(_weapon) || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured)
-        { CancelTrigger(); return; }
-        _requested = false;
+        if (!IsInstanceValid(_weapon) || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured)
+        { CancelTrigger(); _shove?.Cancel(); return; }
         Vector2 centre = _camera.GetViewport().GetVisibleRect().Size * 0.5f;
         Vector3 origin = _camera.ProjectRayOrigin(centre), direction = _camera.ProjectRayNormal(centre);
-        _query.From = origin; _query.To = origin + direction * _weapon!.RuntimeSettings.Range;
-        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_query);
-        Vector3 aim = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
-        _weapon.TryFire(aim, origin);
+        if (_requested)
+        {
+            _requested = false;
+            _query.From = origin; _query.To = origin + direction * _weapon!.RuntimeSettings.Range;
+            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_query);
+            Vector3 aim = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
+            _weapon!.TryFire(aim, origin);
+        }
+        if (_shove?.IsActive == true)
+        {
+            // Character-height origin with the FPS camera's full yaw/pitch direction.
+            float height = Mathf.Clamp(_camera.GlobalPosition.Y - _player.GlobalPosition.Y - 0.30f, 0.65f, 1.5f);
+            _shove.Advance((float)delta, _player.GlobalPosition + Vector3.Up * height,
+                direction, MeleeAimMode.ThreeDimensional);
+            if (_shove.IsActive) SetPhysicsProcess(true);
+        }
     }
 
     // =========================================================
     public override void _Notification(int what)
-    { if (what == NotificationApplicationFocusOut) { CancelTrigger(); if (IsInstanceValid(_weapon)) _weapon!.CancelFeedback(); } }
+    { if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); if (IsInstanceValid(_weapon)) _weapon!.CancelFeedback(); } }
 
     // =========================================================
     public override void _ExitTree()
     {
-        CancelTrigger();
+        CancelTrigger(); _shove?.Cancel();
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
     }
 }
