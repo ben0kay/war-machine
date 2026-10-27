@@ -183,3 +183,7 @@ UI/                                  # optional later PH1 reusable HUD, only if 
 5. **No work beyond planning is authorized by this document.** Each approved phase should produce one GitHub commit, update this plan and `PLAYER/README.md` with state/known limitations, and give short validation results. State **Implemented**, **Awaiting Validation** and **Accepted** separately, not as synonyms.
 
 **Current verification for this plan:** Repository source and documentation reviewed; no code changed, no Godot build/scene execution. PH0–PH5 remain **Planned** pending explicit authorization.
+
+## Combat / melee dependency (separate plan)
+
+[COMBAT/IMPLEMENTATION_PLAN.md](../COMBAT/IMPLEMENTATION_PLAN.md) defines CM0–CM5 for generic impact delivery, bullet stagger, gun shove, bat, knife and eventual zombie melee. **PH0 is required before CM5 zombies can damage the player.** CM0–CM4 can be planned or implemented independently of PH0, since the current zombies already have health. PH2 stamina is an optional later melee cost, not a dependency for the first prototype. No combat action is authorized or implemented by adding this reference.

@@ -83,7 +83,8 @@ The major current or anticipated owners are:
 | `WORLD/` | Shared playable world, terrain, structures, roads/landmarks, placement, region/world work and scene composition; historical wilderness retained separately |
 | `PLAYER/` | Active player body, movement, stances, animation and player-owned equipment integration; old explorer parked under `LegacyFirstPerson/` |
 | `CAMERA/` | Primary angled camera, configuration, zoom/projection and overhead occlusion/fading |
-| `ENTITIES/` | Shared actor foundations, sensing and combat contracts; zombie and robot-specific behaviour/art |
+| `ENTITIES/` | Shared actor foundations, sensing and the currently implemented generic damage primitives; zombie and robot-specific behaviour/art |
+| `COMBAT/` | **Planning folder** for shared melee, zero-damage impacts, hit stagger/knockback and future cross-actor attacks; existing damage implementation remains in ENTITIES for now |
 | `EQUIPMENT/` | Shared weapon/tool foundations, weapon scenes, tunable stats, shot and damage integration |
 | `ENVIRONMENT/` | Sky, lighting, fog, rain, snow, wind and common environmental conditions |
 | `VEGETATION/` | Shared grass and plant/tree placement, rendering and distance/idle-cost controls |
@@ -113,6 +114,7 @@ Start with this README for intent, then read the owning README, relevant plan an
 - [ENTITIES/TYPES/Zombies/README.md](ENTITIES/TYPES/Zombies/README.md) — current zombies and explicit limitations
 - [ENTITIES/Shared/Sensing/README.md](ENTITIES/Shared/Sensing/README.md) — shared visibility, hearing proposal and perception phases
 - [EQUIPMENT/Weapons/README.md](EQUIPMENT/Weapons/README.md) — shared gun systems and accuracy work
+- [COMBAT/IMPLEMENTATION_PLAN.md](COMBAT/IMPLEMENTATION_PLAN.md) — **planned**, not implemented: bullet stagger, gun shoves, bat multi-hit, knife attacks and eventual zombie melee; see [COMBAT ownership](COMBAT/README.md)
 - [DEBUG/TEST/FirstPerson/README.md](DEBUG/TEST/FirstPerson/README.md) — optional FPS comparison
 - [WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md) and [WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md](WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md) — current world restructuring/validation history
 - [NOTES/ideas.md](NOTES/ideas.md) — optional ideas, not an approved roadmap
