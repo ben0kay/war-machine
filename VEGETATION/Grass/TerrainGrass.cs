@@ -20,6 +20,9 @@ public partial class TerrainGrass : Node3D
     private float _tileWidth, _radius, _appliedHeight = -1;
     private bool _refreshQueued, _initialized;
     private readonly string[] _terrainSignals = { "maps_changed", "region_map_changed", "height_maps_changed", "control_maps_changed", "color_maps_changed" };
+    private const int MaximumExclusionAreas = 64; // Must match GrassPlacement.gdshader.
+    private readonly Vector4[] _exclusionBounds = new Vector4[MaximumExclusionAreas];
+    private int _exclusionCount;
     public int AllocatedParticles { get; private set; }
     public int TerrainBindingUpdates { get; private set; }
     public int TileRestarts { get; private set; }
@@ -43,6 +46,32 @@ public partial class TerrainGrass : Node3D
         _initialized = true;
         SetProcess(false); SetPhysicsProcess(false);
         ApplySettings();
+    }
+
+    // =========================================================
+    // Explicit scenery-layout changes upload a bounded world-XZ mask; rebuilds/streamed tiles reuse it.
+    public void SetExclusionAreas(IEnumerable<Rect2> areas)
+    {
+        System.Array.Clear(_exclusionBounds, 0, _exclusionBounds.Length); _exclusionCount = 0;
+        foreach (Rect2 area in areas)
+        {
+            if (_exclusionCount == MaximumExclusionAreas)
+            { GD.PushError($"Grass exclusion mask supports {MaximumExclusionAreas} areas; extra areas ignored."); break; }
+            Rect2 bounds = area.Abs();
+            if (bounds.Size.X <= 0 || bounds.Size.Y <= 0) continue;
+            _exclusionBounds[_exclusionCount++] = new Vector4(bounds.Position.X, bounds.Position.Y, bounds.End.X, bounds.End.Y);
+        }
+        if (_tiles.Count == 0) return;
+        ApplyExclusionUniforms();
+        foreach (var tile in _tiles) { tile.Restart(true); TileRestarts++; }
+    }
+
+    // =========================================================
+    // Only initialization/rebuild/layout changes touch these uniforms, never player/camera movement.
+    private void ApplyExclusionUniforms()
+    {
+        _placement.SetShaderParameter("exclusion_bounds", _exclusionBounds);
+        _placement.SetShaderParameter("exclusion_count", _exclusionCount);
     }
 
     // =========================================================
@@ -88,7 +117,7 @@ public partial class TerrainGrass : Node3D
         _ribbon.SetShaderParameter("focus_distance", _focusDistance);
         _ribbon.SetShaderParameter("fade_start_fraction", Mathf.Clamp(Settings.FadeStartFraction, 0.1f, 0.95f));
         _ribbon.SetShaderParameter("blade_color", new Vector3(Settings.BladeColor.R, Settings.BladeColor.G, Settings.BladeColor.B));
-        BindTerrain();
+        ApplyExclusionUniforms(); BindTerrain();
         int sections = Mathf.Clamp(Settings.BladeSections, 1, 5);
         var mesh = new RibbonTrailMesh { Shape = RibbonTrailMesh.ShapeEnum.Flat, Sections = sections, SectionLength = 0.9f / sections, SectionSegments = 1 };
         int fps = Mathf.Clamp(Settings.SimulationFps, 10, 60);

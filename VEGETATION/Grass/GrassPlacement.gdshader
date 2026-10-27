@@ -39,6 +39,10 @@ uniform float condition_dither_range : hint_range(0.0, 1.0, 0.01) = 0.15;
 uniform bool filter_painted_rock = false;
 uniform float surface_slope_min : hint_range(0.0, 1.0, 0.01) = 0.87;
 
+// Bounded world-space scenery mask, uploaded only when layout changes.
+uniform int exclusion_count = 0;
+uniform vec4 exclusion_bounds[64]; // min XZ, max XZ
+
 group_uniforms private;
 uniform uint instance_rows = 1;
 uniform float instance_spacing = 0.5;
@@ -129,6 +133,15 @@ void start() {
 	// Randomize instance spacing
 	pos.x += ((r.x * 2.0) - 1.0) * random_spacing * instance_spacing;
 	pos.z += ((r.z * 2.0) - 1.0) * random_spacing * instance_spacing;
+
+    // Test the randomized blade root before any terrain sampling. Rejected slots never simulate wind or draw.
+    for (int i = 0; i < exclusion_count; i++) {
+        vec4 bounds = exclusion_bounds[i];
+        if (all(greaterThanEqual(pos.xz, bounds.xy)) && all(lessThanEqual(pos.xz, bounds.zw))) {
+            ACTIVE = false;
+            return;
+        }
+    }
 
 	// Lookup offsets, ID and blend weight
 	const vec3 offsets = vec3(0, 1, 2);

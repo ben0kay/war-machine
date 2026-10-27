@@ -64,12 +64,13 @@ public partial class WorldController : Node3D
         player.Initialize(PlayerSettings, camera);
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
+        var sceneryClearings = PlaceScenery(data, out var grassClearings);
         _grass = new TerrainGrass { Name = "Grass",
             Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
+        _grass.SetExclusionAreas(grassClearings);
         AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
-        var sceneryClearings = PlaceScenery(data);
         _pines = new PinePlacement { Name = "Pines",
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
@@ -141,22 +142,23 @@ public partial class WorldController : Node3D
 
     // =========================================================
     // One shared placement pass serves both top-down and inherited FPS views; no terrain is edited.
-    private Godot.Collections.Array<Rect2> PlaceScenery(GodotObject terrainData)
+    private Godot.Collections.Array<Rect2> PlaceScenery(GodotObject terrainData, out Godot.Collections.Array<Rect2> grassClearings)
     {
         var clearings = new Godot.Collections.Array<Rect2>();
+        grassClearings = new Godot.Collections.Array<Rect2>();
         var structures = new Node3D { Name = "Structures" }; AddChild(structures);
         var objects = new Node3D { Name = "Objects" }; AddChild(objects);
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings);
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings);
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings);
-        PlaceObject(terrainData, objects, "res://WORLD/Content/Objects/Cars/Car001/Car001.tscn", Settings.Car001Offset, 2, 0, clearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, objects, "res://WORLD/Content/Objects/Cars/Car001/Car001.tscn", Settings.Car001Offset, 2, 0, clearings, grassClearings);
         return clearings;
     }
 
     // =========================================================
     // Ground each prefab once, then reserve its actual generated mesh bounds including porches, pumps and open doors.
     private void PlaceObject(GodotObject terrainData, Node3D parent, string scenePath, Vector2 offset,
-        float margin, float approach, Godot.Collections.Array<Rect2> clearings)
+        float margin, float approach, Godot.Collections.Array<Rect2> clearings, Godot.Collections.Array<Rect2> grassClearings)
     {
         Vector2 location = Settings.SpawnXZ + offset;
         float height = terrainData.Call("get_height", new Vector3(location.X, 0, location.Y)).AsSingle();
@@ -176,6 +178,9 @@ public partial class WorldController : Node3D
                 var xz = new Vector2(point.X, point.Z); low = low.Min(xz); high = high.Max(xz);
             }
         }
+        // Grass only clears the actual prefab envelope, with a small edge buffer for leaning blades.
+        // Tree approach/spacing margins below remain independent so grass can grow beside the building.
+        grassClearings.Add(new Rect2(low, high - low).Grow(0.3f));
         // All building doors face +Z. The car receives symmetric clearance for its swung-open driver door.
         low -= Vector2.One * margin; high += Vector2.One * margin + new Vector2(0, approach);
         clearings.Add(new Rect2(low, high - low));
