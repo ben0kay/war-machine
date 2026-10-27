@@ -57,6 +57,9 @@ public sealed class ZombieRunnerMeshBuilder
         LeftLeg = Pivot(_root, "LeftLeg", new(-0.119f, 0.82f, 0));
         RightLeg = Pivot(_root, "RightLeg", new(0.119f, 0.82f, 0));
         LeftKnee = Leg(LeftLeg, true); RightKnee = Leg(RightLeg, false);
+        // Give standalone runner previews the same shared appearance pool as Zombie_001.
+        // InitializeTarget replaces this provisional selection with the stable world spawn seed.
+        ZombieAppearance.Apply(_root, unchecked((uint)_root.GetInstanceId()));
     }
 
     // =========================================================

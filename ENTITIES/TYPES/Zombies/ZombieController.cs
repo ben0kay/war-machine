@@ -79,6 +79,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
         Deactivate(); ClearReaction(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
+        // ZMAT0: spawn-seeded cached material assignment; does not advance the movement RNG.
+        ZombieAppearance.Apply(VisualRoot, seed, _config.AppearanceVariationEnabled, _config.BloodChance);
         _sightTarget = player as IPerceptionTarget;
         _visibility = player is CollisionObject3D body && _sightTarget != null
             ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;

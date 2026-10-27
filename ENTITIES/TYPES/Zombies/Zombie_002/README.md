@@ -15,3 +15,7 @@
 ## Shared-world test placement
 
 WorldMaster.RunnerSpawnOffsets now contains three runners at offsets (18,22), (-15,30), (32,-18) relative to player spawn. Shared WorldController placement affects both WORLD/World.tscn and inherited FirstPersonTest.tscn, retaining the original 12 slow zombies. Runners receive native terrain height, deterministic independent seeds, the existing ground guard delegate and F7 vision cones. Their starting points reserve tree/rock clearings just like slow zombies. Existing speed/health/sensing/settings are untouched. Set this array empty to remove runners from the test. No respawn, combat attack or AI rewrite introduced. Awaiting local build, gait/ground/contact and sight-to-run checks.
+
+## ZMAT0 appearance
+
+Runners now reuse the standard zombie's `../C/ZombieAppearance.cs` generated material palette for skin, facial mottling, shirt, trousers, and occasional muted dried blood. The runner keeps its narrower, independently built skeleton and runner gait. `ZombieRunnerMaster.tres` exposes `AppearanceVariationEnabled=true` and `BloodChance=0.45`. Appearance selection is seeded from `InitializeTarget` and shared across actors; no runner-specific texture allocation or additional runtime update.

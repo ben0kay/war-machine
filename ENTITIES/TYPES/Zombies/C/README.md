@@ -9,3 +9,9 @@ A few muted combinations of skin, shirt and trousers are chosen per instance. Th
 `../Artwork/` remains reserved for future imported zombie models; a replacement should preserve/adapt the named rig pivots and character orientation.
 
 **Brief checks for the owner:** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn`, approach several zombies and inspect front/back/sides at typical zoom; verify face and shirt variation, no gaps between legs and hips, a restrained left/right knee bend while wandering/chasing, the familiar arms-out chase stance, no visual-collider interference, and disappearance upon death. No build or Godot runtime check was performed for this art pass.
+
+## ZMAT0 shared appearance palette
+
+`ZombieAppearance.cs` caches 28 low-resolution procedural textures once for **both** `ZombieMeshBuilder` and `Zombie_002/C/ZombieRunnerMeshBuilder`. It generates dirty, mottled skin/fabric with some small dried-blood areas and independently selects skin, face, shirt and trouser variants. `ZombieController.InitializeTarget` reassigns materials from the existing stable spawn seed; neither builder makes new textures per zombie, and existing gait/eye/wound props aren't touched.
+
+The body-part names switched by `ZombieAppearance.Apply` are deliberately explicit; when adding new zombie artwork, add its names to the category switch or pass material references from the builder to avoid accidentally treating bruises or eyes as skin. No procedural shaders or dynamic decals are added. See [../README.md](../README.md) for resource and brief gameplay test notes.

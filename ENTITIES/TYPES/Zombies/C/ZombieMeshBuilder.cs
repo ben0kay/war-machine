@@ -14,29 +14,11 @@ public sealed class ZombieMeshBuilder
     public Node3D LeftKnee => _leftKnee;
     public Node3D RightKnee => _rightKnee;
 
-    // Shared geometry, low-resolution fabric/skin patterns and three muted outfit variants.
-    // Instances only add transforms; no unique textures, physics or animation processors.
+    // Shared original geometry and separate wound/face feature materials. ZMAT0 palette textures
+    // are generated only once by ZombieAppearance and reused across ordinary zombies and runners.
     private static readonly BoxMesh Box = new() { Size = Vector3.One };
     private static readonly SphereMesh Rounded = new() { Radius = 0.5f, Height = 1f, RadialSegments = 10, Rings = 5 };
     private static readonly CylinderMesh Torso = new() { TopRadius = 0.5f, BottomRadius = 0.37f, Height = 1f, RadialSegments = 10, Rings = 1 };
-    private static readonly Material[] Skin =
-    {
-        Mottled(new(0.42f, 0.47f, 0.36f), new(0.31f, 0.35f, 0.28f), 19),
-        Mottled(new(0.54f, 0.51f, 0.41f), new(0.36f, 0.39f, 0.31f), 29),
-        Mottled(new(0.37f, 0.43f, 0.39f), new(0.25f, 0.30f, 0.30f), 41)
-    };
-    private static readonly Material[] Shirts =
-    {
-        Mottled(new(0.33f, 0.30f, 0.25f), new(0.17f, 0.21f, 0.18f), 61),
-        Mottled(new(0.27f, 0.32f, 0.30f), new(0.16f, 0.21f, 0.22f), 77),
-        Mottled(new(0.35f, 0.29f, 0.27f), new(0.23f, 0.21f, 0.21f), 89)
-    };
-    private static readonly Material[] Pants =
-    {
-        Mottled(new(0.25f, 0.29f, 0.30f), new(0.15f, 0.19f, 0.20f), 101),
-        Mottled(new(0.29f, 0.28f, 0.24f), new(0.19f, 0.21f, 0.19f), 113),
-        Mottled(new(0.22f, 0.26f, 0.25f), new(0.16f, 0.18f, 0.18f), 127)
-    };
     private static readonly Material Bruise = Solid(new(0.24f, 0.26f, 0.23f));
     private static readonly Material Wound = Solid(new(0.34f, 0.19f, 0.20f));
     private static readonly Material Eye = Solid(new(0.73f, 0.72f, 0.53f));
@@ -47,11 +29,13 @@ public sealed class ZombieMeshBuilder
     public ZombieMeshBuilder(Node3D root) { _root = root; BuildArt(); }
 
     // =========================================================
-    // Only material selection varies per actor; all generated geometry is shared and assembled once.
+    // Materials use an instance-based temporary preview until world placement supplies its stable seed.
+    // All colours/texture objects are shared across zombies, not duplicated per body.
     private void BuildArt()
     {
-        int variant = (int)(_root.GetInstanceId() % (ulong)Shirts.Length);
-        Material skin = Skin[variant], shirt = Shirts[variant], pants = Pants[variant];
+        var appearance = ZombieAppearance.Choose(unchecked((uint)_root.GetInstanceId()));
+        Material skin = appearance.Skin, face = appearance.Face;
+        Material shirt = appearance.Shirt, pants = appearance.Pants;
 
         // Tapered, slightly hunched chest and narrow waist replace the Minecraft-like cuboid.
         Part(_root, "SlouchedTorso", new(0, 1.105f, -0.025f), new(0.47f, 0.59f, 0.31f), shirt, Torso, new(7, 0, 3));
@@ -65,9 +49,9 @@ public sealed class ZombieMeshBuilder
         // Small head tilt, sunken sockets, discoloured jaw and imperfect hairline.
         var head = Joint(_root, "Head", new(0.022f, 1.55f, -0.047f));
         head.RotationDegrees = new Vector3(-8, 0, 8);
-        Part(head, "Skull", Vector3.Zero, new(0.295f, 0.34f, 0.295f), skin, Rounded);
-        Part(head, "Jaw", new(0.0f, -0.126f, -0.042f), new(0.235f, 0.125f, 0.223f), skin, Rounded);
-        Part(head, "Nose", new(0.0f, -0.005f, -0.156f), new(0.083f, 0.105f, 0.08f), skin, Rounded);
+        Part(head, "Skull", Vector3.Zero, new(0.295f, 0.34f, 0.295f), face, Rounded);
+        Part(head, "Jaw", new(0.0f, -0.126f, -0.042f), new(0.235f, 0.125f, 0.223f), face, Rounded);
+        Part(head, "Nose", new(0.0f, -0.005f, -0.156f), new(0.083f, 0.105f, 0.08f), face, Rounded);
         Part(head, "LeftSocket", new(-0.082f, 0.041f, -0.129f), new(0.105f, 0.088f, 0.034f), Bruise, Rounded);
         Part(head, "RightSocket", new(0.085f, 0.025f, -0.129f), new(0.102f, 0.097f, 0.035f), Bruise, Rounded);
         Part(head, "LeftEye", new(-0.083f, 0.037f, -0.153f), new(0.039f, 0.03f, 0.016f), Eye, Rounded);
@@ -126,47 +110,6 @@ public sealed class ZombieMeshBuilder
     // =========================================================
     private static Material Solid(Color color)
     { return new StandardMaterial3D { AlbedoColor = color, Roughness = 0.96f }; }
-
-    // =========================================================
-    // Static 64px mottling softens clothing/skin flatness. Never generates textures during gameplay frames.
-    private static Material Mottled(Color main, Color stained, int seed)
-    {
-        const int size = 64;
-        using var image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
-        for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-        {
-            float patch = Noise(x / 11f, y / 11f, seed) * 0.7f
-                + Noise(x / 4.5f, y / 4.5f, seed + 31) * 0.3f;
-            float stain = Mathf.SmoothStep(0.30f, 0.74f, patch) * 0.7f;
-            float fleck = (Hash(x, y, seed + 103) - 0.5f) * 0.055f;
-            Color color = main.Lerp(stained, stain);
-            image.SetPixel(x, y, new Color(
-                Mathf.Clamp(color.R + fleck, 0, 1),
-                Mathf.Clamp(color.G + fleck, 0, 1),
-                Mathf.Clamp(color.B + fleck, 0, 1)));
-        }
-        image.GenerateMipmaps();
-        return new StandardMaterial3D { AlbedoTexture = ImageTexture.CreateFromImage(image), Roughness = 0.96f };
-    }
-
-    // =========================================================
-    private static float Noise(float x, float y, int seed)
-    {
-        int ix = Mathf.FloorToInt(x), iy = Mathf.FloorToInt(y);
-        float dx = x - ix, dy = y - iy;
-        dx = dx * dx * (3 - 2 * dx); dy = dy * dy * (3 - 2 * dy);
-        return Mathf.Lerp(Mathf.Lerp(Hash(ix, iy, seed), Hash(ix + 1, iy, seed), dx),
-            Mathf.Lerp(Hash(ix, iy + 1, seed), Hash(ix + 1, iy + 1, seed), dx), dy);
-    }
-
-    // =========================================================
-    private static float Hash(int x, int y, int seed)
-    {
-        uint n = unchecked((uint)(x * 374761393 ^ y * 668265263 ^ seed * 1274126177));
-        n ^= n >> 13; n *= 1274126177u; n ^= n >> 16;
-        return (n & 0xffff) / 65535f;
-    }
 
     // =========================================================
     // Visual meshes do not collide, think or process. Shared primitives/materials remain reusable across zombies.

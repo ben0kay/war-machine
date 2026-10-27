@@ -79,6 +79,19 @@ Actors with an open-terrain sampler wait at spawn until the existing staggered p
 
 Source/loop review only; compilation not verified (Godot/.NET unavailable). Build and F6 World: inspect all 20 horde spawns, chase over their ground, slopes/cliff edges, inspect Output for spawn-wait/penetration warnings, then check FPS. Runtime success and the underlying collision failure remain awaiting local validation.
 
-## CM1 — nonlethal bullet reactions
+## ZMAT0 — cached procedural zombie appearance variation (2026-10-27)
 
-Shared ZombieController now accepts IImpactReceiver Bullet contacts after damage, provided alive/active and safely spawned. Rifle/MG briefly damp movement with additive recoil; both species inherit, runner starts with 0.1 impact resistance. ZombieMaster/RunnerMaster expose reaction enable/resistance/threshold/duration/retrigger/recovery/motion/pose settings. Active hits never extend the reaction; recovery gaps prevent permanent stun-lock. Existing health/damage, goal sensing, collision/gravity and gait remain. Death/deactivate clears state/pose. No new callback/timer/query: existing physics wakes during reaction/recovery then can sleep again. See ../../../COMBAT/README.md for API/defaults and brief local checks. Compilation/visual validation pending.
+**Implemented in source; awaiting local Godot/.NET compilation and visual checks.** Shared `C/ZombieAppearance.cs` now generates **28 reusable 64×64 RGBA8 textures with mipmaps once**, rather than one texture per zombie: four general skin tones; four clean/four subtly bloody faces; four clean/four blood-stained shirts; four clean/four stained trouser finishes. It also applies natural mottling and patchy dirt. The previous 9-texture static palette in `ZombieMeshBuilder.cs` was replaced (not duplicated). The independently-modelled `Zombie_002` runner uses the **same shared pool**, not its own duplicate textures.
+
+When `InitializeTarget(player, seed, ...)` is called, the appearance is **deterministically chosen from the existing spawn seed** by a small integer hash, without consuming the zombie's movement RNG. The skin, shirt and trouser palettes vary independently; by default **45% of zombies are eligible for blood**. Where blood occurs (face, clothing, or both with an occasional trouser patch) is determined independently from the seed. Blood is muted/dried and blends into the underlying colour—no glowing red. Existing bruise and wound props remain, as do rig pivots, logic and collisions. Standalone prefab editor previews use a provisional instance-ID selection until initialized with a spawn seed.
+
+Both `ZombieMaster.tres` and `Zombie_002/Configuration/ZombieRunnerMaster.tres` expose two **Appearance** settings through their inherited `ZombieSettings`:
+
+- `AppearanceVariationEnabled = true` — set false to use a consistent, blood-free fallback palette.
+- `BloodChance = 0.45` — probability (0–1) that an actor receives one of the stained palettes.
+
+These settings are read **only at spawn/initialize time**; edit, reload and reinitialize to view changes. Blood pattern strength/dirt details are intentionally fixed inside the cached palette for this small pass, rather than generating new texture copies for every slider setting.
+
+**Memory budget:** 28 × 64 × 64 × 4 RGBA bytes × approximately 1.33 for mipmaps = **~0.58 MiB raw pixel storage**, shared by all zombies and runner variants (excluding texture resource and driver overhead). No new shaders, per-frame CPU loops, per-actor texture/image allocations, PNG files, mesh nodes or material instances are created by variation selection. It does not solve draw-call scaling for future hundred-actor hordes.
+
+**Quick owner check:** rebuild .NET scripts; F6 `WORLD/World.tscn` and inherited first-person test; approach several standard zombies and runners to compare skin/shirt colours, facial smears, clothing stains and clean variants. Check blood is unobtrusive at a distance, the original animation pivots remain correct, and reloads preserve a spawn-seeded appearance. Try `BloodChance=0` and `BloodChance=1` (reload) to compare. Full Godot runtime/render testing not performed here.

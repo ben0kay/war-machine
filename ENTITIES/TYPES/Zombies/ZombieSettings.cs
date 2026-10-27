@@ -6,6 +6,9 @@ public partial class ZombieSettings : EntitySettings
 {
     [ExportGroup("Health")]
     [Export] public HealthSettings HealthProfile { get; set; } = null!;
+    [ExportGroup("Appearance")]
+    [Export] public bool AppearanceVariationEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float BloodChance { get; set; } = 0.45f;
     [ExportGroup("Bullet hit reaction")]
     [Export] public bool BulletReactionsEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "0,1,0.05")] public float ImpactResistance { get; set; }
