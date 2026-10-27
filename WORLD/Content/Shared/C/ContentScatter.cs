@@ -61,7 +61,7 @@ public partial class ContentScatter : Node3D
                     ContentScatterSettings.ContentKind.Flowers => PlantGenerator.Create(Settings, random, material),
                     ContentScatterSettings.ContentKind.Bushes => BushGenerator.Create(Settings, random, material),
                     ContentScatterSettings.ContentKind.FallenLogs => FallenLogGenerator.Create(Settings, random, material),
-                    _ => RockGenerator.Create(Settings, random, material)
+                    _ => RockGenerator.Create(Settings, random, material, i)
                 });
             }
         }

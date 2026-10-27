@@ -1,29 +1,86 @@
-// Low-poly asymmetric closed boulders, varied deterministically once per shared mesh variant.
+// Nine deterministic low-poly rock silhouettes: pebbles, fieldstones, slabs, boulders and outcrops.
+// Temporary visual geometry stays in C/. The same mesh assets can be reused in top-down and FPS worlds.
 using Godot;
 
 public static class RockGenerator
 {
     // =========================================================
-    public static Mesh Create(ContentScatterSettings settings, RandomNumberGenerator random, Material material)
+    // One shared mesh is built per silhouette; per-instance rotation and scaling remain in ContentScatter.
+    public static Mesh Create(ContentScatterSettings settings, RandomNumberGenerator random,
+        Material material, int variant = 0)
     {
         using var mesh = new ContentMeshBuilder(material);
-        int sides = random.RandiRange(7, 11);
-        var stretch = new Vector3(random.RandfRange(0.65f, 1.6f), random.RandfRange(0.4f, 1.5f), random.RandfRange(0.6f, 1.4f)); var ring = new Vector3[sides]; var lower = new Vector3[sides];
-        for (int i = 0; i < sides; i++)
+        int type = ((variant % 9) + 9) % 9;
+
+        // Horizontal footprint and height are RELATIVE to RockMaster.Size.
+        // Tiny loose stones through big, readable boulders—not nine copies of the same cone.
+        float radiusX = 1f, radiusZ = 1f, height = 0.8f, cap = 0.55f;
+        switch (type)
         {
-            float angle = i * Mathf.Tau / sides, radius = random.RandfRange(0.7f, 1.15f) * settings.Size;
-            ring[i] = new Vector3(Mathf.Cos(angle) * radius, random.RandfRange(0.25f, 0.55f) * settings.Size, Mathf.Sin(angle) * radius * 0.8f) * stretch;
-            lower[i] = new Vector3(ring[i].X * 0.85f, -settings.Size * 0.12f, ring[i].Z * 0.85f);
+            case 0: radiusX = 0.38f; radiusZ = 0.45f; height = 0.27f; cap = 0.78f; break; // loose stone
+            case 1: radiusX = 0.64f; radiusZ = 0.60f; height = 0.64f; cap = 0.52f; break; // fieldstone
+            case 2: radiusX = 0.84f; radiusZ = 0.76f; height = 0.88f; cap = 0.61f; break; // angular block
+            case 3: radiusX = 1.35f; radiusZ = 0.57f; height = 0.52f; cap = 0.78f; break; // long low stone
+            case 4: radiusX = 0.86f; radiusZ = 0.87f; height = 1.17f; cap = 0.40f; break; // broken upright
+            case 5: radiusX = 1.19f; radiusZ = 1.08f; height = 0.39f; cap = 0.88f; break; // broad flat slab
+            case 6: radiusX = 0.67f; radiusZ = 0.73f; height = 1.57f; cap = 0.36f; break; // tall angular stone
+            case 7: radiusX = 1.29f; radiusZ = 1.10f; height = 1.16f; cap = 0.60f; break; // large boulder
+            case 8: radiusX = 1.54f; radiusZ = 1.25f; height = 0.91f; cap = 0.72f; break; // heavy outcrop
         }
-        var top = new Vector3(random.RandfRange(-0.35f, 0.35f), random.RandfRange(0.65f, 1.15f), random.RandfRange(-0.3f, 0.3f)) * settings.Size * stretch;
+
+        float size = Mathf.Max(0.1f, settings.Size);
+        // One rotation-independent asymmetry per variant; per-instance yaw/scale is applied later.
+        radiusX *= size * random.RandfRange(0.90f, 1.12f);
+        radiusZ *= size * random.RandfRange(0.88f, 1.12f);
+        height *= size * random.RandfRange(0.91f, 1.11f);
+        int sides = random.RandiRange(7, 11);
+        var foot = new Vector3[sides];
+        var middle = new Vector3[sides];
+        var shoulder = new Vector3[sides];
+        var crown = new Vector3[sides];
+        float bendX = radiusX * random.RandfRange(-0.17f, 0.17f);
+        float bendZ = radiusZ * random.RandfRange(-0.17f, 0.17f);
+
         for (int i = 0; i < sides; i++)
         {
-            int next = (i + 1) % sides; var color = settings.PrimaryColor.Lerp(settings.AccentColor, random.RandfRange(0, 0.5f));
-            mesh.RockFace(ring[i], top, ring[next], color, Vector3.Up * settings.Size * 0.2f);
-            mesh.RockFace(lower[i], ring[i], lower[next], color * 0.85f, Vector3.Up * settings.Size * 0.2f);
-            mesh.RockFace(lower[next], ring[i], ring[next], color * 0.9f, Vector3.Up * settings.Size * 0.2f);
-            mesh.RockFace(Vector3.Down * settings.Size * 0.12f, lower[i], lower[next], color, Vector3.Up * settings.Size * 0.2f);
+            float angle = (i + random.RandfRange(-0.08f, 0.08f)) * Mathf.Tau / sides;
+            float irregularity = random.RandfRange(0.79f, 1.15f);
+            float x = Mathf.Cos(angle) * radiusX * irregularity;
+            float z = Mathf.Sin(angle) * radiusZ * irregularity;
+            float shoulderBump = random.RandfRange(0.82f, 1.15f);
+            // Below-ground skirt conceals small terrain sampling differences.
+            foot[i] = new Vector3(x * 0.80f, -0.13f * size, z * 0.80f);
+            middle[i] = new Vector3(x, height * random.RandfRange(0.22f, 0.36f), z);
+            shoulder[i] = new Vector3(x * shoulderBump * 0.87f + bendX * 0.45f,
+                height * random.RandfRange(0.68f, 0.82f),
+                z * shoulderBump * 0.87f + bendZ * 0.45f);
+            crown[i] = new Vector3(x * cap + bendX, height * random.RandfRange(0.89f, 0.98f),
+                z * cap + bendZ);
+        }
+
+        var centre = new Vector3(bendX * 0.45f, height * 0.40f, bendZ * 0.45f);
+        var crownCentre = new Vector3(bendX, height, bendZ);
+        var bottomCentre = new Vector3(0, -0.13f * size, 0);
+        for (int i = 0; i < sides; i++)
+        {
+            int next = (i + 1) % sides;
+            var colour = settings.PrimaryColor.Lerp(settings.AccentColor, random.RandfRange(0.08f, 0.48f));
+            // Four separated angular tiers make a rugged silhouette with a broad crown, not a cone.
+            Connect(mesh, foot[i], foot[next], middle[i], middle[next], colour * 0.75f, centre);
+            Connect(mesh, middle[i], middle[next], shoulder[i], shoulder[next], colour, centre);
+            Connect(mesh, shoulder[i], shoulder[next], crown[i], crown[next], colour * 1.04f, centre);
+            mesh.RockFace(crown[i], crownCentre, crown[next], colour * 1.08f, centre);
+            mesh.RockFace(bottomCentre, foot[i], foot[next], colour * 0.70f, centre);
         }
         return mesh.Finish();
+    }
+
+    // =========================================================
+    // Two flat-shaded triangles per angular side; outward normals are fixed by ContentMeshBuilder.
+    private static void Connect(ContentMeshBuilder mesh, Vector3 lowA, Vector3 lowB,
+        Vector3 highA, Vector3 highB, Color colour, Vector3 centre)
+    {
+        mesh.RockFace(lowA, highA, lowB, colour, centre);
+        mesh.RockFace(lowB, highA, highB, colour * 0.93f, centre);
     }
 }
