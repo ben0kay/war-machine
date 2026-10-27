@@ -35,3 +35,7 @@ The implementation plan includes **cross-phase modularity and performance guardr
 ## Basic zombies — authorized follow-up
 
 [TYPES/Zombies/README.md](TYPES/Zombies/README.md) owns the inherited Zombie scene, runtime-copied master, low-poly shamble and arms-out range pursuit. Six are placed in the top-down preview only. No combat or robot targeting. Implementation awaits local build/visual validation; the previously cancelled ZS combat sandbox stays cancelled.
+
+## Proposed shared perception (PER)
+
+[Shared/Sensing/PERCEPTION_IMPLEMENTATION_PLAN.md](Shared/Sensing/PERCEPTION_IMPLEMENTATION_PLAN.md) describes how to reuse the existing robot `ScanSensor` logic while adding reusable natural eyesight and crouch-aware cover detection for zombies, with optional hearing and future deer/wildlife integration. **Documentation only; no PER gameplay phase has been started.** The robot's cyan `ScanBeam` remains a robot-only visual component, not a generic sight indicator.

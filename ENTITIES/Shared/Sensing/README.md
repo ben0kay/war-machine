@@ -1,4 +1,6 @@
-# Optional cone sensor — RM3
+# Optional sensors and shared perception — RM3 and proposed PER stages
+
+> **Implementation status:** The existing `ScanSensor` remains implemented as documented below. Shared natural eyesight, crouch/cover target sampling, visibility-memory and hearing are **not yet implemented**. See [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) for the Codex-ready staged design, reusable code layout, performance constraints and zombie-first test criteria.
 
 Initialize ScanSensor with an actor, socket and ScanSensorSettings. RegisterCandidate/UnregisterCandidate explicitly supply Node3D targets; no groups, world enumeration or beam hitboxes. The full cone angle is in degrees, forward is socket -Z, range is world metres.
 
