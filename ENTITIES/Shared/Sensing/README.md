@@ -2,6 +2,8 @@
 
 > **Implementation status:** The existing `ScanSensor` remains implemented as documented below. PER0/PER1 shared natural eyesight and crouch/cover sampling are implemented, awaiting local validation. Memory/hearing and robot resolver integration remain unimplemented. See [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) for the Codex-ready staged design, reusable code layout, performance constraints and zombie-first test criteria.
 
+**Hearing proposal:** [HEARING_INVESTIGATION_PLAN.md](HEARING_INVESTIGATION_PLAN.md) describes spatial sound events (starting with successful gunshots), per-zombie investigation of a recorded noise position, and relocating the configurable wander anchor there. HE0–HE3 are proposed only; no hearing behaviour is implemented yet.
+
 Initialize ScanSensor with an actor, socket and ScanSensorSettings. RegisterCandidate/UnregisterCandidate explicitly supply Node3D targets; no groups, world enumeration or beam hitboxes. The full cone angle is in degrees, forward is socket -Z, range is world metres.
 
 StartScan/StopScan are idempotent. Only an enabled sensor on an active actor can start; an empty candidate list leaves its Timer stopped. Registering a target can wake an already-requested scan. Tick first removes unloaded/freed candidates, then rejects by squared range and cone dot product, then performs capped round-robin LOS rays. Default cadence is 0.2s (5Hz) and at most two rays per tick. No valid candidates or inactive scanning means zero raycasts. A cached query excludes the owner's physics body. Hits on the registered target or its ancestor/descendant collider count as the target; a preceding wall blocks it.
