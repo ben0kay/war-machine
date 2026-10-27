@@ -5,11 +5,24 @@ using System.IO;
 public partial class TopDownWorldTest : Node3D
 {
     [Export] public TopDownTestSettings Settings { get; set; } = null!;
+    [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
+    private WeatherBridge _weather = null!;
+    private TopDownCamera _camera = null!;
 
     // =========================================================
     // Runtime settings remain separate from both the authoring master and original world resources.
     public override void _Ready()
-    { Settings = (TopDownTestSettings)Settings.Duplicate(true); SetProcess(false); SetPhysicsProcess(false); CallDeferred(nameof(InitializePreview)); }
+    {
+        Settings = (TopDownTestSettings)Settings.Duplicate(true);
+        EnvironmentSettings = (EnvironmentConfig)EnvironmentSettings.Duplicate(true);
+        var sky = GD.Load<PackedScene>("res://ENVIRONMENT/Sky/WildernessSky.tscn").Instantiate<Node>();
+        AddChild(sky);
+        var skyController = new SkyController { Name = "Environment", Sky = sky, Settings = EnvironmentSettings };
+        AddChild(skyController);
+        // This panel owns time controls; leave the parked FPS world's P/F8 shortcuts untouched.
+        skyController.SetProcessUnhandledInput(false);
+        SetProcess(false); SetPhysicsProcess(false); CallDeferred(nameof(InitializePreview));
+    }
 
     // =========================================================
     // Missing data is a visible setup error, never a reason to bake terrain during gameplay.
@@ -31,11 +44,28 @@ public partial class TopDownWorldTest : Node3D
         terrain.Call("set_camera", camera);
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(Settings, camera);
+        _camera = camera;
+        _weather = new WeatherBridge { Name = "Weather" }; AddChild(_weather);
+        _weather.InitializeView(camera, player, EnvironmentSettings);
+        camera.SettingsChanged += UpdateWeatherCoverage;
+        GetViewport().SizeChanged += UpdateWeatherCoverage;
+        UpdateWeatherCoverage();
         var cameraControls = new TopDownCameraControls();
         GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
-        cameraControls.Initialize(camera, Settings);
+        cameraControls.Initialize(camera, Settings, GetNode<SkyController>("Environment"), _weather);
         bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = "Top-down test · WASD screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
+    }
+
+    // =========================================================
+    // Coverage changes only on zoom/pitch input or viewport resize; clear weather remains dormant.
+    private void UpdateWeatherCoverage() => _weather.SetOrthographicCoverage(Settings.CameraSize);
+
+    // =========================================================
+    public override void _ExitTree()
+    {
+        if (IsInstanceValid(_camera)) _camera.SettingsChanged -= UpdateWeatherCoverage;
+        GetViewport().SizeChanged -= UpdateWeatherCoverage;
     }
 }

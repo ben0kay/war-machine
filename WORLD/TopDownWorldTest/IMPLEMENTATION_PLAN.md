@@ -8,7 +8,7 @@
 
 Try a Project Zomboid-like **angled orthographic camera** in a fully 3D environment. A simple ~1.8m low-poly player walks around fairly flat Terrain3D with one small hill, while the **actual existing Robot_001** walks, stops, visibly scans cyan and resumes patrol nearby. Compare the feel of this view against the existing first-person world.
 
-No grass, trees, rocks, bushes, caves, weather, ground haze, inventory, combat, extra enemies, F9 panel or terrain streaming framework. Sky3D for simple daylight/clouds is optional; if coupling makes it troublesome, use a basic sky, sun and ambient light.
+No grass, trees, rocks, bushes, caves, ground haze, inventory, combat, extra enemies, FPS F9 panel or terrain streaming framework. Follow-up authorization adds day/night and weather sliders by reusing the existing Sky3D and weather systems. Sky3D for simple daylight/clouds is optional; if coupling makes it troublesome, use a basic sky, sun and ambient light.
 
 Read root `README.md`, `CodePreferences.md`, `WORLD/README.md`, `WORLD/Generation/TerrainBake.cs`, `WORLD/RobotEncounter.cs`, `ENTITIES/TYPES/Robots/Robot_001/C/RobotController.cs`, and current Robot_001 README before implementation. Brief checks only, per CodePreferences.
 
@@ -84,3 +84,7 @@ The project is now prioritizing **player control, orthographic camera feel and e
 ## Suggested Codex instruction
 
 Read the referenced files and implement **TD0–TD3 together** as one small, standalone `WORLD/TopDownWorldTest/topdownWorldTest.tscn` preview. Use separate simple Terrain3D ground with a hill, one primitive animated low-poly walking player, an angled following orthographic camera, and the **existing Robot_001** performing its real patrol/stop/cyan scan loop. No vegetation, rocks, caves, grass, weather or combat. Preserve the original world completely. Keep validation short, update documentation, then commit/push once.
+
+## Authorized follow-up — live sky/weather controls
+
+Reuse WildernessSky/SkyController and WeatherBridge in this preview with a separate runtime-copied environment master. Replace the basic static sky/sun, extend the existing scrollable camera controls with time/pause/day length and precipitation/wind/particle sliders, and include their current values in Copy settings. Orthographic weather anchors at the player; bounded emission coverage changes on zoom/resize. First-person world and saved masters remain unchanged. Source/resource checks only on this host; local build and visual checks pending. This does not mark TD3 complete.

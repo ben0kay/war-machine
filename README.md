@@ -13,7 +13,7 @@
 1. **Player feel:** camera-relative walking/running, acceleration and braking, turning, proper ground contact, clearly readable simple low-poly human animation.
 2. **Camera feel:** smooth follow, comfortable angle, orthographic zoom and stable composition so the character and enormous robot remain easy to read.
 3. **Robot_001 feel:** continue refining the existing heavy cyan **biped**—proper forward movement, foot placement, gait, stop/settle timing, head sweeping, cyan scanning, presence and scale from the overhead camera.
-4. **Keep the experiment simple:** use the current flat-ish Terrain3D preview with a small hill and basic daylight. No mandate to bring over trees, rocks, weather, caves, combat or other systems yet.
+4. **Keep the experiment simple:** use the current flat-ish Terrain3D preview with a small hill. Live day/night and weather tuning reuse the existing sky and precipitation systems. No mandate to bring over trees, rocks, caves, combat or other systems yet.
 
 **What success looks like right now:** walking the character around the test terrain and watching the real robot patrol, stop and scan feels enjoyable and convincing **before** expanding gameplay.
 
@@ -37,7 +37,7 @@ The repository was initialized as a **Godot 4 C#/.NET** project. Its checked-in 
 
 The **active prototype is a small, deliberately separate scene**, to evaluate the player/robot/camera without destabilizing the older wilderness showcase. Build and tune work that is explicitly requested **inside `WORLD/TopDownWorldTest/`**, reusing shared robot code where appropriate. Do not automatically merge it into the legacy TestWorld or promote it to the project startup scene.
 
-Terrain3D remains useful for the 3D orthographic world. Keep its preview terrain data separate from the original world; use low-poly/stylized meshes, clear lighting and restrained visual complexity while gameplay feel is being tested. The longer-term landscape may grow to include natural terrain, forests, weather, landmarks, caves and buildable locations, but **these are not current prototype tasks**.
+Terrain3D remains useful for the 3D orthographic world. Keep its preview terrain data separate from the original world; use low-poly/stylized meshes, clear lighting and restrained visual complexity while gameplay feel is being tested. The longer-term landscape may grow to include natural terrain, forests, landmarks, caves and buildable locations, but **these are not current prototype tasks**.
 
 Avoid unrelated frameworks and polish. Prioritize responsive controls, readable robot behaviour and performance-first activation over feature count.
 

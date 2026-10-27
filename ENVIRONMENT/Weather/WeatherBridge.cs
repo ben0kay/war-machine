@@ -9,19 +9,47 @@ public partial class WeatherBridge : Node
     private WildernessCave _cave = null!;
     private EnvironmentConfig _settings = null!;
     private bool _sheltered, _initialized;
+    private float _coverage;
 
     // =========================================================
     // Instantiate the existing addon components with project-owned configuration and environment ownership.
     public void Initialize(ExplorationController explorer, EnvironmentConfig settings, WildernessCave cave)
     {
         _camera = explorer.GetNode<Camera3D>("Camera3D");
-        _explorer = explorer; _settings = settings; _cave = cave;
+        _explorer = explorer; _cave = cave;
+        InitializeView(_camera, _camera, settings);
+        _explorer.ViewPositionChanged += OnMoved;
+    }
+
+    // =========================================================
+    // Camera-independent anchor also supports orthographic previews without an explorer or cave dependency.
+    public void InitializeView(Camera3D camera, Node3D anchor, EnvironmentConfig settings)
+    {
+        _camera = camera; _settings = settings;
         _effects = GD.Load<PackedScene>("res://ENVIRONMENT/Weather/TestWeather.tscn").Instantiate<Node3D>();
         _effects.Set("camera", _camera);
-        _effects.Set("effect_target", _camera);
+        _effects.Set("effect_target", anchor);
         AddChild(_effects); _initialized = true;
-        _explorer.ViewPositionChanged += OnMoved;
         ApplySettings(); SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // Explicit zoom changes widen bounded emitters around the player, rather than raining at the elevated camera.
+    public void SetOrthographicCoverage(float viewSize)
+    {
+        if (!_initialized) return;
+        float aspect = _camera.GetViewport().GetVisibleRect().Size.Aspect();
+        float depth = 1f / Mathf.Max(0.3f, Mathf.Abs(_camera.GlobalBasis.Z.Y));
+        float radius = Mathf.Clamp(viewSize * 0.6f * Mathf.Sqrt(aspect * aspect + depth * depth), 20, 160);
+        if (Mathf.IsEqualApprox(radius, _coverage)) return;
+        _coverage = radius;
+        foreach (var child in _effects.GetNode("Precipitation").GetChildren())
+        {
+            if (child is not GpuParticles3D emitter || emitter.ProcessMaterial is not ParticleProcessMaterial material) continue;
+            float extent = emitter.Name.ToString().EndsWith("Near") ? radius * 0.65f : radius;
+            material.EmissionBoxExtents = new Vector3(extent, material.EmissionBoxExtents.Y, extent);
+            emitter.VisibilityAabb = new Aabb(new Vector3(-radius - 30, -65, -radius - 30), new Vector3(radius * 2 + 60, 90, radius * 2 + 60));
+        }
     }
 
     // =========================================================

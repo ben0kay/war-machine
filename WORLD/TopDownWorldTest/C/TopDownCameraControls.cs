@@ -1,5 +1,6 @@
 // Preview-only camera tuning: input-driven sliders and an explicit clipboard snapshot, with no idle polling.
 using Godot;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -10,12 +11,18 @@ public partial class TopDownCameraControls : PanelContainer
     private HSlider _pitch = null!, _zoom = null!;
     private Label _pitchLabel = null!, _zoomLabel = null!;
     private Button _copy = null!;
+    private SkyController _sky = null!;
+    private EnvironmentConfig _environment = null!;
+    private Node _clock = null!;
+    private Callable _timeChanged;
+    private HSlider _hour = null!;
+    private Label _hourLabel = null!;
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(TopDownCamera camera, TopDownTestSettings settings)
+    public void Initialize(TopDownCamera camera, TopDownTestSettings settings, SkyController sky, WeatherBridge weather)
     {
-        _camera = camera; _settings = settings;
+        _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings;
         SetProcess(false); SetPhysicsProcess(false);
         Position = new Vector2(16, 90);
         CustomMinimumSize = new Vector2(330, 0);
@@ -23,7 +30,12 @@ public partial class TopDownCameraControls : PanelContainer
         foreach (string side in new[] { "left", "right", "top", "bottom" })
             margin.AddThemeConstantOverride("margin_" + side, 12);
         AddChild(margin);
-        var rows = new VBoxContainer(); rows.AddThemeConstantOverride("separation", 8); margin.AddChild(rows);
+        var outer = new VBoxContainer(); margin.AddChild(outer);
+        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(350, Mathf.Clamp(GetViewportRect().Size.Y - 180, 180, 520)),
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        outer.AddChild(scroll);
+        var rows = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        rows.AddThemeConstantOverride("separation", 8); scroll.AddChild(rows);
         rows.AddChild(new Label { Text = "Camera · live preview" });
         _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
         _pitch = AddSlider(rows, 25, 80, 0.5);
@@ -31,7 +43,42 @@ public partial class TopDownCameraControls : PanelContainer
         _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
         _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
             Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
-        _copy = new Button { Text = "Copy settings", FocusMode = FocusModeEnum.None }; rows.AddChild(_copy);
+        rows.AddChild(new Label { Text = "Day / night" });
+        _hourLabel = new Label(); rows.AddChild(_hourLabel);
+        _hour = AddSlider(rows, 0, 23.99, 0.01);
+        _hour.SetValueNoSignal(_environment.StartHour);
+        _hour.ValueChanged += value => { _environment.StartHour = (float)value; _sky.ApplyTime(); };
+        AddBoundSlider(rows, "Day length (minutes)", 1, 1440, 1, _environment.DayLengthMinutes,
+            value => { _environment.DayLengthMinutes = value; _sky.ApplyCycle(); });
+        var pause = new CheckButton { Text = "Pause day / night", ButtonPressed = _environment.StartPaused, FocusMode = FocusModeEnum.None };
+        rows.AddChild(pause); pause.Toggled += value => { _sky.SetPaused(value); _copy.Text = "Copy settings"; };
+        rows.AddChild(new Label { Text = "Weather · zero = off" });
+        AddBoundSlider(rows, "Rain intensity", 0, 1, 0.01, _environment.RainIntensity,
+            value => { _environment.RainIntensity = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Snow intensity", 0, 1, 0.01, _environment.SnowIntensity,
+            value => { _environment.SnowIntensity = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Local mist", 0, 1, 0.01, _environment.LocalMistIntensity,
+            value => { _environment.LocalMistIntensity = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Wind strength", 0, 2, 0.01, _environment.GrassWindStrength,
+            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Wind heading (degrees)", 0, 360, 1, _environment.WindHeading,
+            value => { _environment.WindHeading = value; float angle = Mathf.DegToRad(value);
+                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); });
+        AddBoundSlider(rows, "Gusts", 0, 1, 0.01, _environment.WeatherGusts,
+            value => { _environment.WeatherGusts = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Turbulence", 0, 2, 0.01, _environment.WeatherTurbulence,
+            value => { _environment.WeatherTurbulence = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Particle size", 0.1, 3, 0.05, _environment.WeatherParticleSize,
+            value => { _environment.WeatherParticleSize = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Fall speed", 0.1, 3, 0.05, _environment.WeatherFallSpeed,
+            value => { _environment.WeatherFallSpeed = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Weather quality (0 / 1 / 2)", 0, 2, 1, _environment.WeatherQuality,
+            value => { _environment.WeatherQuality = value; weather.ApplySettings(); });
+        _copy = new Button { Text = "Copy settings", FocusMode = FocusModeEnum.None }; outer.AddChild(_copy);
+        _clock = _sky.Sky.GetNode("TimeOfDay");
+        _timeChanged = Callable.From<float>(OnTimeChanged);
+        _clock.Connect("time_changed", _timeChanged);
+        OnTimeChanged(_sky.Sky.Get("current_time").AsSingle());
         _pitch.ValueChanged += OnPitchChanged;
         _zoom.ValueChanged += OnZoomChanged;
         _copy.Pressed += CopySettings;
@@ -46,6 +93,26 @@ public partial class TopDownCameraControls : PanelContainer
         var slider = new HSlider { MinValue = minimum, MaxValue = maximum, Step = step,
             FocusMode = FocusModeEnum.None, CustomMinimumSize = new Vector2(300, 20) };
         rows.AddChild(slider); return slider;
+    }
+
+    // =========================================================
+    // One binding per control: labels and resources change only on input, without reflection or polling.
+    private void AddBoundSlider(VBoxContainer rows, string title, double minimum, double maximum, double step,
+        float initial, Action<float> apply)
+    {
+        var label = new Label { Text = $"{title}: {initial:0.##}" }; rows.AddChild(label);
+        var slider = AddSlider(rows, minimum, maximum, step); slider.SetValueNoSignal(initial);
+        slider.ValueChanged += value => { label.Text = $"{title}: {value:0.##}"; apply((float)value); _copy.Text = "Copy settings"; };
+    }
+
+    // =========================================================
+    // Sky3D owns the clock; its existing signal keeps the hour slider current during an unpaused day.
+    private void OnTimeChanged(float hour)
+    {
+        _environment.StartHour = hour;
+        _hour.SetValueNoSignal(hour);
+        int minutes = Mathf.FloorToInt(hour * 60);
+        _hourLabel.Text = $"Time: {minutes / 60:00}:{minutes % 60:00}";
     }
 
     private void OnPitchChanged(double value) => _camera.SetPitch((float)value);
@@ -66,7 +133,7 @@ public partial class TopDownCameraControls : PanelContainer
     // Export numeric JSON using the authoring property names; copy the chosen zoom target, not a mid-smoothing frame.
     private void CopySettings()
     {
-        var values = new Dictionary<string, float>
+        var values = new Dictionary<string, object>
         {
             [nameof(_settings.CameraPitchDegrees)] = _settings.CameraPitchDegrees,
             [nameof(_settings.CameraYawDegrees)] = _settings.CameraYawDegrees,
@@ -75,9 +142,22 @@ public partial class TopDownCameraControls : PanelContainer
             [nameof(_settings.MinimumZoom)] = _settings.MinimumZoom,
             [nameof(_settings.MaximumZoom)] = _settings.MaximumZoom,
             [nameof(_settings.ZoomStep)] = _settings.ZoomStep,
-            [nameof(_settings.FollowSmoothing)] = _settings.FollowSmoothing
+            [nameof(_settings.FollowSmoothing)] = _settings.FollowSmoothing,
+            [nameof(_environment.StartHour)] = _sky.Sky.Get("current_time").AsSingle(),
+            [nameof(_environment.StartPaused)] = _environment.StartPaused,
+            [nameof(_environment.DayLengthMinutes)] = _environment.DayLengthMinutes,
+            [nameof(_environment.RainIntensity)] = _environment.RainIntensity,
+            [nameof(_environment.SnowIntensity)] = _environment.SnowIntensity,
+            [nameof(_environment.LocalMistIntensity)] = _environment.LocalMistIntensity,
+            [nameof(_environment.GrassWindStrength)] = _environment.GrassWindStrength,
+            [nameof(_environment.WindHeading)] = _environment.WindHeading,
+            [nameof(_environment.WeatherGusts)] = _environment.WeatherGusts,
+            [nameof(_environment.WeatherTurbulence)] = _environment.WeatherTurbulence,
+            [nameof(_environment.WeatherParticleSize)] = _environment.WeatherParticleSize,
+            [nameof(_environment.WeatherFallSpeed)] = _environment.WeatherFallSpeed,
+            [nameof(_environment.WeatherQuality)] = _environment.WeatherQuality
         };
-        DisplayServer.ClipboardSet("War Machine · TopDownWorldTest camera settings\n"
+        DisplayServer.ClipboardSet("War Machine · TopDownWorldTest camera and environment settings\n"
             + JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true }));
         _copy.Text = "Copied! Paste these settings into chat";
     }
@@ -86,6 +166,8 @@ public partial class TopDownCameraControls : PanelContainer
     // Remove the external subscription when the scene or panel unloads.
     public override void _ExitTree()
     {
+        if (GodotObject.IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
+            _clock.Disconnect("time_changed", _timeChanged);
         if (GodotObject.IsInstanceValid(_camera)) _camera.SettingsChanged -= Refresh;
     }
 }
