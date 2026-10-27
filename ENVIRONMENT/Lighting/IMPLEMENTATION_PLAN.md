@@ -1,0 +1,24 @@
+# Local lighting — future Codex tasks
+
+**Status: proposed only.** Scaffold and `Configuration/LightingMaster.tres` exist; **no runtime light has been implemented**. On authorization, read root `README.md`, `CodePreferences.md`, this folder's README, `EQUIPMENT/Weapons/Shared/FirearmShotEffects.cs`, `FirearmController.cs`, `FirearmSettings.cs`, `WORLD/WorldController.cs` and shared environment ownership docs. Use branch **`implement-td0-td1`**, not main. Implement only authorized phases, keep testing brief and push one commit per job.
+
+## LI0 — rifle muzzle light (do this first when asked)
+
+1. Reuse the existing **`FirearmShotEffects.ShowShot(start, end)`** called only on a successfully accepted `FirearmController.TryFire()`. It already pools tracers, shows a reusable muzzle-flash mesh and processes only while visual effects are alive. **Do not create a second separate firing/cooldown loop.**
+2. For **Rifle_001 only initially**, add one cached short-lived **`OmniLight3D`**, disabled by default, at the muzzle's *actual* world location. When a shot succeeds, set/refresh light position, colour, energy and falloff/range; enable it for the authored duration (default 0.07s). Turn fully **off** at expiry, unequip, focus cancellation or scene unload. Consider render-frame muzzle interpolation to match existing flash; don't attach the light to a moving world-space tracer.
+3. Read a runtime copy of `ENVIRONMENT/Lighting/Configuration/LightingMaster.tres` for defaults, or use an explicit injected settings Resource—avoid duplicating tunable constants. Don't modify gameplay lighting settings in Sky3D or create another WorldEnvironment. Avoid cost from additional timers/Process callbacks when no shot is active. Existing shot effect processing is already awake briefly, so the simplest option is to reuse its lifetime.
+4. **No shadows on the muzzle light**, no extra raycasts and no allocations on each shot. The player is the first emitter, so one cached light may suffice; if later many firearms use the same effect, apply `MaxTransientLights` as a truly shared cap, or document that it is not yet enforced. Avoid writing an unnecessary global lighting manager only for one rifle.
+5. Keep rifle tracer, `FlashDuration`, muzzle mesh, hit/damage, accuracy, audio and cooldown unchanged. If an existing weapon setting defines a visual flash duration, choose/document a single predictable source of truth for light-vs-flash timing. If a future suppressor disables flash, it should also disable light. **Do not enable this for MachineGun_001 or all FirearmController-derived weapons unintentionally.**
+6. Forward+ scene checks: short warm flash should briefly illuminate the player/ground/nearby zombies, be noticeable at night, not overwhelm daylight, and optionally catch Ground Haze 2.0 while volumetric fog is enabled. The underlying existing mesh flash should remain visible. Validate rapid fire, movement and shutdown; compare both top-down/FPS only if weapon effects are shared.
+
+**Suggested settings (NOT live yet):** warm pale-yellow `Color(1, 0.78, 0.52)`, energy 2, range 4m, duration 0.07s, disabled shadows. Tune by eye rather than assuming physical realism.
+
+## LI1 — campfire light (future; DO NOT IMPLEMENT NOW)
+
+Create a reusable campfire world prop when explicitly requested, with a small flame/embers/smoke visual and one warm orange `OmniLight3D`. A persistent light has a **different lifecycle** from a weapon flash: while burning, modest irregular intensity and range flicker; when extinguished, sleeping/out of range or unloaded, the light and flicker stop. Prefer an event/state-driven or low-rate shared update; no idle permanent `_Process` on every campfire. Decide relevance/hysteresis, a cap on shadowed fires and optional light interaction with active volumetric haze. Reserve `Sources/Campfire/` as planning documentation, not an art/model or implementation yet. Place campfire prop assets where WORLD's content ownership dictates, with reusable light behaviour under this folder.
+
+Later candidates: lanterns, torches, house lights, machinery, robot spotlights, muzzle flashes from other weapons, lightning and electric sparks. Keep emitter-specific triggers with the owning gameplay system.
+
+## Brief validation handoff
+
+Check changed scene/script/reference paths, run `dotnet build war-machine.csproj` if tooling exists, F6 `WORLD/World.tscn` in daylight and nighttime. Confirm one light per accepted rifle shot, no permanent processing when firing stops, no shadows on gun flash and no runtime regression or double lights. Update owning documentation, explicitly report unperformed runtime/visual checks.

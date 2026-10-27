@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="LightingSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://ENVIRONMENT/Lighting/LightingSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+MaxTransientLights = 4
+MuzzleLightEnabled = true
+MuzzleLightColor = Color(1, 0.78, 0.52, 1)
+MuzzleLightEnergy = 2.0
+MuzzleLightRange = 4.0
+MuzzleLightDurationSeconds = 0.07

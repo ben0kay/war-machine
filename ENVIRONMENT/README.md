@@ -31,3 +31,7 @@ Fog/PlayerDistanceFog provides the separately authorized player-centred edge fog
 ## Active ground haze 2.0
 
 The top-down world now reuses Weather/GroundHaze with an explicit player/terrain/camera initialization overload and the same Sky3D Environment. GameplayEnvironmentMaster enables the 30m local wispy layer; WorldTuning exposes its controls under Environment → Ground haze. One cached volume and terrain-height texture; GPU noise, movement/tile-only updates, dormant OFF/zero. Legacy explorer/cave initialization is retained; FPS comparison opts out. See [Weather/README.md](Weather/README.md) for defaults, cost, limitations and local checks. Implemented; build/shader/visual validation pending locally.
+
+## Planned reusable local lighting
+
+`[Lighting/README.md](Lighting/README.md)` introduces a scaffold for local point lights separate from Sky3D's sun/moon, environment fog and audio. `Lighting/Configuration/LightingMaster.tres` holds authored **future** muzzle-light defaults; `Lighting/IMPLEMENTATION_PLAN.md` specifies LI0 (brief, shadowless rifle muzzle illumination using existing FirearmShotEffects), with persistent campfire flicker deliberately deferred as LI1. **No local lights or gameplay hooks are implemented by the scaffold.**

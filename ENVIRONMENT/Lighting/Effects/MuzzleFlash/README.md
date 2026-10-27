@@ -1,0 +1,3 @@
+# Muzzle-flash illumination — LI0 pending
+
+**Next feature for Codex, not implemented here.** Add real short-range lighting to successful **Rifle_001** shots by reusing `EQUIPMENT/Weapons/Shared/FirearmShotEffects.cs` and its accepted-shot, cached flash lifecycle. A disabled-by-default, shadowless OmniLight3D with warm colour, ~4m range and ~0.07s lifetime should briefly brighten nearby geometry and ground haze, then turn off. Use `../../Configuration/LightingMaster.tres` for defaults. No second shot timer, no per-shot node construction, no new light on rejected cooldown presses; handle stop/unequip. Do not unintentionally enable for machine gun. See `../../IMPLEMENTATION_PLAN.md`.
