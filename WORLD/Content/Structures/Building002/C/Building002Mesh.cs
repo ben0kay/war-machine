@@ -141,7 +141,7 @@ public partial class Building002Mesh : Node3D
         for (float x = -hx + 0.75f; x < hx - 0.25f; x += 0.85f)
             StructureGeometry.Box(detail, null, "VerandaBoard", new(x, 0.128f, front + 1.35f),
                 new(0.022f, 0.006f, 3.13f), woodDark);
-        for (float x in new[] { -hx + 1.05f, hx - 1.05f })
+        foreach (float x in new[] { -hx + 1.05f, hx - 1.05f })
         {
             StructureGeometry.Box(detail, body, "PorchPost", new(x, 1.64f, front + 2.68f),
                 new(0.26f, 3.28f, 0.26f), trim);
