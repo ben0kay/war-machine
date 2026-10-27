@@ -1,3 +1,5 @@
+**Current reusable visibility:** this prefab now includes StructureVisibility using its existing master (derived from StructureSettings). The generator declares local occupied volumes, floor elevations and disjoint visual roles. No building-specific visibility case remains in WorldController. Follow [../BUILDING_AUTHORING_README.md](../BUILDING_AUTHORING_README.md) for new structures; older named wiring descriptions below are historical. Metadata does not change mesh/collision geometry. Local build/visual checks pending.
+
 # Building002 — Forest ranger lodge
 
 **Status:** Reusable procedural scene, now placed by WorldController in both the active top-down world and inherited FPS test. Source complete; local build/render/physics validation pending.

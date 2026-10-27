@@ -1,97 +1,98 @@
-// Top-down lodge presentation: event-driven local-space occupancy, stair transition and composed section fades.
-// No gameplay simulation, collision changes, per-building polling, or camera behaviour in the art generator.
+// Generic level/roof/wall presentation from cached structure metadata; no building-specific paths or dimensions.
 using Godot;
 using System.Collections.Generic;
 
 public partial class BuildingFloorVisibility : Node3D
 {
-    public enum Occupancy { Outside, Ground, OnStairs, Upper }
-    public Occupancy CurrentFloor { get; private set; } = Occupancy.Outside;
-    private Building002Mesh _building = null!;
+    public bool IsInside { get; private set; }
+    public int CurrentLevel { get; private set; } = -1;
+    public bool OnStairs { get; private set; }
+    private sealed class Part
+    { public CameraOccluder Owner = null!; public StructureLayout.Part Definition = null!; public float Current = 1, Goal = 1; }
+    private readonly List<Part> _parts = new();
+    private Node3D _building = null!;
     private PlayerController _player = null!;
-    private Building002Settings _settings = null!;
-    private readonly List<CameraOccluder> _upper = new(), _lowerWalls = new();
-    private CameraOccluder _roof = null!;
-    private float _upperOpacity = 1, _roofOpacity = 1, _upperGoal = 1, _roofGoal = 1;
-    private float _width, _depth, _height;
-    private bool _inside, _upstairs, _initialized;
+    private StructureSettings _settings = null!;
+    private StructureLayout _layout = null!;
+    private bool _initialized;
 
     // =========================================================
-    // World passes an explicit prefab/player only for the top-down camera; cache the known mesh groups once.
-    public void Initialize(Building002Mesh building, PlayerController player)
+    public void Initialize(Node3D building, PlayerController player, StructureSettings settings, StructureLayout layout)
     {
-        _building = building; _player = player;
-        _settings = (Building002Settings)building.Settings.Duplicate(true);
-        _width = Mathf.Clamp(_settings.Width, 14, 24); _depth = Mathf.Clamp(_settings.Depth, 10, 18);
-        _height = building.GetNode<Node3D>("Generated/Level_1").GetMeta("floor_elevation").AsSingle();
-        const string ground = "Generated/Level_0/Visuals/", upper = "Generated/Level_1/Visuals/";
-        _lowerWalls.Add(Section(ground + "Exterior", true));
-        _lowerWalls.Add(Section(ground + "Partitions", true));
-        _upper.Add(Section(upper + "FloorDeck", false));
-        _upper.Add(Section(upper + "Furnishings", false));
-        _upper.Add(Section(upper + "ExteriorWalls", true));
-        _upper.Add(Section(upper + "Partitions", true));
-        _roof = Section(upper + "RoofVisuals", true);
-        // Previously unowned art must also fade when the entire house hides an outside player.
-        Section(ground + "TimberAndProps", false); Section(ground + "Rooms", false);
-        Section(ground + "ShowcaseExterior", false); Section(ground + "ShowcaseInterior", false);
-        Section("Generated/Stairs_0_to_1/Visuals", false);
+        _building = building; _player = player; _settings = settings; _layout = layout;
+        foreach (var definition in layout.Parts)
+        {
+            bool wall = definition.Role == "walls", roof = definition.Role == "roof";
+            var owner = new CameraOccluder { Name = $"Section_{_parts.Count}", ObjectRoot = definition.Root,
+                CreateObstructionProxy = wall || roof, FadeIndividualMeshes = wall };
+            AddChild(owner); owner.InitializeBounds();
+            _parts.Add(new Part { Owner = owner, Definition = definition });
+        }
         SetProcess(false); SetPhysicsProcess(false);
-        _player.PositionChanged += OnPlayerMoved; _initialized = true; OnPlayerMoved(player.GlobalPosition);
+        _initialized = true; _player.PositionChanged += OnPlayerMoved; OnPlayerMoved(player.GlobalPosition);
     }
 
     // =========================================================
-    // Each mesh has exactly one fade owner. Contents/deck have presentation fades but no obstruction proxy.
-    private CameraOccluder Section(string path, bool proxy)
-    {
-        var section = new CameraOccluder { Name = path.Replace('/', '_'),
-            ObjectRoot = _building.GetNode<Node3D>(path), CreateObstructionProxy = proxy,
-            FadeIndividualMeshes = path.EndsWith("Exterior") || path.EndsWith("ExteriorWalls") || path.EndsWith("Partitions") };
-        AddChild(section); section.InitializeBounds(); return section;
-    }
-
-    // =========================================================
-    // Local feet position respects terrain placement/rotation. Hysteresis avoids boundary/landing oscillation.
+    // Local feet + authored elevations support multiple storeys, landing hysteresis and separate canopy volumes.
     private void OnPlayerMoved(Vector3 position)
     {
-        Vector3 local = _building.ToLocal(position);
-        float margin = _inside ? 0.15f : -0.05f;
-        _inside = Mathf.Abs(local.X) < _width * 0.5f + margin
-            && Mathf.Abs(local.Z) < _depth * 0.5f + margin && local.Y > -0.5f && local.Y < _height + 2.5f;
-        float hysteresis = Mathf.Clamp(_settings.LandingHysteresis, 0.1f, 0.6f);
-        _upstairs = _inside && local.Y >= _height - (_upstairs ? hysteresis : 0.12f);
-        CurrentFloor = !_inside ? Occupancy.Outside : _upstairs ? Occupancy.Upper
-            : local.Y > 0.3f ? Occupancy.OnStairs : Occupancy.Ground;
-        // Keep the upper deck faded until the player approaches the top; the staircase itself is never a fade target.
-        float landing = Mathf.SmoothStep(_height - 1.8f, _height - 0.12f, local.Y);
-        float hidden = Mathf.Clamp(_settings.HiddenUpperOpacity, 0, 1);
-        _upperGoal = !_inside || _upstairs ? 1 : Mathf.Lerp(hidden, 1, landing);
-        _roofGoal = _inside ? Mathf.Clamp(_settings.IndoorRoofOpacity, 0, 1) : 1;
-        foreach (var wall in _lowerWalls) wall.SetCameraFadeEnabled(!_upstairs);
-        if (_upperOpacity != _upperGoal || _roofOpacity != _roofGoal) SetProcess(true);
+        Vector3 local = _building.ToLocal(position); bool inside = false;
+        foreach (var zone in _layout.Zones)
+            if (zone.Grow(IsInside ? 0.15f : -0.05f).HasPoint(local)) { inside = true; break; }
+        int previous = CurrentLevel; IsInside = inside; CurrentLevel = inside ? _layout.Floors[0].Level : -1;
+        float elevation = _layout.Floors[0].Elevation;
+        if (inside)
+            foreach (var floor in _layout.Floors)
+            {
+                float margin = previous >= floor.Level ? Mathf.Clamp(_settings.LandingHysteresis, 0.1f, 0.6f) : 0.12f;
+                if (local.Y >= floor.Elevation - margin) { CurrentLevel = floor.Level; elevation = floor.Elevation; }
+            }
+        OnStairs = inside && local.Y > elevation + 0.3f;
+        bool moving = false;
+        foreach (var part in _parts)
+        {
+            var d = part.Definition; float goal = 1;
+            if (inside && d.Role != "stairs")
+            {
+                if (d.Role == "roof" && d.Level >= CurrentLevel) goal = Mathf.Clamp(_settings.IndoorRoofOpacity, 0, 1);
+                else if (d.Level > CurrentLevel)
+                {
+                    float targetElevation = elevation;
+                    foreach (var floor in _layout.Floors) if (floor.Level == d.Level) { targetElevation = floor.Elevation; break; }
+                    float blend = Mathf.SmoothStep(targetElevation - 1.8f, targetElevation - 0.12f, local.Y);
+                    goal = Mathf.Lerp(Mathf.Clamp(_settings.HiddenUpperOpacity, 0, 1), 1, blend);
+                }
+            }
+            part.Goal = goal;
+            part.Owner.SetCameraFadeEnabled(!inside || d.Level >= CurrentLevel);
+            if (part.Current != goal) moving = true;
+        }
+        SetProcess(moving);
     }
 
     // =========================================================
-    // Only transitioning presentation runs per frame; composed camera factors cannot restore a hidden storey.
     public override void _Process(double delta)
     {
-        float step = (float)delta / Mathf.Max(0.02f, _settings.FloorFadeSeconds);
-        _upperOpacity = Mathf.MoveToward(_upperOpacity, _upperGoal, step);
-        _roofOpacity = Mathf.MoveToward(_roofOpacity, _roofGoal, step);
-        foreach (var section in _upper) section.SetPresentationOpacity(_upperOpacity);
-        _roof.SetPresentationOpacity(_roofOpacity);
-        if (_upperOpacity == _upperGoal && _roofOpacity == _roofGoal) SetProcess(false);
+        bool moving = false; float step = (float)delta / Mathf.Max(0.02f, _settings.FloorFadeSeconds);
+        foreach (var part in _parts)
+        {
+            part.Current = Mathf.MoveToward(part.Current, part.Goal, step);
+            part.Owner.SetPresentationOpacity(part.Current);
+            if (part.Current != part.Goal) moving = true;
+        }
+        if (!moving) SetProcess(false);
     }
 
     // =========================================================
-    // Release explicit external subscription, restore presentation on removal, and let proxies unregister normally.
-    public override void _ExitTree()
+    public void Shutdown()
     {
         if (!_initialized) return;
         if (IsInstanceValid(_player)) _player.PositionChanged -= OnPlayerMoved;
-        foreach (var section in _upper) if (IsInstanceValid(section)) section.SetPresentationOpacity(1);
-        foreach (var section in _lowerWalls) if (IsInstanceValid(section)) section.SetCameraFadeEnabled(true);
-        if (IsInstanceValid(_roof)) _roof.SetPresentationOpacity(1);
-        _initialized = false;
+        foreach (var part in _parts) if (IsInstanceValid(part.Owner))
+        { part.Owner.SetPresentationOpacity(1); part.Owner.SetCameraFadeEnabled(true); }
+        SetProcess(false); _initialized = false;
     }
+
+    // =========================================================
+    public override void _ExitTree() => Shutdown();
 }

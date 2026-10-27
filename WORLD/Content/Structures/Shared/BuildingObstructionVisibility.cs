@@ -82,11 +82,15 @@ public partial class BuildingObstructionVisibility : Node3D, ICameraOcclusionPro
     { if (_initialized && what == NotificationTransformChanged) { OnPlayerMoved(_player.GlobalPosition); OcclusionChanged?.Invoke(); } }
 
     // =========================================================
-    public override void _ExitTree()
+    public void Shutdown()
     {
+        if (!_initialized) return;
         if (GodotObject.IsInstanceValid(_player)) _player.PositionChanged -= OnPlayerMoved;
         SetCameraOpacity(1);
         foreach (var section in _sections) if (GodotObject.IsInstanceValid(section)) section.SetWholeBuildingMode(false);
         _initialized = false;
     }
+    // =========================================================
+    public override void _ExitTree() => Shutdown();
+
 }

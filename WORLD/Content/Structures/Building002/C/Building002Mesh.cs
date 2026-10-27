@@ -16,7 +16,7 @@ public partial class Building002Mesh : Node3D
     public override void _Ready()
     {
         if (GetNodeOrNull<Node3D>("Generated") != null) return;
-        Build();
+        Build(); DeclareVisibility();
         SetProcess(false); SetPhysicsProcess(false);
     }
 
@@ -616,4 +616,26 @@ public partial class Building002Mesh : Node3D
         StructureGeometry.Box(detail, null, name + "Cross", new((left + right) * 0.5f, (lo + hi) * 0.5f, z + 0.19f),
             new(0.10f, hi - lo, 0.12f), trim);
     }
+    // =========================================================
+    // Same metadata contract used by future authored/procedural buildings; no visibility code knows these paths.
+    private void DeclareVisibility()
+    {
+        var s = Settings ?? new Building002Settings();
+        float w = Mathf.Clamp(s.Width, 14, 24), d = Mathf.Clamp(s.Depth, 10, 18);
+        float h = Mathf.Clamp(s.WallHeight, 3.4f, 5), upper = Mathf.Clamp(s.UpperWallHeight, 2.5f, 3.4f);
+        StructureLayout.Occupied(GetNode<Node3D>("Generated"), new Aabb(new Vector3(-w / 2, -0.5f, -d / 2), new Vector3(w, h + upper + 0.5f, d)));
+        foreach (string level in new[] { "Level_0", "Level_1" })
+        {
+            string path = "Generated/" + level + "/Visuals/";
+            foreach (string name in new[] { "Partitions", level == "Level_0" ? "Exterior" : "ExteriorWalls" })
+                StructureLayout.Visual(GetNode<Node3D>(path + name), "walls");
+        }
+        foreach (string name in new[] { "Rooms", "TimberAndProps", "ShowcaseExterior", "ShowcaseInterior" })
+            StructureLayout.Visual(GetNode<Node3D>("Generated/Level_0/Visuals/" + name), "contents");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/Level_1/Visuals/FloorDeck"), "deck");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/Level_1/Visuals/Furnishings"), "contents");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/Level_1/Visuals/RoofVisuals"), "roof");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/Stairs_0_to_1/Visuals"), "stairs");
+    }
+
 }

@@ -1,3 +1,16 @@
+# Reusable structure visibility and procedural geometry
+
+**Current contract:** [../BUILDING_AUTHORING_README.md](../BUILDING_AUTHORING_README.md). Future AI-designed/imported/procedural buildings should follow that short guide. Older per-building integration notes below are historical; named WorldController visibility cases have been removed.
+
+- StructureVisibility: prefab opt-in, deep-copied settings, deferred attach/refresh/rebuild/unload.
+- StructureSettings: common inherited exports on each building master.
+- StructureLayout: startup metadata reader/helpers, any increasing floor count and disjoint visual roles.
+- BuildingFloorVisibility: generic feet-height/volume occupancy, upper-deck/contents restoration, roof/wall rules and transition-only processing.
+- BuildingObstructionVisibility: cached outside bounds and coherent whole-building target.
+- C/StructureGeometry: mesh construction only.
+
+World only registers the structures subtree with CameraOcclusion. Existing prefabs are discovered once; later Ready/Exit events attach/remove components without scans. Context is scoped to that subtree and skipped by FPS. Invalid/missing occupancy/master logs a warning and leaves visibility inactive. Explicit rebuild releases subscriptions/owners before replacing art. No new collision/AI/navigation/editor-generator feature. Source checks only; local .NET/Godot build, inherited export compatibility and runtime visual/streaming checks pending.
+
 # Shared procedural structure geometry
 
 Reusable **Godot C# mesh-construction helpers** for Building002 and Building003. They do not alter Building001 or take over world placement/AI. See `C/StructureGeometry.cs`.

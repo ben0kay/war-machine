@@ -10,3 +10,7 @@ All three buildings are now placed once by WorldController for both WORLD/World.
 The new [Shared/C/StructureGeometry.cs](Shared/C/StructureGeometry.cs) holds only simple reusable box, roof, gable and collider-building methods for Building002/003; Building001 remains unchanged.
 
 Follow the project convention: `C/` is **only procedural C# mesh construction**; `Artwork/` is reserved for imported models; `Configuration/` holds typed settings and master resources. Item scene stays at its own folder root and can later be instanced into `WORLD/World.tscn` or an appropriate placement system. No world placement is performed just by adding the prefab.
+
+## New building authoring
+
+Read [BUILDING_AUTHORING_README.md](BUILDING_AUTHORING_README.md) before creating buildings with AI or code. StructureVisibility + inherited StructureSettings and floor/role metadata replace named world visibility cases. Building002 remains the multi-storey reference. Works for later-spawned compliant prefabs under Structures; procedural generation/placement itself is not added.

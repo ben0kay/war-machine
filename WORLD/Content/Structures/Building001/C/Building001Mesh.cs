@@ -14,7 +14,7 @@ public partial class Building001Mesh : Node3D
     public override void _Ready()
     {
         if (GetNodeOrNull<Node3D>("Generated") != null) return;
-        Build();
+        Build(); DeclareVisibility();
         SetProcess(false); SetPhysicsProcess(false);
     }
 
@@ -293,4 +293,16 @@ public partial class Building001Mesh : Node3D
         Box(roof, null, "VentHousing", new(x, top + 0.52f, z), new(0.85f, 0.68f, 1.00f), trim);
         Box(roof, null, "VentCap", new(x, top + 0.93f, z), new(1.12f, 0.15f, 1.27f), baseMaterial);
     }
+    // =========================================================
+    // Art declares reusable visibility roles; runtime camera/player logic stays outside the mesh generator.
+    private void DeclareVisibility()
+    {
+        var s = Settings ?? new Building001Settings();
+        float w = Mathf.Clamp(s.Width, 16, 32), d = Mathf.Clamp(s.Depth, 10, 24);
+        StructureLayout.Occupied(GetNode<Node3D>("Generated"), new Aabb(new Vector3(-w / 2, -0.5f, -d / 2), new Vector3(w, 9, d)));
+        StructureLayout.Visual(GetNode<Node3D>("Generated/WallsAndTrim"), "walls");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/RoofVisuals"), "roof");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/Details"), "contents");
+    }
+
 }

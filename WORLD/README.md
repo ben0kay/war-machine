@@ -109,3 +109,4 @@ The startup layout is calculated once and reused for pine and rock collision exc
 ## Gameplay HUD — visual hotbar
 
 The shared `WORLD/World.tscn` instances `UI/GameplayHUD/Hotbar/Hotbar.tscn` as `GameplayHUD`. Nine fixed, empty numbered slots are centered near the bottom; Slot1's accent border is an illustrative selection only. This is static UI without inventory, quick-key actions, weapon-selection or item binding. It appears in the inherited FPS debug test as well. See `UI/GameplayHUD/Hotbar/README.md` for future integration and validation notes.
+Structure visibility now comes from each prefab's StructureVisibility component and metadata, rather than named world cases. See Content/Structures/BUILDING_AUTHORING_README.md before adding authored/procedural buildings. Existing three masters inherit the same visibility settings, and later instances register under Structures automatically. Top-down-only context; local build/visual validation pending.

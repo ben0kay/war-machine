@@ -128,3 +128,7 @@ This architectural system could later be reused for a fantasy project with new r
 - Save compatibility, seed versioning and stable structure IDs will matter once houses contain gameplay state/loot.
 
 **Open design questions for later:** final world size; contiguous vs connected regions; degree of handcrafted roads/settlements; slope preparation/foundations; procedural exterior vs interior priorities; how much per-room manual overriding is allowed; bake vs regenerate thresholds.
+
+## Reusable visibility foundation now available
+
+Future procedural generators should follow WORLD/Content/Structures/BUILDING_AUTHORING_README.md: prefab StructureVisibility, StructureSettings master, local occupied bounds, floor levels/elevations, and disjoint walls/roof/deck/contents/stairs roles. Metadata changes with the generated layout; visibility has an explicit Rebuild callback and auto-registration for later spawns. This implements visibility reuse only, not this idea's procedural house generator, terrain snapping, editor seed previews or world streaming.

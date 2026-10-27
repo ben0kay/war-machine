@@ -17,6 +17,8 @@ public partial class CameraOcclusion : Node
     private readonly Dictionary<ICameraFadeTarget, Fade> _fades = new();
     private readonly List<ICameraFadeTarget> _remove = new();
     private bool _initialized;
+    private Node? _structureRoot;
+    private readonly List<StructureVisibility> _structures = new();
 
     // =========================================================
     // Cached references and explicit movement signals; no global object searches or stationary query timer.
@@ -36,6 +38,33 @@ public partial class CameraOcclusion : Node
     // Instanced scenery supplies its own cheap spatial lookup without per-tree physics bodies.
     public void RegisterProvider(ICameraOcclusionProvider provider)
     { _providers.Add(provider); provider.OcclusionChanged += Invalidate; Invalidate(); }
+
+    // =========================================================
+    // One bounded subtree discovery, then explicit prefab Ready/Exit events for spawned/unloaded structures.
+    public void RegisterStructures(Node root)
+    {
+        _structureRoot = root; StructureVisibility.Available += OnStructureAvailable; StructureVisibility.Removed += OnStructureRemoved;
+        foreach (Node node in root.FindChildren("*", "", true, false)) if (node is StructureVisibility structure) OnStructureAvailable(structure);
+    }
+
+    // =========================================================
+    private void OnStructureAvailable(StructureVisibility structure)
+    {
+        if (_structureRoot == null || !_structureRoot.IsAncestorOf(structure) || _structures.Contains(structure)) return;
+        _structures.Add(structure); structure.Attach(_player, this);
+    }
+
+    // =========================================================
+    private void OnStructureRemoved(StructureVisibility structure) => _structures.Remove(structure);
+
+    // =========================================================
+    public void UnregisterProvider(ICameraOcclusionProvider provider)
+    {
+        if (!_providers.Remove(provider)) return;
+        provider.OcclusionChanged -= Invalidate;
+        if (provider is ICameraFadeTarget target && _fades.Remove(target)) { if (target.IsValid) target.SetCameraOpacity(1); }
+        Invalidate();
+    }
 
     private void OnPlayerMoved(Vector3 position) => Invalidate();
     private void OnStanceChanged(bool crouching) => Invalidate();
@@ -120,7 +149,10 @@ public partial class CameraOcclusion : Node
     public override void _ExitTree()
     {
         if (!_initialized) return;
-        RestoreAll(); _check.Stop();
+        RestoreAll(); _check.Stop(); _initialized = false;
+        StructureVisibility.Available -= OnStructureAvailable; StructureVisibility.Removed -= OnStructureRemoved;
+        foreach (var structure in _structures) if (GodotObject.IsInstanceValid(structure)) structure.Detach();
+        _structures.Clear();
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= Invalidate;
         if (IsInstanceValid(_player)) { _player.PositionChanged -= OnPlayerMoved; _player.StanceChanged -= OnStanceChanged; }
         CameraOccluder.RegistryChanged -= Invalidate;

@@ -2,22 +2,14 @@
 
 [ext_resource type="Script" path="res://WORLD/Content/Structures/Building003/C/Building003Mesh.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Content/Structures/Building003/Configuration/Building003Master.tres" id="2"]
-[ext_resource type="Script" path="res://CAMERA/Occlusion/CameraOccluder.cs" id="3"]
+
+[ext_resource type="Script" path="res://WORLD/Content/Structures/Shared/StructureVisibility.cs" id="visibility"]
 
 [node name="Building003" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
 ShowRoof = true
 
-[node name="RoofOccluder" type="Node3D" parent="."]
-script = ExtResource("3")
-VisualRootPath = NodePath("Generated/RoofAndCanopy/StationRoof")
-
-[node name="CanopyOccluder" type="Node3D" parent="."]
-script = ExtResource("3")
-VisualRootPath = NodePath("Generated/RoofAndCanopy/PumpCanopy")
-
-[node name="WallOccluder" type="Node3D" parent="."]
-script = ExtResource("3")
-VisualRootPath = NodePath("Generated/StationShell")
-FadeIndividualMeshes = true
+[node name="StructureVisibility" type="Node" parent="."]
+script = ExtResource("visibility")
+Settings = ExtResource("2")

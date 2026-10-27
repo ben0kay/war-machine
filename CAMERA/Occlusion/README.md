@@ -1,3 +1,5 @@
+**Current building registration:** see WORLD/Content/Structures/BUILDING_AUTHORING_README.md. Prefab StructureVisibility components declare metadata/settings; CameraOcclusion discovers them once beneath the explicit Structures root and then handles Available/Removed events. No Building001/002/003 switch remains in world visibility code. Components deep-copy their shared-base settings and build disjoint section owners after the parent generator finishes. UnregisterProvider/Detach/Shutdown restore visuals and release subscriptions on unload/regeneration. FPS does not register a structure context. Trees and global camera defaults unchanged. Earlier named-integration notes below are historical. Build/visual validation pending locally.
+
 # Scenery obstruction fading
 
 Camera-owned logic lives here, separate from CAMERA/Camera.cs projection/follow code. WorldController attaches CameraOcclusion beneath the active camera and registers the pine provider. **Only world objects fade: entities/players/zombies/robots are excluded.**

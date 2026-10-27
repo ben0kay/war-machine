@@ -13,7 +13,7 @@ public partial class Building003Mesh : Node3D
     public override void _Ready()
     {
         if (GetNodeOrNull<Node3D>("Generated") != null) return;
-        Build();
+        Build(); DeclareVisibility();
         SetProcess(false); SetPhysicsProcess(false);
     }
 
@@ -240,4 +240,21 @@ public partial class Building003Mesh : Node3D
             StructureGeometry.Box(props, null, "RoadSignRows", new(signX, 5.27f - i * 0.29f, signZ + 0.16f),
                 new(1.75f, 0.09f, 0.06f), wallLight);
     }
+    // =========================================================
+    // Occupied forecourt includes the open canopy so pump contents stay solid while standing underneath it.
+    private void DeclareVisibility()
+    {
+        var s = Settings ?? new Building003Settings();
+        float w = Mathf.Clamp(s.Width, 18, 28), d = Mathf.Clamp(s.Depth, 10, 17);
+        StructureLayout.Occupied(GetNode<Node3D>("Generated"), new Aabb(new Vector3(-w / 2, -0.5f, -d / 2), new Vector3(w, 7, d)));
+        // A metadata-only marker carries the second local occupancy box; it has no process or physics.
+        var forecourt = new Node3D { Name = "ForecourtOccupancy" }; GetNode("Generated").AddChild(forecourt);
+        StructureLayout.Occupied(forecourt, new Aabb(new Vector3(-0.6f - (w + 1.75f) / 2, -0.5f, d / 2 - 0.3f), new Vector3(w + 1.75f, 7, 13.2f)));
+        StructureLayout.Visual(GetNode<Node3D>("Generated/StationShell"), "walls");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/RoofAndCanopy/StationRoof"), "roof");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/RoofAndCanopy/PumpCanopy"), "roof");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/ShopAndServiceInterior"), "contents");
+        StructureLayout.Visual(GetNode<Node3D>("Generated/ExteriorProps"), "contents");
+    }
+
 }

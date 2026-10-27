@@ -2,10 +2,8 @@
 using Godot;
 
 [GlobalClass]
-public partial class Building003Settings : Resource
+public partial class Building003Settings : StructureSettings
 {
-    [ExportGroup("Outside obstruction")]
-    [Export(PropertyHint.Range, "0,1,0.01")] public float OutsideBuildingOpacity { get; set; } = 0.15f;
     [ExportGroup("Station")]
     [Export(PropertyHint.Range, "18,28,0.5")] public float Width { get; set; } = 22f;
     [Export(PropertyHint.Range, "10,17,0.5")] public float Depth { get; set; } = 12f;

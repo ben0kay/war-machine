@@ -1,3 +1,5 @@
+**Current reusable visibility:** this prefab now includes StructureVisibility using its existing master (derived from StructureSettings). The generator declares local occupied volumes, floor elevations and disjoint visual roles. No building-specific visibility case remains in WorldController. Follow [../BUILDING_AUTHORING_README.md](../BUILDING_AUTHORING_README.md) for new structures; older named wiring descriptions below are historical. Metadata does not change mesh/collision geometry. Local build/visual checks pending.
+
 # Building001 — Abandoned rural maintenance depot
 
 **Status: first standalone procedural building prefab implemented.** Designed as a **large, stationary, walk-in visual/physics test** for the fully 3D angled top-down game. It is **not yet placed** in `WORLD/World.tscn`. No building placement, interaction, loot, doors-opening gameplay, destructibility, AI or save mechanics have been added.

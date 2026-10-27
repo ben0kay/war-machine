@@ -3,12 +3,14 @@
 [ext_resource type="Script" path="res://WORLD/Content/Structures/Building001/C/Building001Mesh.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Content/Structures/Building001/Configuration/Building001Master.tres" id="2"]
 
-[ext_resource type="Script" path="res://CAMERA/Occlusion/CameraOccluder.cs" id="3"]
+
+[ext_resource type="Script" path="res://WORLD/Content/Structures/Shared/StructureVisibility.cs" id="visibility"]
 
 [node name="Building001" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
 ShowRoof = true
 
-[node name="CameraOccluder" type="Node3D" parent="."]
-script = ExtResource("3")
+[node name="StructureVisibility" type="Node" parent="."]
+script = ExtResource("visibility")
+Settings = ExtResource("2")
