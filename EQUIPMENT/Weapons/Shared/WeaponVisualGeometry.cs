@@ -73,10 +73,12 @@ public static class WeaponVisualGeometry
     }
 
     // =========================================================
-    // Flat normals give clean mechanical edge breaks with minimal geometry and no normal-map textures.
+    // Flat outward normals with Godot's clockwise front-face winding (not outward CCW).
+    // Preserve the original outside-pointing normal while reversing the emitted vertices:
+    // otherwise the front of each solid gets culled and both weapons appear hollow.
     private static void Face(SurfaceTool surface, Vector3 a, Vector3 b, Vector3 c)
     {
         surface.SetNormal((b - a).Cross(c - a).Normalized());
-        surface.AddVertex(a); surface.AddVertex(b); surface.AddVertex(c);
+        surface.AddVertex(a); surface.AddVertex(c); surface.AddVertex(b);
     }
 }
