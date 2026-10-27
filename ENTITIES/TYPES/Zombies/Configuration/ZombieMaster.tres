@@ -42,3 +42,8 @@ StaggerBrakingAcceleration = 60.0
 RecoveryAcceleration = 12.0
 RecoverySeconds = 0.2
 FlinchDegrees = 10.0
+
+ShoveReactionsEnabled = true
+ShoveResistance = 0.0
+ShoveFlinchThreshold = 0.2
+ShoveMaxStaggerSeconds = 0.45

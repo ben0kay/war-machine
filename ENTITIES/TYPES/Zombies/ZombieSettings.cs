@@ -22,6 +22,11 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float RecoveryAcceleration { get; set; } = 12;
     [Export] public float RecoverySeconds { get; set; } = 0.2f;
     [Export(PropertyHint.Range, "0,20,0.5")] public float FlinchDegrees { get; set; } = 10;
+    [ExportGroup("Shove stagger (CM2-B1)")]
+    [Export] public bool ShoveReactionsEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ShoveResistance { get; set; }
+    [Export(PropertyHint.Range, "0,10,0.05")] public float ShoveFlinchThreshold { get; set; } = 0.2f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ShoveMaxStaggerSeconds { get; set; } = 0.45f;
     [ExportGroup("Movement")]
     [Export] public float WanderSpeed { get; set; } = 0.65f;
     [Export] public float ChaseSpeed { get; set; } = 1.15f;

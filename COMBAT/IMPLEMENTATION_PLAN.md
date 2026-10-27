@@ -1,6 +1,6 @@
 # CM — Melee, shove and hit-reaction implementation plan
 
-> **Current status: CM0/CM1 implemented; CM2-A shared melee detection/profile implemented in source, awaiting local validation; CM2-B/C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
+> **Current status: CM0/CM1, CM2-A and CM2-B1 implemented in source, awaiting local validation; CM2-B2/C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
 
 ## Phase overview
 
@@ -149,7 +149,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 ## CM2 — Reusable quick-melee shove (revised scope)
 
-> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B zombie knockback, CM2-C player inputs/contact dispatch and CM2-D poses remain planned.** No actual shove is available in-game yet. See `COMBAT/Melee/README.md`.
+> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B1 brief zombie movement halt is implemented; CM2-B2 physical knockback, CM2-C both-view player inputs/contact dispatch and CM2-D poses remain planned.** No actual shove is available in-game yet. See `COMBAT/Melee/README.md`.
 
 
 
@@ -168,6 +168,15 @@ These are **design-test starting points**, not implemented stats or decisions ab
 **Performance/lifecycle:** Work begins only on attack input; fixed upper bounds for candidates, contact ticks and one hit. Finish/cancel on cooldown completion, focus loss, equip swap, death or unload. No active melee node/polling between attacks.
 
 **Pass / handoff:** With firearm equipped, V shoves one nearby zombie without ammo/HP change; misses, cover and out-of-range are safe. Left-click still shoots. A melee item can eventually invoke exactly the same Quick Melee action, while its left-click primary has a distinct profile. Knockback collides naturally, recovers chase, doesn't stun-lock and doesn't affect dead actors. Build + quick **top-down and FPS melee acceptance** locally: standing target, near-centre strike, deliberately high/low FPS aim miss, overhead attack with correct horizontal facing but modest height difference, intervening wall, different elevation/floor, input focus/weapon swap. **Regular Chat** for isolated setup/pose, **Regular Chat** may implement end-to-end in small source-reviewed edits with brief validation; use **Codex / Work** only if complex collision, movement integration or runtime debugging exceeds that scope, **Copilot** for local validation.
+
+### CM2-B split into independent passes (2026-10-27)
+
+| Phase | Scope | Files | Status |
+| --- | --- | --- | --- |
+| **CM2-B1** | Receive `Shove` on both zombie types, halt only horizontal velocity for existing stagger duration, recover without new animation; preserve CM1 bullet reactions | `ZombieController.cs`, `ZombieSettings.cs`, two zombie masters, combat docs | **Implemented — awaiting local validation** |
+| **CM2-B2** | Give accepted shove controlled backwards velocity/braking using existing `MoveAndSlide()`; remain facing attacker, collide with walls/terrain and resume pursuit | Primarily `ZombieController.cs`, optional profile/master tuning, docs | **Planned; separate authorization** |
+
+CM2-B1 has no new pose or attack input and can be tested through a temporary `Shove` impact dispatch. CM2-C (V input + shared melee hit dispatch for top-down and FPS) is still required for an actual player shove. Shove-specific visual animations can be added later without changing the hit receiver contract; no physical knockback is in B1.
 
 ## CM3 — Baseball bat sweep (multi-target)
 

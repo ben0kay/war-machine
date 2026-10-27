@@ -1,6 +1,6 @@
 # COMBAT — cross-actor impacts and reactions
 
-**CM0/CM1 implemented; CM2-A melee detection/profile implemented in source, awaiting local validation. CM2-B/C/D and full CM2–CM5 remain planned.** No live player shove, zombie physical knockback, bat, knife, zombie attack or player health yet.
+**CM0/CM1, CM2-A and CM2-B1 implemented in source, awaiting local validation. CM2-B2/C/D and full CM2–CM5 remain planned.** No player shove input, zombie physical knockback, bat, knife, zombie attack or player health yet.
 
 ## One contact, separate damage and impact
 
@@ -8,7 +8,7 @@ Shared/CombatImpact.cs supplies a readonly payload and optional IImpactReceiver.
 
 Shared/HitTargetResolver.Dispatch(collider, source, nullableDamage, nullableImpact) walks at most 32 parents, resolves the first supported actor once, excludes self and applies positive damage **before** optional impact. Scenery still blocks the original hitscan; the dispatcher never adds a ray or searches behind cover. A freed/queued actor receives no subsequent impact. Receivers also guard their own dead/inactive state.
 
-For an impact-only contact, pass null damage (or nonpositive damage) plus CombatImpact. No HP event/fake damage is needed. A damage-only contact can omit impact; legacy receivers without IImpactReceiver keep receiving damage. Bullet direction uses source-to-contact projected onto XZ, with a finite forward fallback for coincident/vertical hits. Strength/duration are finite/clamped. Shove/Melee/Blast remain payload values only. Zombies still respond to Bullet, pending CM2-B.
+For an impact-only contact, pass null damage (or nonpositive damage) plus CombatImpact. No HP event/fake damage is needed. A damage-only contact can omit impact; legacy receivers without IImpactReceiver keep receiving damage. Bullet direction uses source-to-contact projected onto XZ, with a finite forward fallback for coincident/vertical hits. Strength/duration are finite/clamped. Zombies now respond to Bullet and Shove. Shove briefly stops horizontal movement (CM2-B1); Melee/Blast remain reserved and physical knockback awaits CM2-B2.
 
 ## CM1 zombie response
 
@@ -37,6 +37,16 @@ No combat singleton, actor registry, scene scans, added hit rays, status framewo
 
 ## CM2-A — melee detection foundation (2026-10-27)
 
-**Implemented in source; awaiting local build/runtime validation.** `Melee/MeleeSettings.cs`, `Melee/MeleeAttack.cs`, `Melee/README.md` and `Configuration/QuickShoveMaster.tres` provide one-target active-window detection, configurable range/arc/height/timing, obstacle checks and both overhead-horizontal/FPS-pitch aim modes, without requiring input or animation. `MeleeAttack` is instantiated by the future caller and only queried while an attack is active. It returns eligible contact data; CM2-C will dispatch it through the existing CM0 resolver. CM2-B victim knockback remains unimplemented.
+**Implemented in source; awaiting local build/runtime validation.** `Melee/MeleeSettings.cs`, `Melee/MeleeAttack.cs`, `Melee/README.md` and `Configuration/QuickShoveMaster.tres` provide one-target active-window detection, configurable range/arc/height/timing, obstacle checks and both overhead-horizontal/FPS-pitch aim modes, without requiring input or animation. `MeleeAttack` is instantiated by the future caller and only queried while an attack is active. It returns eligible contact data; CM2-C will dispatch it through the existing CM0 resolver. CM2-B1 recipient stagger is implemented, while CM2-B2 physical knockback remains unimplemented.
 
 The premature CM2-B code/settings from the previous commit were reverted following the phase-letter correction; both zombie types retain CM1 bullet behaviour. No Godot/.NET build or runtime validation was performed; see `Melee/README.md` for test handoff.
+
+## CM2-B1 — simple zombie shove pause (2026-10-27)
+
+**Implemented in source, awaiting local validation.** Zombies now accept `CombatImpactKind.Shove` through their existing `IImpactReceiver`. A valid zero-damage shove stops XZ velocity immediately and keeps horizontal speed zero throughout the current `HitReaction` window. Gravity, `MoveAndSlide()`, normal vision/goal decisions and floor collisions continue; existing recovery acceleration resumes chasing or wandering afterward. Both normal zombies and runners share this behaviour through `ZombieController`.
+
+Both zombie masters expose `ShoveReactionsEnabled=true`, `ShoveResistance` (0 normal, 0.1 runner), `ShoveFlinchThreshold=0.2`, and `ShoveMaxStaggerSeconds=0.45`. A QuickShoveMaster strength of 1/duration 0.4s yields a 0.4s pause for the normal zombie and 0.36s for runner, provided the reaction gate accepts it. Existing CM1 anti-stun-lock interval/recovery and impact immunity apply to both kinds. Bullet damage, slow and visual flinch are unchanged.
+
+**No new animation:** shove uses the existing standing/chase pose; existing CM1 bullet flinch is skipped for shoves. There is no backward velocity, displacement effect or additional animation system until CM2-B2/D. Deactivation, death and spawn reset clear the shove state. No new physics loop, timer, allocation, ray or per-entity idle processing is added.
+
+**Not player-testable yet:** CM2-A detects contacts but player inputs/impact dispatch are not wired until CM2-C. For local checks, temporarily dispatch a no-damage `CombatImpactKind.Shove` via `HitTargetResolver.Dispatch` to a live zombie (use strength=1, duration=0.4s), then remove the debug caller. Verify it stops, falls normally on slopes, recovers/chases, takes no HP damage, respects resistance/disabled settings, rejects repeated quick impacts and does not change bullet staggering. Run `dotnet build war-machine.csproj` and quick top-down/FPS scene checks. **No local Godot/.NET build or visual test performed.**
