@@ -9,6 +9,8 @@ public partial class TerrainGrass : Node3D
     private Node3D _terrain = null!;
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
+    private Node3D _anchor = null!;
+    private float _viewRadius, _focusDistance;
     private Camera3D _camera = null!;
     private ShaderMaterial _placement = null!, _ribbon = null!;
     private readonly List<GpuParticles3D> _tiles = new();
@@ -26,9 +28,17 @@ public partial class TerrainGrass : Node3D
     // Attach only after the world has selected saved terrain and placed its explorer.
     public void Initialize(Node3D terrain, ExplorationController explorer)
     {
+        _explorer = explorer;
+        _explorer.ViewPositionChanged += UpdateAnchor;
+        InitializeView(terrain, explorer.GetNode<Camera3D>("Camera3D"), explorer.GetNode<Camera3D>("Camera3D"));
+    }
+
+    // =========================================================
+    // Explicit anchor/camera references support the active world without an FPS controller dependency.
+    public void InitializeView(Node3D terrain, Node3D anchor, Camera3D camera)
+    {
         _terrain = terrain; _data = terrain.Get("data").AsGodotObject();
-        _explorer = explorer; _camera = explorer.GetNode<Camera3D>("Camera3D");
-        _explorer.ViewPositionChanged += OnCameraMoved;
+        _anchor = anchor; _camera = camera;
         foreach (string signal in _terrainSignals) _data.Connect(signal, Callable.From(QueueTerrainRefresh));
         _initialized = true;
         SetProcess(false); SetPhysicsProcess(false);
@@ -44,7 +54,7 @@ public partial class TerrainGrass : Node3D
         _center = new Vector2I(int.MinValue, int.MinValue);
         if (!_initialized || !Settings.Enabled || Settings.Density <= 0) return;
         _tileWidth = Mathf.Clamp(Settings.TileWidth, 16, 64);
-        _radius = Mathf.Clamp(Settings.RenderDistance, 8, 128);
+        _radius = Mathf.Clamp(Mathf.Max(Settings.RenderDistance, _viewRadius), 8, 128);
         _half = Mathf.CeilToInt(_radius / _tileWidth); _width = _half * 2 + 1;
         float qualityDensity = Settings.Quality switch { VegetationConfig.GrassQuality.Low => 0.25f, VegetationConfig.GrassQuality.Medium => 0.6f, _ => 1f };
         float spacing = 0.25f / Mathf.Sqrt(Mathf.Clamp(Settings.Density, 0.01f, 2f) * qualityDensity);
@@ -65,6 +75,7 @@ public partial class TerrainGrass : Node3D
         _placement.SetShaderParameter("min_scale", new Vector3(bladeWidth, 0.5f * height, bladeWidth));
         _placement.SetShaderParameter("max_scale", new Vector3(bladeWidth, height, bladeWidth));
         _placement.SetShaderParameter("clod_scale_boost", Mathf.Clamp(Settings.ClumpHeightBoost, 0, 4) * height);
+        _placement.SetShaderParameter("filter_painted_rock", Settings.FilterPaintedRock);
         _placement.SetShaderParameter("surface_slope_min", Mathf.Clamp(Settings.MinimumNormalY, 0, 1));
         _placement.SetShaderParameter("main_noise_scale", Mathf.Max(0.0001f, Settings.PatchNoiseScale));
         float patchMin = Mathf.Clamp(Settings.PatchThresholds.X, 0, 0.999f);
@@ -74,10 +85,12 @@ public partial class TerrainGrass : Node3D
         _placement.SetShaderParameter("clod_min_threshold", clumpMin);
         _placement.SetShaderParameter("clod_max_threshold", Mathf.Clamp(Settings.ClumpThresholds.Y, clumpMin + 0.001f, 1));
         _ribbon.SetShaderParameter("render_distance", _radius);
+        _ribbon.SetShaderParameter("focus_distance", _focusDistance);
         _ribbon.SetShaderParameter("fade_start_fraction", Mathf.Clamp(Settings.FadeStartFraction, 0.1f, 0.95f));
         _ribbon.SetShaderParameter("blade_color", new Vector3(Settings.BladeColor.R, Settings.BladeColor.G, Settings.BladeColor.B));
         BindTerrain();
-        var mesh = new RibbonTrailMesh { Shape = RibbonTrailMesh.ShapeEnum.Flat, SectionLength = 0.18f, SectionSegments = 1 };
+        int sections = Mathf.Clamp(Settings.BladeSections, 1, 5);
+        var mesh = new RibbonTrailMesh { Shape = RibbonTrailMesh.ShapeEnum.Flat, Sections = sections, SectionLength = 0.9f / sections, SectionSegments = 1 };
         int fps = Mathf.Clamp(Settings.SimulationFps, 10, 60);
         if (Settings.Quality == VegetationConfig.GrassQuality.Low) fps = Mathf.Min(fps, 20);
         for (int x = -_half; x <= _half; x++)
@@ -92,7 +105,22 @@ public partial class TerrainGrass : Node3D
                 AddChild(tile); _tiles.Add(tile); _coordinates.Add(new Vector2I(x, z));
             }
         AllocatedParticles = rows * rows * _tiles.Count;
-        ApplyAppearance(); UpdateBounds(); OnCameraMoved(_camera.GlobalPosition);
+        ApplyAppearance(); UpdateBounds(); UpdateAnchor(_anchor.GlobalPosition);
+    }
+
+    // =========================================================
+    // Rebudget only at 16m coverage steps on explicit projection/zoom/resize changes, never during follow frames.
+    public void UpdateView(float viewHeight, float focusDistance)
+    {
+        _focusDistance = focusDistance;
+        float aspect = _camera.GetViewport().GetVisibleRect().Size.Aspect();
+        float depth = 1f / Mathf.Max(0.3f, Mathf.Abs(_camera.GlobalBasis.Z.Y));
+        float needed = viewHeight * 0.6f * Mathf.Sqrt(aspect * aspect + depth * depth) + 8;
+        float radius = Mathf.Clamp(Mathf.Ceil(needed / 16) * 16, 16, 128);
+        bool rebuild = !Mathf.IsEqualApprox(Mathf.Max(Settings.RenderDistance, radius), Mathf.Max(Settings.RenderDistance, _viewRadius));
+        _viewRadius = radius;
+        if (rebuild) ApplySettings();
+        else if (_tiles.Count > 0) _ribbon.SetShaderParameter("focus_distance", _focusDistance);
     }
 
     // =========================================================
@@ -100,6 +128,9 @@ public partial class TerrainGrass : Node3D
     public void ApplyAppearance()
     {
         if (_tiles.Count == 0) return;
+        Vector2 wind = EnvironmentSettings.WindDirection.Normalized();
+        if (wind.LengthSquared() < 0.0001f) wind = Vector2.Right;
+        _placement.SetShaderParameter("wind_direction", wind); _ribbon.SetShaderParameter("wind_direction", wind);
         _placement.SetShaderParameter("wind_strength", Mathf.Clamp(EnvironmentSettings.GrassWindStrength * Settings.WindMultiplier, 0, 2));
         _placement.SetShaderParameter("wind_speed", EnvironmentSettings.GrassWindSpeed);
         float height = Mathf.Clamp(Settings.Height, 0.1f, 3);
@@ -116,7 +147,7 @@ public partial class TerrainGrass : Node3D
 
     // =========================================================
     // Player transform events do nothing inside one tile. Only entering rows/columns restart on crossing.
-    private void OnCameraMoved(Vector3 position)
+    public void UpdateAnchor(Vector3 position)
     {
         if (_tiles.Count == 0) return;
         var center = new Vector2I(Mathf.FloorToInt(position.X / _tileWidth), Mathf.FloorToInt(position.Z / _tileWidth));
@@ -188,7 +219,7 @@ public partial class TerrainGrass : Node3D
     public override void _ExitTree()
     {
         if (!_initialized) return;
-        if (IsInstanceValid(_explorer)) _explorer.ViewPositionChanged -= OnCameraMoved;
+        if (IsInstanceValid(_explorer)) _explorer.ViewPositionChanged -= UpdateAnchor;
         if (IsInstanceValid(_data))
             foreach (string signal in _terrainSignals) _data.Disconnect(signal, Callable.From(QueueTerrainRefresh));
     }

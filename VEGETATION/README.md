@@ -1,3 +1,29 @@
+# VEGETATION — active-world grass
+
+The existing TerrainGrass renderer is now integrated into **WORLD/World.tscn**. Shared VegetationMaster defaults are tuned for the overhead view; no separate FPS grass variant is preserved. Legacy compatibility remains available through the existing explorer initialization method.
+
+## Current defaults
+
+Medium quality, density **0.65**, hard budget **120,000 slots**, **20 FPS** particle simulation, **2 ribbon sections** (previously the mesh default of 5), shadows off. Height **0.45**, clump boost **0.8**, blade width **0.16**, wind multiplier **0.4**, minimum radius **64m**, **32m tiles**. Colour and terrain/noise-shaped patches retain the previous style. At default 48m view size/55° pitch on a 16:9 viewport, coverage rounds to 80m and allocates 117,649 slots versus the old 451,584; these are calculated allocations, not measured FPS gains. Blade geometry has fewer subdivisions and the ribbon shader drops the fine jitter/nonlinear bend work while retaining broad GPU wind sway.
+
+World supplies explicit terrain, player anchor and active camera references. Player tile crossings recycle entering rows/columns; there is no C# per-frame grass callback. Projection/zoom/viewport changes estimate coverage in 16m steps, capped at **128m**, and rebuild only when that effective radius changes. Allocation never exceeds the configured budget. At extreme zoom/low angles, the finite grass boundary can enter view. Off/zero density frees emitters and stops their simulation.
+
+Grass fades in horizontal ground distance around the camera's focus point rather than its elevated position, so orthographic height/perspective distance do not hide all nearby grass. Focus distance is an input-driven uniform; shader camera matrices handle follow motion. Terrain bindings and world-height AABBs still update only after terrain changes, and all subscriptions disconnect on unload.
+
+**FilterPaintedRock=false** is intentional: the simple gameplay bake has default control maps (texture index 0), so the former unconditional rock-index filter would hide the entire field. Slope, holes and absent-region rejection remain. Enable FilterPaintedRock in the master if a later painted landscape needs that convention.
+
+## In-game tuning
+
+DEBUG/WorldTuning now includes grass enabled, density, height and wind multiplier. **Density and height apply when releasing the slider** to avoid rebuilding/restarting a particle pool on every drag event; mouse-wheel edits on these two controls are disabled. Shared wind strength/heading affect grass and weather together. Copy settings includes the current grass values. Runtime edits use a master copy and reset on scene restart. No terrain rebake needed.
+
+## Validation status
+
+Source/settings/shader-uniform and initialization/lifecycle review, resource paths and git whitespace checks only. **Godot/.NET unavailable here; shader compilation, rendering and performance are unverified.** Locally build and F6 WORLD/World.tscn; confirm terrain-following green patches, short readable blades, wind, walking/tile crossings, orthographic/perspective zoom, OFF/zero/reactivation, and copied grass values. Appearance/FPS acceptance stays with the owner.
+
+---
+
+The following notes describe the previous first-person tuning and are retained for reference; current defaults and run instructions above supersede them.
+
 # VEGETATION — GPU ribbon grass
 
 `Grass/TerrainGrass.cs` adapts Terrain3D's included MIT particle grass into the actual `WORLD/testworld.tscn`. It uses the same ribbon mesh, noise-shaped clumps/patches, randomized spacing/orientation/height, terrain colour map, slope filtering, tip pinching and wind bending. World-owned shader copies leave the addon/demo untouched.

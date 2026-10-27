@@ -5,6 +5,7 @@ shader_type spatial;
 render_mode skip_vertex_transform, cull_disabled, blend_mix;
 
 uniform vec2 wind_direction = vec2(1.0, 1.0);
+uniform float focus_distance = 0.0;
 uniform float render_distance = 60.0;
 uniform float fade_start_fraction = 0.66;
 uniform vec3 blade_color = vec3(0.20, 0.22, 0.05);
@@ -16,10 +17,11 @@ void vertex() {
     // Demo-style grow/shrink fade, evaluated against the actual camera every frame.
     // No CPU camera uniform updates or emitter restarts are needed for smooth fading.
     vec3 center = MODEL_MATRIX[3].xyz;
-    float distance_to_camera = length(CAMERA_POSITION_WORLD - center);
+    vec3 ground_focus = CAMERA_POSITION_WORLD - INV_VIEW_MATRIX[2].xyz * focus_distance;
+    float distance_to_camera = length(ground_focus.xz - center.xz);
     float fade = 1.0 - smoothstep(render_distance * fade_start_fraction, render_distance, distance_to_camera);
     VERTEX.y = (VERTEX.y + 0.45) * fade - 0.45;
-    VERTEX.xz *= fade * (1.0 + 3.0 * smoothstep(0.0, render_distance, distance_to_camera));
+    VERTEX.xz *= fade * (1.0 + 0.5 * smoothstep(0.0, render_distance, distance_to_camera));
 	// Wind effect from model data, in this case no vertex colors,
 	// so just use vertex Y component, including mesh offset
 	data[2] = clamp(VERTEX.y + 0.55, 0.0, 1.0);
@@ -38,16 +40,9 @@ void vertex() {
 	// World space vertex
 	vec3 w_vertex = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	// Get wind force and scale from process()
-	float scale = pow(INSTANCE_CUSTOM[3] * INSTANCE_CUSTOM[3], 0.707);
-	float force = max(INSTANCE_CUSTOM[2] * data[2] * scale, 0.0);
-	// Add some cheap jitter at high wind values
-	force -= fract(force * 256.0) * force * 0.05;
-	// Curve the result
-	force = pow(force, 0.707);
-
-	// These 2 combined result in a decent bend without resorting to matrices or pivot data.
-	// Lateral move and wobble
-	float lateral_wobble = sin(TIME * 2.0 * (1.0 + data.r + data.g)) * 0.25 * (1.0 - INSTANCE_CUSTOM[2]);
+    float scale = max(INSTANCE_CUSTOM[3], 0.0);
+    float force = max(INSTANCE_CUSTOM[2], 0.0) * data[2] * scale;
+    float lateral_wobble = 0.0; // Broad placement-noise sway is enough at the overhead view distance.
 	vec2 direction = normalize(wind_direction);
 	w_vertex.xz -= (vec2(-direction.y, direction.x) * lateral_wobble + direction) * force;
 	// Flatten

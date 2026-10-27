@@ -36,6 +36,7 @@ uniform float patch_max_threshold : hint_range(0.0, 1.0, 0.001) = 0.2;
 
 group_uniforms filtering;
 uniform float condition_dither_range : hint_range(0.0, 1.0, 0.01) = 0.15;
+uniform bool filter_painted_rock = false;
 uniform float surface_slope_min : hint_range(0.0, 1.0, 0.01) = 0.87;
 
 group_uniforms private;
@@ -247,7 +248,7 @@ void start() {
 	float blend = float(control >> 14u & 0xFFu) * 0.003921568627450; // 1. / 255.
 
 	// Hardcoded example, hand painted texture id 0 is filtered out.
-	if (!auto && ((base == 0 && blend < 0.7) || (over == 0 && blend >= 0.3))) {
+	if (filter_painted_rock && !auto && ((base == 0 && blend < 0.7) || (over == 0 && blend >= 0.3))) {
 		ACTIVE = false;
 	}
 
