@@ -9,3 +9,9 @@ CameraSize = 48.0
 MinimumZoom = 20.0
 MaximumZoom = 80.0
 FollowSmoothing = 8.0
+
+ObstructionFadeEnabled = true
+ObstructedOpacity = 0.5
+ObstructionRadius = 0.45
+ObstructionChecksPerSecond = 8.0
+ObstructionFadeSeconds = 0.2

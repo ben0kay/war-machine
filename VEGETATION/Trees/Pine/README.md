@@ -15,3 +15,7 @@ Visual trees only: **no trunk collision, damage/chopping, canopy fade or navigat
 ## PT0 — Overhead reuse
 
 Implemented, **Awaiting Local Validation**. Scope authorized: reuse pines in the active world under VEGETATION/Trees/Pine with lighter shared settings and live tuning. Source/settings/path/scene/UID and whitespace checks only; Godot/.NET unavailable here. Local checks: build, F6 WORLD/World.tscn, inspect solid trunks/green crowns and height variation, walk across chunks, try both camera projections/zoom, adjust density/size/wind, OFF/zero/reactivation, paste Copy settings, unload without errors and assess appearance/FPS. No subsequent vegetation/gameplay phase is authorized.
+
+## Camera obstruction fading
+
+CameraOcclusion now queries cached canopy/chunk bounds and fades only the blocking tree through MultiMesh custom data in both LODs. Bark stays solid; foliage uses opaque ordered stipple coverage at 50% by default. Geometry rebuilds/evictions invalidate the camera. No per-tree physics collider or process node is added. See CAMERA/Occlusion/README.md; local shader/visual checks pending.

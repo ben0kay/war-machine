@@ -39,3 +39,7 @@
 - No terrain modifications or main-world/parked-first-person changes.
 - The C# procedural model is generated on scene load. This is **not a baked `.glb` model**; if a permanent exported mesh is required later, add a separate editor baking/export workflow.
 - **Visual/compile/runtime checks are still needed in Godot**; repo-only source/path inspections do not establish rendering/physics success. Check roof silhouette, the actual open door, wall collision and entry from the loading apron.
+
+## Camera obstruction fading
+
+Building001.tscn now includes CAMERA/Occlusion/CameraOccluder.cs. Once placed, its meshes opt into the active camera's scenery-only fade query. The component defers bounds collection until the procedural mesh is built. Solid collision remains unchanged. This does not place the prefab or implement indoor roof hiding; see CAMERA/Occlusion/README.md.

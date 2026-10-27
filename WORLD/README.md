@@ -22,3 +22,7 @@ The existing VEGETATION/Grass/TerrainGrass renderer is now initialized around th
 ## Pine integration
 
 Pine trees now use VEGETATION/Trees/Pine: lighter shared meshes/settings, event-driven player-centred batches and tuning controls. No rebake required; see the pine README for limits and pending local checks.
+
+## Camera obstruction fading
+
+WorldController initializes CAMERA/Occlusion/CameraOcclusion after the player/camera/pines are ready. Scenery-only fading is enabled at 50%; pine canopies support individual fades and Building001 is opted in for future placement. Entities remain opaque. No terrain rebake required.

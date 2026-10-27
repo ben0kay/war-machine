@@ -2,8 +2,9 @@
 using Godot;
 using System.Collections.Generic;
 
-public partial class PinePlacement : Node3D
+public partial class PinePlacement : Node3D, ICameraOcclusionProvider
 {
+    public event System.Action? OcclusionChanged;
     [Export] public PineSettings Settings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
 
@@ -20,6 +21,9 @@ public partial class PinePlacement : Node3D
     {
         public readonly List<MultiMeshInstance3D> Nodes = new();
         public int TreeCount;
+        public readonly List<PineFadeTarget> Occluders = new();
+        public Aabb Bounds;
+        public bool HasBounds;
     }
     private readonly Dictionary<Vector2I, TreeChunk> _active = new();
     private Vector2I _center = new(int.MinValue, int.MinValue);
@@ -53,7 +57,11 @@ public partial class PinePlacement : Node3D
     public void ApplySettings()
     {
         foreach (var chunk in _active.Values)
+        {
+            foreach (var target in chunk.Occluders) target.Alive = false;
             foreach (var instance in chunk.Nodes) { RemoveChild(instance); instance.QueueFree(); }
+        }
+        OcclusionChanged?.Invoke();
         _active.Clear(); _center = new Vector2I(int.MinValue, int.MinValue); ActiveTrees = 0;
         _meshes = _farMeshes = System.Array.Empty<Mesh>(); _foliage = null;
         if (!_initialized || Settings == null || !Settings.Enabled || Settings.Density <= 0) return;
@@ -74,6 +82,7 @@ public partial class PinePlacement : Node3D
             Vector2 wind = EnvironmentSettings.WindDirection;
             wind = wind.LengthSquared() > 0.0001f ? wind.Normalized() : Vector2.Right;
             foliage.SetShaderParameter("wind_direction", wind);
+            foliage.SetShaderParameter("use_camera_occlusion", true);
             foliage.SetShaderParameter("wind_strength", Mathf.Max(0f, Settings.LeafWindStrength)
                 * Mathf.Clamp(EnvironmentSettings.GrassWindStrength, 0f, 2f));
             foliage.SetShaderParameter("wind_speed", Mathf.Max(0f, Settings.LeafWindSpeed));
@@ -150,6 +159,7 @@ public partial class PinePlacement : Node3D
                 > distance + _chunkSize * 2.5f) remove.Add(key);
         foreach (var key in remove)
         {
+            foreach (var target in _active[key].Occluders) target.Alive = false;
             foreach (var instance in _active[key].Nodes)
             {
                 RemoveChild(instance); instance.QueueFree();
@@ -159,6 +169,7 @@ public partial class PinePlacement : Node3D
         }
         foreach (var key in wanted)
             if (!_active.ContainsKey(key)) CreateChunk(key);
+        OcclusionChanged?.Invoke();
     }
 
     // =========================================================
@@ -206,10 +217,29 @@ public partial class PinePlacement : Node3D
             float averageHeight = 0;
             foreach (var transform in bins[i]) averageHeight += transform.Origin.Y;
             var anchor = new Vector3((key.X + 0.5f) * _chunkSize, averageHeight / bins[i].Count, (key.Y + 0.5f) * _chunkSize);
-            chunk.Nodes.Add(CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor, 0, hasLod ? lod : distance, margin, Settings.CastShadows));
+            var near = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor, 0, hasLod ? lod : distance, margin, Settings.CastShadows);
+            chunk.Nodes.Add(near);
+            MultiMeshInstance3D? far = null;
             if (hasLod)
-                chunk.Nodes.Add(CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Far", _farMeshes[i], bins[i], anchor, lod, distance, margin,
-                    Settings.CastShadows && Settings.FarCastShadows));
+            {
+                far = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Far", _farMeshes[i], bins[i], anchor, lod, distance, margin,
+                    Settings.CastShadows && Settings.FarCastShadows);
+                chunk.Nodes.Add(far);
+            }
+            // Procedural foliage implements the fade shader; arbitrary imported shaders need their own adapter.
+            if (_foliage != null)
+            {
+                Aabb localCanopy = _meshes[i].GetAabb();
+                if (hasLod) localCanopy = localCanopy.Merge(_farMeshes[i].GetAabb());
+                localCanopy.Position += Vector3.Up * localCanopy.Size.Y * 0.18f;
+                localCanopy.Size = new Vector3(localCanopy.Size.X, localCanopy.Size.Y * 0.82f, localCanopy.Size.Z);
+                for (int j = 0; j < bins[i].Count; j++)
+                {
+                    Aabb bounds = CameraOcclusionMath.TransformBounds(localCanopy, GlobalTransform * bins[i][j]);
+                    chunk.Occluders.Add(new PineFadeTarget(near.Multimesh, far?.Multimesh, j, bounds));
+                    chunk.Bounds = chunk.HasBounds ? chunk.Bounds.Merge(bounds) : bounds; chunk.HasBounds = true;
+                }
+            }
             chunk.TreeCount += bins[i].Count;
         }
         ActiveTrees += chunk.TreeCount;
@@ -220,12 +250,13 @@ public partial class PinePlacement : Node3D
     // Native Forward+ range fades/LOD and culling need no C# frame callbacks; roots/transforms are shared by both levels.
     private MultiMeshInstance3D CreateBatch(string name, Mesh mesh, List<Transform3D> transforms, Vector3 anchor, float begin, float end, float margin, bool shadows)
     {
-        var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh };
+        var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = true, Mesh = mesh };
         multi.InstanceCount = transforms.Count;
         for (int j = 0; j < transforms.Count; j++)
         {
             var transform = transforms[j]; transform.Origin -= anchor;
             multi.SetInstanceTransform(j, transform);
+            multi.SetInstanceCustomData(j, new Color(1, 0, 0, 0));
         }
         var node = new MultiMeshInstance3D
         {
@@ -237,6 +268,40 @@ public partial class PinePlacement : Node3D
         };
         AddChild(node);
         return node;
+    }
+
+    // =========================================================
+    // Reject entire chunks first, then test individual cached canopy bounds. No per-tree physics bodies or scene searches.
+    public void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results)
+    {
+        foreach (var chunk in _active.Values)
+        {
+            if (!chunk.HasBounds || !CameraOcclusionMath.Intersects(from, to, chunk.Bounds, radius)) continue;
+            foreach (var target in chunk.Occluders)
+                if (target.IsValid && CameraOcclusionMath.Intersects(from, to, target.Bounds, radius)) results.Add(target);
+        }
+    }
+
+    private sealed class PineFadeTarget : ICameraFadeTarget
+    {
+        private readonly MultiMesh _near;
+        private readonly MultiMesh? _far;
+        private readonly int _index;
+        public readonly Aabb Bounds;
+        public bool Alive = true;
+        public bool IsValid => Alive && GodotObject.IsInstanceValid(_near);
+        public PineFadeTarget(MultiMesh near, MultiMesh? far, int index, Aabb bounds)
+        { _near = near; _far = far; _index = index; Bounds = bounds; }
+
+        // =========================================================
+        // Update one tree in both LOD batches; bark uses an opaque material and ignores this channel.
+        public void SetCameraOpacity(float opacity)
+        {
+            if (!IsValid) return;
+            var value = new Color(opacity, 0, 0, 0);
+            _near.SetInstanceCustomData(_index, value);
+            if (GodotObject.IsInstanceValid(_far)) _far!.SetInstanceCustomData(_index, value);
+        }
     }
 
     // =========================================================
@@ -286,6 +351,8 @@ public partial class PinePlacement : Node3D
     {
         if (_initialized) DisconnectSignals();
         _initialized = false;
+        foreach (var chunk in _active.Values) foreach (var target in chunk.Occluders) target.Alive = false;
+        OcclusionChanged?.Invoke();
         _forest?.Dispose(); _forest = null!;
     }
 }

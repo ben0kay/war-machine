@@ -4,6 +4,12 @@ using Godot;
 [GlobalClass]
 public partial class CameraSettings : Resource
 {
+    [ExportGroup("Scenery obstruction")]
+    [Export] public bool ObstructionFadeEnabled { get; set; } = true;
+    [Export] public float ObstructedOpacity { get; set; } = 0.5f;
+    [Export] public float ObstructionRadius { get; set; } = 0.45f;
+    [Export] public float ObstructionChecksPerSecond { get; set; } = 8;
+    [Export] public float ObstructionFadeSeconds { get; set; } = 0.2f;
     [ExportGroup("Projection")]
     [Export] public bool UsePerspective { get; set; }
     [Export] public float PerspectiveFov { get; set; } = 65;

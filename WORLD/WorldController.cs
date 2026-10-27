@@ -72,6 +72,8 @@ public partial class WorldController : Node3D
             EnvironmentSettings = EnvironmentSettings };
         AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
+        var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
+        occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
         _weather = new WeatherBridge { Name = "Weather" }; AddChild(_weather);
         _weather.InitializeView(camera, player, EnvironmentSettings);
         camera.SettingsChanged += UpdateWeatherCoverage;
