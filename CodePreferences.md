@@ -61,6 +61,14 @@ Maintain clear phase states: Planned, In Progress, Implemented, Awaiting Validat
 
 Preferred workflow: Regular Chat investigates and drafts → user reviews/improves → user chooses phase and assistant → authorized implementation → validation → documentation update → next phase only on request.
 
-## Folder convention clarified by owner
+## Procedural C# models and future artwork folder convention (owner preference)
 
-`C/` is reserved for procedural mesh construction in C# when a model has been requested in code. It is not a general scripts folder. Ordinary controllers/settings/helpers live in their owning feature folder. `Artwork/` is for eventual imported models replacing procedural geometry. Active camera script lives directly at `CAMERA/Camera.cs`.
+When an object, character, building, vehicle, tree or other asset is being **modelled/generated with C# instead of an imported 3D model**, follow the existing paired-folder pattern:
+
+- **`C/` = C# procedural model/mesh generation.** Put the C# that *constructs the asset's visible geometry* here: mesh builders, primitive assembly, custom vertices/shapes, procedural variations and closely related geometry-generation helpers. It may also build generated art-specific materials or supporting generated geometry as needed. Examples already in the repo include `PLAYER/C/PlayerMeshBuilder.cs`, `ENTITIES/TYPES/Zombies/C/ZombieMeshBuilder.cs`, `WORLD/Content/Structures/Building001/C/Building001Mesh.cs`, and `WORLD/Content/Objects/Cars/Car001/C/Car001Mesh.cs`.
+- **`Artwork/` = future imported model/artwork files.** Reserve this sibling folder for authored/imported assets such as `.glb`, `.gltf`, models, textures and associated art materials. It is fine for `Artwork/` to contain only a README until actual art exists. This folder is where I may later put a better model to replace the C#-generated visual geometry.
+- **Keep the gameplay asset's scene and behavior reusable.** The `.tscn` should remain the stable prefab. Make the procedural visual implementation replaceable by an imported model later without redesigning movement, AI, interactions, animation sockets, collision or other gameplay systems. Preserve the relevant pivots/sockets and adjust visual setup/collision only when the replacement demands it.
+- **`C/` is not a catch-all for every C# script.** General controllers, gameplay, movement, health, AI, equipment behavior and common settings stay in their owning feature or `Configuration/` folder. Geometry-generation-specific helpers may live with the generator in `C/`. Follow any existing feature README and do not reorganize older folders just to satisfy naming.
+- For a newly built code-generated object, prefer a simple structure like `<Asset>/C/<Asset>Mesh.cs`, `<Asset>/Artwork/README.md`, `<Asset>/<Asset>.tscn`, and `<Asset>/Configuration/` for tweakable authoring settings as appropriate. Don't create unnecessary empty files or extra managers.
+
+This is a **source-art versus future-imported-art convention**, not an instruction to move every C# class into `C/`. For example, the active camera remains `CAMERA/Camera.cs` and the player controller remains `PLAYER/PlayerController.cs`.
