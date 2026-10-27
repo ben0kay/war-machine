@@ -26,4 +26,9 @@ public partial class FirearmSettings : Resource
     [Export] public Color ShotColor { get; set; } = new(1, 0.8f, 0.35f);
     [Export] public AudioStream? ShotSound { get; set; }
     [Export] public float ShotVolumeDb { get; set; } = -12;
+
+    [ExportGroup("First-person presentation")]
+    // FPS-only local adjustment relative to FirstPersonMaster. Does not change overhead weapon mounts.
+    [Export] public Vector3 FirstPersonOffset { get; set; } = Vector3.Zero;
+    [Export(PropertyHint.Range, "0.4,1.5,0.01")] public float FirstPersonScale { get; set; } = 1f;
 }

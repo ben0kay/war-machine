@@ -6,6 +6,7 @@
 - `Configuration/MachineGunMaster.tres` uses the common `FirearmSettings` with a faster fire rate, different spread, damage and range.
 - `C/MachineGunMeshBuilder.cs` creates original, removable low-poly weapon art once, with heavier silhouette, ammunition box, barrel shroud, carrying handle and folded bipod. A future imported GLB can replace the visual without changing firing.
 - `Artwork/` is reserved for replacements and source assets.
+- **FPS framing:** `MachineGunMaster.tres` sets `FirstPersonOffset = (0.07, -0.18, -0.23)` and `FirstPersonScale = 0.78`, relative to the default FPS weapon offset. This lowers and reduces the bulky gun in the camera without altering its top-down model, damage or actual muzzle alignment. The rifle retains its original FPS presentation.
 
 ## Proposed initial balance, now authored
 

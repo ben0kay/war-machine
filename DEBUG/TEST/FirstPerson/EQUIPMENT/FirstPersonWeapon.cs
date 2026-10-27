@@ -34,6 +34,11 @@ public partial class FirstPersonWeapon : Node
         CancelTrigger();
         if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
         _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
+        // =========================================================
+        // Each gun may override its FPS view-model fit; root scaling also moves the real muzzle
+        // marker consistently, while the shared top-down mount remains unaffected.
+        _weapon.Position = _camera.TestSettings.WeaponOffset + _weapon.RuntimeSettings.FirstPersonOffset;
+        _weapon.Scale = Vector3.One * Mathf.Clamp(_weapon.RuntimeSettings.FirstPersonScale, 0.4f, 1.5f);
         _query.CollisionMask = _weapon.RuntimeSettings.HitMask;
     }
 
