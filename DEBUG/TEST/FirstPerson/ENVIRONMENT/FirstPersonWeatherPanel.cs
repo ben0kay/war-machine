@@ -14,21 +14,21 @@ public partial class FirstPersonWeatherPanel : Node
     private EnvironmentConfig _settings = null!;
     private Node _clock = null!;
     private Callable _timeChanged;
-    private PanelContainer _panel = null!;
+    private GroundHaze _haze = null!;
+    public VBoxContainer EnvironmentRows { get; private set; } = null!;
     private HSlider _hour = null!;
     private Label _hourLabel = null!;
     private Button _copy = null!;
 
-    public bool IsOpen => IsInstanceValid(_panel) && _panel.Visible;
 
     // =========================================================
     // The FPS test uses the same already-duplicated world environment, never writes a master .tres.
     public void Initialize(SkyController sky, WeatherBridge weather, TerrainGrass grass,
-        PinePlacement pines, CanvasLayer controls)
+        PinePlacement pines, VBoxContainer root, GroundHaze haze)
     {
-        _sky = sky; _weather = weather; _grass = grass; _pines = pines; _settings = sky.Settings;
+        _sky = sky; _weather = weather; _grass = grass; _pines = pines; _settings = sky.Settings; _haze = haze;
         SetProcess(false); SetPhysicsProcess(false);
-        BuildPanel(controls);
+        BuildPanel(root);
         _clock = _sky.Sky.GetNode("TimeOfDay");
         _timeChanged = Callable.From<float>(OnTimeChanged);
         _clock.Connect("time_changed", _timeChanged);
@@ -36,23 +36,11 @@ public partial class FirstPersonWeatherPanel : Node
     }
 
     // =========================================================
-    public void SetPanelVisible(bool visible) { if (IsInstanceValid(_panel)) _panel.Visible = visible; }
-
-    // =========================================================
-    // FirstPersonWorld owns F8/F9 and mouse capture. This panel only exposes environment controls.
-    private void BuildPanel(CanvasLayer controls)
+    // Build into the one left-hand panel; no hotkey, independent window or mouse-capture owner.
+    private void BuildPanel(VBoxContainer root)
     {
-        _panel = new PanelContainer { Name = "FPSWeatherControls", Position = new Vector2(20, 80), Visible = false };
-        controls.AddChild(_panel);
-        var margin = new MarginContainer();
-        foreach (string side in new[] { "left", "right", "top", "bottom" })
-            margin.AddThemeConstantOverride("margin_" + side, 10);
-        _panel.AddChild(margin);
-        var outer = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) }; margin.AddChild(outer);
-        outer.AddChild(new Label { Text = "FPS weather + time of day · F8 to close" });
-        var root = FirstPersonTuningSections.AddScroll(outer,
-            Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 220, 180, 580));
         var environmentRows = FirstPersonTuningSections.Add(root, "Environment");
+        EnvironmentRows = environmentRows;
         var rows = FirstPersonTuningSections.Add(environmentRows, "Day / night");
         _hourLabel = new Label(); rows.AddChild(_hourLabel);
         _hour = AddSlider(rows, 0, 23.99, 0.01);
@@ -99,15 +87,16 @@ public partial class FirstPersonWeatherPanel : Node
         AddBoundSlider(rows, "Weather quality (0 / 1 / 2)", 0, 2, 1, _settings.WeatherQuality,
             value => { _settings.WeatherQuality = value; _weather.ApplySettings(); });
 
+        GroundHazeControls.Build(environmentRows, _settings, _haze, MarkChanged);
         _copy = new Button { Text = "Copy weather & time settings", FocusMode = Control.FocusModeEnum.None };
-        outer.AddChild(_copy);
+        environmentRows.AddChild(_copy);
         _copy.Pressed += CopySettings;
     }
 
     // =========================================================
     // Existing weather, grass and pine owners all consume this shared wind state, on explicit changes only.
     private void ApplyWind()
-    { _weather.ApplySettings(); _grass.ApplyAppearance(); _pines.ApplyWind(); }
+    { _weather.ApplySettings(); _haze.ApplySettings(); _grass.ApplyAppearance(); _pines.ApplyWind(); }
 
     // =========================================================
     private static HSlider AddSlider(VBoxContainer rows, double min, double max, double step)
@@ -147,6 +136,15 @@ public partial class FirstPersonWeatherPanel : Node
             [nameof(_settings.StartHour)] = _sky.Sky.Get("current_time").AsSingle(),
             [nameof(_settings.StartPaused)] = _settings.StartPaused,
             [nameof(_settings.DayLengthMinutes)] = _settings.DayLengthMinutes,
+            [nameof(_settings.GroundHazeEnabled)] = _settings.GroundHazeEnabled,
+            [nameof(_settings.GroundHazeDensity)] = _settings.GroundHazeDensity,
+            [nameof(_settings.GroundHazeHeight)] = _settings.GroundHazeHeight,
+            [nameof(_settings.GroundHazeNoiseScale)] = _settings.GroundHazeNoiseScale,
+            [nameof(_settings.GroundHazeDriftSpeed)] = _settings.GroundHazeDriftSpeed,
+            [nameof(_settings.GroundHazeContrast)] = _settings.GroundHazeContrast,
+            [nameof(_settings.GroundHazeTurbulence)] = _settings.GroundHazeTurbulence,
+            [nameof(_settings.GroundHazeCoverageRadius)] = _settings.GroundHazeCoverageRadius,
+            [nameof(_settings.GroundHazeColor)] = new[] { _settings.GroundHazeColor.R, _settings.GroundHazeColor.G, _settings.GroundHazeColor.B, _settings.GroundHazeColor.A },
             [nameof(_settings.WeatherEnabled)] = _settings.WeatherEnabled,
             [nameof(_settings.RainIntensity)] = _settings.RainIntensity,
             [nameof(_settings.SnowIntensity)] = _settings.SnowIntensity,
@@ -170,6 +168,5 @@ public partial class FirstPersonWeatherPanel : Node
     {
         if (IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
             _clock.Disconnect("time_changed", _timeChanged);
-        if (IsInstanceValid(_panel)) _panel.QueueFree();
     }
 }

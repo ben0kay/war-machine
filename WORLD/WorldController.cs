@@ -7,7 +7,7 @@ public partial class WorldController : Node3D
     [Export] public WorldSettings Settings { get; set; } = null!;
     [Export] public PlayerSettings PlayerSettings { get; set; } = null!;
     [Export] public CameraSettings CameraSettings { get; set; } = null!;
-    [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
+    public EnvironmentConfig EnvironmentSettings { get; private set; } = null!;
     [Export] public VegetationConfig GrassSettings { get; set; } = null!;
     protected PinePlacement _pines = null!;
     protected TerrainGrass _grass = null!;
@@ -15,7 +15,8 @@ public partial class WorldController : Node3D
     protected WeatherBridge _weather = null!;
     protected Camera _camera = null!;
     private PlayerDistanceFog? _distanceFog;
-    private GroundHaze? _groundHaze;
+    protected GroundHaze? _groundHaze;
+    protected GameEnvironment _environmentScene = null!;
     private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
 
@@ -31,19 +32,8 @@ public partial class WorldController : Node3D
         PlayerSettings = (PlayerSettings)PlayerSettings.Duplicate(true);
         CameraSettings = (CameraSettings)CameraSettings.Duplicate(true);
         GameplayTerrainStorage.CopyLegacyBakeIfNeeded();
-        EnvironmentSettings = (EnvironmentConfig)EnvironmentSettings.Duplicate(true);
-        var sky = GD.Load<PackedScene>("res://ENVIRONMENT/Sky/WildernessSky.tscn").Instantiate<Node>();
-        GetNode("SystemsRoot/EnvironmentRoot").AddChild(sky);
-        // A readable ambient floor survives a below-horizon/new moon; Sky3D still owns its colour and sun/moon motion.
-        var environment = ((WorldEnvironment)sky).Environment;
-        environment.AmbientLightSource = Godot.Environment.AmbientSource.Color;
-        environment.AmbientLightSkyContribution = 0;
-        environment.AmbientLightEnergy = Mathf.Max(0, EnvironmentSettings.AmbientLightEnergy);
-        sky.GetNode("SkyDome").Set("moon_light_energy", Mathf.Max(0, EnvironmentSettings.MoonlightEnergy));
-        var skyController = new SkyController { Name = "Environment", Sky = sky, Settings = EnvironmentSettings };
-        GetNode("SystemsRoot/EnvironmentRoot").AddChild(skyController);
-        // This panel owns time controls; leave the parked FPS world's P/F8 shortcuts untouched.
-        skyController.SetProcessUnhandledInput(false);
+        _environmentScene = GetNode<GameEnvironment>("SystemsRoot/EnvironmentRoot");
+        EnvironmentSettings = _environmentScene.Settings;
         SetProcess(false); SetPhysicsProcess(false); CallDeferred(nameof(InitializeWorld));
     }
 
@@ -114,13 +104,12 @@ public partial class WorldController : Node3D
         _rocks.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _rocks.UpdateAnchor;
         InitializeOcclusion(camera, player);
-        _weather = new WeatherBridge { Name = "Weather" }; GetNode("SystemsRoot/EnvironmentRoot").AddChild(_weather);
-        _weather.InitializeView(camera, player, EnvironmentSettings);
+        _environmentScene.InitializeView(terrain, player, camera);
+        _weather = _environmentScene.Weather; _groundHaze = _environmentScene.Haze;
         camera.SettingsChanged += UpdateWeatherCoverage;
         GetViewport().SizeChanged += UpdateWeatherCoverage;
         UpdateWeatherCoverage();
         InitializeDistanceFog(camera, player);
-        InitializeGroundHaze(terrain, camera, player);
         _visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
         GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
@@ -156,18 +145,6 @@ public partial class WorldController : Node3D
         _distanceFog = new PlayerDistanceFog { Name = "PlayerDistanceFog" };
         GetNode("SystemsRoot/EnvironmentRoot").AddChild(_distanceFog);
         _distanceFog.Initialize(camera, player, EnvironmentSettings);
-    }
-
-    // =========================================================
-    // Reuse the legacy haze owner with the live terrain/player and Sky3D's existing Environment.
-    protected virtual void InitializeGroundHaze(Node3D terrain, Camera camera, PlayerController player)
-    {
-        _groundHaze = new GroundHaze { Name = "GroundHaze" };
-        GetNode("SystemsRoot/EnvironmentRoot").AddChild(_groundHaze);
-        var sky = GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment").Sky;
-        var environment = (Godot.Environment)sky.GetNode("SkyDome").Get("environment").AsGodotObject();
-        _groundHaze.Initialize(terrain, player, camera, EnvironmentSettings, environment);
-        camera.SettingsChanged += _groundHaze.RefreshView;
     }
 
     // =========================================================
@@ -332,7 +309,6 @@ public partial class WorldController : Node3D
         if (IsInstanceValid(_camera))
         {
             _camera.SettingsChanged -= UpdateWeatherCoverage;
-            if (_groundHaze != null) _camera.SettingsChanged -= _groundHaze.RefreshView;
         }
         if (IsInstanceValid(_player) && IsInstanceValid(_pines)) _player.PositionChanged -= _pines.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_grass)) _player.PositionChanged -= _grass.UpdateAnchor;

@@ -2,7 +2,7 @@
 
 ## Ground haze 2.0 — implemented, awaiting local validation
 
-The active top-down `WORLD/World.tscn` now reuses `GroundHaze.cs` and `Shaders/GroundWisps.gdshader`. WorldController passes the current player, Terrain3D data, camera and **the existing Sky3D Environment**. No second WorldEnvironment, weather controller, gameplay/physics change or addon edit. The legacy Initialize(explorer, cave) contract remains, including its cave and >35m flight suppression. FPS comparison deliberately skips the new top-down haze integration and keeps its own controls.
+The active top-down `WORLD/World.tscn` now reuses `GroundHaze.cs` and `Shaders/GroundWisps.gdshader`. WorldController passes the current player, Terrain3D data, camera and **the existing Sky3D Environment**. No second WorldEnvironment, weather controller, gameplay/physics change or addon edit. The legacy Initialize(explorer, cave) contract remains, including its cave and >35m flight suppression. Both views now inherit ENVIRONMENT/Environment.tscn, including this haze. See ../SHARED_ENVIRONMENT_README.md.
 
 One cached local FogVolume replaces overlapping boxes, eliminating internal tile seams. A small RG float texture stores terrain height and validity on a fixed 4m world grid. The shader interpolates that surface, suppresses missing regions, tapers density above the ground, and combines a foot-level veil with broad/detail noise and gently warped drift. Noise uses WORLD_POSITION and GPU TIME, so scenery does not slide with the camera. Coverage feathers from 60% of the radius to zero. Coverage follows movement in 1.5m increments; the world-space pattern remains fixed except intentional wind drift. No per-volume boundaries or CPU noise animation.
 
@@ -20,7 +20,7 @@ One cached local FogVolume replaces overlapping boxes, eliminating internal tile
 - GroundHazeColor = (0.64, 0.71, 0.73)
 - WindDirection remains the shared environment wind; Environment → Weather and shared wind exposes its heading.
 
-All haze settings appear under **Environment → Ground haze** in the top-down tuning panel. Coverage applies on slider release; other controls apply immediately. Copy settings exports haze and shared wind too. Live edits affect runtime copies only; save chosen values in the master for persistence. Legacy master values are retained, with a default 9m radius when no override exists.
+All haze settings appear under **Environment → Ground haze** in both views' left-hand tuning panels. Coverage applies on slider release; other controls apply immediately. Copy settings exports haze and shared wind too. Live edits affect runtime copies only; save chosen values in the master for persistence. Legacy master values are retained, with a default 9m radius when no override exists.
 
 ### Performance and ownership
 
@@ -58,3 +58,5 @@ Initial source/reference checks only; Godot/.NET are unavailable here. Test rain
 ## Orthographic preview reuse
 
 WeatherBridge also accepts an explicit Camera3D and Node3D anchor, without an ExplorationController or cave. TopDownWorldTest uses its player as anchor and SetOrthographicCoverage on zoom/viewport resize to widen the existing rain/snow emitters and culling bounds. Existing FPS initialization still anchors at its camera and retains movement-triggered cave shelter. Particle quality budgets and dormant-zero behaviour are shared; addon sources are unchanged.
+
+Shared scene ownership now lives in ENVIRONMENT/Environment.tscn (GameEnvironment), which owns these existing WeatherBridge/GroundHaze components. EffectsScene and WispsShader can be edited on that prefab. No duplicate implementations. FPS also exposes GroundHazeControls; old F8/F9 modal-panel instructions are superseded by one left-hand panel.

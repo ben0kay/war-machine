@@ -10,7 +10,7 @@
 [ext_resource type="PackedScene" path="res://ENTITIES/TYPES/Robots/Robot_001/Robot_001.tscn" id="8"]
 [ext_resource type="Script" path="res://ENTITIES/Shared/EntitySettings.cs" id="9"]
 
-[ext_resource type="Resource" path="res://ENVIRONMENT/Configuration/GameplayEnvironmentMaster.tres" id="10"]
+[ext_resource type="PackedScene" path="res://ENVIRONMENT/Environment.tscn" id="10"]
 
 [ext_resource type="Resource" path="res://PLAYER/Configuration/PlayerMaster.tres" id="11"]
 [ext_resource type="Resource" path="res://CAMERA/Configuration/CameraMaster.tres" id="12"]
@@ -24,7 +24,6 @@ StartActive = false
 [node name="World" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
-EnvironmentSettings = ExtResource("10")
 PlayerSettings = ExtResource("11")
 CameraSettings = ExtResource("12")
 
@@ -82,4 +81,4 @@ mouse_filter = 2
 
 [node name="SystemsRoot" type="Node" parent="."]
 [node name="VegetationRoot" type="Node3D" parent="SystemsRoot"]
-[node name="EnvironmentRoot" type="Node3D" parent="SystemsRoot"]
+[node name="EnvironmentRoot" parent="SystemsRoot" instance=ExtResource("10")]

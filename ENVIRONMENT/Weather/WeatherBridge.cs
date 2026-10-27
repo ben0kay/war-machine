@@ -3,6 +3,7 @@ using Godot;
 
 public partial class WeatherBridge : Node
 {
+    [Export] public PackedScene EffectsScene { get; set; } = null!;
     private Node3D _effects = null!;
     private ExplorationController _explorer = null!;
     private Camera3D _camera = null!;
@@ -26,7 +27,7 @@ public partial class WeatherBridge : Node
     public void InitializeView(Camera3D camera, Node3D anchor, EnvironmentConfig settings)
     {
         _camera = camera; _settings = settings;
-        _effects = GD.Load<PackedScene>("res://ENVIRONMENT/Weather/TestWeather.tscn").Instantiate<Node3D>();
+        _effects = (EffectsScene ?? GD.Load<PackedScene>("res://ENVIRONMENT/Weather/TestWeather.tscn")).Instantiate<Node3D>();
         _effects.Set("camera", _camera);
         _effects.Set("effect_target", anchor);
         AddChild(_effects); _initialized = true;

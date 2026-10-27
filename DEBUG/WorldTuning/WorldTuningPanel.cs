@@ -112,29 +112,7 @@ public partial class WorldTuningPanel : PanelContainer
         AddBoundSlider(rows, "Weather quality (0 / 1 / 2)", 0, 2, 1, _environment.WeatherQuality,
             value => { _environment.WeatherQuality = value; weather.ApplySettings(); });
         if (groundHaze != null)
-        {
-            rows = AddSection(environmentRows, "Ground haze");
-            var hazeEnabled = new CheckButton { Text = "Ground haze enabled", ButtonPressed = _environment.GroundHazeEnabled, FocusMode = FocusModeEnum.None };
-            rows.AddChild(hazeEnabled);
-            hazeEnabled.Toggled += value => { _environment.GroundHazeEnabled = value; groundHaze.ApplySettings(); _copy.Text = "Copy settings"; };
-            AddBoundSlider(rows, "Density", 0, 0.5, 0.01, _environment.GroundHazeDensity,
-                value => { _environment.GroundHazeDensity = value; groundHaze.ApplySettings(); });
-            AddBoundSlider(rows, "Height (m)", 0.25, 3, 0.05, _environment.GroundHazeHeight,
-                value => { _environment.GroundHazeHeight = value; groundHaze.ApplySettings(); });
-            AddBoundSlider(rows, "Noise scale", 0.05, 1, 0.01, _environment.GroundHazeNoiseScale,
-                value => { _environment.GroundHazeNoiseScale = value; groundHaze.ApplySettings(); });
-            AddBoundSlider(rows, "Drift (m/s)", 0, 2, 0.01, _environment.GroundHazeDriftSpeed,
-                value => { _environment.GroundHazeDriftSpeed = value; groundHaze.ApplySettings(); });
-            AddBoundSlider(rows, "Wisp definition", 0, 1, 0.01, _environment.GroundHazeContrast,
-                value => { _environment.GroundHazeContrast = value; groundHaze.ApplySettings(); });
-            AddBoundSlider(rows, "Haze turbulence", 0, 1, 0.01, _environment.GroundHazeTurbulence,
-                value => { _environment.GroundHazeTurbulence = value; groundHaze.ApplySettings(); });
-            AddDeferredSlider(rows, "Coverage radius (m) · release to apply", 6, 48, 1, _environment.GroundHazeCoverageRadius,
-                value => _environment.GroundHazeCoverageRadius = value, groundHaze.ApplySettings);
-            var hazeColor = new ColorPickerButton { Text = "Haze colour", Color = _environment.GroundHazeColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
-            rows.AddChild(hazeColor);
-            hazeColor.ColorChanged += color => { _environment.GroundHazeColor = color; groundHaze.ApplySettings(); _copy.Text = "Copy settings"; };
-        }
+            GroundHazeControls.Build(environmentRows, _environment, groundHaze, () => _copy.Text = "Copy settings");
         var foliageRows = AddSection(rootRows, "Foliage");
         rows = AddSection(foliageRows, "Grass");
         rows.AddChild(new Label { Text = "Release density/height to apply" });

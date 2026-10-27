@@ -1,3 +1,7 @@
+# ENVIRONMENT — current shared prefab
+
+Use [Environment.tscn](Environment.tscn) for the active top-down and FPS test views. See [shared environment guide](SHARED_ENVIRONMENT_README.md) for scene ownership, shared defaults, initialization and testing. Both views now share ground haze as well as Sky3D/weather. Existing wilderness APIs remain supported. Current FPS controls are one left-hand expandable panel; F8/F9 instructions below are historical.
+
 # ENVIRONMENT — Shared atmosphere
 
 `Sky/WildernessSky.tscn` adapts only Sky3D's environment and four relevant child nodes from its reference scene. No city, reference camera, demo UI, reflection probe or competing static sky is included. Sky3D owns sun, moon, sky, clouds and its timer.

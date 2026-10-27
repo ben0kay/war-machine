@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public partial class GroundHaze : Node3D
 {
+    [Export] public Shader WispsShader { get; set; } = null!;
     private EnvironmentConfig _settings = null!;
     private Godot.Environment _environment = null!;
     private GodotObject _data = null!;
@@ -65,7 +66,7 @@ public partial class GroundHaze : Node3D
         { _active = false; GD.PushWarning("Ground haze requires Forward+."); if (_volume != null) _volume.Hide(); RestoreFog(); return; }
         if (_volume == null)
         {
-            _material = new ShaderMaterial { Shader = GD.Load<Shader>("res://ENVIRONMENT/Weather/Shaders/GroundWisps.gdshader") };
+            _material = new ShaderMaterial { Shader = WispsShader ?? GD.Load<Shader>("res://ENVIRONMENT/Weather/Shaders/GroundWisps.gdshader") };
             _volume = new FogVolume { Name = "TerrainWisps", Shape = RenderingServer.FogVolumeShape.Box, Material = _material, Visible = false };
             AddChild(_volume);
         }

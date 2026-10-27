@@ -1,3 +1,7 @@
+# Current FPS testing controls
+
+**Environment is now shared with top-down**, including ground haze, via the EnvironmentRoot inherited from World.tscn. One left-hand expandable panel replaces F8/F9 windows. Escape releases mouse for controls; click the world to resume. See [current environment controls](ENVIRONMENT/README.md) and [shared scene guide](../../../ENVIRONMENT/SHARED_ENVIRONMENT_README.md). Older F8/F9 panel descriptions below are historical. Compilation/visual acceptance pending locally.
+
 # First-person world test
 
 Open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`, build C#, then press **F6**. Same branch: `implement-td0-td1`. This is an inherited version of `WORLD/World.tscn`, using the same saved terrain, all three buildings, open-door car, pines/collisions, zombies, robot, environment, equipment and damage. No new terrain bake is needed when the active world already runs. F5 and the active top-down scene are unchanged.
