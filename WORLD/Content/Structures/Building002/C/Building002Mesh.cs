@@ -200,22 +200,30 @@ public partial class Building002Mesh : Node3D
         var cloth = StructureGeometry.Paint(new Color(0.32f, 0.43f, 0.39f));
         var yellow = StructureGeometry.Paint(settings.Accent);
 
-        // EXTERIOR: continuous horizontal clapboard/shadow-line accents. Skip the door and front window glazing.
+        // EXTERIOR: thin weatherboard seams lie ONLY over solid wall spans.
+        // The door is open from X=-1..1 and Y=0..2.9; the front windows are open at Y=1.25..2.75.
+        // Never let a decorative strip bridge any portion of those openings (including at sill height).
         for (float y = 0.73f; y < h - 0.38f; y += 0.52f)
         {
-            foreach (float z in new[] { -hz - 0.14f, hz + 0.14f })
-            {
-                if (z > 0 && y > 1.15f && y < 3.02f)
-                {
-                    foreach (var seg in new[] { (-hx + 0.15f, -5.55f), (-2.95f, -1.06f),
-                                               (1.06f, 3.43f), (6.06f, hx - 0.15f) })
-                        StructureGeometry.Box(exterior, null, "FrontWeatherboard",
-                            new((seg.Item1 + seg.Item2) * 0.5f, y, z),
-                            new(seg.Item2 - seg.Item1, 0.065f, 0.045f), carved);
-                }
-                else StructureGeometry.Box(exterior, null, "Weatherboard",
-                    new(0, y, z), new(hx * 2f - 0.32f, 0.065f, 0.045f), carved);
-            }
+            StructureGeometry.Box(exterior, null, "RearWeatherboard", new(0, y, -hz - 0.14f),
+                new(hx * 2f - 0.32f, 0.065f, 0.045f), carved);
+            foreach (var seg in new[] { (-hx + 0.15f, -5.55f), (-2.95f, -1.06f),
+                                       (1.06f, 3.43f), (6.06f, hx - 0.15f) })
+                StructureGeometry.Box(exterior, null, "FrontWallWeatherboard",
+                    new((seg.Item1 + seg.Item2) * 0.5f, y, hz + 0.14f),
+                    new(seg.Item2 - seg.Item1, 0.065f, 0.045f), carved);
+
+            // Window sill and header levels only; keep the openings themselves unbridged.
+            if (y < 1.20f || y > 2.80f)
+                foreach (var seg in new[] { (-5.5f, -3.0f), (3.5f, 6.0f) })
+                    StructureGeometry.Box(exterior, null, "FrontWindowBayWeatherboard",
+                        new((seg.Item1 + seg.Item2) * 0.5f, y, hz + 0.14f),
+                        new(seg.Item2 - seg.Item1, 0.065f, 0.045f), carved);
+
+            // There is wall above the 2.9m doorway, but not below the lintel.
+            if (y > 2.96f)
+                StructureGeometry.Box(exterior, null, "AboveDoorWeatherboard",
+                    new(0, y, hz + 0.14f), new(2.0f, 0.065f, 0.045f), carved);
         }
         foreach (float x in new[] { -hx - 0.15f, hx + 0.15f })
             for (float y = 0.80f; y < h - 0.38f; y += 0.58f)
@@ -287,12 +295,16 @@ public partial class Building002Mesh : Node3D
 
         // INTERIOR: posters, map, shelving details, reception papers, radio and a hanging wall clock.
         // Keep pieces slim near walls; no extra collision for paper, decor or small possessions.
-        StructureGeometry.Box(interior, null, "LargeRangerMap", new(-1.35f, 2.14f, hz - 0.19f),
-            new(2.30f, 1.28f, 0.08f), carved);
-        StructureGeometry.Box(interior, null, "MapSurface", new(-1.35f, 2.14f, hz - 0.25f),
-            new(2.06f, 1.03f, 0.035f), paper);
+        // Hang the map FLUSH against the solid front-wall bay X=-3..-1.
+        // The previous 2.3m map overlapped the X=-1..1 entry and looked like a floating painting.
+        const float mapX = -2.0f;
+        StructureGeometry.Box(interior, null, "LargeRangerMap", new(mapX, 2.14f, hz - 0.15f),
+            new(1.70f, 1.28f, 0.08f), carved);
+        StructureGeometry.Box(interior, null, "MapSurface", new(mapX, 2.14f, hz - 0.208f),
+            new(1.52f, 1.03f, 0.035f), paper);
         for (int i = 0; i < 4; i++)
-            StructureGeometry.Box(interior, null, "MapContours", new(-2.02f + i * 0.44f, 2.18f, hz - 0.275f),
+            StructureGeometry.Box(interior, null, "MapContours",
+                new(mapX - 0.56f + i * 0.36f, 2.18f, hz - 0.236f),
                 new(0.065f, 0.70f - (i % 2) * 0.18f, 0.018f), moss);
 
         for (int i = 0; i < 3; i++)

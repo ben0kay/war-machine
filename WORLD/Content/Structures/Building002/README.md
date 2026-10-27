@@ -39,3 +39,7 @@ Building002 now generates extra low-poly C# detail **within its original footpri
 - **Layering:** `Generated/ShowcaseExterior` and `Generated/ShowcaseInterior` are grouped separately so a later pass can refine or replace the dressing without reconstructing the building shell. The entire enhancement lives in `C/Building002Mesh.cs` and can be used in both the top-down world and the inherited FPS preview.
 
 This is a practical example of developing a prop in layers: **shell → usable rooms → furnishings → material/architectural dressing → small storytelling props**. It does not create an imported model or a complete loot/interaction system. Build and view locally to judge densities, placement and collision; authoring here did not include a Godot render test.
+
+### Doorway visibility correction
+
+The interior ranger-map prop is now mounted wholly on the solid front-wall section between the left window and the entrance; it no longer overlaps the open door. The added clapboard/weatherboard strips are split around the pedestrian doorway **at all heights below its header**, and around window openings, so no decorative horizontal beam cuts through an opening. These are purely visual changes—building footprint, solid walls, door collision and room layout are unchanged. Verify after a Godot scene reload/F6.
