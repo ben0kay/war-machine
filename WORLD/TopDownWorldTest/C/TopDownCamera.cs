@@ -4,6 +4,7 @@ using Godot;
 public partial class TopDownCamera : Camera3D
 {
     public event System.Action? SettingsChanged;
+    public event System.Action? ViewChanged;
     private TopDownPlayer _player = null!;
     private TopDownTestSettings _settings = null!;
     private Vector3 _target;
@@ -56,7 +57,7 @@ public partial class TopDownCamera : Camera3D
         _settings.CameraPitchDegrees = Mathf.Clamp(degrees, 25, 80);
         RotationDegrees = new Vector3(-_settings.CameraPitchDegrees, _settings.CameraYawDegrees, 0);
         GlobalPosition = DesiredPosition();
-        SettingsChanged?.Invoke();
+        ViewChanged?.Invoke(); SettingsChanged?.Invoke();
     }
 
     // =========================================================
@@ -67,7 +68,7 @@ public partial class TopDownCamera : Camera3D
         if (_settings.UsePerspective) _settings.CameraDistance = Mathf.Clamp(size, 20, 100);
         else { _zoomTarget = ClampZoom(size); _settings.CameraSize = _zoomTarget; }
         SetProcess(true);
-        SettingsChanged?.Invoke();
+        ViewChanged?.Invoke(); SettingsChanged?.Invoke();
     }
 
     // =========================================================
@@ -80,7 +81,7 @@ public partial class TopDownCamera : Camera3D
         else { _zoomTarget = ClampZoom(ViewHeight); _settings.CameraSize = _zoomTarget; Size = _zoomTarget; }
         _settings.UsePerspective = perspective;
         Projection = perspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
-        GlobalPosition = DesiredPosition(); SetProcess(true); SettingsChanged?.Invoke();
+        GlobalPosition = DesiredPosition(); SetProcess(true); ViewChanged?.Invoke(); SettingsChanged?.Invoke();
     }
 
     // =========================================================
@@ -88,7 +89,7 @@ public partial class TopDownCamera : Camera3D
     public void SetPerspectiveFov(float degrees)
     {
         _settings.PerspectiveFov = Mathf.Clamp(degrees, 25, 90); Fov = _settings.PerspectiveFov;
-        SettingsChanged?.Invoke();
+        ViewChanged?.Invoke(); SettingsChanged?.Invoke();
     }
 
     public float ViewHeight => _settings.UsePerspective
@@ -104,6 +105,7 @@ public partial class TopDownCamera : Camera3D
         bool zooming = Mathf.Abs(Size - _zoomTarget) > 0.001f;
         if (moving) GlobalPosition = GlobalPosition.Lerp(desired, weight); else if (GlobalPosition != desired) GlobalPosition = desired;
         if (zooming) Size = Mathf.Lerp(Size, _zoomTarget, weight); else if (Size != _zoomTarget) Size = _zoomTarget;
+        if (moving || zooming) ViewChanged?.Invoke();
         if (!moving && !zooming) SetProcess(false);
     }
 

@@ -1,7 +1,6 @@
 # Weapons
 
-Weapon scenes and individual weapon types live here. Start with [Rifles/Rifle_001](Rifles/Rifle_001/README.md). A weapon should be an instantiable item rather than code hardcoded into `TopDownPlayer.cs`.
-
-[Shared](Shared/README.md) is reserved for common firearm behaviour when duplication justifies it. Future `Pistols/`, `Shotguns/` and `Melee/` folders can be created **when those items are requested**, not now.
-
-Each concrete weapon uses `C/` for **Godot C# procedural meshes and runtime code**, `Artwork/` for later model imports, `Configuration/` for item master settings, and a root `.tscn` scene once implemented. No weapons currently exist.
+Shared/C holds the reusable hitscan controller, settings and shot feedback.
+Rifles/Rifle_001 is the first usable scene; item art and stats remain local.
+Other firearm scenes can reuse the same mechanics and typed Resource.
+Projectile weapons, melee, ammo/reload and inventory remain future tasks.

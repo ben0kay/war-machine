@@ -23,3 +23,8 @@ FollowSmoothing = 8.0
 
 AmbientLightEnergy = 0.8
 MoonlightEnergy = 0.8
+
+WeaponMountOffset = Vector3(0.24, 0.40, -0.45)
+LeftWeaponArmDegrees = Vector3(72, -25, 23)
+RightWeaponArmDegrees = Vector3(72, 0, 8)
+WeaponProbeOffset = Vector3(0, 0.38, 0)

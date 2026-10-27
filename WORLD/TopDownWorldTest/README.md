@@ -90,3 +90,14 @@ Brief source/resource and whitespace checks only; Godot/.NET unavailable. Local 
 ## Basic zombie population
 
 Six reusable `ENTITIES/TYPES/Zombies/Zombie.tscn` instances spawn at terrain-sampled offsets around the player, configured by TopDownTestSettings.ZombieSpawnOffsets. Placement is preview-owned; all zombie settings, art and behaviour live under ENTITIES/TYPES/Zombies. They slowly wander, pause, and converge with both arms extended inside detection range. No attacks, damage, robot targeting or crouch-based stealth yet. Player/zombie collision layers keep them solid to each other. Missing terrain keeps them unspawned. See the zombie README for defaults, idle cost and pending local checks.
+
+## Temporary reusable rifle
+
+The preview now equips the scene from EQUIPMENT/Configuration/EquipmentMaster.tres.
+Mouse aims; click/hold left mouse fires a slow hitscan rifle. Shared firing/effects
+and per-weapon stats live under EQUIPMENT, input bridging under PLAYER/Equipment.
+The player owns its upper-body socket/holding pose, configured by TopDownTestMaster.
+Zombie health is in ZombieMaster; default 25 damage against 50 health takes two hits.
+No robot damage, ammo/reload/inventory or FPS changes. See
+[EQUIPMENT rifle handoff](../../EQUIPMENT/Weapons/Rifles/Rifle_001/README.md).
+Source checks only here; local .NET build, pose/aim/hit and performance checks pending.

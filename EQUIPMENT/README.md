@@ -1,44 +1,31 @@
-# EQUIPMENT — Weapons and handheld tools
+# EQUIPMENT — reusable weapons and handheld tools
 
-**Status: folder/documentation scaffold only. No rifle, projectile, shooting, inventory or equipment system has been implemented.** This is intended as an independent, reusable asset/behaviour home for the fully 3D top-down War Machine game.
+The first usable firearm is implemented and integrated into the active top-down scene.
+**Awaiting local compilation and visual/physics validation.** Read root CodePreferences.md.
 
-## Folder conventions (important)
+- `Configuration/EquipmentMaster.tres`: enable equipment and choose the default weapon scene.
+- `Shared/C/EquipmentConfig.cs`: small composition resource, independent of the player.
+- `Weapons/Shared/C/FirearmController.cs`: shared firing, cadence, hitscan, obstruction and damage dispatch.
+- `Weapons/Shared/C/FirearmSettings.cs`: typed, reusable firearm stats resource.
+- `Weapons/Shared/C/FirearmShotEffects.cs`: reused shot feedback, dormant after expiry.
+- `Weapons/Rifles/Rifle_001/`: the first scene, editable stats and temporary C# visual.
+- `PLAYER/Equipment/`: mouse/camera input adapter; actor pose remains in TopDownPlayer.
+- `ENTITIES/Shared/Combat/IDamageReceiver.cs`: shared hit contract, currently supported by zombies.
+- `Tools/`: reserved for later tools; no inventory, reload, ammo economy or switching yet.
 
-- **`C/`** is where we write **Godot C# procedural mesh generation** for a weapon/tool. It can also hold that item's C# behaviour/controller and configuration class. Example: `RifleMeshBuilder.cs` constructs the first temporary low-poly rifle *using Godot mesh primitives from C#*. This is intentional and not an exported art asset.
-- **`Artwork/`** is reserved for **future authored/imported models**, such as a `.glb`/`.gltf` rifle and associated texture/material files. Replacing the procedural C# art with a model should not require rewriting weapon mechanics.
-- **`Configuration/`** holds the **per-item editable master resource** (e.g. `RifleMaster.tres`). Keep the associated typed C# settings class under the item's `C/` folder to follow the C# convention. Duplicate configuration at runtime before changing it.
-- **`.tscn`** lives at the individual item root (e.g. `Weapons/Rifles/Rifle_001/Rifle_001.tscn`) once the item is actually implemented.
-- **`README.md`** describes what a folder owns, intended files, and eventual scene integration.
-- Don't create C# runtime systems, blank `.tres` files or a nonfunctional scene merely to fill a directory. Create real source/resources as Codex implements the first rifle.
+`C/` contains procedural C# mesh generation and scripts. `Artwork/` is for later
+imported art. Item `Configuration/` holds `.tres` definitions. Keep firing code
+shared from the first weapon onward: do not create a rifle-specific controller or
+copy stat classes for a pistol. Future projectile/melee/tool behaviour should be
+added deliberately when requested; hitscan is not a universal projectile simulator.
 
-## Current structure
+Rifle is always equipped while the master is enabled. Mouse aims; left click or
+hold fires slowly. Arrows, Shift, right Ctrl crouch and camera controls remain.
+UI clicks are excluded; focus loss cancels held fire. Robot and parked FPS world
+are unchanged. See the rifle README for controls, stats and local check steps.
 
-```text
-EQUIPMENT/
-├── README.md
-├── Shared/README.md                     # Shared equipment interface/equip logic when needed
-├── Weapons/
-│   ├── README.md
-│   ├── Shared/README.md                 # Reusable firearm mechanics when a second weapon needs them
-│   └── Rifles/
-│       ├── README.md
-│       └── Rifle_001/
-│           ├── README.md
-│           ├── C/README.md             # Future C# procedural model + rifle behaviour
-│           ├── Configuration/README.md # Future RifleMaster.tres
-│           └── Artwork/README.md       # Future imported model/textures
-└── Tools/README.md                      # Future axes, pickaxes, repair/build tools
-```
-
-Further categories (e.g. `Weapons/Pistols/`, `Weapons/Shotguns/`, `Weapons/Melee/` and concrete `Tools/Axe_001/`) are **future possible paths**, not empty folders to precreate.
-
-## Ownership and integration
-
-- **EQUIPMENT** owns the weapon/tool scene, visual construction, individual settings and firing/using behaviour.
-- **PLAYER** / the current `WORLD/TopDownWorldTest/C/TopDownPlayer.cs` owns movement, pose/aim input and a proposed **hand/weapon attachment point**; it must not embed the complete rifle implementation.
-- **WORLD/TopDownWorldTest** only instances/connects a test weapon when explicitly authorized. The parked first-person world should remain untouched.
-- **ENTITIES** owns robots/zombies/other actors, not every object they might equip. Reusable equipment should be able to attach to different actors later without duplicating classes.
-
-**Next Codex step if authorized:** implement a *single temporary low-poly Rifle_001* using C# procedural mesh generation in `C/`, held via a player `WeaponMount`. Add a small, configurable single-shot hitscan firearm, simple muzzle flash/tracer and basic character aiming. Keep it modular and dormant while not firing; defer ammo economy, inventory, multiple weapons, tool use and full combat systems. Read [the rifle's contract](Weapons/Rifles/Rifle_001/README.md) first.
-
-Read root `README.md`, `CodePreferences.md` and this README before doing any implementation. Keep one commit per authorized job and validation brief as requested.
+Performance: input, actor/camera changes wake one physics aim update; no idle aim
+loop. Held fire sleeps on a one-shot physics cooldown timer, then requests its next
+shot. Queries exclude the holder. Feedback reuses two mesh instances and sleeps
+after its brief lifetime. No projectile nodes, target scans or per-zombie hit polls.
+Audio is optional via the stats resource; no sound asset is included by default.

@@ -1,5 +1,5 @@
 # Rifles
 
-Owns rifle weapon types and their variants. [Rifle_001](Rifle_001/README.md) is the first **planned temporary test rifle**.
-
-Create each additional rifle as its own named folder with a `.tscn` scene, **C# procedural mesh and code in `C/`**, future external art in `Artwork/`, editable item settings in `Configuration/`, and a README. No rifle has been implemented yet.
+Rifle_001 is the temporary low-poly firearm integrated in the top-down scene.
+Its C folder owns generated art; Configuration holds RifleMaster.tres.
+Mechanics/settings types are shared in Weapons/Shared/C. See its README.

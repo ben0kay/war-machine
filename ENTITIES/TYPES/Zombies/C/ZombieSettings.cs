@@ -4,6 +4,8 @@ using Godot;
 [GlobalClass]
 public partial class ZombieSettings : EntitySettings
 {
+    [ExportGroup("Health")]
+    [Export] public float MaxHealth { get; set; } = 50;
     [ExportGroup("Movement")]
     [Export] public float WanderSpeed { get; set; } = 0.65f;
     [Export] public float ChaseSpeed { get; set; } = 1.15f;

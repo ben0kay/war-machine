@@ -56,7 +56,7 @@ The following are **planned ownership boundaries**, not a list of existing direc
 | `SAVE/` | Persistent seeds, authored overrides and later world-state changes |
 | `DEBUG/` | Diagnostic overlays, profiling helpers, quality and distance controls |
 | `ENTITIES/` | Shared robot foundation, heavy cyan biped locomotion, patrol and scanning; reused by both the top-down prototype and parked first-person world |
-| `EQUIPMENT/` | Future reusable firearms, melee weapons and tools; `C/` houses Godot C# procedural mesh builders and scripts, `Artwork/` holds later imported assets. Rifle_001 structure is scaffolded only; no working weapon yet. |
+| `EQUIPMENT/` | Future reusable firearms, melee weapons and tools; `C/` houses Godot C# procedural mesh builders and scripts, `Artwork/` holds later imported assets. Rifle_001 is implemented using shared firearm mechanics and editable `.tres` stats; active top-down player equips it by default. Awaiting local validation. |
 | `UI/`, `FX/` | Shared interface and effects as features require them |
 
 Create folders, subfolders and scripts **when implementing their owning features**, not all at once. Major uppercase folders should have their own README and a central, easy-to-tune configuration resource or master config where useful. Avoid redundant managers, massive scene trees, duplicated settings and tight cross-system coupling.

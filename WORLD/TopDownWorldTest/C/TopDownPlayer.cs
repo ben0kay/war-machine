@@ -14,6 +14,10 @@ public partial class TopDownPlayer : CharacterBody3D
     private PhysicsShapeQueryParameters3D _standingQuery = null!;
     public bool IsCrouching { get; private set; }
     public event System.Action<bool>? StanceChanged;
+    public Marker3D WeaponMount { get; private set; } = null!;
+    public Vector3 WeaponProbeOrigin => _upperBody.GlobalPosition + _settings.WeaponProbeOffset;
+    public event System.Action? WeaponPoseChanged;
+    private bool _weaponPose;
     private float _crouch;
     private bool _toggleCrouch;
     private Vector3 _screenRight, _screenForward;
@@ -102,14 +106,31 @@ public partial class TopDownPlayer : CharacterBody3D
         if (actualSpeed > 0.05f)
         {
             float yaw = Mathf.Atan2(-travel.X, -travel.Z);
-            _art.Rotation = new Vector3(0, Mathf.LerpAngle(_art.Rotation.Y, yaw, 1 - Mathf.Exp(-14 * dt)), 0);
+            if (!_weaponPose) _art.Rotation = new Vector3(0, Mathf.LerpAngle(_art.Rotation.Y, yaw, 1 - Mathf.Exp(-14 * dt)), 0);
             _phase += dt * Mathf.Tau * Mathf.Max(0.1f, _settings.GaitRate) * actualSpeed / Mathf.Max(0.1f, _settings.WalkSpeed);
             Pose(Mathf.Sin(_phase) * 0.5f, Mathf.Abs(Mathf.Sin(_phase * 2)) * 0.025f);
         }
         else Pose(0, 0);
+        if (_crouch != previousCrouch) WeaponPoseChanged?.Invoke();
         if (before.DistanceSquaredTo(GlobalPosition) > 0.0000001f) PositionChanged?.Invoke(GlobalPosition);
         if (IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _crouch == (IsCrouching ? 1 : 0))
         { Velocity = Vector3.Zero; _phase = 0; Pose(0, 0); SetPhysicsProcess(false); }
+    }
+
+    // =========================================================
+    // The actor owns its holding pose and socket; equipment owns everything about firing.
+    public void SetWeaponPose(bool enabled) { _weaponPose = enabled; if (_initialized) Pose(0, 0); }
+
+    // =========================================================
+    // Face the cursor while walking/crouching; pitch only the held socket, independent of leg gait.
+    public void SetWeaponAim(Vector3 target)
+    {
+        Vector3 horizontal = target - GlobalPosition; horizontal.Y = 0;
+        if (horizontal.LengthSquared() < 0.01f) return;
+        _art.Rotation = new Vector3(0, Mathf.Atan2(-horizontal.X, -horizontal.Z), 0);
+        Vector3 direction = target - WeaponMount.GlobalPosition;
+        if (direction.LengthSquared() > 0.0001f && Mathf.Abs(direction.Normalized().Dot(Vector3.Up)) < 0.99f)
+            WeaponMount.GlobalBasis = Basis.LookingAt(direction, Vector3.Up);
     }
 
     // =========================================================
@@ -121,6 +142,7 @@ public partial class TopDownPlayer : CharacterBody3D
         _upperBody.Rotation = new Vector3(0.18f * _crouch, 0, 0);
         _leftArm.Rotation = new Vector3(-stride - 0.4f * _crouch, 0, 0);
         _rightArm.Rotation = new Vector3(stride - 0.4f * _crouch, 0, 0);
+        if (_weaponPose) { _leftArm.RotationDegrees = _settings.LeftWeaponArmDegrees; _rightArm.RotationDegrees = _settings.RightWeaponArmDegrees; }
         _leftLeg.Rotation = new Vector3(stride + 1.15f * _crouch, 0, 0);
         _rightLeg.Rotation = new Vector3(-stride + 1.15f * _crouch, 0, 0);
         _leftKnee.Rotation = new Vector3(-2.3f * _crouch, 0, 0);
@@ -139,6 +161,7 @@ public partial class TopDownPlayer : CharacterBody3D
         var trousers = new StandardMaterial3D { AlbedoColor = new Color(0.34f, 0.3f, 0.23f), Roughness = 1 };
         var boots = new StandardMaterial3D { AlbedoColor = new Color(0.1f, 0.12f, 0.14f), Roughness = 1 };
         _upperBody = new Node3D { Name = "UpperBody", Position = Vector3.Up * 0.85f }; _art.AddChild(_upperBody);
+        WeaponMount = new Marker3D { Name = "WeaponMount", Position = _settings.WeaponMountOffset }; _upperBody.AddChild(WeaponMount);
         Part(_upperBody, "Torso", new(0, 0.27f, 0), new(0.5f, 0.6f, 0.3f), shirt);
         Part(_upperBody, "Head", new(0, 0.77f, 0), new(0.32f, 0.36f, 0.32f), skin);
         Part(_upperBody, "Face", new(0, 0.77f, -0.17f), new(0.23f, 0.12f, 0.04f), skin);

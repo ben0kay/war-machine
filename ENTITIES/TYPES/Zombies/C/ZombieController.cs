@@ -1,8 +1,10 @@
 // Dumb reusable zombie: staggered range decisions, slow wandering/chasing, and one shambling animation driver.
 using Godot;
 
-public partial class ZombieController : EntityCore
+public partial class ZombieController : EntityCore, IDamageReceiver
 {
+    public float Health { get; private set; }
+    private bool _dead;
     public bool IsChasing { get; private set; }
     private Node3D? _target;
     private ZombieSettings _config = null!;
@@ -38,7 +40,18 @@ public partial class ZombieController : EntityCore
     public void InitializeTarget(Node3D player, uint seed)
     {
         Deactivate(); _target = player; _home = GlobalPosition; _random.Seed = seed;
+        Health = Mathf.Max(1, _config.MaxHealth); _dead = false;
         _configured = true; _hasGoal = false; IsChasing = false; _restUntil = 0; Activate();
+    }
+
+    // =========================================================
+    // Shared hit contract: no weapon lookup, polling or knowledge of rifle balance. Dead actors stop immediately.
+    public void ReceiveHit(float damage, Vector3 position, Vector3 direction, Node3D source)
+    {
+        if (_dead || !IsActive || !float.IsFinite(damage) || damage <= 0) return;
+        Health = Mathf.Max(0, Health - damage);
+        if (Health > 0) return;
+        _dead = true; Deactivate(); CollisionLayer = 0; CollisionMask = 0; Hide(); QueueFree();
     }
 
     // =========================================================

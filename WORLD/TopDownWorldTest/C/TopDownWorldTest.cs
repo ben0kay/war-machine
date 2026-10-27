@@ -50,6 +50,8 @@ public partial class TopDownWorldTest : Node3D
         terrain.Call("set_camera", camera);
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(Settings, camera);
+        var equipment = new PlayerWeaponController { Name = "Equipment" }; player.AddChild(equipment);
+        equipment.Initialize(player, camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"));
         _camera = camera;
         _weather = new WeatherBridge { Name = "Weather" }; AddChild(_weather);
         _weather.InitializeView(camera, player, EnvironmentSettings);
@@ -61,7 +63,7 @@ public partial class TopDownWorldTest : Node3D
         cameraControls.Initialize(camera, Settings, GetNode<SkyController>("Environment"), _weather);
         SpawnZombies(data, player);
         bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
-        status.Text = "Top-down test · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Wheel zoom\nF6 in editor: Run Current Scene"
+        status.Text = "Top-down test · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 

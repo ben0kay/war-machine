@@ -10,3 +10,4 @@ WanderRadius = 10.0
 DetectionRange = 18.0
 LoseRange = 23.0
 StopDistance = 1.3
+MaxHealth = 50.0
