@@ -11,3 +11,9 @@ No process/physics callback, extra per-object loop, scene scan or streaming rebu
 FirstPersonWorld makes F8 and F9 mutually exclusive and maintains mouse-capture state when switching; the FPS camera does not click-to-recapture while either panel is open. Escape closes the panel without recapturing; focus loss cancels recapture. The top-down tuning panel is unchanged.
 
 **Awaiting local validation:** build C# and F6 FPS. Change time from day to night and back; pause/unpause; test rain/snow/mist on/off and wind; copy settings; swap F8/F9 and check no overlap/click shooting; close/escape/focus loss; briefly open the top-down world. No terrain rebake needed.
+
+## Expandable FPS tuning categories
+
+F8 now groups the existing controls under Environment → Day/night, Weather (Rain/snow, Mist/motes, Particle appearance/quality), and Wind. F9 separates Distance fog from Rendering/culling. Sections start collapsed and remember their open state while switching/reopening panels; the scroll area grows with content up to the viewport cap. Copy buttons/readouts remain accessible outside the collapsed sections. Existing values, bindings, F8/F9 mutual exclusion, mouse capture, escape and focus-loss behaviour remain unchanged. No new effects, foliage controls or haze integration were added.
+
+FirstPersonTuningSections.cs shares the small button/scroll construction helpers between the two FPS panels. Visibility/layout uses UI signals only, no frame callbacks/timers/polling. Source/loop review completed; compilation and local layout/input checks remain unverified because Godot/.NET are unavailable here. Briefly build and F6 FPS: F8/F9, expand/collapse each group, edit one value, scroll, copy, escape and reopen. Top-down UI is untouched.

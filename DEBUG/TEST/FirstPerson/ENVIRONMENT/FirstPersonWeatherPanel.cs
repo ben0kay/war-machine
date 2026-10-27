@@ -50,14 +50,10 @@ public partial class FirstPersonWeatherPanel : Node
         _panel.AddChild(margin);
         var outer = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) }; margin.AddChild(outer);
         outer.AddChild(new Label { Text = "FPS weather + time of day · F8 to close" });
-        var scroll = new ScrollContainer {
-            CustomMinimumSize = new Vector2(350, Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 220, 220, 580)),
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled
-        };
-        outer.AddChild(scroll);
-        var rows = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        rows.AddThemeConstantOverride("separation", 8); scroll.AddChild(rows);
-        rows.AddChild(new Label { Text = "Day / night" });
+        var root = FirstPersonTuningSections.AddScroll(outer,
+            Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 220, 180, 580));
+        var environmentRows = FirstPersonTuningSections.Add(root, "Environment");
+        var rows = FirstPersonTuningSections.Add(environmentRows, "Day / night");
         _hourLabel = new Label(); rows.AddChild(_hourLabel);
         _hour = AddSlider(rows, 0, 23.99, 0.01);
         _hour.SetValueNoSignal(_settings.StartHour);
@@ -69,19 +65,23 @@ public partial class FirstPersonWeatherPanel : Node
         rows.AddChild(pause);
         pause.Toggled += value => { _sky.SetPaused(value); MarkChanged(); };
 
-        rows.AddChild(new Label { Text = "Weather · zero = off" });
+        rows = FirstPersonTuningSections.Add(environmentRows, "Weather");
         var enabled = new CheckButton { Text = "Enable weather", ButtonPressed = _settings.WeatherEnabled,
             FocusMode = Control.FocusModeEnum.None };
         rows.AddChild(enabled);
         enabled.Toggled += value => { _settings.WeatherEnabled = value; _weather.ApplySettings(); MarkChanged(); };
+        var weatherRows = rows;
+        rows = FirstPersonTuningSections.Add(weatherRows, "Rain / snow");
         AddBoundSlider(rows, "Rain intensity", 0, 1, 0.01, _settings.RainIntensity,
             value => { _settings.RainIntensity = value; _weather.ApplySettings(); });
         AddBoundSlider(rows, "Snow intensity", 0, 1, 0.01, _settings.SnowIntensity,
             value => { _settings.SnowIntensity = value; _weather.ApplySettings(); });
+        rows = FirstPersonTuningSections.Add(weatherRows, "Mist / motes");
         AddBoundSlider(rows, "Local mist", 0, 1, 0.01, _settings.LocalMistIntensity,
             value => { _settings.LocalMistIntensity = value; _weather.ApplySettings(); });
         AddBoundSlider(rows, "Airborne motes", 0, 1, 0.01, _settings.AirborneIntensity,
             value => { _settings.AirborneIntensity = value; _weather.ApplySettings(); });
+        rows = FirstPersonTuningSections.Add(environmentRows, "Wind");
         AddBoundSlider(rows, "Wind strength", 0, 2, 0.01, _settings.GrassWindStrength,
             value => { _settings.GrassWindStrength = value; ApplyWind(); });
         AddBoundSlider(rows, "Wind heading (degrees)", 0, 360, 1, _settings.WindHeading,
@@ -91,6 +91,7 @@ public partial class FirstPersonWeatherPanel : Node
             value => { _settings.WeatherGusts = value; _weather.ApplySettings(); });
         AddBoundSlider(rows, "Turbulence", 0, 2, 0.01, _settings.WeatherTurbulence,
             value => { _settings.WeatherTurbulence = value; _weather.ApplySettings(); });
+        rows = FirstPersonTuningSections.Add(weatherRows, "Particle appearance / quality");
         AddBoundSlider(rows, "Particle size", 0.1, 3, 0.05, _settings.WeatherParticleSize,
             value => { _settings.WeatherParticleSize = value; _weather.ApplySettings(); });
         AddBoundSlider(rows, "Fall speed", 0.1, 3, 0.05, _settings.WeatherFallSpeed,

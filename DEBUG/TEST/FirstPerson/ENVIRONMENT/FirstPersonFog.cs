@@ -50,15 +50,19 @@ public partial class FirstPersonFog : Node
         controls.AddChild(_panel);
         var box = new VBoxContainer { CustomMinimumSize = new Vector2(400, 0) }; _panel.AddChild(box);
         box.AddChild(new Label { Text = "FPS fog + render distance · F9 to close" });
-        var enabled = new CheckButton { Text = "Distance fog + linked rendering", ButtonPressed = _settings.DistanceFogEnabled };
-        enabled.Toggled += value => { _settings.DistanceFogEnabled = value; Apply(); }; box.AddChild(enabled);
-        Slider(box, "Fog starts (m)", 1, 150, _settings.FogStartDistance, value => _settings.FogStartDistance = value);
-        Slider(box, "Fog fully opaque (m)", 10, 250, _settings.FogEndDistance, value => _settings.FogEndDistance = value);
-        Slider(box, "Hidden render buffer (m)", 8, 200, _settings.FogCullBuffer, value => _settings.FogCullBuffer = value);
-        var color = new ColorPickerButton { Color = _settings.FogColor, EditAlpha = false, Text = "Fog colour" };
-        color.ColorChanged += value => { _settings.FogColor = value; Apply(); }; box.AddChild(color);
+        var rows = FirstPersonTuningSections.AddScroll(box,
+            Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 220, 180, 580));
+        var fogRows = FirstPersonTuningSections.Add(rows, "Distance fog");
+        var enabled = new CheckButton { Text = "Distance fog + linked rendering", ButtonPressed = _settings.DistanceFogEnabled, FocusMode = Control.FocusModeEnum.None };
+        enabled.Toggled += value => { _settings.DistanceFogEnabled = value; Apply(); }; fogRows.AddChild(enabled);
+        Slider(fogRows, "Fog starts (m)", 1, 150, _settings.FogStartDistance, value => _settings.FogStartDistance = value);
+        Slider(fogRows, "Fog fully opaque (m)", 10, 250, _settings.FogEndDistance, value => _settings.FogEndDistance = value);
+        var color = new ColorPickerButton { Color = _settings.FogColor, EditAlpha = false, Text = "Fog colour", FocusMode = Control.FocusModeEnum.None };
+        color.ColorChanged += value => { _settings.FogColor = value; Apply(); }; fogRows.AddChild(color);
+        var renderRows = FirstPersonTuningSections.Add(rows, "Rendering / culling");
+        Slider(renderRows, "Hidden render buffer (m)", 8, 200, _settings.FogCullBuffer, value => _settings.FogCullBuffer = value);
         _readout = new Label(); box.AddChild(_readout);
-        var copy = new Button { Text = "Copy fog settings" };
+        var copy = new Button { Text = "Copy fog settings", FocusMode = Control.FocusModeEnum.None };
         copy.Pressed += () => DisplayServer.ClipboardSet(System.FormattableString.Invariant(
             $"DistanceFogEnabled = {_settings.DistanceFogEnabled}\nFogStartDistance = {_fogSettings.DistanceFogStart}\nFogEndDistance = {_fogSettings.DistanceFogEnd}\nFogCullBuffer = {Mathf.Clamp(_settings.FogCullBuffer, 8, 200)}\nFogColor = Color({_settings.FogColor.R}, {_settings.FogColor.G}, {_settings.FogColor.B}, 1)"));
         box.AddChild(copy);
@@ -68,7 +72,7 @@ public partial class FirstPersonFog : Node
     private void Slider(VBoxContainer box, string name, float min, float max, float value, System.Action<float> set)
     {
         box.AddChild(new Label { Text = name });
-        var slider = new HSlider { MinValue = min, MaxValue = max, Step = 1, Value = value };
+        var slider = new HSlider { MinValue = min, MaxValue = max, Step = 1, Value = value, FocusMode = Control.FocusModeEnum.None, Scrollable = false };
         slider.ValueChanged += next => { set((float)next); Apply(); }; box.AddChild(slider);
     }
 
