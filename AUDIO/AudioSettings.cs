@@ -1,4 +1,4 @@
-// Authoring-only shared audio budgets/mix. The pooled runtime service will be implemented in a later phase.
+// Shared authoring defaults for the world-owned bounded audio pool; duplicate once at runtime.
 using Godot;
 
 [GlobalClass]
@@ -9,7 +9,7 @@ public partial class AudioSettings : Resource
     [Export(PropertyHint.Range, "-60,12,0.5")] public float MasterVolumeDb { get; set; } = 0f;
 
     [ExportGroup("Voice budgets")]
-    // Targets only until AudioManager exists. Nested caps never increase the global hard limit.
+    // Nested limits enforced by WorldAudio. The fixed pool is sized at startup.
     [Export(PropertyHint.Range, "1,64,1")] public int MaxVoices { get; set; } = 20;
     [Export(PropertyHint.Range, "0,64,1")] public int MaxOneShotVoices { get; set; } = 14;
     [Export(PropertyHint.Range, "0,64,1")] public int MaxLoopVoices { get; set; } = 6;

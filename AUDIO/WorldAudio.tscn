@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://AUDIO/Shared/WorldAudio.cs" id="1"]
+[ext_resource type="Resource" path="res://AUDIO/Configuration/AudioMaster.tres" id="2"]
+
+[node name="Audio" type="Node"]
+script = ExtResource("1")
+Settings = ExtResource("2")

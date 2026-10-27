@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AudioCue" load_steps=2 format=3]
+[ext_resource type="Script" path="res://AUDIO/Shared/AudioCue.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+CueId = "rifle_shot"
+Category = 0
+Spatial = true
+Priority = 90
+VolumeDb = 0.0
+MaxDistance = 90.0
+PitchVariation = 0.025

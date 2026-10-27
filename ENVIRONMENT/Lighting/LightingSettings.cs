@@ -1,15 +1,15 @@
-// Authoring-only defaults for future local lighting. No light nodes or animation are created here.
+// Shared cached muzzle-light defaults; campfire/persistent lighting remains separate future work.
 using Godot;
 
 [GlobalClass]
 public partial class LightingSettings : Resource
 {
-    [ExportGroup("Local lights (future)")]
+    [ExportGroup("Local lights")]
     [Export] public bool Enabled { get; set; } = true;
-    // A design safety budget for future pooled, transient effects; not enforced yet.
+    // Shared active muzzle-light lease cap, enforced by MuzzleFlashLight.
     [Export(PropertyHint.Range, "1,16,1")] public int MaxTransientLights { get; set; } = 4;
 
-    [ExportGroup("Weapon muzzle light (future)")]
+    [ExportGroup("Weapon muzzle light")]
     [Export] public bool MuzzleLightEnabled { get; set; } = true;
     [Export] public Color MuzzleLightColor { get; set; } = new(1f, 0.78f, 0.52f);
     [Export(PropertyHint.Range, "0,8,0.1")] public float MuzzleLightEnergy { get; set; } = 2f;

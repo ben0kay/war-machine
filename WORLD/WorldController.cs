@@ -12,6 +12,7 @@ public partial class WorldController : Node3D
     protected PinePlacement _pines = null!;
     protected TerrainGrass _grass = null!;
     private PlayerController _player = null!;
+    protected WorldAudio _audio = null!;
     protected WeatherBridge _weather = null!;
     protected Camera _camera = null!;
     private PlayerDistanceFog? _distanceFog;
@@ -32,6 +33,7 @@ public partial class WorldController : Node3D
         PlayerSettings = (PlayerSettings)PlayerSettings.Duplicate(true);
         CameraSettings = (CameraSettings)CameraSettings.Duplicate(true);
         GameplayTerrainStorage.CopyLegacyBakeIfNeeded();
+        _audio = GetNode<WorldAudio>("SystemsRoot/Audio");
         _environmentScene = GetNode<GameEnvironment>("SystemsRoot/EnvironmentRoot");
         EnvironmentSettings = _environmentScene.Settings;
         SetProcess(false); SetPhysicsProcess(false); CallDeferred(nameof(InitializeWorld));
@@ -65,6 +67,7 @@ public partial class WorldController : Node3D
         collision.Call("build");
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(PlayerSettings, camera);
+        _audio.BindListener(player, camera);
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
         // Build one deterministic horde layout for both placement and its tree/rock clearings.
@@ -127,7 +130,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeEquipment(PlayerController player, Camera camera)
     {
         var equipment = new PlayerWeaponController { Name = "Equipment" }; player.AddChild(equipment);
-        equipment.Initialize(player, camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"));
+        equipment.Initialize(player, camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"), _audio);
     }
 
     // =========================================================

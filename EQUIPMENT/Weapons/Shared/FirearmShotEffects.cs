@@ -9,6 +9,7 @@ public partial class FirearmShotEffects : Node3D
     private FirearmSettings _settings = null!;
     private int _nextTracer;
     private float _flashTime;
+    private MuzzleFlashLight? _light;
     private Marker3D _muzzle = null!;
 
     // =========================================================
@@ -37,6 +38,11 @@ public partial class FirearmShotEffects : Node3D
             MaterialOverride = material, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             Visible = false };
         AddChild(_flash);
+        if (settings.EmitMuzzleLight)
+        {
+            _light = new MuzzleFlashLight { Name = "MuzzleLight" }; AddChild(_light);
+            _light.Initialize(GD.Load<LightingSettings>("res://ENVIRONMENT/Lighting/Configuration/LightingMaster.tres"));
+        }
         Visible = false; SetProcess(false); SetPhysicsProcess(false);
     }
 
@@ -63,7 +69,8 @@ public partial class FirearmShotEffects : Node3D
         }
         else { tracer.Visible = false; _tracerTime[slot] = 0; }
 
-        _flash.GlobalPosition = start;
+        _flash.GlobalPosition = _muzzle.GlobalPosition;
+        _light?.Trigger(_muzzle.GlobalPosition);
         _flashTime = Mathf.Clamp(_settings.FlashDuration, 0.01f, 0.25f);
         _flash.Visible = true;
         Visible = true; SetProcess(true);
@@ -75,6 +82,9 @@ public partial class FirearmShotEffects : Node3D
     {
         float dt = (float)delta;
         bool active = false;
+        Vector3 renderedMuzzle = IsInstanceValid(_muzzle) ? _muzzle.GetGlobalTransformInterpolated().Origin : GlobalPosition;
+        _light?.Advance(dt, renderedMuzzle);
+        active |= _light?.IsLit == true;
         if (_flashTime > 0)
         {
             _flashTime = Mathf.Max(0f, _flashTime - dt);
@@ -82,7 +92,7 @@ public partial class FirearmShotEffects : Node3D
             else
             {
                 // Attached flash follows the rendered barrel; fired streaks remain in world space.
-                if (IsInstanceValid(_muzzle)) _flash.GlobalPosition = _muzzle.GetGlobalTransformInterpolated().Origin;
+                if (IsInstanceValid(_muzzle)) _flash.GlobalPosition = renderedMuzzle;
                 active = true;
             }
         }
@@ -100,6 +110,7 @@ public partial class FirearmShotEffects : Node3D
     // Focus loss, unequip and scene unload cancel every visual, not just the newest shot.
     public void Stop()
     {
+        _light?.StopLight();
         _flashTime = 0; _flash.Visible = false;
         for (int i = 0; i < _tracers.Length; i++)
         { _tracerTime[i] = 0; _tracers[i].Visible = false; }

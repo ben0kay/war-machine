@@ -17,14 +17,14 @@ public partial class PlayerWeaponController : Node
 
     // =========================================================
     // Spawn whichever firearm scene is configured; this adapter never knows a rifle path or balance value.
-    public void Initialize(PlayerController player, Camera camera, EquipmentConfig config)
+    public void Initialize(PlayerController player, Camera camera, EquipmentConfig config, WorldAudio? audio = null)
     {
         _player = player; _camera = camera;
         if (!config.Enabled || config.DefaultWeaponScene == null) return;
         _aimQuery = new PhysicsRayQueryParameters3D {
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
-        _slots.Initialize(config, player, player.WeaponMount, Vector3.Zero);
+        _slots.Initialize(config, player, player.WeaponMount, Vector3.Zero, audio);
         SwitchWeapon(0);
         if (_weapon == null) return;
         player.SetWeaponPose(true);

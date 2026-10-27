@@ -15,14 +15,14 @@ public partial class FirstPersonWeapon : Node
 
     // =========================================================
     // The same rifle is a real world-space mesh, so nearby scenery can still obstruct its muzzle.
-    public void Initialize(PlayerController player, FirstPersonCamera camera, EquipmentConfig equipment)
+    public void Initialize(PlayerController player, FirstPersonCamera camera, EquipmentConfig equipment, WorldAudio? audio = null)
     {
         _player = player; _camera = camera;
         if (!equipment.Enabled || equipment.DefaultWeaponScene == null) return;
         _query = new PhysicsRayQueryParameters3D { HitFromInside = true,
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
-        _slots.Initialize(equipment, player, camera, camera.TestSettings.WeaponOffset);
+        _slots.Initialize(equipment, player, camera, camera.TestSettings.WeaponOffset, audio);
         SwitchWeapon(0);
     }
 

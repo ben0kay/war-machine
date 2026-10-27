@@ -9,7 +9,8 @@ public partial class FirearmController : Node3D
     public FirearmSettings RuntimeSettings { get; private set; } = null!;
     private Timer _cooldown = null!;
     private FirearmShotEffects _effects = null!;
-    private AudioStreamPlayer3D _audio = null!;
+    private AudioStreamPlayer3D? _legacyAudio;
+    private WorldAudio? _audioService;
     private PhysicsRayQueryParameters3D _query = null!;
     private CollisionObject3D? _holder;
     private readonly RandomNumberGenerator _shotRandom = new();
@@ -25,16 +26,19 @@ public partial class FirearmController : Node3D
         _cooldown = new Timer { Name = "Cooldown", OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
         AddChild(_cooldown); _cooldown.Timeout += OnCooldown;
         _effects = new FirearmShotEffects { Name = "ShotEffects" }; AddChild(_effects); _effects.Initialize(RuntimeSettings, Muzzle);
-        _audio = new AudioStreamPlayer3D { Name = "ShotAudio", Stream = RuntimeSettings.ShotSound, VolumeDb = RuntimeSettings.ShotVolumeDb };
-        AddChild(_audio);
+        if (RuntimeSettings.ShotCue == null && RuntimeSettings.ShotSound != null)
+        {
+            _legacyAudio = new AudioStreamPlayer3D { Name = "LegacyShotAudio", Stream = RuntimeSettings.ShotSound, VolumeDb = RuntimeSettings.ShotVolumeDb };
+            AddChild(_legacyAudio);
+        }
         _query = new PhysicsRayQueryParameters3D { CollisionMask = RuntimeSettings.HitMask, HitFromInside = true };
         if (Muzzle == null) GD.PushError("Firearm scene requires a Muzzle marker.");
     }
 
     // =========================================================
     // Any actor can equip this scene; its own collider is excluded from the cached query.
-    public void Equip(CollisionObject3D holder)
-    { _holder = holder; _query.Exclude = new Godot.Collections.Array<Rid> { holder.GetRid() }; _equipped = true; }
+    public void Equip(CollisionObject3D holder, WorldAudio? audio = null)
+    { _audioService = audio; _holder = holder; _query.Exclude = new Godot.Collections.Array<Rid> { holder.GetRid() }; _equipped = true; }
 
     // =========================================================
     // Caller supplies aim and shoulder/probe origin during physics, independent of movement/input implementation.
@@ -66,7 +70,11 @@ public partial class FirearmController : Node3D
                 { receiver.ReceiveHit(new DamagePacket(RuntimeSettings.Damage, RuntimeSettings.DamageKind, _holder, end, direction)); break; }
         }
         _effects.ShowShot(start, end);
-        if (_audio.Stream != null) _audio.Play();
+        if (RuntimeSettings.ShotCue != null)
+        {
+            if (IsInstanceValid(_audioService)) _audioService!.PlayOneShot(RuntimeSettings.ShotCue, Muzzle.GlobalPosition, GetInstanceId(), RuntimeSettings.ShotVolumeDb);
+        }
+        else _legacyAudio?.Play();
         _cooldown.Start(Mathf.Max(RuntimeSettings.ShotInterval, 0.03f));
         return true;
     }
@@ -77,7 +85,8 @@ public partial class FirearmController : Node3D
 
     // =========================================================
     // Unequip, focus cancellation and scene teardown cannot leave feedback/audio ticking.
-    public void CancelFeedback() { _effects.Stop(); _audio.Stop(); }
+    public void CancelFeedback()
+    { _effects.Stop(); _legacyAudio?.Stop(); if (IsInstanceValid(_audioService)) _audioService!.StopEmitter(GetInstanceId()); }
 
     // =========================================================
     public void Unequip() { _equipped = false; _cooldown.Stop(); CancelFeedback(); _holder = null; }

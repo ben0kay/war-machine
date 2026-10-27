@@ -8,13 +8,14 @@ public partial class WeaponSlots : Node
     private CollisionObject3D _holder = null!;
     private Node3D _mount = null!;
     private Vector3 _offset;
+    private WorldAudio? _audio;
     private int _selected = -1;
     public FirearmController? Current => _selected < 0 ? null : _weapons[_selected];
 
     // =========================================================
     // Actual scenes remain data-driven; FPS supplies its eye-camera mount, overhead supplies the hand socket.
-    public void Initialize(EquipmentConfig config, CollisionObject3D holder, Node3D mount, Vector3 offset)
-    { _config = config; _holder = holder; _mount = mount; _offset = offset; SetProcess(false); SetPhysicsProcess(false); }
+    public void Initialize(EquipmentConfig config, CollisionObject3D holder, Node3D mount, Vector3 offset, WorldAudio? audio = null)
+    { _config = config; _holder = holder; _mount = mount; _offset = offset; _audio = audio; SetProcess(false); SetPhysicsProcess(false); }
 
     // =========================================================
     // Lazy scene creation is bounded to two weapons. Validate replacement before putting the current gun away.
@@ -32,7 +33,7 @@ public partial class WeaponSlots : Node
         }
         if (IsInstanceValid(Current)) { Current!.Unequip(); Current.Hide(); Current.ProcessMode = ProcessModeEnum.Disabled; }
         _selected = slot;
-        Current!.ProcessMode = ProcessModeEnum.Inherit; Current.Show(); Current.Equip(_holder);
+        Current!.ProcessMode = ProcessModeEnum.Inherit; Current.Show(); Current.Equip(_holder, _audio);
         return true;
     }
 

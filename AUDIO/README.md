@@ -1,52 +1,31 @@
-# AUDIO — reusable sound playback foundation
+# AUDIO — shared bounded playback
 
-> **Status: structure and configuration only.** There is **no live AudioManager, pooling, sound asset or world wiring** yet. These directories and Inspector-readable AudioMaster are a handoff for Codex; current rifle/robot/weather playback is unchanged.
+**AU0 implemented, awaiting local validation. AU1 rifle playback hook implemented; sound asset intentionally unassigned.** AU2 sources and AU3 AI hearing remain future work.
 
-War Machine's fully 3D, angled top-down survival world will eventually need positional weapons, footsteps, wildlife/deer, zombies, robots, machinery, weather and ambient sound. It also has an inherited first-person test. Keep playback shared and bounded, not one always-running AudioStreamPlayer per zombie.
+World instances `AUDIO/WorldAudio.tscn` once under SystemsRoot/Audio; FPS inherits it. Settings come from Configuration/AudioMaster.tres, duplicated at startup. Shared/WorldAudio.cs owns the pool; Shared/AudioCue.cs describes an independent stream/category/priority/spatial/range/gain/pitch cue.
 
-## Folder map
+## Plug in the rifle sound
 
-```text
-AUDIO/
-  README.md / IMPLEMENTATION_PLAN.md
-  AudioSettings.cs
-  Configuration/AudioMaster.tres
-  Shared/                       future AudioManager, cue resources, routing
-  OneShots/
-    Weapons/                    gunfire, reload, melee and impact
-    Movement/                   footsteps, slides, falls
-    Creatures/                  zombies, deer, wildlife, damage
-    Interactions/               doors, scavenging, items, switches
-    UI/                         HUD, menu and warnings (2D)
-  Loops/
-    Ambience/                   forest, caves, buildings
-    Weather/                    rain, wind, blizzards
-    Machinery/                  robots, generators, engines
-    Creatures/                  rare sustained growls/breathing
-```
+1. Import the desired short non-looping WAV/OGG under AUDIO/OneShots/Weapons/.
+2. Open **AUDIO/OneShots/Weapons/RifleShot.tres**, assign **Stream** in the Inspector and save.
+3. RifleMaster already references that cue through ShotCue. Its ShotVolumeDb remains -12; tune cue VolumeDb and AudioMaster.WeaponsVolumeDb as needed.
 
-Each subfolder has a README so it exists in Git before audio assets are supplied. Audio files belong inside these asset folders; generic playback code belongs in `Shared/`.
+There is no generated/bundled sound in this change. Empty Stream silently skips playback without spending a voice. MachineGunMaster has no ShotCue or ShotSound and remains silent; later create its own cue/stream. Both guns use the same optional API without copying playback code. Legacy ShotSound fallback remains only for unmigrated weapons and is never played alongside ShotCue. RobotAudio and existing addon audio are not migrated and are outside this pool's budgets.
 
-## Planned global voice handling
+## Budgets and API
 
-Use one world-owned playback service with reusable pooled `AudioStreamPlayer3D` and `AudioStreamPlayer` nodes. Master defaults: **20 total voices**, up to **14 one-shots**, **6 loops**, **5 creature voices**, **2 voices per emitter**, and **3 concurrent copies of one cue**. Limits are **nested caps**, not additive. **These values are currently data only; they do not affect live sounds.**
+Hard nested caps apply to participating requests: default 20 total / 14 one-shots / 6 loops / 5 creature / 2 per emitter / 3 per CueId. The pool creates 20 reusable slots with paired 3D/2D players; **only one player per slot is used**, each with MaxPolyphony=1, so 40 cached nodes do not mean 40 voices. MaxVoices is clamped to 64 at startup. Use unique stable CueId strings for cues (the same rifle ID remains shared across duplicated weapon resources). Empty IDs fall back to resource identity.
 
-When 50 zombies request groans at once, only the closest/most relevant few should play. Reject out-of-range optional sounds before using a slot. Rank requests by distance, category and priority; prefer immediate player feedback/nearby danger over distant groans or ambience. When all slots are full, drop/replace the least useful optional sound rather than create a new voice. Include slight pitch/gain variation later to avoid a choir of identical zombie sounds. Don't muffle important gameplay feedback merely to reach a global volume target.
+PlayOneShot(cue, worldPosition, emitterId, gainDb) returns accepted bool. StartLoop(cue, source, emitterId) returns a unique handle; StopLoop(handle), StopEmitter(emitterId), StopAll() release playback. Spatial requests outside range are rejected before slot use. Selection ranks category-authored priority then distance; an equal/lower-ranked victim must satisfy every saturated nested cap before replacement. If no single victim resolves all limits, the request is rejected. No extra nodes are allocated on demand. Caller-owned streams must not loop for one-shots. For loops, native authored stream looping is preferred; Finished restarts a non-looping stream with a possible seam.
 
-**One-shots:** save the world position of an accepted rifle shot and play the short tail **there**, even if the player moves away. Recycle a pooled voice on `Finished`; no per-shot node construction. **Loops:** start/stop explicitly, optionally follow their source, use fades and coarse distance relevance updates, end on disable/death/unload; never start one unbounded loop per creature.
+One-shots retain their original muzzle world position, including shots blocked by cover; gameplay probe/raycast start is not used as the audio origin. Equip passes an explicit world service through existing slots/adapters. Unequip/focus cancellation stops that weapon emitter's active sounds; completed voices recycle on Finished. Missing/capped/muted audio never gates firing, damage or any future AI hearing stimulus. No AI hearing implemented.
 
-**3D listener:** the overhead camera is elevated, so use an intentional player-centred `AudioListener3D` (or equivalent) rather than accidentally attenuating a rifle shot as if the player's ears were 36m above them. Ensure the FPS test switches cleanly without competing active listeners. UI sounds are 2D. Later define/validate Godot buses for Weapons, Creatures, Footsteps, World, Weather, UI and optional Music; settings offsets apply at the right category or bus once implemented.
+## Listener, lifetime and performance
 
-**Performance:** zero/OFF should stop voices and processing; no always-on loop scanning when nothing is playing; no per-zombie sound timers; no world searches per cue. Reuse event-driven trigger points, signal-based recycling and one bounded, active-only relevance pass for ongoing loops. Reload/scene unload must stop and release audio handles. No built-in sound effect should force a world-wide listener query.
+One AudioListener3D is attached at player head height and oriented by existing camera ViewChanged signals, in both views. The overhead camera's elevation does not move the ears away from the player. Stance changes adjust height. Rebind/exit disconnect camera/stance events and release listener state.
 
-## Keep AI hearing separate from audible playback
+No manager Process/PhysicsProcess callback for idle or one-shot-only use. Native audio playback is intentional active mixer work. Only ongoing loops wake a single 5Hz source follow/relevance check; lost/far sources stop and the manager sleeps after the last loop. Explicit StopLoop/StopEmitter stops burning/AI/etc. state changes; no generic entity-state dependency is assumed. OFF through RuntimeSettings.Enabled plus ApplySettings stops all; master volume/category gains apply once per request. Call ApplySettings after runtime changes (it stops existing playback). Pool-size increases need scene reload; reductions are enforced on new requests. No new buses or global bus mutations, occlusion rays, resource searches or per-creature timers. Existing external playback is unchanged.
 
-The planned zombie hearing/perception feature is defined in `ENTITIES/Shared/Sensing/HEARING_INVESTIGATION_PLAN.md`. Gameplay gunshot stimuli should be raised independently of the audio playback outcome. **Muted/capped/missing sound must not make a real shot inaudible to zombies.** The audio manager only presents SFX; individual AI systems decide whether to investigate recorded positions.
+## Local validation
 
-## Existing sources to preserve
-
-- `EQUIPMENT/Weapons/Shared/FirearmController.cs` already plays optional `FirearmSettings.ShotSound` with its own cached `AudioStreamPlayer3D` for accepted `TryFire()`. Neither default rifle nor machine gun has a bundled stream. Future AU1 migrates **rifle only** first, avoiding duplicate playback or changing hit/trace/cooldown.
-- `ENTITIES/TYPES/Robots/Robot_001/RobotAudio.cs` already synthesizes/caches spatial footstep and servo cues. Keep its behaviour until a separate authorized integration.
-- `ENVIRONMENT/Weather/WeatherBridge.cs` owns current weather state; future rain loops should respond to it instead of adding one player per raindrop.
-
-**Next:** see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), stages AU0 (pooled manager), AU1 (rifle sound only), AU2 (creatures, robots, ambience/weather), AU3 (AI stimuli/acoustics, owned by sensing). Follow `CodePreferences.md`: minimal C#, Inspector master, dormant when off, and one commit per task.
+Source/loop/resource wiring and a numeric nested-budget model were checked. **Compilation, Godot runtime, listening and visual/performance acceptance are unverified: no Godot/.NET executable here.** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. At night, fire/switch both guns while moving; verify brief warm lighting, no shadows/stuck light, focus loss and reload. Assign a short **non-looping** WAV/OGG to RifleShot.tres Stream, fire/hold and move, verify exactly one sound per accepted shot and no MG sound. Check the Remote tree for one Audio service/player listener; inspect stopping/switching/unload and OFF. Stress caps with temporary cue requests; do not assume measured performance from source checks. No terrain rebake needed.

@@ -12,7 +12,7 @@ public partial class FirstPersonWorld : WorldController
     protected override void InitializeEquipment(PlayerController player, Camera camera)
     {
         var weapon = new FirstPersonWeapon { Name = "FirstPersonEquipment" }; player.AddChild(weapon);
-        weapon.Initialize(player, (FirstPersonCamera)camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"));
+        weapon.Initialize(player, (FirstPersonCamera)camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"), _audio);
     }
 
     // =========================================================

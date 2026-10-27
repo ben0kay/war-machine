@@ -24,6 +24,9 @@ public partial class FirearmSettings : Resource
     [Export] public float FlashRadius { get; set; } = 0.08f;
     [Export] public float TracerWidth { get; set; } = 0.035f;
     [Export] public Color ShotColor { get; set; } = new(1, 0.8f, 0.35f);
+    [Export] public bool EmitMuzzleLight { get; set; }
+    [Export] public AudioCue? ShotCue { get; set; }
+    // Legacy stream remains available for unmigrated weapons; pooled playback is required when ShotCue is set.
     [Export] public AudioStream? ShotSound { get; set; }
     [Export] public float ShotVolumeDb { get; set; } = -12;
 

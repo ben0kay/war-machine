@@ -1,6 +1,6 @@
 # Local lighting — future Codex tasks
 
-**Status: proposed only.** Scaffold and `Configuration/LightingMaster.tres` exist; **no runtime light has been implemented**. On authorization, read root `README.md`, `CodePreferences.md`, this folder's README, `EQUIPMENT/Weapons/Shared/FirearmShotEffects.cs`, `FirearmController.cs`, `FirearmSettings.cs`, `WORLD/WorldController.cs` and shared environment ownership docs. Use branch **`implement-td0-td1`**, not main. Implement only authorized phases, keep testing brief and push one commit per job.
+**Current status: LI0 implemented, awaiting local validation.** Shared muzzle-light code is explicitly enabled for both rifle and machine gun under the current authorization. Settings, separate light/mesh timing and the shared active lease cap are documented in README. LI1 remains proposed only. The numbered LI0 steps below are the original handoff; its earlier rifle-only restriction is superseded by this job's explicit two-weapon opt-in. On authorization, read root `README.md`, `CodePreferences.md`, this folder's README, `EQUIPMENT/Weapons/Shared/FirearmShotEffects.cs`, `FirearmController.cs`, `FirearmSettings.cs`, `WORLD/WorldController.cs` and shared environment ownership docs. Use branch **`implement-td0-td1`**, not main. Implement only authorized phases, keep testing brief and push one commit per job.
 
 ## LI0 — rifle muzzle light (do this first when asked)
 
