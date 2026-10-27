@@ -21,4 +21,8 @@ public partial class MeleeSettings : Resource
     [Export] public CombatImpactKind ImpactKind { get; set; } = CombatImpactKind.Shove;
     [Export(PropertyHint.Range, "0,10,0.05")] public float ImpactStrength { get; set; } = 1f;
     [Export(PropertyHint.Range, "0,1,0.01")] public float ImpactDuration { get; set; } = 0.40f;
+    [ExportGroup("Quick shove momentum")]
+    [Export(PropertyHint.Range, "0,5,0.05")] public float StationaryStrengthMultiplier { get; set; } = 0.45f;
+    [Export(PropertyHint.Range, "0,5,0.05")] public float RunningStrengthMultiplier { get; set; } = 2.25f;
+    [Export(PropertyHint.Range, "0.1,20,0.1")] public float FullMomentumSpeed { get; set; } = 8f;
 }

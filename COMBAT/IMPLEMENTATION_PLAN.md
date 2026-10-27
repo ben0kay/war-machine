@@ -169,6 +169,11 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 **Pass / handoff:** With firearm equipped, V shoves one nearby zombie without ammo/HP change; misses, cover and out-of-range are safe. Left-click still shoots. A melee item can eventually invoke exactly the same Quick Melee action, while its left-click primary has a distinct profile. Knockback collides naturally, recovers chase, doesn't stun-lock and doesn't affect dead actors. Build + quick **top-down and FPS melee acceptance** locally: standing target, near-centre strike, deliberately high/low FPS aim miss, overhead attack with correct horizontal facing but modest height difference, intervening wall, different elevation/floor, input focus/weapon swap. **Regular Chat** for isolated setup/pose, **Regular Chat** may implement end-to-end in small source-reviewed edits with brief validation; use **Codex / Work** only if complex collision, movement integration or runtime debugging exceeds that scope, **Copilot** for local validation.
 
+
+### CM2-C small follow-up — movement-weighted Q shove (2026-10-27)
+
+**Implemented in source; awaiting local validation.** The existing Q binding and top-down/FPS melee detection remain unchanged and work at rest, while walking and while running. When Q successfully starts, `PlayerQuickMelee` samples actual player XZ velocity once and scales only the shove's impact strength from **0.45× stationary** through **~1.575× at 5 m/s** to **2.25× at 8 m/s and above**. These values and the full-speed reference are editable in `COMBAT/Configuration/QuickShoveMaster.tres`; default base impact strength remains 1. Both zombie master resources now allow a **10 m/s max shove push speed** (was 6). Recipient collision/braking, hit eligibility, bullet reactions, recovery, independent cooldown, zero damage, and no-animation/no-idle-work contracts are preserved. No new phase authorization follows from this tweak. See COMBAT/README.md for the focused test handoff.
+
 ### CM2-B split into independent passes (2026-10-27)
 
 | Phase | Scope | Files | Status |

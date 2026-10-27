@@ -48,5 +48,5 @@ ShoveResistance = 0.0
 ShoveFlinchThreshold = 0.2
 ShoveMaxStaggerSeconds = 0.45
 ShovePushSpeed = 4.0
-ShoveMaxPushSpeed = 6.0
+ShoveMaxPushSpeed = 10.0
 ShoveBrakingAcceleration = 9.0

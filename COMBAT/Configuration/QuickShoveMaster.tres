@@ -15,3 +15,6 @@ CooldownSeconds = 0.55
 Damage = 0.0
 ImpactStrength = 1.0
 ImpactDuration = 0.4
+StationaryStrengthMultiplier = 0.45
+RunningStrengthMultiplier = 2.25
+FullMomentumSpeed = 8.0

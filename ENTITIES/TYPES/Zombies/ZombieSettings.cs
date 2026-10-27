@@ -28,7 +28,7 @@ public partial class ZombieSettings : EntitySettings
     [Export(PropertyHint.Range, "0,10,0.05")] public float ShoveFlinchThreshold { get; set; } = 0.2f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float ShoveMaxStaggerSeconds { get; set; } = 0.45f;
     [Export(PropertyHint.Range, "0,20,0.1")] public float ShovePushSpeed { get; set; } = 4f;
-    [Export(PropertyHint.Range, "0,20,0.1")] public float ShoveMaxPushSpeed { get; set; } = 6f;
+    [Export(PropertyHint.Range, "0,20,0.1")] public float ShoveMaxPushSpeed { get; set; } = 10f;
     [Export(PropertyHint.Range, "0,40,0.5")] public float ShoveBrakingAcceleration { get; set; } = 9f;
     [ExportGroup("Movement")]
     [Export] public float WanderSpeed { get; set; } = 0.65f;

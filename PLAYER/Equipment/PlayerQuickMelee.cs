@@ -7,6 +7,7 @@ public sealed class PlayerQuickMelee
     private readonly PlayerController _owner;
     private readonly MeleeAttack _attack;
     private readonly MeleeSettings _settings;
+    private float _impactMomentumMultiplier = 1f;
     public bool IsActive => _attack.IsActive;
 
     // =========================================================
@@ -24,7 +25,24 @@ public sealed class PlayerQuickMelee
     }
 
     // =========================================================
-    public bool TryStart() => _attack.TryStart(_settings);
+    // Capture real horizontal momentum when Q is pressed. The player can shove while idle,
+    // walking or sprinting; later braking during windup cannot silently reduce its force.
+    public bool TryStart()
+    {
+        if (!_attack.TryStart(_settings)) return false;
+        Vector3 velocity = _owner.Velocity;
+        float speed = Mathf.Sqrt(velocity.X * velocity.X + velocity.Z * velocity.Z);
+        float fullSpeed = Safe(_settings.FullMomentumSpeed, 0.1f, 20f);
+        float idle = Safe(_settings.StationaryStrengthMultiplier, 0f, 5f);
+        float running = Safe(_settings.RunningStrengthMultiplier, 0f, 5f);
+        _impactMomentumMultiplier = Mathf.Lerp(idle, running, Mathf.Clamp(speed / fullSpeed, 0f, 1f));
+        return true;
+    }
+
+    // =========================================================
+    // Avoid propagating non-finite inspector values into the combat impact payload.
+    private static float Safe(float value, float min, float max)
+    { return float.IsFinite(value) ? Mathf.Clamp(value, min, max) : min; }
 
     // =========================================================
     // Cancel the active window while preserving its existing cooldown.
@@ -39,8 +57,12 @@ public sealed class PlayerQuickMelee
         DamagePacket? damage = _settings.Damage > 0
             ? new DamagePacket(_settings.Damage, _settings.DamageKind, _owner, contact.Position, contact.Direction)
             : null;
+        // Only the player's shove scales with momentum; damage and stagger duration stay fixed.
+        float strength = _settings.ImpactKind == CombatImpactKind.Shove
+            ? Safe(_settings.ImpactStrength, 0f, 10f) * _impactMomentumMultiplier
+            : _settings.ImpactStrength;
         CombatImpact impact = new(_owner, contact.Position, contact.Direction,
-            _settings.ImpactKind, _settings.ImpactStrength, _settings.ImpactDuration);
+            _settings.ImpactKind, strength, _settings.ImpactDuration);
         HitTargetResolver.Dispatch(contact.Collider, _owner, damage, impact);
     }
 }
