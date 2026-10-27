@@ -1,4 +1,4 @@
-// Dumb reusable zombie: staggered frontal eyesight decisions, slow wandering/chasing, and one shambling animation driver.
+// Reusable zombie: shared sight, health, roaming and chase with overridable artwork/gait for future variants.
 using Godot;
 
 public partial class ZombieController : EntityCore, IDamageReceiver
@@ -24,17 +24,15 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private bool _hasGoal, _configured;
     private ulong _restUntil;
     private float _phase, _stuck;
-    private Node3D _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
-    private Node3D _leftKnee = null!, _rightKnee = null!;
+    protected Node3D _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
+    protected Node3D _leftKnee = null!, _rightKnee = null!;
     // =========================================================
     // Art and one decision timer are built once. The inherited scene stays dormant until placement supplies a target.
     public override void _Ready()
     {
         if (_brain == null)
         {
-            var mesh = new ZombieMeshBuilder(VisualRoot);
-            _leftArm = mesh.LeftArm; _rightArm = mesh.RightArm; _leftLeg = mesh.LeftLeg; _rightLeg = mesh.RightLeg;
-            _leftKnee = mesh.LeftKnee; _rightKnee = mesh.RightKnee;
+            BuildArt();
             Pose(0);
             _health = new HealthComponent { Name = "Health" }; AddChild(_health);
             _health.Died += OnKilled;
@@ -50,6 +48,28 @@ public partial class ZombieController : EntityCore, IDamageReceiver
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
     }
+
+    // =========================================================
+    // Subtypes only supply art and optional motion tuning; detection, health and AI stay shared.
+    protected virtual void BuildArt()
+    {
+        var mesh = new ZombieMeshBuilder(VisualRoot);
+        BindArtJoints(mesh.LeftArm, mesh.RightArm, mesh.LeftLeg, mesh.RightLeg, mesh.LeftKnee, mesh.RightKnee);
+    }
+
+    // =========================================================
+    // Share the existing six-pivot shamble contract across independent procedural mesh builders.
+    protected void BindArtJoints(Node3D leftArm, Node3D rightArm, Node3D leftLeg, Node3D rightLeg,
+        Node3D leftKnee, Node3D rightKnee)
+    {
+        _leftArm = leftArm; _rightArm = rightArm; _leftLeg = leftLeg; _rightLeg = rightLeg;
+        _leftKnee = leftKnee; _rightKnee = rightKnee;
+    }
+
+    // =========================================================
+    // Only species animation/movement feel is customizable; all current zombie timings remain unchanged.
+    protected virtual float MovementAcceleration => 5f;
+    protected virtual float GaitPhasePerMeter => 5f;
 
     // =========================================================
     // World owns placement and target references; the entity has no dependency on PlayerController or Terrain3D.
@@ -178,7 +198,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
         if (_hasGoal && !walking && !IsChasing) Rest();
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
         float speed = Mathf.Max(0, IsChasing ? _config.ChaseSpeed : _config.WanderSpeed);
-        Vector3 horizontal = new Vector3(Velocity.X, 0, Velocity.Z).MoveToward(direction * speed, dt * 5);
+        Vector3 horizontal = new Vector3(Velocity.X, 0, Velocity.Z).MoveToward(direction * speed, dt * Mathf.Max(0.1f, MovementAcceleration));
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - 20 * dt, horizontal.Z);
         MoveAndSlide();
@@ -188,7 +208,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
         {
             float yaw = Mathf.Atan2(-travel.X, -travel.Z);
             VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
-            _phase += travel.Length() * 5;
+            _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter);
             // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
             float swing = Mathf.Cos(_phase);
             Pose(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
@@ -207,7 +227,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
 
     // =========================================================
     // Arms extend toward the player during pursuit, including the stop-near-player pose.
-    private void Pose(float step, float leftLift = 0, float rightLift = 0)
+    protected virtual void Pose(float step, float leftLift = 0, float rightLift = 0)
     {
         VisualRoot.Position = Vector3.Up * (Mathf.Abs(step) * 0.015f);
         _leftArm.Rotation = new Vector3((IsChasing ? 1.4f : 0.15f) - step * 0.08f, 0, -0.08f);

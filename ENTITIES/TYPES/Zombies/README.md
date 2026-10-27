@@ -37,6 +37,10 @@ Controllers/settings now live directly in this folder. Procedural geometry is in
 
 The original cube-like placeholder has been replaced with a stylized organic silhouette, mottled decayed skin, several worn clothing palettes, head/face details and uneven sleeves. The original shamble rig has also gained small cached knee pivots driven only during existing movement. No independent animation processing, physics changes, combat, AI, or new settings were added. See [C/README.md](C/README.md) for the appearance details and short F6 validation checklist. Not yet visually verified in Godot.
 
+## Zombie 002 — Runner prefab (not placed)
+
+A separate [Zombie_002](Zombie_002/README.md) prefab now inherits `Zombie.tscn` and `ZombieController` without duplicating sight, health, terrain recovery, idle decisions or damage. It has a leaner generated body and a distinct running animation when it sees the player. Its independent `ZombieRunnerMaster.tres` sets `ChaseSpeed = 8.3 m/s`, slightly above the player's configured 8.0 m/s sprint. Wandering remains slow (0.85 m/s). The normal Zombie 001 remains unchanged in the world; **Zombie 002 is not spawned anywhere yet**, and still cannot attack. The visual/gait tuning hooks added to the shared controller preserve its default shambler behavior. Source review only; local build and visual verification pending.
+
 ## Building placement and trunk collision
 
 Zombies now collide with pine trunks via physics layer 5. This prevents walking through trees; movement remains a direct slow approach, without navigation around obstacles. Spawn locations receive small pine clearings. The robot does not collide with this trunk layer.
