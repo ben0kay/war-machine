@@ -16,8 +16,19 @@ Non-damageable collision still blocks shots. `ReadyToFire` lets an adapter reque
 another held-trigger shot without polling. `Unequip()` shuts down cooldown,
 feedback and audio. Timing/resources are per instance, not mutable shared masters.
 
-One reused flash/tracer pair per weapon; no per-shot nodes or permanent loop.
-`ShotSound` is an optional AudioStream resource. Default rifle has no audio asset.
+**Pooled tracers:** `FirearmShotEffects.cs` pre-creates `TracerPoolSize` (1–16) separate
+tracer meshes and one reused muzzle flash per equipped weapon. Each shot rotates to
+the next slot, preserving existing streaks until their individual `EffectDuration`
+expires. Exhausting the pool recycles the next slot rather than allocating a new
+mesh. The flash has its own `FlashDuration` and restarts per shot. Only the
+tracers/flash that are alive are visible; once all end, the effects node disables
+`_Process()`. `Stop()` hides all active slots on unequip or focus loss.
+The rifle defaults to **1 tracer**, while MachineGun_001 uses **4**.
+No per-shot nodes, new raycasts, physics loops, materials or permanent VFX loop.
+
+`ShotSound` is an optional AudioStream resource. The default rifle and machine
+gun have no audio asset. Audio still uses one reusable player per firearm, so
+overlapping rapid-fire audio/loops would be a separate polish pass.
 Stats, effect sizes/duration/color and hit mask are in each item's `.tres`.
 `ShotSpread.cs` uses two random samples only when a shot passes cooldown and equip checks;
 there are no extra raycasts or callbacks. It samples a disk-shaped angular cone

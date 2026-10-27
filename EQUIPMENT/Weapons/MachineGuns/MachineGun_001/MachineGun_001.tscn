@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/FirearmController.cs" id="1"]
+[ext_resource type="Resource" path="res://EQUIPMENT/Weapons/MachineGuns/MachineGun_001/Configuration/MachineGunMaster.tres" id="2"]
+[ext_resource type="Script" path="res://EQUIPMENT/Weapons/MachineGuns/MachineGun_001/C/MachineGunMeshBuilder.cs" id="3"]
+
+[node name="MachineGun_001" type="Node3D" node_paths=PackedStringArray("Muzzle")]
+script = ExtResource("1")
+Settings = ExtResource("2")
+Muzzle = NodePath("Muzzle")
+
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("3")
+
+[node name="Muzzle" type="Marker3D" parent="."]
+position = Vector3(0, 0.06, -1.20)

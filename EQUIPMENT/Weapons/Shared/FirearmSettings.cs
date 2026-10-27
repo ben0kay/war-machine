@@ -19,6 +19,8 @@ public partial class FirearmSettings : Resource
     [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 21;
     [ExportGroup("Feedback")]
     [Export] public float EffectDuration { get; set; } = 0.07f;
+    [Export(PropertyHint.Range, "1,16,1")] public int TracerPoolSize { get; set; } = 1;
+    [Export(PropertyHint.Range, "0.01,0.25,0.01")] public float FlashDuration { get; set; } = 0.07f;
     [Export] public float FlashRadius { get; set; } = 0.08f;
     [Export] public float TracerWidth { get; set; } = 0.035f;
     [Export] public Color ShotColor { get; set; } = new(1, 0.8f, 0.35f);

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FirearmSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/FirearmSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+DisplayName = "Machine Gun 001"
+ShotInterval = 0.10
+Automatic = true
+Damage = 35.0
+DamageKind = 0
+Range = 85.0
+BaseSpreadDegrees = 0.75
+HitMask = 21
+EffectDuration = 0.18
+TracerPoolSize = 4
+FlashDuration = 0.05
+FlashRadius = 0.11
+TracerWidth = 0.032
+ShotColor = Color(1, 0.78, 0.42, 1)
+ShotVolumeDb = -12.0

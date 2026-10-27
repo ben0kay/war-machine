@@ -18,7 +18,7 @@ preview, selected by `EQUIPMENT/Configuration/EquipmentMaster.tres`.
 | ACC0 base spread | 0.30° maximum shot deviation (half-angle); 0° restores perfect accuracy |
 | Trigger | Click once or hold left mouse for slow repeating fire |
 | Hit mask | 5: world layer 1 + zombie layer 3; player layer 2 excluded |
-| Feedback | 0.07s reused flash/tracer, optional sound slot (empty by default) |
+| Feedback | 0.07s flash and single pooled tracer; optional sound slot (empty by default) |
 
 Mouse aims toward a physics surface using the active camera in either projection.
 Empty space falls back to a hand-height plane. The player faces the cursor while
@@ -48,8 +48,10 @@ Weapon pose is player-rig configuration, not a rifle-specific animation driver.
 Unequipped weapons have no polling. Actor/camera/mouse changes queue an aim update
 in physics; settled aim sleeps. Holding fire waits on the weapon cooldown timer.
 A shot uses a shoulder obstruction ray and, when unobstructed, one hit ray.
-Hit reactions use an interface, not world scans. Two feedback meshes are reused
-and stop processing after expiry; optional audio only plays per shot.
+Hit reactions use an interface, not world scans. One tracer slot plus a flash
+are pre-created and reused; effects stop processing after expiry. Other firearms
+can increase `TracerPoolSize` for overlapping shots without changing the rifle's
+appearance or cost. Optional audio only plays per shot.
 
 Source/resource paths, wiring and whitespace checked. Godot/.NET unavailable in
 this environment, so **compilation and gameplay remain unverified**. Locally:
