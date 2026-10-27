@@ -8,6 +8,7 @@ Automatic = true
 Damage = 95.0
 DamageKind = 0
 Range = 90.0
+BaseSpreadDegrees = 0.30
 HitMask = 21
 EffectDuration = 0.07
 FlashRadius = 0.08

@@ -12,6 +12,10 @@ public partial class FirearmSettings : Resource
     [Export] public float Damage { get; set; } = 95;
     [Export] public DamageType DamageKind { get; set; } = DamageType.Physical;
     [Export] public float Range { get; set; } = 90;
+    [ExportGroup("Accuracy")]
+    // Maximum half-angle in degrees. Zero means perfect accuracy; shot-only deviation.
+    [Export(PropertyHint.Range, "0,10,0.05")] public float BaseSpreadDegrees { get; set; } = 0f;
+    [ExportGroup("Firing collision")]
     [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 21;
     [ExportGroup("Feedback")]
     [Export] public float EffectDuration { get; set; } = 0.07f;

@@ -7,8 +7,10 @@ controller nor the player input adapter knows which firearm is equipped.
 
 An actor calls `Equip(CollisionObject3D)` after the firearm enters the tree.
 Call `TryFire(aimPoint, shoulderProbeOrigin)` **from physics**. It enforces its
-cooldown, checks the shoulder-to-muzzle segment for cover, casts to the range
-limit, and sends a typed DamagePacket to the nearest ancestor implementing `IDamageReceiver`.
+cooldown, applies the configured per-shot **BaseSpreadDegrees** half-angle to the
+muzzle aim (ACC0), checks the shoulder-to-muzzle segment for cover, casts to
+the range limit, and sends a typed DamagePacket to the nearest ancestor
+implementing `IDamageReceiver`. Set spread to 0 for previous perfect accuracy.
 The target health component/resolver owns armour, resistances and health loss.
 Non-damageable collision still blocks shots. `ReadyToFire` lets an adapter request
 another held-trigger shot without polling. `Unequip()` shuts down cooldown,
@@ -17,6 +19,14 @@ feedback and audio. Timing/resources are per instance, not mutable shared master
 One reused flash/tracer pair per weapon; no per-shot nodes or permanent loop.
 `ShotSound` is an optional AudioStream resource. Default rifle has no audio asset.
 Stats, effect sizes/duration/color and hit mask are in each item's `.tres`.
+`ShotSpread.cs` uses two random samples only when a shot passes cooldown and equip checks;
+there are no extra raycasts or callbacks. It samples a disk-shaped angular cone
+uniformly in area and correctly handles near-vertical aims. A longer shot has
+more world-space deviation from the target centre. The current top-down and FPS
+adapters automatically share this firearm logic.
+
+See [../ACCURACY_IMPLEMENTATION_PLAN.md](../ACCURACY_IMPLEMENTATION_PLAN.md)
+for planned ACC1 player crouch/movement multipliers and optional ACC2 polish.
 
 ## Ownership cleanup
 

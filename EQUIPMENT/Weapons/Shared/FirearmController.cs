@@ -12,6 +12,7 @@ public partial class FirearmController : Node3D
     private AudioStreamPlayer3D _audio = null!;
     private PhysicsRayQueryParameters3D _query = null!;
     private CollisionObject3D? _holder;
+    private readonly RandomNumberGenerator _shotRandom = new();
     private bool _equipped;
 
     // =========================================================
@@ -20,6 +21,7 @@ public partial class FirearmController : Node3D
     {
         SetProcess(false); SetPhysicsProcess(false);
         RuntimeSettings = Settings != null ? (FirearmSettings)Settings.Duplicate(true) : new FirearmSettings();
+        _shotRandom.Randomize();
         _cooldown = new Timer { Name = "Cooldown", OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
         AddChild(_cooldown); _cooldown.Timeout += OnCooldown;
         _effects = new FirearmShotEffects { Name = "ShotEffects" }; AddChild(_effects); _effects.Initialize(RuntimeSettings);
@@ -41,7 +43,10 @@ public partial class FirearmController : Node3D
         if (!_equipped || !IsInstanceValid(_holder) || Muzzle == null || !_cooldown.IsStopped()) return false;
         Vector3 start = Muzzle.GlobalPosition, direction = aimPoint - start;
         if (direction.LengthSquared() < 0.0001f) return false;
-        direction = direction.Normalized();
+        // =========================================================
+        // ACC0: sample slight muzzle-angle inaccuracy once per accepted shot, never on idle aim.
+        // All existing cover, hit, damage, tracer and cooldown logic uses this same direction.
+        direction = ShotSpread.Apply(direction, RuntimeSettings.BaseSpreadDegrees, _shotRandom);
         _query.CollisionMask = RuntimeSettings.HitMask;
         // Prevent a barrel sticking through cover from firing out of the other side.
         _query.From = probeOrigin; _query.To = start;
