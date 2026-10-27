@@ -26,17 +26,43 @@ Settings = ExtResource("2")
 EnvironmentSettings = ExtResource("10")
 PlayerSettings = ExtResource("11")
 CameraSettings = ExtResource("12")
-[node name="Terrain3D" type="Terrain3D" parent="."]
+
+[node name="TerrainRoot" type="Node3D" parent="."]
+[node name="Terrain3D" type="Terrain3D" parent="TerrainRoot"]
 region_size = 1024
 collision_mode = 3
 collision_layer = 1
 collision_mask = 1
 assets = ExtResource("4")
 material = ExtResource("3")
-[node name="Player" parent="." instance=ExtResource("5")]
+
+[node name="WorldActorsRoot" type="Node3D" parent="."]
+
+[node name="PersistentEntitiesRoot" type="Node3D" parent="WorldActorsRoot"]
+[node name="Player" parent="WorldActorsRoot/PersistentEntitiesRoot" instance=ExtResource("5")]
+[node name="RobotPatrol" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot" node_paths=PackedStringArray("Robot", "RouteMarkers")]
+visible = false
+script = ExtResource("7")
+Robot = NodePath("Robot_001")
+RouteMarkers = NodePath("Route")
+SpawnOffset = Vector2(-24, 8)
+[node name="Route" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol"]
+[node name="NorthWest" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
+position = Vector3(-6, 0, -6)
+[node name="NorthEast" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
+position = Vector3(6, 0, -6)
+[node name="SouthEast" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
+position = Vector3(6, 0, 6)
+[node name="SouthWest" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
+position = Vector3(-6, 0, 6)
+[node name="Robot_001" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol" instance=ExtResource("8")]
+Settings = SubResource("RobotStartup")
+
 [node name="Camera" parent="." instance=ExtResource("6")]
-[node name="Controls" type="CanvasLayer" parent="."]
-[node name="Status" type="Label" parent="Controls"]
+
+[node name="DebugUIRoot" type="Node" parent="."]
+[node name="Controls" type="CanvasLayer" parent="DebugUIRoot"]
+[node name="Status" type="Label" parent="DebugUIRoot/Controls"]
 offset_left = 16.0
 offset_top = 16.0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
@@ -44,21 +70,3 @@ theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 text = "Loading saved preview terrain…"
 mouse_filter = 2
-
-[node name="RobotPatrol" type="Node3D" parent="." node_paths=PackedStringArray("Robot", "RouteMarkers")]
-visible = false
-script = ExtResource("7")
-Robot = NodePath("Robot_001")
-RouteMarkers = NodePath("Route")
-SpawnOffset = Vector2(-24, 8)
-[node name="Route" type="Node3D" parent="RobotPatrol"]
-[node name="NorthWest" type="Marker3D" parent="RobotPatrol/Route"]
-position = Vector3(-6, 0, -6)
-[node name="NorthEast" type="Marker3D" parent="RobotPatrol/Route"]
-position = Vector3(6, 0, -6)
-[node name="SouthEast" type="Marker3D" parent="RobotPatrol/Route"]
-position = Vector3(6, 0, 6)
-[node name="SouthWest" type="Marker3D" parent="RobotPatrol/Route"]
-position = Vector3(-6, 0, 6)
-[node name="Robot_001" parent="RobotPatrol" instance=ExtResource("8")]
-Settings = SubResource("RobotStartup")

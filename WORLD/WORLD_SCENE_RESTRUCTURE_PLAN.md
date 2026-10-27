@@ -1,6 +1,6 @@
 # War Machine — World scene root hierarchy restructuring plan
 
-**Status: Planned.** Updated after the owner's hierarchy/procedural-content discussion. Target branch: `implement-td0-td1`. This update changes documentation only; SO0/SO1 have not been implemented.
+**Status: SO0 implemented; SO1 implemented, awaiting local validation.** Target branch: `implement-td0-td1`. SO2–SO4 remain planned. The handoff below records the actual staged hierarchy and checks.
 
 ## Goal and agreed direction
 
@@ -29,7 +29,7 @@ Future streamed props/entities should live under `WorldActorsRoot/ChunkActorsRoo
 
 ## Confirmed current behavior
 
-- WORLD/World.tscn authors Terrain3D, Player, Camera, Controls/Status and the complete RobotPatrol subtree directly under World.
+- After SO1, WORLD/World.tscn authors Terrain3D under TerrainRoot, Player and the complete RobotPatrol subtree under WorldActorsRoot/PersistentEntitiesRoot, and Controls/Status under DebugUIRoot. Camera remains directly under World.
 - WorldController creates sky, Environment controller, Weather, Grass, Pines, Structures, Objects and Zombies at runtime. The Structures/Objects groups contain three buildings and one car.
 - All three buildings and Car001 are already placed in both top-down and inherited FPS views. WorldMaster offsets, terrain grounding, collisions and separate grass/tree exclusion masks must be preserved.
 - DEBUG/TEST/FirstPerson/FirstPersonTest.tscn inherits World.tscn and overrides Player and Camera scripts by node path. FirstPersonWorld separately looks up Controls for its crosshair.
@@ -40,8 +40,8 @@ Future streamed props/entities should live under `WorldActorsRoot/ChunkActorsRoo
 
 | Phase | Goal and scope | Suggested assistant | Status |
 | --- | --- | --- | --- |
-| SO0 | Audit node paths, runtime parenting, inherited FPS overrides and cleanup; record the exact reparent map before editing scenes. | Codex/ChatGPT Work: cross-file dependency review | Planned |
-| SO1 | Add the essential authored roots; move Terrain3D, Player, complete RobotPatrol and debug UI; update all affected paths in both views. | Codex/ChatGPT Work: scene and code integration | Planned |
+| SO0 | Audit node paths, runtime parenting, inherited FPS overrides and cleanup; record the exact reparent map before editing scenes. | Codex/ChatGPT Work: cross-file dependency review | Implemented |
+| SO1 | Add the essential authored roots; move Terrain3D, Player, complete RobotPatrol and debug UI; update all affected paths in both views. | Codex/ChatGPT Work: scene and code integration | Awaiting Validation (implemented) |
 | SO2 | Route existing runtime entities, scenery, vegetation and environment into stable destinations. Keep procedural spawning and prevent duplicate containers/objects. | Codex/ChatGPT Work: initialization/lifecycle integration | Planned |
 | SO3 | Optional editor-authored showcase placement, only if later requested. Keep it independent of procedural placement. | Codex/ChatGPT Work; Regular Chat can review layout | Planned (optional) |
 | SO4 | Brief local build/F6 and Local/Remote inspection in both views; record acceptance and limitations. Documentation/source checks also accompany each earlier phase. | Copilot for local diagnostics; owner for visuals | Planned |
@@ -94,7 +94,7 @@ If authorized later, give each prop exactly one placement owner: authored instan
 
 Build the C# project and F6 WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Inspect Local/Remote roots and verify player movement/crouch/aim, robot patrol/scanning, zombies, terrain textures/collision, weather, pines, four props and clear grass on paved/interior areas. Check world unload/reload for duplicate nodes or subscription errors. Keep checks proportional per CodePreferences; no profiling claims without measurements.
 
-One commit per authorized job, preserving unrelated branch updates. Record the eventual implementation commit SHA and actual checks in the handoff; update phase status after each authorized task. No implementation SHA exists for SO0/SO1 yet.
+One commit per authorized job, preserving unrelated branch updates. Record the eventual implementation commit SHA and actual checks in the handoff; update phase status after each authorized task. SO0/SO1 source and path checks are complete; the implementation SHA is supplied in the commit handoff (this section is included in that same commit).
 
 ## Recommendations before implementation
 
@@ -103,3 +103,24 @@ One commit per authorized job, preserving unrelated branch updates. Record the e
 3. Keep stable roots at identity transforms. Move individual content, not organizational containers, when laying out the world.
 4. Defer streaming until required by world size. Root paths provide organization, not a substitute for a loaded-object budget.
 5. Preserve both views through the same shared world; FPS-specific camera/input/aim code remains under DEBUG/TEST.
+
+## SO0/SO1 implementation handoff
+
+SO0 audit completed against the active world, shared controllers, RobotPlacement, player/camera internals and inherited FPS scene. The safe reparent map above was applied in SO1. No generic root manager, empty future/system roots, processing callbacks or additional settings were needed.
+
+| Consumer | Change/result |
+| --- | --- |
+| WorldController.InitializeWorld | Terrain/player/robot lookups now use the new full paths; status uses DebugControls/Status |
+| Overhead panel and FPS crosshair | Shared protected DebugControls accessor resolves DebugUIRoot/Controls only during startup |
+| FPS inherited Player override | Parent is WorldActorsRoot/PersistentEntitiesRoot, sibling index 0 |
+| FPS inherited Camera override | Still root child index 2; actual root order is TerrainRoot, WorldActorsRoot, Camera, DebugUIRoot |
+| RobotPatrol | Entire subtree moved together; Robot_001 and Route NodePaths, waypoint positions, initial visibility and startup settings unchanged |
+| Player/camera/vegetation references | Passed explicitly; player-local collider lookup unchanged; no other active ancestor/sibling dependency found |
+| Runtime AddChild inventory for SO2 | Sky, Environment controller, Weather, Grass, Pines, Structures, Objects and Zombies still attach directly to World |
+| Local ownership preserved | Equipment remains under player; obstruction manager remains under camera; occluder proxies remain prefab-owned |
+
+The new 3D containers have default identity transforms; DebugUIRoot is a plain Node around the existing CanvasLayer. All original node property bodies, resource references and route data were compared against the previous scene and matched. Runtime initialization, prop placement and grass/tree mask code were left unchanged. Existing event subscriptions and cleanup still use explicit object references.
+
+Checks run: parsed authored node paths for unique names and parent-before-child ordering; compared every original node property body before/after the move; checked FPS inherited override paths/indices and robot relative paths; reviewed affected code lookups and ran git diff --check. Godot/.NET are unavailable here, so no C# build, engine scene-load or visual/performance claim is made. Local validation: build and F6 both scenes, check player/crouch/aim, camera, robot patrol, status/panel/crosshair, terrain, props and clear grass; inspect Local/Remote roots. No rebake needed.
+
+Remaining staged limitation: dynamic content is not yet routed into organizational roots. SO2 is the next planned step and requires separate authorization. This change does not implement SO2, optional SO3 authored props or SO4 runtime acceptance.

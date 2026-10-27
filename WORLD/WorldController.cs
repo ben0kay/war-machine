@@ -16,6 +16,10 @@ public partial class WorldController : Node3D
     protected Camera _camera = null!;
 
     // =========================================================
+    // Shared by the overhead panel and inherited FPS crosshair; resolved only during startup.
+    protected CanvasLayer DebugControls => GetNode<CanvasLayer>("DebugUIRoot/Controls");
+
+    // =========================================================
     // Runtime settings remain separate from both the authoring master and original world resources.
     public override void _Ready()
     {
@@ -43,11 +47,11 @@ public partial class WorldController : Node3D
     // Missing data is a visible setup error, never a reason to bake terrain during gameplay.
     public void InitializeWorld()
     {
-        var status = GetNode<Label>("Controls/Status");
+        var status = DebugControls.GetNode<Label>("Status");
         string directory = ProjectSettings.GlobalizePath(WorldSettings.TerrainDirectory);
         if (!Directory.Exists(directory) || Directory.GetFiles(directory, "*.res").Length == 0)
         { status.Text = "Preview terrain not baked.\nRun WORLD/Generation/BakeGameplayTerrain.tscn once (F6),\nthen run this scene again. The main world is unchanged."; GD.PushWarning(status.Text); return; }
-        var terrain = GetNode<Node3D>("Terrain3D");
+        var terrain = GetNode<Node3D>("TerrainRoot/Terrain3D");
         terrain.Set("data_directory", WorldSettings.TerrainDirectory);
         if (!BindTerrainAppearance(terrain, out string appearanceError))
         { status.Text = appearanceError; GD.PushError(appearanceError); return; }
@@ -55,7 +59,7 @@ public partial class WorldController : Node3D
         Vector3 spawn = new(Settings.SpawnXZ.X, 0, Settings.SpawnXZ.Y);
         float height = data.Call("get_height", spawn).AsSingle();
         if (!float.IsFinite(height)) { status.Text = "Saved preview terrain has no ground at spawn; inspect the preview bake/settings."; GD.PushError(status.Text); return; }
-        var player = GetNode<PlayerController>("Player");
+        var player = GetNode<PlayerController>("WorldActorsRoot/PersistentEntitiesRoot/Player");
         player.GlobalPosition = new Vector3(spawn.X, height + 0.05f, spawn.Z);
         var camera = GetNode<Camera>("Camera");
         camera.Initialize(player, CameraSettings);
@@ -88,7 +92,7 @@ public partial class WorldController : Node3D
         UpdateWeatherCoverage();
         InitializeControls(camera);
         SpawnZombies(data, player);
-        bool patrolReady = GetNode<RobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
+        bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = ControlsHelp
             + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
@@ -112,7 +116,7 @@ public partial class WorldController : Node3D
     // =========================================================
     protected virtual void InitializeControls(Camera camera)
     {
-        var panel = new WorldTuningPanel(); GetNode<CanvasLayer>("Controls").AddChild(panel);
+        var panel = new WorldTuningPanel(); DebugControls.AddChild(panel);
         panel.Initialize(camera, CameraSettings, GetNode<SkyController>("Environment"), _weather, _grass, _pines);
     }
 

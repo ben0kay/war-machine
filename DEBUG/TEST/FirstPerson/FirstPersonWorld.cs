@@ -22,7 +22,7 @@ public partial class FirstPersonWorld : WorldController
     {
         var crosshair = new Label { Text = "+", MouseFilter = Control.MouseFilterEnum.Ignore,
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        GetNode<CanvasLayer>("Controls").AddChild(crosshair);
+        DebugControls.AddChild(crosshair);
         crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center);
         crosshair.OffsetLeft = -10; crosshair.OffsetRight = 10; crosshair.OffsetTop = -14; crosshair.OffsetBottom = 14;
     }

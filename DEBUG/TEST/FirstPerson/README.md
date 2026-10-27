@@ -26,3 +26,7 @@ Camera updates only on mouse input, actor movement or crouch interpolation. Play
 The top-down tuning panel is omitted. Building camera-occluder proxies may still exist, but no FPS fading manager queries them. This first pass has no visible hands, reload, recoil, ADS, weapon collision animation or full-body first-person rendering. Rifle uses the real world depth buffer and can visually enter nearby scenery, while its obstruction ray prevents shooting through that cover. Zombies retain simple direct pursuit rather than navigation around obstacles.
 
 Validation: resource paths, inherited scene node overrides, input/capture and lifecycle source review, preserved top-down defaults and `git diff --check`. Godot/.NET are unavailable in this environment, so compilation, inherited scene loading, mouse capture, crouch, aiming/cover hits, grass appearance and performance await local validation. Also rerun WORLD/World.tscn briefly to check the shared extension hooks.
+
+## Shared hierarchy update — SO1
+
+The inherited Player override now targets WorldActorsRoot/PersistentEntitiesRoot/Player (index 0). Camera remains at World/Camera (root index 2). Crosshair setup uses the shared DebugUIRoot/Controls accessor. No FPS controls/settings or gameplay changes. Source path/index checks passed; local build/F6 is pending. Runtime objects retain their current parents until SO2.

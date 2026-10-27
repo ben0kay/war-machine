@@ -63,3 +63,9 @@ Shared WorldController now places scenery before initializing grass and supplies
 TerrainGrass.SetExclusionAreas caches up to 64 rectangles and uploads the mask on initialization, explicit layout changes or grass rebuilds. GrassPlacement rejects randomized roots inside those rectangles before terrain sampling. Streamed tiles and quality/OFF/ON rebuilds reuse the cached mask; an explicit layout update restarts existing tiles once. No per-blade physics queries, CPU polling or new frame callbacks. GPU particle slots remain budgeted even when rejected.
 
 Validation: source review of mask packing/comparisons, initialization ordering, rebuild retention and whitespace checks. Godot/.NET unavailable here; shader compilation and in-game checks remain pending. Build then F6 either view, check station pavement/interiors and grass outside, toggle/rebuild grass in top-down and walk away/back to stream tiles. Changes to scenery transforms after startup need an explicit mask refresh; current props are stationary.
+
+## Scene roots — SO0/SO1
+
+World.tscn now organizes authored nodes as TerrainRoot/Terrain3D, WorldActorsRoot/PersistentEntitiesRoot/{Player,RobotPatrol}, root Camera, and DebugUIRoot/Controls/Status. The inherited FPS player override and both debug UI paths were updated. Original transforms, resources and robot subtree data were preserved; no terrain rebake needed.
+
+SO0 audit complete; SO1 implemented, awaiting local Godot validation. Runtime-created buildings/car, zombies, vegetation and environment intentionally remain at World until SO2 routes them into stable roots. No new managers, idle callbacks or settings. Source scene/property/path/index and whitespace checks passed; build/F6 both views and visual checks remain local. See WORLD_SCENE_RESTRUCTURE_PLAN.md for the audit map and handoff.
