@@ -36,7 +36,9 @@ public partial class FirstPersonCamera : Camera
             float limit = Mathf.Clamp(TestSettings.MaximumPitch, 10, 89);
             Vector3 angle = RotationDegrees;
             angle.Y = Mathf.Wrap(angle.Y - motion.Relative.X * sensitivity, -180, 180);
-            angle.X = Mathf.Clamp(angle.X - motion.Relative.Y * sensitivity, -limit, limit);
+            // Positive pitch looks upward; inverted mode makes mouse-up look down.
+            float verticalDelta = (TestSettings.InvertMouseY ? 1f : -1f) * motion.Relative.Y;
+            angle.X = Mathf.Clamp(angle.X + verticalDelta * sensitivity, -limit, limit);
             RotationDegrees = angle; NotifyViewChanged(); _actor.SetPhysicsProcess(true);
             GetViewport().SetInputAsHandled();
         }

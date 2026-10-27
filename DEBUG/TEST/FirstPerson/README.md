@@ -4,7 +4,7 @@ Open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`, build C#, then press **F6**.
 
 ## Controls
 
-arrow-key walk, Shift run, Right Ctrl toggle crouch, mouse look, left click/hold fire. Escape releases the pointer; click to capture again (that click does not fire). Focus loss releases the pointer and cancels firing. A centre crosshair marks the camera aim ray; the real muzzle/cover obstruction still decides the shot.
+arrow-key walk, Shift run, Right Ctrl toggle crouch, **inverted vertical mouse look by default** (mouse up looks down; mouse down looks up), left click/hold fire. Escape releases the pointer; click to capture again (that click does not fire). Focus loss releases the pointer and cancels firing. A centre crosshair marks the camera aim ray; the real muzzle/cover obstruction still decides the shot.
 
 ## Ownership
 
@@ -14,7 +14,7 @@ All new FPS-specific implementation lives here:
 - `CAMERA/`: eye camera, mouse look/capture and event-driven crouch height.
 - `PLAYER/`: arrow-key and camera-yaw movement adapter. Reuses shared acceleration, gravity, collision and standing-clearance crouch; hides the third-person mesh.
 - `EQUIPMENT/`: centre-screen aiming/trigger adapter. Instances the configured shared firearm under the eye camera; reuses damage, hit masks, cooldown and effects.
-- `CONFIGURATION/FirstPersonMaster.tres`: FOV, mouse sensitivity, pitch limit, eye inset and gun offset.
+- `CONFIGURATION/FirstPersonMaster.tres`: FOV, mouse sensitivity, **InvertMouseY=true** default, pitch limit, eye inset and gun offset. Set `InvertMouseY=false` there to restore standard mouse look.
 - `VEGETATION/GrassMaster.tres`: independent FPS grass settings, shared renderer/shaders. 32m radius, narrower blades, four sections and 30Hz GPU simulation; overhead footprint expansion is bypassed.
 
 Three shared files expose small reusable extension hooks: WORLD/WorldController, PLAYER/PlayerController and CAMERA/Camera. Their normal top-down defaults remain the same. Future shared scene changes appear in both views. This is an isolated presentation experiment, not a self-contained copy of the game; a future Git branch can retain these shared dependencies.

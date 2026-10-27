@@ -7,6 +7,7 @@ public partial class FirstPersonSettings : Resource
     [ExportGroup("Camera")]
     [Export] public float FieldOfView { get; set; } = 75;
     [Export] public float MouseSensitivity { get; set; } = 0.12f;
+    [Export] public bool InvertMouseY { get; set; } = true;
     [Export] public float MaximumPitch { get; set; } = 85;
     [Export] public float EyeInset { get; set; } = 0.15f;
     [ExportGroup("Held weapon")]
