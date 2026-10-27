@@ -1,4 +1,4 @@
-[gd_resource type="Terrain3DMaterial" load_steps=4 format=3]
+[gd_resource type="Terrain3DMaterial" format=3 uid="uid://coi2xrvy0itmv"]
 
 [sub_resource type="Gradient" id="Gradient_vr1m7"]
 offsets = PackedFloat32Array(0.2, 1)
@@ -17,9 +17,9 @@ domain_warp_fractal_lacunarity = 1.5
 domain_warp_fractal_gain = 1.0
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_bov7h"]
-seamless = true
-color_ramp = SubResource("Gradient_vr1m7")
 noise = SubResource("FastNoiseLite_d8lcj")
+color_ramp = SubResource("Gradient_vr1m7")
+seamless = true
 
 [resource]
 _shader_parameters = {
@@ -48,17 +48,8 @@ _shader_parameters = {
 "noise2_scale": 0.076,
 "noise_texture": SubResource("NoiseTexture2D_bov7h"),
 "projection_threshold": 0.87,
-"tri_scale_reduction": 0.3,
-"world_noise_fragment_normals": false,
-"world_noise_height": 34.0,
-"world_noise_lod_distance": 7500.0,
-"world_noise_max_octaves": 4,
-"world_noise_min_octaves": 2,
-"world_noise_offset": Vector3(2.17, -1.225, 1.9),
-"world_noise_region_blend": 0.33,
-"world_noise_scale": 9.85
+"tri_scale_reduction": 0.3
 }
 world_background = 0
 auto_shader = true
 dual_scaling = true
-

@@ -1,29 +1,17 @@
-[gd_resource type="Resource" script_class="RobotSettings" load_steps=6 format=3]
+[gd_resource type="Resource" format=3 uid="uid://bn4g32yjhjf8m"]
 
-[ext_resource type="Script" path="res://ENTITIES/TYPES/Robots/Robot_001/RobotSettings.cs" id="1"]
-[ext_resource type="Script" path="res://ENTITIES/Shared/Movement/PatrolSettings.cs" id="2"]
-[ext_resource type="Script" path="res://ENTITIES/Shared/Sensing/ScanSensorSettings.cs" id="3"]
+[ext_resource type="Script" uid="uid://ca0pn2w5bm3lk" path="res://ENTITIES/TYPES/Robots/Robot_001/RobotSettings.cs" id="1"]
+[ext_resource type="Script" uid="uid://bghi1eih4v1d8" path="res://ENTITIES/Shared/Movement/PatrolSettings.cs" id="2"]
+[ext_resource type="Script" uid="uid://qbcnkjnx2tqe" path="res://ENTITIES/Shared/Sensing/ScanSensorSettings.cs" id="3"]
 
 [sub_resource type="Resource" id="Patrol"]
 script = ExtResource("2")
-Speed = 2.0
-Acceleration = 2.0
-Braking = 3.0
-TurnDegreesPerSecond = 45.0
 ArrivalRadius = 0.6
 SettleSeconds = 0.6
-WaitSeconds = 1.5
-Loop = true
 
 [sub_resource type="Resource" id="Sensor"]
 script = ExtResource("3")
-Enabled = true
-Range = 45.0
-FullAngleDegrees = 35.0
 IntervalSeconds = 0.2
-RequireLineOfSight = true
-RaysPerTick = 2
-CollisionMask = 1
 
 [resource]
 script = ExtResource("1")

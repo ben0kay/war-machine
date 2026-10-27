@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="EntitySettings" load_steps=2 format=3]
+[gd_resource type="Resource" format=3 uid="uid://b6juivjxv7v8k"]
 
-[ext_resource type="Script" path="res://ENTITIES/Shared/EntitySettings.cs" id="1"]
+[ext_resource type="Script" uid="uid://d15mjgs1ungma" path="res://ENTITIES/Shared/EntitySettings.cs" id="1"]
 
 [resource]
 script = ExtResource("1")

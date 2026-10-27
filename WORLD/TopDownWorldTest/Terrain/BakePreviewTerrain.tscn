@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cx6aik0o8hiyc"]
+
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownTerrainBake.cs" id="1"]
+
+[node name="BakePreviewTerrain" type="Node" unique_id=795921142]
+script = ExtResource("1")

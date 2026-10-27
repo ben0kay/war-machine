@@ -1,0 +1,82 @@
+[gd_scene format=3 uid="uid://d4cpnebl5sfoc"]
+
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownWorldTest.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/TopDownWorldTest/Configuration/TopDownTestMaster.tres" id="2"]
+[ext_resource type="Terrain3DMaterial" uid="uid://coi2xrvy0itmv" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
+[ext_resource type="Terrain3DAssets" uid="uid://digu5u3dlqua1" path="res://WORLD/Terrain/TerrainAssets.tres" id="4"]
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownPlayer.cs" id="5"]
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownCamera.cs" id="6"]
+[ext_resource type="Script" path="res://WORLD/TopDownWorldTest/C/TopDownRobotPlacement.cs" id="7"]
+[ext_resource type="PackedScene" path="res://ENTITIES/TYPES/Robots/Robot_001/Robot_001.tscn" id="8"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/C/EntitySettings.cs" id="9"]
+[ext_resource type="Resource" path="res://WORLD/TopDownWorldTest/Configuration/TopDownEnvironmentMaster.tres" id="10"]
+
+[sub_resource type="CapsuleShape3D" id="PlayerCapsule"]
+radius = 0.3
+height = 1.8
+
+[sub_resource type="Resource" id="RobotStartup"]
+script = ExtResource("9")
+TypeLabel = "Robot_001"
+StartActive = false
+
+[node name="TopDownWorldTest" type="Node3D" unique_id=1908965054]
+script = ExtResource("1")
+Settings = ExtResource("2")
+EnvironmentSettings = ExtResource("10")
+
+[node name="Terrain3D" type="Terrain3D" parent="." unique_id=1407781872]
+data_directory = "res://WORLD/TopDownWorldTest/Terrain/Data"
+material = ExtResource("3")
+assets = ExtResource("4")
+top_level = true
+metadata/_edit_lock_ = true
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=999259292]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("5")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1381605794]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("PlayerCapsule")
+
+[node name="Camera" type="Camera3D" parent="." unique_id=1814213773]
+transform = Transform3D(0.70710677, -0.579228, 0.4055798, 0, 0.57357645, 0.81915206, -0.70710677, -0.579228, 0.4055798, 532, 35, 532)
+projection = 1
+current = true
+size = 48.0
+script = ExtResource("6")
+
+[node name="Controls" type="CanvasLayer" parent="." unique_id=1345633059]
+
+[node name="Status" type="Label" parent="Controls" unique_id=1994858938]
+offset_left = 16.0
+offset_top = 16.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+text = "Loading saved preview terrain…"
+
+[node name="RobotPatrol" type="Node3D" parent="." unique_id=380807933 node_paths=PackedStringArray("Robot", "RouteMarkers")]
+visible = false
+script = ExtResource("7")
+Robot = NodePath("Robot_001")
+RouteMarkers = NodePath("Route")
+
+[node name="Route" type="Node3D" parent="RobotPatrol" unique_id=506701727]
+
+[node name="NorthWest" type="Marker3D" parent="RobotPatrol/Route" unique_id=2144601363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -6)
+
+[node name="NorthEast" type="Marker3D" parent="RobotPatrol/Route" unique_id=621236287]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -6)
+
+[node name="SouthEast" type="Marker3D" parent="RobotPatrol/Route" unique_id=1689580043]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 6)
+
+[node name="SouthWest" type="Marker3D" parent="RobotPatrol/Route" unique_id=68724207]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 6)
+
+[node name="Robot_001" parent="RobotPatrol" unique_id=1427521620 instance=ExtResource("8")]
+Settings = SubResource("RobotStartup")
