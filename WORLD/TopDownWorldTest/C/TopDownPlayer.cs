@@ -41,7 +41,7 @@ public partial class TopDownPlayer : CharacterBody3D
     // Ground contact sleeps again after focus returns; no held direction is allowed while the window is unfocused.
     public override void _Notification(int what)
     {
-        if (_initialized && (what == NotificationWmWindowFocusOut || what == NotificationWmWindowFocusIn)) SetPhysicsProcess(true);
+        if (_initialized && (what == NotificationApplicationFocusOut || what == NotificationApplicationFocusIn)) SetPhysicsProcess(true);
     }
 
     // =========================================================
