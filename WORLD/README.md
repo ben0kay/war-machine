@@ -91,3 +91,17 @@ Zombie PER0/PER1 now use frontal eyesight (160°), range and head/torso cover ra
 Top-down buildings: Building002 now detects local player floor/stairs and composes section fades; upper content restores at the landing, roof stays faded indoors, ground walls restore upstairs. Building003 fades only independent shop-roof/canopy sections, preserving pumps/furniture. Tune lodge visibility in Building002Master and camera obstruction in CameraMaster. Physics/LOS and FPS visibility unchanged; local build/visual validation pending.
 
 Shared test equipment/population: **1 = Rifle_001, 2 = MachineGun_001**; rifle starts selected, switching cancels held fire and reuses cached gun scenes. Press/click again to shoot after switching. Both scenes now have 12 existing slow zombies plus 3 Zombie_002 runners, with independent WorldMaster.RunnerSpawnOffsets at (18,22), (-15,30), (32,-18) from spawn. Runners wander slowly and sprint at their authored 8.3m/s only when sight confirms the player; no attacks/hearing added. F7 shows vision; tree/rock spawn clearings include runners. Local build/weapon placement/shooting/runner checks pending. Existing FPS fog profile and other recent commits preserved.
+
+## Top-down horde stress test — 20 additional zombies
+
+In `WORLD/World.tscn` only, the world now generates one deterministic, loosely packed cluster of **20 additional zombies** southwest of the player spawn: **14 Zombie 001 Shamblers + 6 Zombie 002 Runners** by default. The previous population of 12 Shamblers and 3 scattered Runners remains, for a **top-down total of 35**. `FirstPersonWorld` explicitly opts out; its inherited test remains at 15.
+
+Tune `WORLD/Configuration/WorldMaster.tres` under `Horde preview (top-down only)`:
+- `HordeCount = 20`: extra zombies (0 disables; capped at 60 for a deliberate preview)
+- `HordeRunnerCount = 6`: how many of the extra count are Runners (clamped to total)
+- `HordeCenterOffset = Vector2(-38, -16)`: centre relative to the player start, away from structures, hill and robot patrol
+- `HordeSpacing = 2.5`: metres between starting actors; small deterministic jitter avoids identical rows
+
+The startup layout is calculated once and reused for pine and rock collision exclusion rectangles, native terrain-height placement, seeded zombie initialization and F7 vision-debug registration. This **does not** change AI, patrol/wander/chase ranges, weapon damage, zombie attack behaviour (none), Terrain3D bake, world saving or zombie spawning during play. The horde is initially beyond normal 18m visual range: approach from spawn to wake a chase. Its motion is not a coordinated group/flocking AI; it is a clustered population of independently wandering/pursuing zombies, deliberately useful for observing crowd behaviour and performance.
+
+**Minimal local checks:** compile C#; F6 `WORLD/World.tscn`; approach the southwest group, count about 20 new actors, see both models, run/chase and shoot; toggle F7, verify the scatter systems didn't put trunks/boulders inside the initial formation. Confirm `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` still loads its original 15 population. Set `HordeCount = 0` and restart to disable the preview group. Briefly watch CPU/FPS and the existing terrain grounding issue with the larger population. Local build and visual testing are pending.

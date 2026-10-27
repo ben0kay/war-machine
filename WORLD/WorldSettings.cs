@@ -27,6 +27,11 @@ public partial class WorldSettings : Resource
     [Export] public float CliffDepth { get; set; } = 36;
     [Export] public float CliffRampLength { get; set; } = 38;
     [Export] public float CliffPathWidth { get; set; } = 10;
+    [ExportGroup("Horde preview (top-down only)")]
+    [Export(PropertyHint.Range, "0,60,1")] public int HordeCount { get; set; } = 20;
+    [Export(PropertyHint.Range, "0,60,1")] public int HordeRunnerCount { get; set; } = 6;
+    [Export] public Vector2 HordeCenterOffset { get; set; } = new(-38, -16);
+    [Export(PropertyHint.Range, "1.8,4,0.1")] public float HordeSpacing { get; set; } = 2.5f;
     [ExportGroup("Runner placement")]
     [Export] public Vector2[] RunnerSpawnOffsets { get; set; } = new Vector2[]
     { new(18, 22), new(-15, 30), new(32, -18) };

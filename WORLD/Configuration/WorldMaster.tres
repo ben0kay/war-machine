@@ -24,3 +24,8 @@ CliffRampLength = 38.0
 CliffPathWidth = 10.0
 
 RunnerSpawnOffsets = PackedVector2Array(18, 22, -15, 30, 32, -18)
+
+HordeCount = 20
+HordeRunnerCount = 6
+HordeCenterOffset = Vector2(-38, -16)
+HordeSpacing = 2.5

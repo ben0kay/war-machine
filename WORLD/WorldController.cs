@@ -71,6 +71,9 @@ public partial class WorldController : Node3D
         player.Initialize(PlayerSettings, camera);
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
+        // Build one deterministic horde layout for both placement and its tree/rock clearings.
+        // The inherited first-person debug scene explicitly opts out.
+        var horde = EnableHorde ? BuildHordeOffsets() : (Slow: System.Array.Empty<Vector2>(), Fast: System.Array.Empty<Vector2>());
         var sceneryClearings = PlaceScenery(data, out var grassClearings);
         foreach (Rect2 cliffClearing in mountainPath)
         { sceneryClearings.Add(cliffClearing); grassClearings.Add(cliffClearing); }
@@ -84,21 +87,21 @@ public partial class WorldController : Node3D
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
         foreach (Rect2 clearing in sceneryClearings) _pines.ExclusionAreas.Add(clearing);
-        foreach (Vector2 offset in Settings.RunnerSpawnOffsets)
-            _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
-        // Keep initial zombie positions free of newly solid trunks.
-        foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
-            _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
+        // No trunks inside either existing spawns or the extra 20-zombie test cluster.
+        AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.RunnerSpawnOffsets);
+        AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.ZombieSpawnOffsets);
+        AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Slow);
+        AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Fast);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
         _rocks = new ContentScatter { Name = "Rocks",
             Settings = (ContentScatterSettings)GD.Load<ContentScatterSettings>("res://WORLD/Content/Rocks/Configuration/GameplayRockMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
         foreach (Rect2 clearing in sceneryClearings) _rocks.ExclusionAreas.Add(clearing);
-        foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
-            _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
-        foreach (Vector2 offset in Settings.RunnerSpawnOffsets)
-            _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
+        AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.ZombieSpawnOffsets);
+        AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.RunnerSpawnOffsets);
+        AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Slow);
+        AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Fast);
         // Keep the giant's route and foot corridor free of new solid boulders.
         _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
         GetNode("WorldActorsRoot/PersistentPropsRoot").AddChild(_rocks);
@@ -112,15 +115,17 @@ public partial class WorldController : Node3D
         UpdateWeatherCoverage();
         InitializeDistanceFog(camera, player);
         InitializeControls(camera);
-        SpawnZombies(data, player);
+        SpawnZombies(data, player, horde.Slow, horde.Fast);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = ControlsHelp
-            + (patrolReady ? $" · 1 rifle / 2 machine gun · {Settings.RunnerSpawnOffsets.Length} fast runners · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Terrain mountain path south" : "\nRobot placement failed; see Output. Player preview remains available.");
+            + (patrolReady ? $" · 1 rifle / 2 machine gun · {Settings.RunnerSpawnOffsets.Length} scattered runners · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Terrain mountain path south" : "\nRobot placement failed; see Output. Player preview remains available.")
+            + (horde.Slow.Length + horde.Fast.Length > 0 ? $"\nTest horde: {horde.Slow.Length} slow + {horde.Fast.Length} fast zombies around offset {Settings.HordeCenterOffset}" : "");
     }
 
     // =========================================================
     // View-specific adapters are replaceable; terrain, scenery and entity composition remain shared.
     protected virtual string ControlsHelp => "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene";
+    protected virtual bool EnableHorde => true;
     protected virtual void InitializeEquipment(PlayerController player, Camera camera)
     {
         var equipment = new PlayerWeaponController { Name = "Equipment" }; player.AddChild(equipment);
@@ -258,14 +263,52 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    // Deterministic irregular grid gives a readable, closely packed group without overlapping zombie capsules.
+    // No terrain writes or runtime spawn logic; maximum count is bounded for this horde test.
+    private (Vector2[] Slow, Vector2[] Fast) BuildHordeOffsets()
+    {
+        int count = Mathf.Clamp(Settings.HordeCount, 0, 60);
+        int runners = Mathf.Clamp(Settings.HordeRunnerCount, 0, count);
+        var slow = new Vector2[count - runners]; var fast = new Vector2[runners];
+        if (count == 0) return (slow, fast);
+        int columns = Mathf.CeilToInt(Mathf.Sqrt(count * 1.25f));
+        int rows = (count + columns - 1) / columns;
+        float spacing = Mathf.Clamp(Settings.HordeSpacing, 1.8f, 4f);
+        float jitter = Mathf.Min(0.32f, spacing * 0.12f);
+        var rng = new RandomNumberGenerator { Seed = unchecked((ulong)(Settings.Seed + 23771)) };
+        int slowIndex = 0, fastIndex = 0;
+        for (int i = 0; i < count; i++)
+        {
+            int column = i % columns, row = i / columns;
+            Vector2 offset = Settings.HordeCenterOffset + new Vector2(
+                (column - (columns - 1) * 0.5f) * spacing + rng.RandfRange(-jitter, jitter),
+                (row - (rows - 1) * 0.5f) * spacing + rng.RandfRange(-jitter, jitter));
+            // Spread fast zombies throughout the horde, never all in one corner.
+            bool runner = ((i + 1) * runners / count) > (i * runners / count);
+            if (runner) fast[fastIndex++] = offset; else slow[slowIndex++] = offset;
+        }
+        return (slow, fast);
+    }
+
+    // =========================================================
+    // Both obstacle scatter systems reserve the same initial spawn footprints, once at world startup.
+    private void AddZombieSpawnClearings(Godot.Collections.Array<Rect2> exclusions, Vector2[] offsets)
+    {
+        foreach (Vector2 offset in offsets)
+            exclusions.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
+    }
+
+    // =========================================================
     // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.
-    private void SpawnZombies(GodotObject terrainData, PlayerController player)
+    private void SpawnZombies(GodotObject terrainData, PlayerController player, Vector2[] hordeSlow, Vector2[] hordeFast)
     {
         var group = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies");
         var visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
         GetNode("DebugUIRoot").AddChild(visionDebug);
         SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", Settings.ZombieSpawnOffsets, 0);
         SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", Settings.RunnerSpawnOffsets, 104729);
+        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", hordeSlow, 209759);
+        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", hordeFast, 314573);
     }
 
     // =========================================================
@@ -273,6 +316,7 @@ public partial class WorldController : Node3D
     private void SpawnZombieSet(GodotObject terrainData, PlayerController player, Node3D group,
         ZombieVisionDebug visionDebug, string scenePath, Vector2[] offsets, int seedOffset)
     {
+        if (offsets.Length == 0) return;
         var scene = GD.Load<PackedScene>(scenePath);
         for (int i = 0; i < offsets.Length; i++)
         {

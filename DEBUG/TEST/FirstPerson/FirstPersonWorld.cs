@@ -4,6 +4,7 @@ using Godot;
 public partial class FirstPersonWorld : WorldController
 {
     protected override string ControlsHelp => "FIRST PERSON TEST · arrow-key walk · Shift run · Right Ctrl crouch\nMouse look · Left click/hold fire · Esc release mouse · Click recapture · F9 fog/render controls";
+    protected override bool EnableHorde => false; // Extra population belongs only to the top-down horde test.
 
     // =========================================================
     protected override void InitializeEquipment(PlayerController player, Camera camera)
