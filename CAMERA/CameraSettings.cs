@@ -17,10 +17,12 @@ public partial class CameraSettings : Resource
     [Export] public float CameraYawDegrees { get; set; } = 45;
     [Export] public float CameraPitchDegrees { get; set; } = 55;
     [Export] public float CameraDistance { get; set; } = 36;
-    [Export] public float CameraSize { get; set; } = 48;
+    [Export] public float CameraSize { get; set; } = 40;
     [ExportGroup("Zoom limits")]
-    [Export] public float MinimumZoom { get; set; } = 20;
-    [Export] public float MaximumZoom { get; set; } = 80;
+    [Export] public float MinimumZoom { get; set; } = 15;
+    [Export] public float MaximumZoom { get; set; } = 40;
+    [Export] public float MinimumPerspectiveDistance { get; set; } = 15;
+    [Export] public float MaximumPerspectiveDistance { get; set; } = 50;
     [Export] public float ZoomStep { get; set; } = 4;
     [Export] public float FollowSmoothing { get; set; } = 8;
 }

@@ -1,4 +1,4 @@
-// Angled orthographic follow/zoom. Player movement or scroll wakes interpolation; settled camera sleeps.
+// Angled camera follow, yaw orbit and bounded zoom. Changes are input-driven; settled camera sleeps.
 using Godot;
 
 public partial class Camera : Camera3D
@@ -26,6 +26,8 @@ public partial class Camera : Camera3D
         Projection = settings.UsePerspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
         Fov = Mathf.Clamp(settings.PerspectiveFov, 25, 90); KeepAspect = KeepAspectEnum.Height; Current = true; Near = 0.1f; Far = 1800;
         settings.CameraPitchDegrees = Mathf.Clamp(settings.CameraPitchDegrees, 25, 80);
+        settings.CameraYawDegrees = Mathf.Clamp(settings.CameraYawDegrees, 0, 360);
+        settings.CameraDistance = ClampPerspectiveDistance(settings.CameraDistance);
         RotationDegrees = new Vector3(-settings.CameraPitchDegrees, settings.CameraYawDegrees, 0);
         _zoomTarget = ClampZoom(settings.CameraSize); Size = _zoomTarget;
         settings.CameraSize = _zoomTarget;
@@ -55,7 +57,7 @@ public partial class Camera : Camera3D
     }
 
     // =========================================================
-    // Pitch changes keep the player centred immediately; yaw and screen-relative movement axes stay fixed.
+    // Tilt changes update framing immediately and preserve the current camera orbit angle.
     public void SetPitch(float degrees)
     {
         if (!_initialized) return;
@@ -66,11 +68,24 @@ public partial class Camera : Camera3D
     }
 
     // =========================================================
+    // Orbit horizontally around the current follow point. Player-relative controls use the updated basis.
+    public void SetYaw(float degrees)
+    {
+        if (!_initialized) return;
+        float yaw = Mathf.Clamp(degrees, 0, 360);
+        if (Mathf.IsEqualApprox(_settings.CameraYawDegrees, yaw)) return;
+        _settings.CameraYawDegrees = yaw;
+        RotationDegrees = new Vector3(-_settings.CameraPitchDegrees, yaw, 0);
+        GlobalPosition = DesiredPosition();
+        ViewChanged?.Invoke(); SettingsChanged?.Invoke();
+    }
+
+    // =========================================================
     // Wheel and slider share one zoom target and notify the panel only when an input changes it.
     public void SetZoom(float size)
     {
         if (!_initialized) return;
-        if (_settings.UsePerspective) _settings.CameraDistance = Mathf.Clamp(size, 20, 100);
+        if (_settings.UsePerspective) _settings.CameraDistance = ClampPerspectiveDistance(size);
         else { _zoomTarget = ClampZoom(size); _settings.CameraSize = _zoomTarget; }
         SetProcess(true);
         ViewChanged?.Invoke(); SettingsChanged?.Invoke();
@@ -82,7 +97,7 @@ public partial class Camera : Camera3D
     {
         if (!_initialized || _settings.UsePerspective == perspective) return;
         if (perspective)
-            _settings.CameraDistance = Mathf.Clamp(_settings.CameraSize / (2 * Mathf.Tan(Mathf.DegToRad(Fov * 0.5f))), 20, 100);
+            _settings.CameraDistance = ClampPerspectiveDistance(_settings.CameraSize / (2 * Mathf.Tan(Mathf.DegToRad(Fov * 0.5f))));
         else { _zoomTarget = ClampZoom(ViewHeight); _settings.CameraSize = _zoomTarget; Size = _zoomTarget; }
         _settings.UsePerspective = perspective;
         Projection = perspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
@@ -118,12 +133,18 @@ public partial class Camera : Camera3D
 
     // =========================================================
     // Offset follows the camera's backwards axis so its optical axis remains centred on the player.
-    private Vector3 DesiredPosition() => _target + Vector3.Up * 0.9f + GlobalBasis.Z * Mathf.Clamp(_settings.CameraDistance, 20, 100);
+    private Vector3 DesiredPosition() => _target + Vector3.Up * 0.9f + GlobalBasis.Z * ClampPerspectiveDistance(_settings.CameraDistance);
 
     // =========================================================
     // Reversed authored limits remain safe and predictable.
     private float ClampZoom(float value) => Mathf.Clamp(value, Mathf.Max(5, Mathf.Min(_settings.MinimumZoom, _settings.MaximumZoom)),
         Mathf.Max(5, Mathf.Max(_settings.MinimumZoom, _settings.MaximumZoom)));
+
+    // =========================================================
+    // Perspective uses distance, not orthographic size; keep both bounds independently authorable.
+    private float ClampPerspectiveDistance(float value) => Mathf.Clamp(value,
+        Mathf.Max(1, Mathf.Min(_settings.MinimumPerspectiveDistance, _settings.MaximumPerspectiveDistance)),
+        Mathf.Max(1, Mathf.Max(_settings.MinimumPerspectiveDistance, _settings.MaximumPerspectiveDistance)));
 
     // =========================================================
     // Derived debug cameras notify aim adapters without depending on the overhead follow implementation.

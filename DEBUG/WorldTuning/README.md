@@ -19,3 +19,7 @@ The scroll area grows/shrinks with expanded content via MinimumSizeChanged, capp
 ## Debug — zombie sight cones
 
 The left-hand top-down controls now include a top-level **Debug** section with a **Show zombie sight cones** checkbox. It is connected to the existing world-local `ZombieVisionDebug` manager and the **F7** shortcut, so either changes the same state and F7 updates the checkbox without emitting a duplicate toggle. All current zombie variants' red fan meshes are affected; sight/LOS and AI are unchanged. Future registered zombies inherit current debug visibility while preserving their `ZombieSettings.ShowVisionCone` authoring flag. No per-frame work or gameplay tuning settings added; changes are runtime-only. Local Godot/.NET build and visual checks pending.
+
+## Camera rotation and bounded zoom
+
+The top-level Camera disclosure now includes a live **Camera rotation** slider (0–360° yaw). `Camera.SetYaw()` orbits around the player using the already-authored `CameraYawDegrees` property, with existing player-relative movement/aim hooks retained. The zoom slider reads the configured bounds for the current projection instead of using hard-coded perspective values. Default orthographic view size is 15–40, perspective distance 15–50m. Both mouse wheel and slider follow the same camera clamps. Copy settings also includes the new perspective min/max fields. All actions are event-driven; no additional idle callback. FPS has no new camera slider. Local build and F6 visual validation pending.

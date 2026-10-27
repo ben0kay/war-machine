@@ -8,10 +8,10 @@ public partial class WorldTuningPanel : PanelContainer
 {
     private Camera _camera = null!;
     private CameraSettings _settings = null!;
-    private HSlider _pitch = null!, _zoom = null!, _fov = null!;
+    private HSlider _pitch = null!, _yaw = null!, _zoom = null!, _fov = null!;
     private Label _fovLabel = null!;
     private OptionButton _projection = null!;
-    private Label _pitchLabel = null!, _zoomLabel = null!;
+    private Label _pitchLabel = null!, _yawLabel = null!, _zoomLabel = null!;
     private Button _copy = null!;
     private SkyController _sky = null!;
     private PinePlacement _pines = null!;
@@ -57,6 +57,8 @@ public partial class WorldTuningPanel : PanelContainer
         _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
         _pitch = AddSlider(rows, 25, 80, 0.5);
         rows.AddChild(new Label { Text = "25° low angle → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
+        _yawLabel = new Label(); rows.AddChild(_yawLabel);
+        _yaw = AddSlider(rows, 0, 360, 1);
         _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
         _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
             Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
@@ -150,6 +152,7 @@ public partial class WorldTuningPanel : PanelContainer
         _clock.Connect("time_changed", _timeChanged);
         OnTimeChanged(_sky.Sky.Get("current_time").AsSingle());
         _pitch.ValueChanged += OnPitchChanged;
+        _yaw.ValueChanged += OnYawChanged;
         _zoom.ValueChanged += OnZoomChanged;
         _copy.Pressed += CopySettings;
         _camera.SettingsChanged += Refresh;
@@ -215,6 +218,7 @@ public partial class WorldTuningPanel : PanelContainer
     }
 
     private void OnPitchChanged(double value) => _camera.SetPitch((float)value);
+    private void OnYawChanged(double value) => _camera.SetYaw((float)value);
     private void OnZoomChanged(double value) => _camera.SetZoom((float)value);
 
     // =========================================================
@@ -222,14 +226,20 @@ public partial class WorldTuningPanel : PanelContainer
     private void Refresh()
     {
         _pitch.SetValueNoSignal(_settings.CameraPitchDegrees);
+        _yaw.SetValueNoSignal(_settings.CameraYawDegrees);
         _projection.Select(_settings.UsePerspective ? 1 : 0);
         _fov.Visible = _fovLabel.Visible = _settings.UsePerspective;
         _fov.SetValueNoSignal(_settings.PerspectiveFov);
         _fovLabel.Text = $"Perspective FOV: {_settings.PerspectiveFov:0.0}°";
-        _zoom.MinValue = _settings.UsePerspective ? 20 : Mathf.Max(5, Mathf.Min(_settings.MinimumZoom, _settings.MaximumZoom));
-        _zoom.MaxValue = _settings.UsePerspective ? 100 : Mathf.Max(5, Mathf.Max(_settings.MinimumZoom, _settings.MaximumZoom));
+        _zoom.MinValue = _settings.UsePerspective
+            ? Mathf.Max(1, Mathf.Min(_settings.MinimumPerspectiveDistance, _settings.MaximumPerspectiveDistance))
+            : Mathf.Max(5, Mathf.Min(_settings.MinimumZoom, _settings.MaximumZoom));
+        _zoom.MaxValue = _settings.UsePerspective
+            ? Mathf.Max(1, Mathf.Max(_settings.MinimumPerspectiveDistance, _settings.MaximumPerspectiveDistance))
+            : Mathf.Max(5, Mathf.Max(_settings.MinimumZoom, _settings.MaximumZoom));
         _zoom.SetValueNoSignal(_settings.UsePerspective ? _settings.CameraDistance : _settings.CameraSize);
         _pitchLabel.Text = $"Tilt downward: {_settings.CameraPitchDegrees:0.0}°";
+        _yawLabel.Text = $"Camera rotation: {_settings.CameraYawDegrees:0}°";
         _zoomLabel.Text = _settings.UsePerspective ? $"Camera distance: {_settings.CameraDistance:0.0} m" : $"Zoom / view size: {_settings.CameraSize:0.0} m";
         _copy.Text = "Copy settings";
     }
@@ -277,6 +287,8 @@ public partial class WorldTuningPanel : PanelContainer
             [nameof(_settings.CameraDistance)] = _settings.CameraDistance,
             [nameof(_settings.MinimumZoom)] = _settings.MinimumZoom,
             [nameof(_settings.MaximumZoom)] = _settings.MaximumZoom,
+            [nameof(_settings.MinimumPerspectiveDistance)] = _settings.MinimumPerspectiveDistance,
+            [nameof(_settings.MaximumPerspectiveDistance)] = _settings.MaximumPerspectiveDistance,
             [nameof(_settings.ZoomStep)] = _settings.ZoomStep,
             [nameof(_settings.FollowSmoothing)] = _settings.FollowSmoothing,
             [nameof(_environment.StartHour)] = _sky.Sky.Get("current_time").AsSingle(),
