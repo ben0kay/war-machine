@@ -39,11 +39,16 @@ public partial class Car001Mesh : Node3D
         // All collision is static; no RigidBody3D, CharacterBody3D or wheels simulation.
         var body = new StaticBody3D { Name = "StaticCollision", CollisionLayer = 1, CollisionMask = 1 };
         generated.AddChild(body);
-        var paint = Mat(s.Paint), paintLight = Mat(s.Paint.Lightened(0.13f));
-        var paintDark = Mat(s.Paint.Darkened(0.22f)), rubber = Mat(new Color(0.085f, 0.092f, 0.10f));
-        var glass = Mat(s.Glass), black = Mat(new Color(0.13f, 0.15f, 0.16f));
-        var seats = Mat(new Color(0.33f, 0.34f, 0.32f)), metal = Mat(new Color(0.56f, 0.58f, 0.56f));
-        var lights = Mat(new Color(0.83f, 0.81f, 0.65f)), red = Mat(new Color(0.63f, 0.15f, 0.12f));
+        var paint = Mat(s.Paint);
+        var paintLight = Mat(s.Paint.Lightened(0.13f));
+        var paintDark = Mat(s.Paint.Darkened(0.22f));
+        var rubber = Mat(new Color(0.085f, 0.092f, 0.10f));
+        var glass = Mat(s.Glass);
+        var black = Mat(new Color(0.13f, 0.15f, 0.16f));
+        var seats = Mat(new Color(0.33f, 0.34f, 0.32f));
+        var metal = Mat(new Color(0.56f, 0.58f, 0.56f));
+        var lights = Mat(new Color(0.83f, 0.81f, 0.65f));
+        var red = Mat(new Color(0.63f, 0.15f, 0.12f));
 
         // Local forward = -Z; driver is on the left (-X). Base at Y=0.
         Box(shell, body, "LowerMonocoque", new(0, 0.72f, 0), new(width, 0.64f, length - 0.14f), paint);
