@@ -2,8 +2,10 @@
 
 `PlayerMeshBuilder.cs` builds a lightweight, stylized **soldier-like** human for the angled 3D world. The original box-only placeholder has been replaced with rounded/tapered chest and limbs, a readable helmet/face, utility vest and straps, compact backpack, cargo pockets, knee pads, gloves and boots. Small deterministic green/brown camouflage fabric textures are generated once in C# and reused; no external texture/model assets or per-frame mesh work.
 
+The knee pivots now visibly flex on the forward swing (alternating left/right) and the ankles add restrained toe/heel roll while preserving level-looking boots. A small rounded joint hides the thigh/shin seam. Tune `KneeBendDegrees` and `FootRollDegrees` in `PLAYER/Configuration/PlayerMaster.tres`; these affect walking only, with reduced influence during crouching.
+
 **Animation contract is unchanged:** `VisualRoot`, `UpperBody`, `LeftArm`, `RightArm`, `LeftLeg`, `RightLeg`, `Knee`, `Ankle`, and the existing `WeaponMount` remain available for `PlayerController`'s movement, crouching and rifle poses. The player root capsule retains all collisions; the visible mesh has none. Camera, controls, aim, health and enemy logic were not modified.
 
 The palette and pieces are near the top of `PlayerMeshBuilder.cs`. Geometry is intended to read well at gameplay zoom, not to be a high-resolution FPS model. `../Artwork/` remains reserved for a future imported replacement that preserves pivots and sockets.
 
-**Brief local checks:** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn`: inspect front/back at play zoom, walking, running, right-Ctrl crouch, mouse aim, rifle hold/fire. Check that the vest/pack do not obscure weapon alignment, and that legs and arms do not detach. No visual runtime verification has been performed here.
+**Brief local checks:** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn`: inspect front/back at play zoom, walking, running, right-Ctrl crouch, mouse aim, rifle hold/fire. Check that one knee bends during each leg's forward swing, that boots settle at rest, and that the crouch pose still folds cleanly. Check that the vest/pack do not obscure weapon alignment, and that legs and arms do not detach. No visual runtime verification has been performed here.

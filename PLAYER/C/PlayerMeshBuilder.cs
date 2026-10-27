@@ -112,6 +112,8 @@ public sealed class PlayerMeshBuilder
         Part(leg, "CargoPocket", new(0.14f * (leg.Name == "LeftLeg" ? -1 : 1), -0.21f, -0.006f),
             new(0.075f, 0.18f, 0.17f), Webbing, Rounded);
         var knee = Limb(leg, "Knee", new(0, -0.36f, 0));
+        // Rounded joint masks the seam between thigh and shin during knee flexion.
+        Part(knee, "KneeJoint", Vector3.Zero, new(0.19f, 0.18f, 0.22f), Trousers, Rounded);
         Part(knee, "Shin", new(0, -0.18f, 0), new(0.20f, 0.37f, 0.226f), Trousers, Rounded);
         Part(knee, "KneePad", new(0, -0.06f, -0.13f), new(0.18f, 0.17f, 0.065f), Vest, Rounded);
         foot = Limb(knee, "Ankle", new(0, -0.36f, 0));

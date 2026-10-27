@@ -11,6 +11,9 @@ public partial class PlayerSettings : Resource
     [Export] public float Acceleration { get; set; } = 24;
     [Export] public float Gravity { get; set; } = 20;
     [Export] public float GaitRate { get; set; } = 1.8f;
+    [ExportGroup("Walking gait")]
+    [Export(PropertyHint.Range, "0,60,1")] public float KneeBendDegrees { get; set; } = 35f;
+    [Export(PropertyHint.Range, "0,20,1")] public float FootRollDegrees { get; set; } = 8f;
     [ExportGroup("Equipment pose")]
     [Export] public Vector3 WeaponProbeOffset { get; set; } = new(0, 0.38f, 0);
     [Export] public Vector3 WeaponMountOffset { get; set; } = new(0.24f, 0.40f, -0.45f);

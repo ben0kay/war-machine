@@ -108,7 +108,11 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
             float yaw = Mathf.Atan2(-travel.X, -travel.Z);
             if (!_weaponPose) _art.Rotation = new Vector3(0, Mathf.LerpAngle(_art.Rotation.Y, yaw, 1 - Mathf.Exp(-14 * dt)), 0);
             _phase += dt * Mathf.Tau * Mathf.Max(0.1f, _settings.GaitRate) * actualSpeed / Mathf.Max(0.1f, _settings.WalkSpeed);
-            Pose(Mathf.Sin(_phase) * 0.5f, Mathf.Abs(Mathf.Sin(_phase * 2)) * 0.025f);
+            // Lift each knee only while that foot swings forward; the other leg stays planted.
+            float liftPhase = Mathf.Cos(_phase);
+            float gaitStrength = Mathf.Clamp(actualSpeed / Mathf.Max(0.1f, _settings.WalkSpeed), 0f, 1f);
+            Pose(Mathf.Sin(_phase) * 0.5f, Mathf.Abs(Mathf.Sin(_phase * 2)) * 0.025f,
+                Mathf.Max(0, liftPhase) * gaitStrength, Mathf.Max(0, -liftPhase) * gaitStrength);
         }
         else Pose(0, 0);
         if (_crouch != previousCrouch) WeaponPoseChanged?.Invoke();
@@ -151,8 +155,8 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     }
 
     // =========================================================
-    // One method moves all four joints; no limb scripts, AnimationTree framework or idle animation clock.
-    private void Pose(float angle, float bob)
+    // One gait driver bends the swinging knee, then counter-rotates the ankle to keep boots level.
+    private void Pose(float angle, float bob, float leftLift = 0, float rightLift = 0)
     {
         float stride = angle * Mathf.Lerp(1, 0.4f, _crouch);
         _art.Position = Vector3.Up * (bob * Mathf.Lerp(1, 0.35f, _crouch) - 0.72f * (1 - Mathf.Cos(1.15f * _crouch)));
@@ -162,10 +166,14 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         if (_weaponPose) { _leftArm.RotationDegrees = _settings.LeftWeaponArmDegrees; _rightArm.RotationDegrees = _settings.RightWeaponArmDegrees; }
         _leftLeg.Rotation = new Vector3(stride + 1.15f * _crouch, 0, 0);
         _rightLeg.Rotation = new Vector3(-stride + 1.15f * _crouch, 0, 0);
-        _leftKnee.Rotation = new Vector3(-2.3f * _crouch, 0, 0);
-        _rightKnee.Rotation = new Vector3(-2.3f * _crouch, 0, 0);
-        _leftFoot.Rotation = new Vector3(-_leftLeg.Rotation.X - _leftKnee.Rotation.X, 0, 0);
-        _rightFoot.Rotation = new Vector3(-_rightLeg.Rotation.X - _rightKnee.Rotation.X, 0, 0);
+        // Crouch retains its existing deep knee bend; walking adds up to ~35 degrees on the airborne leg.
+        float kneeBend = Mathf.DegToRad(Mathf.Clamp(_settings.KneeBendDegrees, 0, 60)) * (1f - _crouch);
+        _leftKnee.Rotation = new Vector3(-2.3f * _crouch - kneeBend * leftLift, 0, 0);
+        _rightKnee.Rotation = new Vector3(-2.3f * _crouch - kneeBend * rightLift, 0, 0);
+        // Small toe/heel movement while swinging; feet return to their original planted pose at rest.
+        float footRoll = Mathf.DegToRad(Mathf.Clamp(_settings.FootRollDegrees, 0, 20)) * (1f - _crouch) * Mathf.Sin(_phase);
+        _leftFoot.Rotation = new Vector3(-_leftLeg.Rotation.X - _leftKnee.Rotation.X + footRoll * leftLift, 0, 0);
+        _rightFoot.Rotation = new Vector3(-_rightLeg.Rotation.X - _rightKnee.Rotation.X - footRoll * rightLift, 0, 0);
     }
 
 }
