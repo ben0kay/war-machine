@@ -14,17 +14,19 @@ public static class RobotMeshBuilder
     // Broad upper silhouette, two substantial legs and independently turning cyan head hardware.
     public static Node3D Build(Node3D visual, RobotSettings settings)
     {
-        var armour = Material(settings.ArmourColor);
-        var joints = Material(settings.JointColor);
-        var inset = Material(settings.ArmourColor.Darkened(0.4f));
+        // MAT1: one shared instance of each finish for this robot's primitive parts.
+        // Existing cyan emissive optics/markers stay StandardMaterial3D until MAT0 is authorized.
+        var armour = RobotMaterialFactory.Armour(settings);
+        var joints = RobotMaterialFactory.Joint(settings, settings.JointColor);
+        var inset = RobotMaterialFactory.Rubber(settings, settings.ArmourColor.Darkened(0.4f));
         var glow = Material(settings.SensorColor);
         glow.EmissionEnabled = true; glow.Emission = settings.SensorColor;
         glow.EmissionEnergyMultiplier = Mathf.Max(0, settings.EmissionEnergy);
         // Detail palette is deliberately darker/more restrained than the main cyan scanning optics.
-        var edge = Material(settings.JointColor.Lightened(0.22f));
-        var recess = Material(settings.JointColor.Darkened(0.45f));
-        var cable = Material(settings.JointColor.Darkened(0.64f));
-        var steel = Material(settings.JointColor.Lightened(0.32f));
+        var edge = RobotMaterialFactory.Steel(settings, settings.JointColor.Lightened(0.22f));
+        var recess = RobotMaterialFactory.Rubber(settings, settings.JointColor.Darkened(0.45f));
+        var cable = RobotMaterialFactory.Rubber(settings, settings.JointColor.Darkened(0.64f));
+        var steel = RobotMaterialFactory.Steel(settings, settings.JointColor.Lightened(0.32f));
         var marking = Material(new Color(0.60f, 0.52f, 0.33f));
         var accent = Material(settings.SensorColor.Darkened(0.60f));
         accent.EmissionEnabled = true; accent.Emission = settings.SensorColor;

@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://ENTITIES/TYPES/Robots/Robot_001/Artwork/Shaders/WeatheredMetal.gdshader" id="1"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/base_color = Color(0.14, 0.18, 0.21, 1)
+shader_parameter/bare_metal_color = Vector3(0.31, 0.34, 0.36)
+shader_parameter/metallic_level = 0.75
+shader_parameter/base_roughness = 0.60
+shader_parameter/wear_amount = 0.38
+shader_parameter/dirt_amount = 0.28
+shader_parameter/scratch_amount = 0.30

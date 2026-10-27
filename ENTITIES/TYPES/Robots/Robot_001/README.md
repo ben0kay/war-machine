@@ -83,3 +83,38 @@ Robot_001's **existing original C# biped** receives additional industrial/mechan
 **Socket/rig contract:** unchanged `BodyRoot`, `HeadPivot/SensorSocket`, `LeftHip/Knee/Foot` and `RightHip/Knee/Foot` names and coordinates. The original scene, `ArtOverride` path, raycaster, animated pivot geometry, `ModelScale`, collision, camera relevance and scan VFX setup are untouched. Decorative accents have no collision and must not occlude gameplay vision physics. The additional meshes share cached unit primitives/material instances within each robot, with no extra timers or CPU update callbacks. However, **more mesh surfaces increase render submissions/draw cost**; the detail toggle is provided for comparison and future LOD/batching if robot counts increase.
 
 **Local validation required:** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn`, inspect from the top-down angle and FPS test, and observe a full walk/stop/scan cycle. Look particularly at the side pod silhouette, foot clearances, bent cable attachment and cyan brightness in fog/night. Turn `ExtraMeshDetail` off on a test resource then reload to compare the original. If any geometry intersects awkwardly while bending, adjust only its local art offset—never a gait pivot or scanner socket. Code-review-only changes: no Godot/.NET compile or render pass was performed in this environment.
+
+## MAT1 — procedural PBR surface finishes (implemented, awaiting Godot validation)
+
+Material-only pass for the existing two-legged Robot_001. **No PNG textures, imported 3D assets, new lights, environment glow/bloom, AI, scanner-state changes, additional collisions or animation were added.** The old robot anatomy and socket/IK hierarchy are identical.
+
+- `Artwork/Shaders/WeatheredMetal.gdshader` calculates paint variation, edge chips, grime, directional scuffs, metal/roughness variation for large **painted armour** plates.
+- `Artwork/Shaders/IndustrialSurface.gdshader` gives **brushed steel, joint metal and rubber/cables** different roughness, metalness and surface grain without an image asset.
+- `Artwork/Materials/` has four editable `ShaderMaterial` presets: `WeatheredArmour.tres`, `BrushedSteel.tres`, `JointMetal.tres`, and `IndustrialRubber.tres`. Individual presets link to one of the two shader files.
+- `C/RobotMaterialFactory.cs` duplicates each needed preset **once per robot finish**, applies `RobotMaster.tres` parameters to the duplicates, and sends them to `RobotMeshBuilder.cs`. It never mutates the source presets, repeatedly loads materials during gait, or creates one resource per body plate.
+- Primitive parts are already constructed as shared box/sphere/cylinder meshes scaled per piece. The shaders compute **object-local procedural coordinates multiplied by the mesh's geometry scale**, so weathering patterns follow each animated thigh/shin/head/foot part without sliding across the terrain. No authored UV maps are needed. These are shader illusions, not true displaced geometry/normal-map scratches.
+
+### Configuration / rollback
+
+In `Configuration/RobotMaster.tres`, under **MAT1 surfaces**, spawn-time tuning defaults are:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `ProceduralMaterialsEnabled` | `true` | Use MAT1 shaders; set false and respawn to use previous flat materials |
+| `ArmourWear` | 0.38 | Edge chip / exposed metal prevalence on armour |
+| `ArmourDirt` | 0.28 | Uneven darker grime on armour; subdued dirt on metal joints |
+| `ArmourScratches` | 0.30 | Long shallow scuffs on armour |
+| `ArmourMetallic` | 0.75 | Armour PBR metallic response |
+| `ArmourRoughness` | 0.60 | Average armour microsurface roughness |
+
+`ArmourColor` and `JointColor` still define the main palette. `ExtraMeshDetail` still toggles geometry independently of the material system. **Settings are read when the robot is spawned**, not dynamically during F9 slider updates; resummon/reload to inspect a new material setting.
+
+All cyan main optics, small indicator emission, scan-beam rendering and emission settings remain unchanged. **MAT0 (bloom/lighting) is deliberately deferred**.
+
+### Performance / validation handoff
+
+Two shared shader programs, four `.tres` templates and at most seven duplicated **material instances per robot** (armour, joints, insets, edges, recesses, cables and exposed steel), not hundreds. These shaders use a small number of math/noise evaluations on visible pixels; they have **more per-pixel GPU cost than the flat materials** even when actor CPU callbacks remain exactly as before. No extra nodes, polling, per-frame parameter updates, CPU terrain queries or additional texture-memory uploads.
+
+Build `dotnet build war-machine.csproj`, then run `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` in Godot. Inspect armour chips vs. broad clean areas, brushed pistons, truly matte cables, cyan readability, fog visibility, night shading and moving joints/feet for texture swimming. Change one `ArmourWear` or `ArmourDirt` setting, respawn, and compare. Turn `ProceduralMaterialsEnabled=false` and respawn to compare old vs new. Check shader compile and look for **magenta/pink fallback or warnings**. For many robots, measure GPU before considering shader complexity/LOD reductions; no measured speedup is claimed.
+
+**Validation actually done here:** source, shader/preset path checks and shallow syntax review only. Godot/.NET compile and rendered appearance remain awaiting the owner's local inspection.

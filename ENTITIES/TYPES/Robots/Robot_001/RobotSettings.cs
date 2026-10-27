@@ -19,6 +19,13 @@ public partial class RobotSettings : Resource
     [Export] public bool ExtraMeshDetail { get; set; } = true;
     // Relative to existing sensor emission; small fixed highlights should remain much dimmer.
     [Export(PropertyHint.Range, "0,1.0,0.05")] public float DetailGlowMultiplier { get; set; } = 0.30f;
+    [ExportGroup("MAT1 surfaces")]
+    [Export] public bool ProceduralMaterialsEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ArmourWear { get; set; } = 0.38f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ArmourDirt { get; set; } = 0.28f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ArmourScratches { get; set; } = 0.30f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ArmourMetallic { get; set; } = 0.75f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float ArmourRoughness { get; set; } = 0.60f;
     [Export] public PackedScene? ArtOverride { get; set; }
     [ExportGroup("Gait")]
     [Export] public float StrideLength { get; set; } = 2.4f;

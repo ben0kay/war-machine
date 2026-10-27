@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://ENTITIES/TYPES/Robots/Robot_001/Artwork/Shaders/IndustrialSurface.gdshader" id="1"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/base_color = Color(0.28, 0.33, 0.36, 1)
+shader_parameter/metallic_level = 0.80
+shader_parameter/base_roughness = 0.45
+shader_parameter/grain_strength = 0.22
+shader_parameter/grime_amount = 0.15
+shader_parameter/pattern_scale = 23.0
+shader_parameter/grain_stretch = 0.12
