@@ -1,6 +1,6 @@
 # CM — Melee, shove and hit-reaction implementation plan
 
-> **Current status: CM0 and CM1 implemented; CM2-B recipient pushback implemented in source, awaiting local validation; CM2-A/C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
+> **Current status: CM0/CM1 implemented; CM2-A shared melee detection/profile implemented in source, awaiting local validation; CM2-B/C/D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
 
 ## Phase overview
 
@@ -149,7 +149,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 ## CM2 — Reusable quick-melee shove (revised scope)
 
-> **Partial progress (CM2-B, 2026-10-27):** Receiver-side zombie and runner physical pushback, `Shove` impact acceptance, configurable braking/resistance and recovery are implemented in source; compilation and Godot validation pending. CM2-A detection/profile, CM2-C both-view player inputs/aim and CM2-D procedural animation are **not** implemented. Full CM2 remains planned; the existing `CombatImpactKind.Shove` can be dispatched through CM0 without creating a second damage pipeline. Bullet behaviour remains unchanged. See `COMBAT/README.md` for test values/handoff.
+> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B zombie knockback, CM2-C player inputs/contact dispatch and CM2-D poses remain planned.** No actual shove is available in-game yet. See `COMBAT/Melee/README.md`.
 
 
 
