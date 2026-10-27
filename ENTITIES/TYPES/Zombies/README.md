@@ -33,6 +33,10 @@ ZombieMaster.tres; no separate per-zombie health file is required.
 
 Controllers/settings now live directly in this folder. Procedural geometry is in C/ZombieMeshBuilder.cs and future imported models in Artwork/. World placement is now WORLD/WorldController.cs.
 
+## Procedural zombie appearance pass (awaiting local validation)
+
+The original cube-like placeholder has been replaced with a stylized organic silhouette, mottled decayed skin, several worn clothing palettes, head/face details and uneven sleeves. The original shamble rig has also gained small cached knee pivots driven only during existing movement. No independent animation processing, physics changes, combat, AI, or new settings were added. See [C/README.md](C/README.md) for the appearance details and short F6 validation checklist. Not yet visually verified in Godot.
+
 ## Building placement and trunk collision
 
 Zombies now collide with pine trunks via physics layer 5. This prevents walking through trees; movement remains a direct slow approach, without navigation around obstacles. Spawn locations receive small pine clearings. The robot does not collide with this trunk layer.

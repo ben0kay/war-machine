@@ -25,6 +25,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private ulong _restUntil;
     private float _phase, _stuck;
     private Node3D _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
+    private Node3D _leftKnee = null!, _rightKnee = null!;
     // =========================================================
     // Art and one decision timer are built once. The inherited scene stays dormant until placement supplies a target.
     public override void _Ready()
@@ -33,6 +34,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
         {
             var mesh = new ZombieMeshBuilder(VisualRoot);
             _leftArm = mesh.LeftArm; _rightArm = mesh.RightArm; _leftLeg = mesh.LeftLeg; _rightLeg = mesh.RightLeg;
+            _leftKnee = mesh.LeftKnee; _rightKnee = mesh.RightKnee;
             Pose(0);
             _health = new HealthComponent { Name = "Health" }; AddChild(_health);
             _health.Died += OnKilled;
@@ -186,7 +188,11 @@ public partial class ZombieController : EntityCore, IDamageReceiver
         {
             float yaw = Mathf.Atan2(-travel.X, -travel.Z);
             VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
-            _phase += travel.Length() * 5; Pose(Mathf.Sin(_phase)); _stuck = 0;
+            _phase += travel.Length() * 5;
+            // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
+            float swing = Mathf.Cos(_phase);
+            Pose(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
+            _stuck = 0;
         }
         else { Pose(0); if (walking) _stuck += dt; }
         if (_stuck > 2) { Rest(); _stuck = 0; }
@@ -201,12 +207,14 @@ public partial class ZombieController : EntityCore, IDamageReceiver
 
     // =========================================================
     // Arms extend toward the player during pursuit, including the stop-near-player pose.
-    private void Pose(float step)
+    private void Pose(float step, float leftLift = 0, float rightLift = 0)
     {
         VisualRoot.Position = Vector3.Up * (Mathf.Abs(step) * 0.015f);
         _leftArm.Rotation = new Vector3((IsChasing ? 1.4f : 0.15f) - step * 0.08f, 0, -0.08f);
         _rightArm.Rotation = new Vector3((IsChasing ? 1.4f : 0.15f) + step * 0.08f, 0, 0.08f);
         _leftLeg.Rotation = new Vector3(step * 0.22f, 0, 0); _rightLeg.Rotation = new Vector3(-step * 0.22f, 0, 0);
+        _leftKnee.Rotation = new Vector3(-leftLift * 0.32f, 0, 0);
+        _rightKnee.Rotation = new Vector3(-rightLift * 0.25f, 0, 0);
     }
 
 }
