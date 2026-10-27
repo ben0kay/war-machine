@@ -1,5 +1,3 @@
 # Procedural rifle visual
 
-RifleMeshBuilder.cs builds the temporary low-poly mesh once. All firing logic and
-the reusable stats class live in Weapons/Shared/C. Replace this visual child with
-an imported Artwork scene later without changing the weapon controller.
+`RifleMeshBuilder.cs` now creates a compact, refined carbine shape once beneath `Visual/Generated`. A stock/neck, grip/trigger guard, distinct upper/lower receivers and ejection port, magazine, ribbed rail and handguard slots, round barrel, muzzle device and split sights replace the old nine unrefined boxes. Shapes and basic colours are shared/reused using `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs`. No authored textures, shader or extra first-person material system. All game logic stays in the shared firearm controller. `Muzzle` marker unchanged; future imported GLB can replace Visual without affecting shots. Builder idle processing disabled. Verify silhouette/hand placement in FPS and top-down locally.

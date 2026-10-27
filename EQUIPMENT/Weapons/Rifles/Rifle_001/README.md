@@ -66,3 +66,9 @@ this environment, so **compilation and gameplay remain unverified**. Locally:
 8. Disable EquipmentMaster or unload: no stuck subscriptions/audio/effects.
 
 No terrain rebake or parked FPS scene changes are required.
+
+## Procedural model polish — geometry only
+
+The rifle Visual node now builds a more intentional compact carbine: reusable chamfered and tapered low-poly profiles on the receiver/stock, angled pistol grip, open trigger guard, stepped magazine, thin ejection/bolt details, inset handguard vent slots, upper accessory rail, protective front/rear sight ears, round barrel and short muzzle device. The overall grip-centred outline stays within the original weapon's approximate dimensions, with its `Muzzle` marker still fixed at `(0, 0.055, -0.81)` along local -Z. Top-down and first-person views share the same upgraded art; no FPS-only material variant, shader, textures or robot material import.
+
+Primitive geometry is shared through `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs`. The builder creates the full model one time and stops processing; static meshes/basic existing-tone materials are reused. Controller, equipment slots, shot origin, recoil/hit/tracer/light/audio rules, balancing and FPS offsets are unchanged. **Local build/FPS silhouette checks required**, particularly sight alignment/hand placement in motion.

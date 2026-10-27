@@ -42,3 +42,7 @@ for planned ACC1 player crouch/movement multipliers and optional ACC2 polish.
 ## Ownership cleanup
 
 FirearmController.cs, FirearmSettings.cs and FirearmShotEffects.cs live directly here; C/ is reserved for mesh builders, such as Rifle_001/C/RifleMeshBuilder.cs.
+
+## Shared shape-only weapon art polish
+
+`WeaponVisualGeometry.cs` provides one cached flat-shaded chamfered box profile, front-/rear-tapered profiles, one 12-sided round tube and reusable box mesh for gun model builders. The rifle and machine gun now reuse these primitives instead of constructing a unique box mesh for every detail. Existing colour-only materials remain; no new textures, shader files, material variants or FPS renderer were added. Visual nodes generate their meshes once on load and sleep. Firing mechanics and weapon marker positions remain in the original scenes. Inspect both models from the first-person camera and at overhead distances, check arm/hand alignment and shot muzzle effects. Compiler/editor/runtime verification remains for local Godot.

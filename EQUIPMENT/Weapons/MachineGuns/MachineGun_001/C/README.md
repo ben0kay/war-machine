@@ -1,3 +1,3 @@
 # MachineGun_001 mesh
 
-`MachineGunMeshBuilder.cs` generates placeholder low-poly visual geometry **only** once during scene load. It never simulates firing, damage, input or tracers. The reusable weapon logic lives in `EQUIPMENT/Weapons/Shared/`.
+`MachineGunMeshBuilder.cs` now builds a detailed low-poly LMG once: shaped stock, angled grip, split receiver/feed cover, removable box/ammo feed, cooling shroud, round heavy barrel and brake, carry handle and folded bipod. Shared static chamfered/tapered primitives from `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs` add modest actual bevels, not extra textures. The original simple palette and approximate outside bounds remain, and the `Muzzle` marker/weapon scale are unchanged. No idle processing, animation or gameplay hooks. User should build and inspect in first person and top-down.
