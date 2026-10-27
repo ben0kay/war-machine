@@ -8,12 +8,28 @@
 | --- | --- | --- | --- |
 | **CM0** | Shared impact/attack contract and zero-damage reaction path; preserve current damage | Codex / ChatGPT Work; Regular Chat reviews contracts | **Awaiting Validation** |
 | **CM1** | Bullets briefly stagger/slow living zombies, then pursuit resumes | Codex / Work; Copilot checks locally | **Awaiting Validation** |
-| **CM2** | Gun-butt shove while a firearm is equipped: low/no damage and short pushback | Codex / Work; Regular Chat tunes values | **Planned** |
-| **CM3** | Baseball bat: timed swing arc hits up to three nearby zombies | Codex / Work; Regular Chat tunes feel | **Planned** |
-| **CM4** | Knife: short-range, faster, one-target strikes with distinct animation hooks | Codex / Work; Regular Chat tunes feel | **Planned** |
-| **CM5** | Reuse melee for zombie attacks against the player, **after PH0 player health** | Codex / Work; Copilot checks locally | **Planned** |
+| **CM2** | Universal quick shove on a separate input, independent of equipped firearm/melee item; establish minimal actor-neutral melee query | Regular Chat prep; Codex / Work for collision/motion integration | **Planned** |
+| **CM3** | Left-click equipped bat primary attack: configurable blunt arc/multi-target; quick shove remains available | Codex / Work; Regular Chat tunes feel | **Planned** |
+| **CM4** | Knife primary attack + reusable shape/profile and animation semantics for future swords, grip modes and dual-wield | Codex / Work; Regular Chat tunes feel | **Planned** |
+| **CM5** | Actor-neutral melee reuse for zombies striking the player (**after PH0**); bear/other creatures use species adapters later | Codex / Work; Copilot checks locally | **Planned** |
 
 States: Planned → In Progress → Implemented → Awaiting Validation → Accepted. These are **independent authorization gates**, not permission to build the entire combat system in one pass.
+
+## Updated melee design contract — 2026-10-27 (owner direction, planning only)
+
+**Two independent actions, regardless of held weapon:** A dedicated **Quick Melee** button (provisional `V`) performs a low-damage, primarily defensive shove/punch/body-check. With a firearm, the pose is a gun-butt/weapon push; with a bat, sword or knife, it is a quick push with the held weapon, or an unarmed shove if appropriate. **Primary Attack** (left mouse) continues firing guns; with a melee weapon equipped, it performs that weapon's full damaging swing/stab. Both actions are different attack profiles with separate cooldowns, timing, damage and animation IDs; never implement quick shove as a firearm-only feature. No forced animation asset or dual-wield implementation in CM2.
+
+**Reusable actor-neutral contact executor:** The same `COMBAT/Melee` execution path must work for future player, zombie, bear and other creature attacks. Actor-specific code supplies source/owner, orientation/aim, target filtering, profile and pose hook; the shared executor never reads player input, weapon slot indices, camera or zombie AI directly. Avoid a huge inheritance tree or global combat manager. Existing CM0 `HitTargetResolver`, `CombatImpact`, `IDamageReceiver` and `IImpactReceiver` remain the sole damage/impact dispatch paths.
+
+**Invisible detection volume, only while attacking:** Conceptually each strike uses a short-lived invisible hitbox in front of the attacker. Prefer **bounded physics queries/swept shapes** (narrow capsule/box or arc sectors; not a permanently monitoring `Area3D` per actor), sampled on attack's active ticks. Shape/reach/width/angle, contact timing, target cap and LOS are data in the attack profile. A sword might use a wider sweep hitting several targets; a bat a narrower arc with stronger stagger; a knife a narrow single-target thrust; a bear a frontal paw arc; a zombie a short lunge/bite. Broad-phase shape overlap is **not** automatic damage: for each potential target, verify forward arc, distance, eligibility, occlusion against world solids (walls/doors/terrain) and per-swing deduplication before dispatching exactly one contact. A query must never apply damage through a wall just because its volume overlaps a collider behind the wall. Motion/sample the strike over a short bounded window to avoid tunnelling at low frame rates; put a hard cap on physics candidates and per-attack hits.
+
+**Profiles separate hit feel from animation:** Proposed reusable `MeleeSettings` fields: action kind (`QuickShove`, `PrimarySwing`, `PrimaryThrust`, `Claw`, `Bite`), shape mode (short forward capsule/box, sweep arc, thrust), range, arc angle/width, vertical coverage, target cap, hit mask/filter, optional per-secondary-target falloff, damage/type, impact strength/push, stagger, windup/active/recovery/cooldown, and animation cue (`Shove`, `BluntSwing`, `WideSlash`, `Stab`, `Claw`, etc.). **Do not add every field to CM2 prematurely:** build one shove profile and the extension seams, then add sweep/target cap in CM3 and grip/advanced profiles only when real weapons need them. The contact executor must not know whether a weapon is held in one hand or two. Future one-/two-handed grips and dual wield can select different profiles/animation cues, including different damage/stagger/speed, without rewriting hit detection.
+
+**Lifecycle/performance:** Button or AI decision starts a bounded windup → contact window → recovery; only active attacks request physics checks. Attack completion, target/source death, unequip, focus/menu interruption, deactivation or unload clears pending contacts and stops queries/pose work. Exactly zero per-actor melee polling while idle. Existing controller movement/collision still owns physical knockback; no teleporting targets, no extra health pipeline, no per-frame global scene scans.
+
+**Phase boundaries:** CM2 establishes the actor-neutral attack/query seam and *one-target* Quick Melee for the overhead player even if a firearm is equipped. CM3 proves primary attack + configurable **multi-target blunt sweep** and limited melee equipping. CM4 adds narrow knife primary attacks and generalizes attack shape/animation cues for eventual wide sword attacks and grip-specific profiles; actual sword/dual-wield weapons are **future separately authorized work**, not bundled into CM4. CM5 makes a zombie an attacker after PH0 and proves no player-only assumptions; bears and other wildlife become later species-specific adoption, not an implicit CM5 deliverable. FPS may reuse core logic but receives view-specific pose/input only when explicitly authorized.
+
+**Minimal Codex work strategy:** Regular Chat can document/profile defaults, prepare isolated settings/input/pose adapters, and review existing input/equipment contracts. Reserve Codex for physics overlap/occlusion, target deduplication, knockback integration into `CharacterBody3D` and the small shared execution boundary. No imported animations required: start with an optional procedural weapon/body shove cue. Keep CM2 small; do not prebuild sword, bat, bear, dual-wield or generalized animation frameworks.
 
 ## 1. Source snapshot at planning — 2026-10-27 (CM0/CM1 changes now described in README)
 
@@ -129,31 +145,31 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 **Pass:** Rifle and MG both cause a short recoverable interruption on living zombie and runner; no reaction on miss/solid cover/dead target; run/turn and stationary cases; fast MG bursts cannot lock one zombie forever; dead zombie still disappears once; horde of ~20 causes bounded work. **Codex / Work** integration; **Copilot** build/F6 visuals; **Regular Chat** balance review.
 
-## CM2 — Firearm melee shove
+## CM2 — Reusable quick-melee shove (revised scope)
 
-**Objective:** When the player has a gun equipped, a separate close-range action shoves the nearest zombie away without firing a bullet.
+**Objective:** Dedicated Quick Melee button performs a short defensive push independent of currently equipped weapon. With a gun it looks like a gun-butt strike; with a bat/knife/sword later it is a held-weapon push, while left-click is reserved for that equipped weapon's main attack. Initially implement only the player's overhead quick shove against one zombie/runner, with an **actor-neutral attack interface** future NPCs can call.
 
-**Dependencies:** CM0 and CM1; current `PlayerWeaponController` + `WeaponSlots`, PlayerController pose/socket, reusable melee contact window/helper in `COMBAT/Melee`.
+**Dependencies:** CM0/CM1, player aiming/input, equipped-item reference (no inventory rewrite), existing zombie movement/reactions. Reuse CM0's hit/impact dispatch rather than a new damage system.
 
-**Implementation scope:** Add a **contextual melee action** in the overhead player input adapter. Proposed key **V** (final binding owner-adjustable); existing left-click remains gun fire. Use the equipped gun's butt/body as a presentation action, not as a new "melee firearm" class. Narrow close-forward hit query and bounded windup/active/recovery; one closest eligible target, self ignored, solid cover blocks, no damage or ≤5 HP configurable. Supply stronger stagger/backward push via impact; actor's CharacterBody3D motion handles contact against walls/other zombies. Optional very brief shoulder/weapon lunge on existing rig/socket; no permanent animation loop.
+**Implementation scope:** Add the minimal shared `COMBAT/Melee` contact executor/profile and a dedicated input action (provisionally `V`). One forward short-lived, narrow invisible query, ~1.5m, max one nearest eligible target, wall/door/terrain occlusion and self exclusion, no damage by default (optional 0–5 HP). Bounded windup/active/recovery, dedicated cooldown, strong but modest backwards physical push/stagger handled by the victim's existing movement code, never direct teleport. No bullet, ammo usage or firearm shot cooldown. Optional simple procedural shove cue on existing player/held-weapon rig, including weapon in hand; avoid requiring authored animation files. Different grips/held items can later swap pose cue without affecting contacts. Inputs remain separate: **Quick Melee = shove; left-click gun = fire; left-click melee weapon = primary attack in CM3+.**
 
-**Owning files:** `COMBAT/Melee/` shared execution, new optional gun-butt impact stats in `FirearmSettings`/master, `PLAYER/Equipment/PlayerWeaponController.cs`, player pose integration as necessary; update equipment/player docs. Do **not** wire it through firing cooldown or consume ammo; its own short cooldown may temporarily gate repeated shoves.
+**Owning files:** Small shared `COMBAT/Melee/` helper + profile/resource if necessary, `PLAYER/Equipment/PlayerWeaponController.cs` or an isolated input adapter, existing `ENTITIES/TYPES/Zombies/ZombieController.cs` and reaction helper for actual knockback, minimal item/pose adapter, applicable configurations/docs. Do not create a separate shove-only damage pipeline or persistent `Area3D`.
 
-**Out of scope:** Bat/knife, generic inventory, stamina (PH2), zombie attacks, automatic combo chains or elaborate animation. FPS use is optional, explicitly scoped after top-down.
+**Out of scope:** Bat/sword/knife primary attack, multi-target sweep, one-/two-hand grip or dual-wield, bear/zombie attacks, stamina, inventory expansion, fancy imported animation, FPS view-specific animations (unless later approved).
 
-**Preserve:** Existing 1/2 gun switching, click/held fire, UI click refusal, mouse aiming, recoil/shot effects, focus cancellation and FPS behaviour.
+**Preserve:** Firearm 1/2 switching and shooting, UI focus prevention, camera-independent world-space aim, existing bullet flinch and death, stable rig pivots, obstacle collisions and top-down primary input.
 
-**Performance / lifecycle:** On key press begin one bounded attack/timer; physics hits only during active frames; one result; cancel on unequip/death/focus loss; no idle attack processing or collision spam.
+**Performance/lifecycle:** Work begins only on attack input; fixed upper bounds for candidates, contact ticks and one hit. Finish/cancel on cooldown completion, focus loss, equip swap, death or unload. No active melee node/polling between attacks.
 
-**Pass:** Shove living pursuer once at ~1.5m, no damage with 0-damage profile, no bullet/sound/tracer/shot cooldown, target visibly yields then resumes chasing; no shove through walls/UI/out of range, repeat obeys cooldown. **Codex / Work** gameplay; **Regular Chat** tuning; **Copilot** local visuals.
+**Pass / handoff:** With firearm equipped, V shoves one nearby zombie without ammo/HP change; misses, cover and out-of-range are safe. Left-click still shoots. A melee item can eventually invoke exactly the same Quick Melee action, while its left-click primary has a distinct profile. Knockback collides naturally, recovers chase, doesn't stun-lock and doesn't affect dead actors. Build + quick top-down/FPS regression locally. **Regular Chat** for isolated setup/pose, **Codex / Work** for shared collision/physics wiring, **Copilot** for local validation.
 
 ## CM3 — Baseball bat sweep (multi-target)
 
-**Objective:** A real equippable blunt weapon can hit **two or three zombies in one swing** if they are actually inside its moving reach and unobstructed.
+**Objective:** When a baseball bat is equipped, **left-click** performs its configured blunt primary attack hitting up to three unobstructed zombies, while **Quick Melee** still shoves with the held bat on its separate button. This proves the dual-action contract.
 
 **Dependencies:** CM0, CM1, shared melee contact/window from CM2. Current firearm-only `WeaponSlots` needs a **narrow equipment capability/adapter extension** before it can accept a non-firearm scene; avoid converting the nine-slot **visual-only** HUD into an inventory here.
 
-**Implementation scope:** Bat scene + editable attack profile + procedural placeholder bat mesh (if useful), hand/socket attachment, input for windup/active/recovery, bounded wedge/capsule sweep physics query, up to three **distinct** eligible targets per attack, per-target occlusion. Each receives damage via the existing receiver and optional blunt impact. One hit per zombie per swing; optionally moderate falloff for secondary targets. Expose reach, arc, damage, target cap, cooldown, windup/active/recovery and impact strength; default proposal above. One replaceable animation trigger/weapon socket contract for later imported bat swings.
+**Implementation scope:** Bat scene + editable **primary attack** profile + procedural placeholder bat mesh (if useful), hand/socket attachment, input for windup/active/recovery, bounded wedge/capsule sweep physics query, up to three **distinct** eligible targets per attack, per-target occlusion. Each receives damage via the existing receiver and optional blunt impact. One hit per zombie per swing; optionally moderate falloff for secondary targets. Expose reach, arc, damage, target cap, cooldown, windup/active/recovery and impact strength; default proposal above. One replaceable animation trigger/weapon socket contract for later imported bat swings.
 
 **Owning files:** `COMBAT/Melee/`, `EQUIPMENT/Melee/BaseballBat_001/…` with `.tscn`, `Configuration/*.tres`, optional `C/` and `Artwork/README.md`, one shared equip/input seam in `EQUIPMENT/Shared/` and `PLAYER/Equipment/`; update docs. No alternate bat-only damage maths.
 
@@ -167,7 +183,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 ## CM4 — Knife and animation variants
 
-**Objective:** One reusable melee execution supports knives and future short blades with tighter hit windows and different visual motions, not a second damage system.
+**Objective:** One reusable melee execution supports knife left-click thrusts and future blade/sword profiles with different arc widths, target caps and animation cues, not a second damage system. Maintain Quick Melee for every held melee weapon.
 
 **Dependencies:** CM3 shared equipment and hit query; existing procedural player rig, future imported rig compatibility.
 
@@ -175,7 +191,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 **Owning files:** `EQUIPMENT/Melee/Knife_001/`, existing `COMBAT/Melee/`, existing player pose adapter and optional shared art hook; per-item `Configuration` + README. No new all-purpose animation framework.
 
-**Out of scope:** Stealth takedowns, bleeding, dismemberment, assassination AI, extensive combos or NPC combat logic.
+**Out of scope:** Stealth takedowns, bleeding, dismemberment, assassination AI, extensive combos or NPC combat logic; actual wide-sweep sword item, one-/two-hand balance and dual-wield mechanics remain future separately scoped jobs.
 
 **Preserve:** Bat multi-hit, gun shove, bullet impacts and all current equipment controls unaffected. No camera-dependent melee maths.
 
@@ -185,7 +201,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 ## CM5 — Zombies attack and hit-reactive player (later)
 
-**Objective:** Living zombies can deliver telegraphed short melee hits to a damageable player using the same shared contact/damage system.
+**Objective:** Living zombies can deliver telegraphed short melee hits to a damageable player using the **same actor-neutral contact/damage system**; the executor must accept AI-controlled callers without player input. Bears and other creatures may adopt that executor later.
 
 **Dependencies:** **PH0 must be implemented and validated first** (player `IDamageReceiver` and HP/death). CM0 shared contract and at least a basic melee executor from CM2/CM3. PH2 stamina is **optional**, not a blocker; advanced hearing/navigation is optional.
 
@@ -207,7 +223,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 **Simplifications:** Do not add a global combat manager, fixed-tick collision checks for every idle weapon, a large ability/state-machine framework, a second resolver or an entire inventory just for a bat. One reusable short attack window and target interface should cover shove/bat/knife; weapon profiles supply the differences. Keep the existing two firearm slots until an authorized equipment-capability extension is necessary (CM3), and keep `UI/GameplayHUD/Hotbar` decorative until a separate hotbar/inventory phase.
 
-**Proposed decisions the owner can adjust before coding:** default quick-melee key (`V` suggested); how far and forceful a shove should feel; whether a very high-damage rifle should flinch on every nonlethal hit; bat second/third-target damage falloff; stagger immunity of large mechanical enemies; and when FPS should receive equivalent view animations. No question blocks plan creation.
+**Proposed decisions the owner can adjust before coding:** quick-melee always available independently of held equipment (owner direction); default quick-melee key (`V` suggested); how far and forceful a shove should feel; whether a very high-damage rifle should flinch on every nonlethal hit; bat second/third-target damage falloff; stagger immunity of large mechanical enemies; and when FPS should receive equivalent view animations. No question blocks plan creation.
 
 **Longer-term option:** When both player and zombies use damage broadly, moving the existing `ENTITIES/Shared/Combat` files into `COMBAT/Shared/Damage/` would make folder boundaries cleaner. It is optional, should be one separately authorized migration with Godot script resource and `.uid` verification, and does not improve the first melee prototype's behaviour by itself. Avoid splitting generic health calculations across two locations.
 
