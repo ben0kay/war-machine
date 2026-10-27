@@ -31,3 +31,7 @@ New folders/materials/scripts are created **only when their phase is authorized*
 ## Before Codex starts
 
 The implementation plan includes **cross-phase modularity and performance guardrails**: idempotent actor activation/deactivation with event cleanup; event-driven proximity wake/sleep with hysteresis; one shared gait update and foot-target caching; cached procedural mesh resources and stable VisualRoot/SensorSocket transforms; separate logical sensor vs transparent beam (no full-world target scans); and bounded raycasts / shader overdraw. These are constraints on RM0–RM5, **not additional phases**. The root entity scene stays minimal; no generic entity manager, premature navigation system or new debug UI is required.
+
+## Basic zombies — authorized follow-up
+
+[TYPES/Zombies/README.md](TYPES/Zombies/README.md) owns the inherited Zombie scene, runtime-copied master, low-poly shamble and arms-out range pursuit. Six are placed in the top-down preview only. No combat or robot targeting. Implementation awaits local build/visual validation; the previously cancelled ZS combat sandbox stays cancelled.

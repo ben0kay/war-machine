@@ -19,7 +19,7 @@
 
 ### Longer-term vision — not an implementation order
 
-The intended destination is an **atmospheric sci-fi wilderness game balancing survival, combat and base-building**, with exploration, scavenging and a persistent home/base supporting each other. The player is vulnerable; **giant robots are the superior, intimidating threats** while **zombies may later provide smaller, recurring nuisance threats** and complicate escapes or exploration. Robots could eventually fight or obliterate zombies, but that is *future design context*, **not a current feature request or zombie implementation plan**. The owner intends to add zombies later, after movement and robot mechanics are satisfying.
+The intended destination is an **atmospheric sci-fi wilderness game balancing survival, combat and base-building**, with exploration, scavenging and a persistent home/base supporting each other. The player is vulnerable; **giant robots are the superior, intimidating threats** while **zombies may later provide smaller, recurring nuisance threats** and complicate escapes or exploration. Robots could eventually fight or obliterate zombies, but that is *future design context*, **not a current feature request or zombie implementation plan**. The owner has now authorized a small basic zombie population in the top-down preview: slow wandering and arms-out range pursuit only; combat and robot interaction remain future work.
 
 Art direction should be **stylized, low-poly and readable**, with painterly landscapes, restrained palettes and atmospheric lighting reminiscent in *level of graphical ambition* of *The Long Dark*. No requirement for photorealism or extremely detailed models. Everything should remain original, and the orthographic camera should show convincing silhouettes and animation at gameplay zoom.
 
@@ -77,7 +77,7 @@ Create folders, subfolders and scripts **when implementing their owning features
 
 **[WORLD/TopDownWorldTest/README.md](WORLD/TopDownWorldTest/README.md)** — current working scene, run instructions and priority: player, orthographic camera and robot mechanics.
 
-**[WORLD/TopDownWorldTest/IMPLEMENTATION_PLAN.md](WORLD/TopDownWorldTest/IMPLEMENTATION_PLAN.md)** — TD0–TD2 implemented on `implement-td0-td1` with local validation/feel checks outstanding; TD3 planned. **No active ZS/zombie phase plan.**
+**[WORLD/TopDownWorldTest/IMPLEMENTATION_PLAN.md](WORLD/TopDownWorldTest/IMPLEMENTATION_PLAN.md)** — TD0–TD2 implemented on `implement-td0-td1` with local validation/feel checks outstanding; TD3 planned. **The old ZS combat plan remains cancelled; the newly authorized basic wander/chase zombies are documented under ENTITIES/TYPES/Zombies.**
 
 **[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — historical reusable robot implementation notes. Existing robot functionality can be refined for the top-down prototype when explicitly requested.
 

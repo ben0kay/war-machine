@@ -14,6 +14,8 @@ public partial class TopDownTestSettings : Resource
     [Export] public Vector2 HillOffset { get; set; } = new(30, -10);
     [Export] public float HillHeight { get; set; } = 5;
     [Export] public float HillRadius { get; set; } = 24;
+    [ExportGroup("Zombie placement")]
+    [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[] { new(8, 6), new(12, 10), new(-8, -10), new(-13, -8), new(4, -15), new(16, 16) };
     [ExportGroup("Player")]
     [Export] public float WalkSpeed { get; set; } = 5;
     [Export] public float CrouchSpeedMultiplier { get; set; } = 0.45f;

@@ -59,9 +59,28 @@ public partial class TopDownWorldTest : Node3D
         var cameraControls = new TopDownCameraControls();
         GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
         cameraControls.Initialize(camera, Settings, GetNode<SkyController>("Environment"), _weather);
+        SpawnZombies(data, player);
         bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = "Top-down test · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
+    }
+
+    // =========================================================
+    // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.
+    private void SpawnZombies(GodotObject terrainData, TopDownPlayer player)
+    {
+        var group = new Node3D { Name = "Zombies" }; AddChild(group);
+        var scene = GD.Load<PackedScene>("res://ENTITIES/TYPES/Zombies/Zombie.tscn");
+        for (int i = 0; i < Settings.ZombieSpawnOffsets.Length; i++)
+        {
+            Vector2 offset = Settings.ZombieSpawnOffsets[i];
+            Vector3 position = new(Settings.SpawnXZ.X + offset.X, 0, Settings.SpawnXZ.Y + offset.Y);
+            float height = terrainData.Call("get_height", position).AsSingle();
+            if (!float.IsFinite(height)) { GD.PushWarning("Skipped zombie spawn outside preview terrain."); continue; }
+            var zombie = scene.Instantiate<ZombieController>();
+            group.AddChild(zombie); zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
+            zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + i * 7919)));
+        }
     }
 
     // =========================================================
