@@ -114,3 +114,7 @@ Structure visibility now comes from each prefab's StructureVisibility component 
 ## Shared environment prefab
 
 EnvironmentRoot is now an instance of ENVIRONMENT/Environment.tscn. WorldController binds the ready terrain/player/camera rather than independently constructing sky, weather and haze. FirstPersonTest inherits that same instance, including haze. Shared defaults live on the prefab's GameplayEnvironmentMaster reference; edit those once for both views. See ../ENVIRONMENT/SHARED_ENVIRONMENT_README.md. Gameplay/terrain/physics ownership is unchanged; local build/visual checks pending.
+
+## Building004 — second multi-storey comparison
+
+A new [Building004 field office](Content/Structures/Building004/README.md) is placed once at `WorldMaster.Building004Offset = (-34,-70)`, roughly 26m beyond the Building002 lodge (north-west of spawn). Both active top-down and inherited FPS use shared WorldController placement and generated-bounds clearings. The concrete/brick structure differs from the timber lodge with a flat roof, rooftop vent, upper walk-out balcony and crosswise 21-step stair. A real four-span collision deck has an open stairwell. Metadata and a scene-owned StructureVisibility child use the common per-floor, roof and whole-building camera fades automatically; no new building-specific camera rules, terrain bake, player/AI changes or process loops. Set Building004Offset in WorldMaster to adjust location. Test F6 both views, entrance, stairs, upstairs balcony and original structure fades. Local Godot build and visual checks remain outstanding.

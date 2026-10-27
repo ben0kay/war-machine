@@ -192,6 +192,7 @@ public partial class WorldController : Node3D
         PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings, grassClearings);
         PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings, grassClearings);
         PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building004/Building004.tscn", Settings.Building004Offset, 3, 4, clearings, grassClearings);
         PlaceObject(terrainData, objects, "res://WORLD/Content/Objects/Cars/Car001/Car001.tscn", Settings.Car001Offset, 2, 0, clearings, grassClearings);
         return clearings;
     }

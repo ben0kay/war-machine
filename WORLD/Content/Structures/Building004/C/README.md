@@ -1,0 +1,3 @@
+# Procedural Building004 construction
+
+`Building004Mesh.cs` assembles low-poly brick/concrete field-office geometry one time with shared `StructureGeometry` primitives. Real `StaticBody3D` colliders live outside the disjoint visual-role roots. `StructureLayout.Level/Visual/Occupied` metadata is declared during mesh generation, before shared deferred visibility initialization. A separate occupied volume covers the second-storey balcony. The upper slab uses four physical spans around a stair hole and one gentle slope collision box with 21 decorative steps. No per-frame drawing, animation or physics builder. See [../README.md](../README.md) and [../../BUILDING_AUTHORING_README.md](../../BUILDING_AUTHORING_README.md).
