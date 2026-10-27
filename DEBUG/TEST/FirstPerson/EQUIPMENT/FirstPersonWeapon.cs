@@ -6,6 +6,7 @@ public partial class FirstPersonWeapon : Node
     private PlayerController _player = null!;
     private FirstPersonCamera _camera = null!;
     private FirearmController? _weapon;
+    private WeaponSlots _slots = null!;
     private PhysicsRayQueryParameters3D _query = null!;
     private bool _held, _requested;
 
@@ -18,14 +19,22 @@ public partial class FirstPersonWeapon : Node
     {
         _player = player; _camera = camera;
         if (!equipment.Enabled || equipment.DefaultWeaponScene == null) return;
-        Node instance = equipment.DefaultWeaponScene.Instantiate();
-        if (instance is not FirearmController firearm)
-        { GD.PushError("FPS equipment requires a FirearmController root."); instance.Free(); return; }
-        _weapon = firearm; camera.AddChild(firearm);
-        firearm.Position = camera.TestSettings.WeaponOffset; firearm.Equip(player);
-        _query = new PhysicsRayQueryParameters3D { CollisionMask = firearm.RuntimeSettings.HitMask,
-            HitFromInside = true, Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
-        firearm.ReadyToFire += OnReadyToFire;
+        _query = new PhysicsRayQueryParameters3D { HitFromInside = true,
+            Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
+        _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
+        _slots.Initialize(equipment, player, camera, camera.TestSettings.WeaponOffset);
+        SwitchWeapon(0);
+    }
+
+    // =========================================================
+    private void SwitchWeapon(int slot)
+    {
+        var previous = _weapon;
+        if (!_slots.Select(slot)) return;
+        CancelTrigger();
+        if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
+        _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
+        _query.CollisionMask = _weapon.RuntimeSettings.HitMask;
     }
 
     // =========================================================
@@ -41,6 +50,8 @@ public partial class FirstPersonWeapon : Node
     public override void _UnhandledInput(InputEvent input)
     {
         if (_weapon == null || Input.MouseMode != Input.MouseModeEnum.Captured) return;
+        int slot = WeaponSlots.RequestedSlot(input);
+        if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
         { _held = true; RequestShot(); GetViewport().SetInputAsHandled(); }
     }
@@ -74,6 +85,6 @@ public partial class FirstPersonWeapon : Node
     public override void _ExitTree()
     {
         CancelTrigger();
-        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.Unequip(); _weapon.QueueFree(); }
+        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
     }
 }

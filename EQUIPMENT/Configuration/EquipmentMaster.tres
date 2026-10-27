@@ -1,7 +1,9 @@
-[gd_resource type="Resource" script_class="EquipmentConfig" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="EquipmentConfig" load_steps=4 format=3]
 [ext_resource type="Script" path="res://EQUIPMENT/Shared/EquipmentConfig.cs" id="1"]
 [ext_resource type="PackedScene" path="res://EQUIPMENT/Weapons/Rifles/Rifle_001/Rifle_001.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://EQUIPMENT/Weapons/MachineGuns/MachineGun_001/MachineGun_001.tscn" id="3"]
 [resource]
 script = ExtResource("1")
 Enabled = true
 DefaultWeaponScene = ExtResource("2")
+SecondaryWeaponScene = ExtResource("3")

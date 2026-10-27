@@ -6,6 +6,7 @@ public partial class PlayerWeaponController : Node
     private PlayerController _player = null!;
     private Camera _camera = null!;
     private FirearmController? _weapon;
+    private WeaponSlots _slots = null!;
     private PhysicsRayQueryParameters3D _aimQuery = null!;
     private bool _held, _shotRequested, _aimDirty, _initialized;
     private Vector3 _aimPoint;
@@ -20,17 +21,29 @@ public partial class PlayerWeaponController : Node
     {
         _player = player; _camera = camera;
         if (!config.Enabled || config.DefaultWeaponScene == null) return;
-        Node instance = config.DefaultWeaponScene.Instantiate();
-        if (instance is not FirearmController firearm)
-        { GD.PushError("EquipmentMaster requires a FirearmController root."); instance.Free(); return; }
-        _weapon = firearm;
-        player.WeaponMount.AddChild(firearm); firearm.Equip(player);
-        _aimQuery = new PhysicsRayQueryParameters3D { CollisionMask = firearm.RuntimeSettings.HitMask,
+        _aimQuery = new PhysicsRayQueryParameters3D {
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
+        _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
+        _slots.Initialize(config, player, player.WeaponMount, Vector3.Zero);
+        SwitchWeapon(0);
+        if (_weapon == null) return;
         player.SetWeaponPose(true);
         player.PositionChanged += OnPlayerMoved; player.WeaponPoseChanged += RequestAim;
-        camera.ViewChanged += RequestAim; firearm.ReadyToFire += OnReadyToFire;
+        camera.ViewChanged += RequestAim;
         _initialized = true; RequestAim();
+    }
+
+    // =========================================================
+    // Cancel old trigger/callback before aiming the replacement; only the active gun can request repeat fire.
+    private void SwitchWeapon(int slot)
+    {
+        var previous = _weapon;
+        if (!_slots.Select(slot)) return;
+        CancelTrigger();
+        if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
+        _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
+        _aimQuery.CollisionMask = _weapon.RuntimeSettings.HitMask;
+        RequestAim();
     }
 
     // =========================================================
@@ -43,6 +56,8 @@ public partial class PlayerWeaponController : Node
     public override void _UnhandledInput(InputEvent input)
     {
         if (!_initialized) return;
+        int slot = WeaponSlots.RequestedSlot(input);
+        if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
         if (input is InputEventMouseMotion) RequestAim();
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
         { _held = true; _shotRequested = true; RequestAim(); GetViewport().SetInputAsHandled(); }
@@ -106,7 +121,7 @@ public partial class PlayerWeaponController : Node
         if (!_initialized) return;
         if (IsInstanceValid(_player)) { _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;
-        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.Unequip(); _weapon.QueueFree(); }
+        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
         _initialized = false;
     }
 }

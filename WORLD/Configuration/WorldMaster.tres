@@ -22,3 +22,5 @@ CliffWidth = 44.0
 CliffDepth = 36.0
 CliffRampLength = 38.0
 CliffPathWidth = 10.0
+
+RunnerSpawnOffsets = PackedVector2Array(18, 22, -15, 30, 32, -18)

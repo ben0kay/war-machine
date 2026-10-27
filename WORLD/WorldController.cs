@@ -84,6 +84,8 @@ public partial class WorldController : Node3D
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
         foreach (Rect2 clearing in sceneryClearings) _pines.ExclusionAreas.Add(clearing);
+        foreach (Vector2 offset in Settings.RunnerSpawnOffsets)
+            _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
         // Keep initial zombie positions free of newly solid trunks.
         foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
             _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
@@ -94,6 +96,8 @@ public partial class WorldController : Node3D
             EnvironmentSettings = EnvironmentSettings };
         foreach (Rect2 clearing in sceneryClearings) _rocks.ExclusionAreas.Add(clearing);
         foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
+            _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
+        foreach (Vector2 offset in Settings.RunnerSpawnOffsets)
             _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
         // Keep the giant's route and foot corridor free of new solid boulders.
         _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
@@ -111,7 +115,7 @@ public partial class WorldController : Node3D
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = ControlsHelp
-            + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Terrain mountain path south" : "\nRobot placement failed; see Output. Player preview remains available.");
+            + (patrolReady ? $" · 1 rifle / 2 machine gun · {Settings.RunnerSpawnOffsets.Length} fast runners · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Terrain mountain path south" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
     // =========================================================
@@ -231,16 +235,25 @@ public partial class WorldController : Node3D
         var group = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies");
         var visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
         GetNode("DebugUIRoot").AddChild(visionDebug);
-        var scene = GD.Load<PackedScene>("res://ENTITIES/TYPES/Zombies/Zombie.tscn");
-        for (int i = 0; i < Settings.ZombieSpawnOffsets.Length; i++)
+        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", Settings.ZombieSpawnOffsets, 0);
+        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", Settings.RunnerSpawnOffsets, 104729);
+    }
+
+    // =========================================================
+    // Both views use this bounded startup placement, ground sampler and vision debug wiring for either species.
+    private void SpawnZombieSet(GodotObject terrainData, PlayerController player, Node3D group,
+        ZombieVisionDebug visionDebug, string scenePath, Vector2[] offsets, int seedOffset)
+    {
+        var scene = GD.Load<PackedScene>(scenePath);
+        for (int i = 0; i < offsets.Length; i++)
         {
-            Vector2 offset = Settings.ZombieSpawnOffsets[i];
+            Vector2 offset = offsets[i];
             Vector3 position = new(Settings.SpawnXZ.X + offset.X, 0, Settings.SpawnXZ.Y + offset.Y);
             float height = terrainData.Call("get_height", position).AsSingle();
             if (!float.IsFinite(height)) { GD.PushWarning("Skipped zombie spawn outside preview terrain."); continue; }
             var zombie = scene.Instantiate<ZombieController>();
             group.AddChild(zombie); zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
-            zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + i * 7919)),
+            zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + seedOffset + i * 7919)),
                 point => terrainData.Call("get_height", point).AsSingle());
             visionDebug.Register(zombie);
         }

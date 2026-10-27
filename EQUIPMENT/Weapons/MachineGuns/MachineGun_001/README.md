@@ -1,6 +1,6 @@
 # MachineGun_001 — low-poly light machine gun
 
-**Status:** Authored, pending local Godot/.NET build and visual/gameplay validation. A new **independent weapon choice**, not automatic weapon-switching support.
+**Status:** Authored, pending local Godot/.NET build and visual/gameplay validation. A new **independent weapon choice**, now wired into the shared test weapon slots.
 
 - `MachineGun_001.tscn` reuses the same `FirearmController.cs` as Rifle_001.
 - `Configuration/MachineGunMaster.tres` uses the common `FirearmSettings` with a faster fire rate, different spread, damage and range.
@@ -25,10 +25,12 @@ Shots share `ShotSpread`, the existing shoulder-to-muzzle obstruction check, hit
 
 ## How to test without implementing weapon switching
 
-Edit `EQUIPMENT/Configuration/EquipmentMaster.tres` and set `DefaultWeaponScene` to `res://EQUIPMENT/Weapons/MachineGuns/MachineGun_001/MachineGun_001.tscn` in Godot. The default **remains Rifle_001** in source control. This configuration affects both top-down and the inherited FPS test using `EquipmentMaster`. The current input adapter already supports holding the trigger for automatic fire.
+Edit `EQUIPMENT/Configuration/EquipmentMaster.tres` and set `DefaultWeaponScene` to `res://EQUIPMENT/Weapons/MachineGuns/MachineGun_001/MachineGun_001.tscn` in Godot. The default **remains Rifle_001** in source control, with SecondaryWeaponScene now selecting this machine gun. This configuration affects both top-down and the inherited FPS test using `EquipmentMaster`. The current input adapter already supports holding the trigger for automatic fire.
 
 Press F6 in `WORLD/World.tscn`, check the heavier mesh/hand placement, muzzle/tracer start, sustained 600 RPM, damage, spread and nearby-cover blocking. F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` for the FPS alternative.
 
 **Important:** With multiple live tracers, high-rate shooting can leave several distinct short-lived lines in the world simultaneously. The muzzle flash remains one reused mesh, resetting on every shot. The optional shot audio remains **one** `AudioStreamPlayer3D`, so overlapping machine gun sound/loop polish is a separate future task. No runtime/render test claimed here.
 
 Performance: `TracerPoolSize=4` pre-creates four tracer meshes at weapon initialization. Each shot only cycles an existing slot; no per-shot nodes, physics queries, materials or allocations from the VFX layer. `FirearmShotEffects._Process` runs only while a flash or at least one tracer is active, then sleeps. Stop/unequip hides every slot.
+
+Test slots now implemented: press **1** for rifle, **2** for this machine gun in either view. No need to replace DefaultWeaponScene manually. Shared WeaponSlots handles switching; weapon mechanics and pooled effects are unchanged.

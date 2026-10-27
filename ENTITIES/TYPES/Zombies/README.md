@@ -68,3 +68,5 @@ The world installs DEBUG/Perception/ZombieVisionDebug: faint red eye-height hori
 Cost: existing timer only while actor active, cheap gates before up to 2 LOS rays/check (12 actors at 0.4s gives at most ~60 sight rays/s before gating; not measured). Waiting active zombies still think, inactive actors stop entirely. No extra timers, target scans or new physics callbacks.
 
 Brief local checks: build, F6 World and FPS; approach from behind vs front, check open crouch remains visible, crouch behind medium solid cover, full wall/ridge blocks and stepping out reacquires, arms lower after loss, F7 hides/shows cones, death/unload clean, robot unchanged. Godot/.NET unavailable here; runtime checks remain outstanding.
+
+Zombie_002 is now explicitly placed by WorldController in both world views: three separate RunnerSpawnOffsets in WorldMaster, retaining the 12 slow placements. Native grounding, tree/rock exclusions and F7 debug registration reuse existing placement. Runner behavior/stats remain those of its prefab; local runtime validation pending.

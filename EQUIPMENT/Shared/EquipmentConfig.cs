@@ -5,5 +5,6 @@ using Godot;
 public partial class EquipmentConfig : Resource
 {
     [Export] public bool Enabled { get; set; } = true;
+    [Export] public PackedScene SecondaryWeaponScene { get; set; } = null!;
     [Export] public PackedScene DefaultWeaponScene { get; set; } = null!;
 }

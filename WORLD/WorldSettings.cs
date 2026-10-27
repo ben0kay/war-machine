@@ -27,6 +27,9 @@ public partial class WorldSettings : Resource
     [Export] public float CliffDepth { get; set; } = 36;
     [Export] public float CliffRampLength { get; set; } = 38;
     [Export] public float CliffPathWidth { get; set; } = 10;
+    [ExportGroup("Runner placement")]
+    [Export] public Vector2[] RunnerSpawnOffsets { get; set; } = new Vector2[]
+    { new(18, 22), new(-15, 30), new(32, -18) };
     [ExportGroup("Zombie placement")]
     // Twelve preview zombies, spread around spawn and clear of the robot's initial patrol route.
     [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[]
