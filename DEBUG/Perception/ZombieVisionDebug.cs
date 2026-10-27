@@ -1,4 +1,4 @@
-// Optional world-local eyesight display: one F8 handler; static meshes follow visual headings without callbacks.
+// Optional world-local eyesight display: one F7 handler; static meshes follow visual headings without callbacks.
 using Godot;
 using System.Collections.Generic;
 
@@ -40,7 +40,7 @@ public partial class ZombieVisionDebug : Node
     // One input-only observer for the small test population; no process, physics, polling or extra LOS queries.
     public override void _UnhandledKeyInput(InputEvent @event)
     {
-        if (@event is not InputEventKey key || !key.Pressed || key.Echo || key.PhysicalKeycode != Key.F8) return;
+        if (@event is not InputEventKey key || !key.Pressed || key.Echo || key.PhysicalKeycode != Key.F7) return;
         _visible = !_visible;
         for (int i = _zombies.Count - 1; i >= 0; i--)
         {
