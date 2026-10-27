@@ -6,6 +6,7 @@
 - `Vegetation/FallenLogs`: tapered logs with cut ends, snapped branch stubs and moss.
 - `Rocks`: asymmetric low-poly boulders.
 - `Objects/Cars/Car001`: standalone stationary low-poly compact car with an already-swung-open driver door and static collision; placed in both active top-down and inherited FPS views.
+- `Placeables/`: **new reusable model library** (`Objects/` cannot be picked up; `Props/` eventually pickup-able). Bookcase001/Book001 GLB designs only, no physics or placement; Car001 remains at original path.
 - `Structures/Building001`: existing maintenance depot with interior/collision and an active-world placement.
 - `Structures/Building002`: new procedural timber ranger lodge with covered porch, walk-in door, actual window apertures and divided interior; placed in both active views.
 - `Structures/Building003`: new procedural roadside fuel station with walk-in shop, closed garage shutter, rear exit, pump canopy and colliding fuel pumps; placed in both active views.

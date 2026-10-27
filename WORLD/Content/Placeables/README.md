@@ -1,0 +1,32 @@
+# Placeables — reusable world asset library
+
+**Current status (2026-10-27): foundation + original 3D art for two assets, no physics/prefab/scene integration.** This is the one shared library future AI building and furnishing chats should read.
+
+## Terminology
+
+- `Objects/` are **not pickup-able by the player**. They may be purely static (Bookcase001, cars) or interactive but fixed (a cupboard with openable doors, a switchable generator). Cannot be lifted is the definition; breakability/interactivity are separate flags.
+- `Props/` are **physically pickup-able** small items: Book001, bucket, broom, etc. Future physics carrying holds them ahead of the player and lets them drop/throw, with mass limits. They do **not** automatically go into inventory or require per-item hand animations.
+- `WORLD/Content/Structures/` holds building shells. A future house should *instance* the same catalogue bookcase/book prefabs rather than baking copies of their meshes into building C#.
+- `INTERACTION/` owns shared target selection, physics carry, hinges and destruction. `INVENTORY/` and `EQUIPMENT/` own persistent/equipped item identity, not generic bookcase logic.
+
+## First two assets
+
+- [Bookcase001](Objects/Furniture/Bookcases/Bookcase001/README.md) — original GLB model, **fixed/non-interactive/unbreakable Object**, empty individually modelled shelf boards.
+- [Book001](Props/Books/Book001/README.md) — original GLB model, **future movable/throwable Prop**, lying-down closed hardback with visible covers/pages.
+
+See [PLACEABLE_CATALOG.md](PLACEABLE_CATALOG.md). Both are Godot-importable `.glb` meshes in their own `Artwork/` folders. **They are not yet `.tscn` prefabs, cannot be placed as gameplay scenes without integration, have no colliders, no `RigidBody3D` and are not world spawned.**
+
+## Authoring foundation for future AI chats
+
+1. Choose `Objects/` or `Props/` based on liftability. Create `Category/Type/Asset001/`, keep the stable asset identifier and add an asset README documenting dimensions, axis/pivot, status and intended interaction.
+2. `Artwork/` = imported `.glb`, texture, other model art. Use `C/` **only if** a future C# script procedurally **builds visible geometry**. Create `Configuration/AssetMaster.tres` when a configurable prefab exists; do not add useless empty settings.
+3. Later wrap the imported mesh in a **reusable `Asset001.tscn`** with intentional physics/collision. Model material/mesh swaps must not rewrite gameplay or interaction. Fixed bookshelves need individual shelf colliders (not one full solid box blocking shelves); throwable books need one lightweight `RigidBody3D` plus simple collision, friction/mass/sleep.
+4. Houses should use references to canonical prefabs under per-floor furnishings; honour `StructureVisibility` and `structure_visual_role=contents` on suitable fixed furniture. Mobile props need an **authoritative physics/world item owner**, stable spawn identities and placement anchors so rebuilding/fading building visual meshes cannot destroy physics state. A faded building remains physically solid.
+5. Reuse IX0–IX8 mechanics from `INTERACTION/IMPLEMENTATION_PLAN.md` later, with separate view targeting for FPS and overhead, but **one world and one set of objects**.
+6. Keep decorative clutter static/instanced where possible; don't simulate hundreds of awake books just for scenery. Godot Jolt can sleep loose rigid bodies. No per-prop idle polling.
+
+## Existing car stays put
+
+Existing `WORLD/Content/Objects/Cars/Car001/` is a fixed Object **at its original path**. It has working Godot/C# references; this change intentionally does **not relocate it**. A later explicit migration can update references and validate both views. Do not create a second Car001 or break existing paths.
+
+**Future instruction to an AI:** read root `README.md`, `CodePreferences.md`, this folder guide, catalogue, asset-specific README and `WORLD/Content/Structures/BUILDING_AUTHORING_README.md`. Reuse library assets when furnishing; check floor/door/stair clearance, surface grounding and physical sightlines. Don't auto-place anything in the active world without permission.

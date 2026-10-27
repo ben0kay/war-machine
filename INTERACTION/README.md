@@ -12,10 +12,14 @@ War Machine's top-down and first-person scenes already share the same world, ter
 
 ## Folder boundaries
 
-`INTERACTION/` = target eligibility, real-world reach, action intents, physics grab/throw, door and destruction orchestration. `INVENTORY/` (to be created in IX5) = unique item definitions/instances, single ownership and state transitions. `EQUIPMENT/` = held weapon behaviour and sockets. `COMBAT/` and `ENTITIES/Shared/Combat/` = melee, impacts and damage (already partly implemented). `WORLD/Content/Objects/Props/` (future IX1) = content prefabs and collider/material profiles. `PLAYER/` = movement/pose, `DEBUG/TEST/FirstPerson/` = input/camera presentation adapter. Save integration will be part of an eventual shared persistence owner, **not** a new competing one here.
+`INTERACTION/` = target eligibility, real-world reach, action intents, physics grab/throw, door and destruction orchestration. `INVENTORY/` (to be created in IX5) = unique item definitions/instances, single ownership and state transitions. `EQUIPMENT/` = held weapon behaviour and sockets. `COMBAT/` and `ENTITIES/Shared/Combat/` = melee, impacts and damage (already partly implemented). `WORLD/Content/Placeables/Props/` = new model library with Book001 art (IX physics prefabs still planned); `WORLD/Content/Placeables/Objects/` = fixed model library with Bookcase001. `PLAYER/` = movement/pose, `DEBUG/TEST/FirstPerson/` = input/camera presentation adapter. Save integration will be part of an eventual shared persistence owner, **not** a new competing one here.
 
 **Key distinction:** `WORLD`, `PHYSICS_HELD`, `INVENTORY`, `EQUIPPED` are location/ownership modes of a thing, not four separate item clones. Some props are deliberately world-only and can never be stowed/equipped. An equipped rifle has a persistent item identity and may be carefully placed back into the physical world. Gun ammunition and item condition are **future mutable state**, not currently working features.
 
 ## Immediate proposal
 
 Start **IX0** (common selection and input arbitration) with both F6 camera modes. Continue with IX1 movable books/bucket and IX2 floating physics pickup/throw. Only then add cupboards (IX3), melee planks after CM2 contact (IX4), item identity/inventory (IX5), rifle placement/retrieval (IX6), scavenging (IX7), persistent save (IX8). Codex can tackle an explicitly approved slice when available. No action taken automatically by this plan.
+
+## Artwork library now exists (not implemented gameplay)
+
+[Placeables/README](../WORLD/Content/Placeables/README.md) is the authoritative future library. Bookcase001 and Book001 are original **GLB mesh-only** designs; they have no game scenes, collision, interaction or world placement. IX0–IX8 remain Planned.

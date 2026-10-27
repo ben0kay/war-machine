@@ -118,6 +118,7 @@ Start with this README for intent, then read the owning README, relevant plan an
 - [EQUIPMENT/Weapons/README.md](EQUIPMENT/Weapons/README.md) — shared gun systems and accuracy work
 - [COMBAT/IMPLEMENTATION_PLAN.md](COMBAT/IMPLEMENTATION_PLAN.md) — impact and stagger foundation implemented/awaiting validation; remaining quick melee, bat, knife and zombie outgoing attacks tracked there
 - [INTERACTION/IMPLEMENTATION_PLAN.md](INTERACTION/IMPLEMENTATION_PLAN.md) — **new master plan (IX0–IX8; nothing implemented):** physical props and carrying/throwing, cupboards, destructible planks, item identity, rifle placement and scavenging; see [INTERACTION overview](INTERACTION/README.md)
+- [WORLD/Content/Placeables/README.md](WORLD/Content/Placeables/README.md) — **new model library:** fixed Objects versus pickup-able Props, Bookcase001 and Book001 original GLBs, future furnishing catalogue
 - [DEBUG/TEST/FirstPerson/README.md](DEBUG/TEST/FirstPerson/README.md) — optional FPS comparison
 - [WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md) and [WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md](WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md) — current world restructuring/validation history
 - [NOTES/ideas.md](NOTES/ideas.md) — optional ideas, not an approved roadmap
