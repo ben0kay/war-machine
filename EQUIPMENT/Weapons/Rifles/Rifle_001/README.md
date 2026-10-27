@@ -51,7 +51,7 @@ Source/resource paths, wiring and whitespace checked. Godot/.NET unavailable in
 this environment, so **compilation and gameplay remain unverified**. Locally:
 
 1. `dotnet build war-machine.csproj`, then open in your Godot .NET editor.
-2. F6 `WORLD/TopDownWorldTest/topdownWorldTest.tscn`; use existing preview terrain.
+2. F6 `WORLD/World.tscn`; use existing preview terrain.
 3. Check gun/arms standing, walking, crouched, turning and aiming uphill/downhill.
 4. Click/hold: slow regular shots, correct muzzle/tracer and 2-hit zombie removal.
 5. Verify terrain/cover blocks hits, another zombie intercepts the shot, robot is unharmed.

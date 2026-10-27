@@ -4,6 +4,9 @@ using Godot;
 [GlobalClass]
 public partial class EnvironmentConfig : Resource
 {
+    [ExportGroup("Gameplay lighting")]
+    [Export] public float AmbientLightEnergy { get; set; } = 0.8f;
+    [Export] public float MoonlightEnergy { get; set; } = 0.8f;
     [ExportGroup("Sky3D Time")]
     [Export(PropertyHint.Range, "0,23.99,0.01")] public float StartHour { get; set; } = 9f;
     [Export(PropertyHint.Range, "1,1440,1")] public float DayLengthMinutes { get; set; } = 24f;

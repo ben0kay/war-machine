@@ -1,16 +1,11 @@
-[gd_resource type="Resource" script_class="WorldConfig" load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://WORLD/WorldConfig.cs" id="1"]
-
+[gd_resource type="Resource" script_class="WorldSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/WorldSettings.cs" id="1"]
 [resource]
 script = ExtResource("1")
-DataDirectory = "res://WORLD/Terrain/PineLandscape"
-Seed = 78341
-Size = 2048
-Elevation = 220.0
-NoiseFrequency = 0.0035
-GrassSpacing = 4
-GrassSlopeLimit = 0.6
-GrassCoverage = 0.85
-SpawnXZ = Vector2(1024, 1240)
-SpawnClearance = 4.0
+Seed = 48193
+SpawnXZ = Vector2(512, 512)
+GroundHeight = 4.0
+Relief = 0.15
+HillOffset = Vector2(30, -10)
+HillHeight = 5.0
+HillRadius = 24.0

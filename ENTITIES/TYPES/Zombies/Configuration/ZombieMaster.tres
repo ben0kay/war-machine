@@ -1,5 +1,5 @@
 [gd_resource type="Resource" script_class="ZombieSettings" load_steps=4 format=3]
-[ext_resource type="Script" path="res://ENTITIES/TYPES/Zombies/C/ZombieSettings.cs" id="1"]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Zombies/ZombieSettings.cs" id="1"]
 [ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="2"]
 [sub_resource type="Resource" id="ZombieHealth"]
 script = ExtResource("2")

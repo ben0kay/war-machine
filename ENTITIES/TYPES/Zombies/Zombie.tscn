@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3]
 [ext_resource type="PackedScene" path="res://ENTITIES/Shared/Entity.tscn" id="1"]
-[ext_resource type="Script" path="res://ENTITIES/TYPES/Zombies/C/ZombieController.cs" id="2"]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Zombies/ZombieController.cs" id="2"]
 [ext_resource type="Resource" path="res://ENTITIES/TYPES/Zombies/Configuration/ZombieMaster.tres" id="3"]
 [sub_resource type="CapsuleShape3D" id="Body"]
 resource_local_to_scene = true

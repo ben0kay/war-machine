@@ -1,5 +1,5 @@
 [gd_resource type="Resource" script_class="EquipmentConfig" load_steps=3 format=3]
-[ext_resource type="Script" path="res://EQUIPMENT/Shared/C/EquipmentConfig.cs" id="1"]
+[ext_resource type="Script" path="res://EQUIPMENT/Shared/EquipmentConfig.cs" id="1"]
 [ext_resource type="PackedScene" path="res://EQUIPMENT/Weapons/Rifles/Rifle_001/Rifle_001.tscn" id="2"]
 [resource]
 script = ExtResource("1")

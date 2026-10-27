@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnvironmentConfig" load_steps=2 format=3]
+[ext_resource type="Script" path="res://ENVIRONMENT/EnvironmentConfig.cs" id="1"]
+[resource]
+script = ExtResource("1")
+StartHour = 9.0
+StartPaused = true
+DayLengthMinutes = 24.0
+FogEnabled = false
+GroundHazeEnabled = false
+RainIntensity = 0.0
+SnowIntensity = 0.0
+WeatherParticleSize = 1.5
+GrassWindStrength = 0.2
+
+AmbientLightEnergy = 0.8
+MoonlightEnergy = 0.8

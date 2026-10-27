@@ -1,5 +1,5 @@
 [gd_scene load_steps=4 format=3]
-[ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/C/FirearmController.cs" id="1"]
+[ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/FirearmController.cs" id="1"]
 [ext_resource type="Resource" path="res://EQUIPMENT/Weapons/Rifles/Rifle_001/Configuration/RifleMaster.tres" id="2"]
 [ext_resource type="Script" path="res://EQUIPMENT/Weapons/Rifles/Rifle_001/C/RifleMeshBuilder.cs" id="3"]
 [node name="Rifle_001" type="Node3D" node_paths=PackedStringArray("Muzzle")]

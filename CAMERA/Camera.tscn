@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://CAMERA/Camera.cs" id="1"]
+[node name="Camera" type="Camera3D" ]
+position = Vector3(532, 35, 532)
+rotation_degrees = Vector3(-55, 45, 0)
+projection = 1
+size = 48.0
+current = true
+script = ExtResource("1")

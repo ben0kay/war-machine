@@ -17,3 +17,7 @@ feedback and audio. Timing/resources are per instance, not mutable shared master
 One reused flash/tracer pair per weapon; no per-shot nodes or permanent loop.
 `ShotSound` is an optional AudioStream resource. Default rifle has no audio asset.
 Stats, effect sizes/duration/color and hit mask are in each item's `.tres`.
+
+## Ownership cleanup
+
+FirearmController.cs, FirearmSettings.cs and FirearmShotEffects.cs live directly here; C/ is reserved for mesh builders, such as Rifle_001/C/RifleMeshBuilder.cs.

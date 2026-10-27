@@ -29,7 +29,7 @@ As inspected before this plan:
 
 - **RM0 now exists:** `Shared/Entity.tscn`, `Shared/C/EntityCore.cs`, `Shared/C/EntitySettings.cs`, `Configuration/EntityMaster.tres` and `Shared/README.md`. RM1 adds Robot_001 scene/controller/settings/mesh builder/master and shared MechanicalLegs. RM2–RM4 now add shared Movement/Sensing, robot Scanning and WORLD/RobotEncounter.cs/.tscn, integrated in testworld. RM5 remains proposed.
 - `WORLD/testworld.tscn` is the **actual project main scene**. It has Terrain3D terrain, Sky3D day/night and thick distance mist, vegetation/grass/pines and small decorative content, a cave, weather integration, F9 tuning and the FPS display.
-- `PLAYER/ExplorationController.cs` extends `CharacterBody3D` and supports a free-flight camera plus optional collidable **first-person movement via F6**. Do not rewrite it to give the robot movement. Use it only as an optional future sensing target/debug reference.
+- `PLAYER/LegacyFirstPerson/ExplorationController.cs` extends `CharacterBody3D` and supports a free-flight camera plus optional collidable **first-person movement via F6**. Do not rewrite it to give the robot movement. Use it only as an optional future sensing target/debug reference.
 - The main landscape has authored/saved Terrain3D data. **Do not rebake, replace, overwrite or regenerate terrain** to make a robot patrol.
 - Existing fog and wind are controlled by `ENVIRONMENT/`; use them visually and never introduce a second WorldEnvironment/Sky3D owner.
 - The owner requested a reusable foundation, **not** an attack AI, health/damage system, inventory or world population system.

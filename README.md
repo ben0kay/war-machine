@@ -6,7 +6,7 @@
 
 ## Current game direction — top-down 3D first
 
-**War Machine is now being developed around an angled, orthographic camera overlooking a fully 3D world.** Think isometric-style movement and interactions, not 2D sprites or a fixed-perspective 2D engine. The active scene is [TopDownWorldTest](WORLD/TopDownWorldTest/README.md) on the `implement-td0-td1` branch.
+**War Machine is now being developed around an angled, orthographic camera overlooking a fully 3D world.** Think isometric-style movement and interactions, not 2D sprites or a fixed-perspective 2D engine. The active scene is [World](WORLD/README.md) on the `implement-td0-td1` branch.
 
 ### The immediate priority: make movement and the robot feel right
 
@@ -31,11 +31,11 @@ Art direction should be **stylized, low-poly and readable**, with painterly land
 
 The repository was initialized as a **Godot 4 C#/.NET** project. Its checked-in `project.godot` indicates Godot **4.7** project features, **Forward+** rendering, **Direct3D 12** for Windows and **Jolt Physics**. Actual engine/addon installations must be verified in the project; the config is not proof of compatibility.
 
-**Terrain3D** is checked into `addons/terrain_3d` (v1.0.2) with its demo assets. **Sky3D 2.1** is installed and integrated as the sky/day-night owner. The parked original-world scene is `WORLD/testworld.tscn`: saved valley terrain, slope-blended cliff/grass, shared GPU wind grass and reusable free-flight exploration. **Active experimentation** is in `WORLD/TopDownWorldTest/topdownWorldTest.tscn` (separate simple Terrain3D, low-poly player, orthographic camera and an instance of the same Robot_001). C# build and headless integration checks passed under Godot 4.5.1 .NET; visual/performance acceptance and the configured local 4.7/D3D12 runtime remain pending. See `WORLD/WE0_WE1_VALIDATION.md`. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
+**Terrain3D** is checked into `addons/terrain_3d` (v1.0.2) with its demo assets. **Sky3D 2.1** is installed and integrated as the sky/day-night owner. The parked original-world scene is `WORLD/testworld.tscn`: saved valley terrain, slope-blended cliff/grass, shared GPU wind grass and reusable free-flight exploration. **Active experimentation** is in `WORLD/World.tscn` (separate simple Terrain3D, low-poly player, orthographic camera and an instance of the same Robot_001). C# build and headless integration checks passed under Godot 4.5.1 .NET; visual/performance acceptance and the configured local 4.7/D3D12 runtime remain pending. See `WORLD/WE0_WE1_VALIDATION.md`. Use Godot built-ins where possible, including lighting, fog, instancing and LOD. Prefer lightweight custom C# glue over replacing entire engine subsystems.
 
 ## World and gameplay philosophy
 
-The **active prototype is a small, deliberately separate scene**, to evaluate the player/robot/camera without destabilizing the older wilderness showcase. Build and tune work that is explicitly requested **inside `WORLD/TopDownWorldTest/`**, reusing shared robot code where appropriate. Do not automatically merge it into the legacy TestWorld or promote it to the project startup scene.
+The **active prototype is a small, deliberately separate scene**, to evaluate the player/robot/camera without destabilizing the older wilderness showcase. Build and tune work that is explicitly requested **inside `WORLD/`**, reusing shared robot code where appropriate. Do not automatically merge it into the legacy TestWorld or promote it to the project startup scene.
 
 Terrain3D remains useful for the 3D orthographic world. Keep its preview terrain data separate from the original world; use low-poly/stylized meshes, clear lighting and restrained visual complexity while gameplay feel is being tested. The longer-term landscape may grow to include natural terrain, forests, landmarks, caves and buildable locations, but **these are not current prototype tasks**.
 
@@ -48,15 +48,16 @@ The following are **planned ownership boundaries**, not a list of existing direc
 | Area | Responsibility |
 | --- | --- |
 | `CORE/` | Application bootstrap, shared reusable utilities, common coordination |
-| `WORLD/` | Active `TopDownWorldTest/` gameplay prototype; parked `testworld.tscn`, terrain, generation, geographic regions and landmarks |
+| `WORLD/` | Active `World.tscn` gameplay world; parked `testworld.tscn`, terrain, generation, geographic regions and landmarks |
 | `VEGETATION/` | Procedural plant placement, foliage rendering/LOD and wind response |
 | `ENVIRONMENT/` | Sky, time, light, fog, weather, environmental ambience and shared wind conditions |
-| `PLAYER/` | Existing first-person controller (parked); orthographic prototype player/camera currently live under `WORLD/TopDownWorldTest/C/` |
+| `CAMERA/` | Active Camera.cs, reusable camera scene and projection/follow settings |
+| `PLAYER/` | Existing first-person controller (parked); active player lives under `PLAYER/`, camera under `CAMERA/` |
 | `ASSETS/` | Organized source/imported terrain, plants, rocks, cave modules and audio |
 | `SAVE/` | Persistent seeds, authored overrides and later world-state changes |
 | `DEBUG/` | Diagnostic overlays, profiling helpers, quality and distance controls |
 | `ENTITIES/` | Shared robot foundation, zombies and reusable packet/resolver/health mechanics under Shared/Combat; each actor owns its reactions. Robot damage remains unimplemented. |
-| `EQUIPMENT/` | Future reusable firearms, melee weapons and tools; `C/` houses Godot C# procedural mesh builders and scripts, `Artwork/` holds later imported assets. Rifle_001 is implemented using shared firearm mechanics and editable `.tres` stats; active top-down player equips it by default. Awaiting local validation. |
+| `EQUIPMENT/` | Future reusable firearms, melee weapons and tools; `C/` houses Godot C# procedural mesh builders only, `Artwork/` holds later imported assets. Rifle_001 is implemented using shared firearm mechanics and editable `.tres` stats; active top-down player equips it by default. Awaiting local validation. |
 | `UI/`, `FX/` | Shared interface and effects as features require them |
 
 Create folders, subfolders and scripts **when implementing their owning features**, not all at once. Major uppercase folders should have their own README and a central, easy-to-tune configuration resource or master config where useful. Avoid redundant managers, massive scene trees, duplicated settings and tight cross-system coupling.
@@ -76,9 +77,9 @@ Create folders, subfolders and scripts **when implementing their owning features
 
 **Implementation plans do not belong in the root README.** Current focus, setup and phase status:
 
-**[WORLD/TopDownWorldTest/README.md](WORLD/TopDownWorldTest/README.md)** — current working scene, run instructions and priority: player, orthographic camera and robot mechanics.
+**[WORLD/README.md](WORLD/README.md)** — current working scene, run instructions and priority: player, orthographic camera and robot mechanics.
 
-**[WORLD/TopDownWorldTest/IMPLEMENTATION_PLAN.md](WORLD/TopDownWorldTest/IMPLEMENTATION_PLAN.md)** — TD0–TD2 implemented on `implement-td0-td1` with local validation/feel checks outstanding; TD3 planned. **The old ZS combat plan remains cancelled; the newly authorized basic wander/chase zombies are documented under ENTITIES/TYPES/Zombies.**
+**[WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md)** — TD0–TD2 implemented on `implement-td0-td1` with local validation/feel checks outstanding; TD3 planned. **The old ZS combat plan remains cancelled; the newly authorized basic wander/chase zombies are documented under ENTITIES/TYPES/Zombies.**
 
 **[ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md)** — historical reusable robot implementation notes. Existing robot functionality can be refined for the top-down prototype when explicitly requested.
 
@@ -89,3 +90,7 @@ AI workflow: read this README → read CodePreferences → read the owning folde
 **Current north star:** *First make the low-poly 3D player pleasant to control and the towering scanning robot convincing from the angled orthographic camera. Expand into survival, combat, building and eventually zombies only when explicitly requested.*
 
 Parked first-person world content is retained in `WORLD/Content/`: vegetation, cave and rocks. It is **not** automatically part of the simple top-down test. See `WORLD/Content/README.md`.
+
+## Active ownership after cleanup
+
+Run **WORLD/World.tscn with F6**. CAMERA/Camera.cs and Camera.tscn own the active camera; PLAYER/PlayerController.cs, Player.tscn and PlayerSettings own the player. C/ contains procedural mesh builders only; Artwork/ holds future model replacements. Player, camera, world and environment masters are separate. First-person assets are parked under PLAYER/LegacyFirstPerson; F5 remains the original world. Existing user-local top-down terrain is copied to WORLD/Terrain/Gameplay without deleting the old bake. See WORLD/RESTRUCTURE.md for the migration and pending local validation.

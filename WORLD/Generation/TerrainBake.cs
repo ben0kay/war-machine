@@ -17,7 +17,7 @@ public partial class TerrainBake : Node
     // Generate deterministic relief, import once and save Terrain3D-native regions and instances.
     private void Bake()
     {
-        var config = GD.Load<WorldConfig>("res://WORLD/Configuration/WorldMaster.tres");
+        var config = GD.Load<WorldConfig>("res://WORLD/Configuration/LegacyWorldMaster.tres");
         string directory = ProjectSettings.GlobalizePath(config.DataDirectory);
         Directory.CreateDirectory(directory);
         if (Directory.GetFiles(directory, "*.res").Length > 0)

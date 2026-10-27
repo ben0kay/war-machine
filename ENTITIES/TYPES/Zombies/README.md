@@ -28,3 +28,7 @@ not in ZombieController. The controller owns hit eligibility and its death
 reaction. Rifle damage is 95; zombie HealthProfile.MaxHealth is 100 with zero
 defences, so the first hit leaves 5 HP. HealthProfile is embedded in the existing
 ZombieMaster.tres; no separate per-zombie health file is required.
+
+## Ownership cleanup
+
+Controllers/settings now live directly in this folder. Procedural geometry is in C/ZombieMeshBuilder.cs and future imported models in Artwork/. World placement is now WORLD/WorldController.cs.

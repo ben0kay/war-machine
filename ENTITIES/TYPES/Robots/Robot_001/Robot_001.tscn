@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://ENTITIES/Shared/Entity.tscn" id="1"]
-[ext_resource type="Script" path="res://ENTITIES/TYPES/Robots/Robot_001/C/RobotController.cs" id="2"]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Robots/Robot_001/RobotController.cs" id="2"]
 [ext_resource type="Resource" path="res://ENTITIES/TYPES/Robots/Robot_001/Configuration/RobotMaster.tres" id="3"]
 
 [node name="Robot_001" instance=ExtResource("1")]

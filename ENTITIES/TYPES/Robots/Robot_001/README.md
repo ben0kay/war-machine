@@ -63,3 +63,7 @@ Rig now has `LeftHip` and `RightHip`, each Knee → Foot, instead of four corner
 Shared MechanicalLegs accepts two or four injected legs and optional per-leg bend directions. Robot_001 injects forward knee bends and alternating 0/0.5 phases, small support-side body shift/roll and lower lift/bob. The helper retains diagonal-pair support for future quadrupeds. One driver, cached foot targets, no per-leg callbacks and no extra collision shapes. Two legs reduce the number of active IK solves; no measured performance claim is made.
 
 Brief source/reference checks, two-leg IK/phase calculations and resource checks performed. Godot/.NET unavailable: compilation, the actual biped gait/silhouette, head-pod sweep clearance, grounded feet and scanner alignment still need owner inspection. Check a full walk/stop/scan cycle and F9 scale/disable/re-enable. No existing imported custom art has been migrated automatically.
+
+## Ownership cleanup
+
+RobotController.cs, RobotSettings.cs and RobotAudio.cs live directly here. C/ retains RobotMeshBuilder.cs only.

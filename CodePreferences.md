@@ -60,3 +60,7 @@ After drafting, explain phases in plain language and proactively suggest possibl
 Maintain clear phase states: Planned, In Progress, Implemented, Awaiting Validation, Accepted. Update the plan and owning README after authorized work; distinguish code completion from automated checks and user visual/performance acceptance. Record commit SHA, known limitations, deferred tests and next handoff. Keep current guidance prominent; relocate lengthy superseded history to validation/archive notes instead of mixing contradictory instructions into active phases. Continue to follow one GitHub commit per job.
 
 Preferred workflow: Regular Chat investigates and drafts → user reviews/improves → user chooses phase and assistant → authorized implementation → validation → documentation update → next phase only on request.
+
+## Folder convention clarified by owner
+
+`C/` is reserved for procedural mesh construction in C# when a model has been requested in code. It is not a general scripts folder. Ordinary controllers/settings/helpers live in their owning feature folder. `Artwork/` is for eventual imported models replacing procedural geometry. Active camera script lives directly at `CAMERA/Camera.cs`.

@@ -7,3 +7,7 @@ The player owns WeaponMount and its holding pose. Camera ViewChanged covers
 follow, zoom, pitch and projection. No settled idle physics/process callback.
 Release is observed before GUI handling; presses only after GUI refusal.
 Focus loss/unload cancels the trigger and releases subscriptions/effects.
+
+## Ownership cleanup
+
+PlayerWeaponController.cs lives directly here and consumes the active PlayerController and CAMERA/Camera.cs; gameplay weapon logic remains in EQUIPMENT.
