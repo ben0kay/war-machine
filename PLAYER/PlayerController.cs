@@ -97,7 +97,7 @@ public partial class PlayerController : CharacterBody3D
         Vector3 direction = GetMovementDirection(keys);
         float speed = Mathf.Max(0.1f, _settings.WalkSpeed) * (IsCrouching ? Mathf.Clamp(_settings.CrouchSpeedMultiplier, 0.1f, 1) : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1, _settings.RunMultiplier) : 1);
         Vector3 horizontal = new(Velocity.X, 0, Velocity.Z);
-        horizontal = horizontal.MoveToward(direction * speed, Mathf.Max(1, _settings.Acceleration) * dt);
+        horizontal = UpdateHorizontalVelocity(horizontal, direction * speed, dt);
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - Mathf.Max(1, _settings.Gravity) * dt, horizontal.Z);
         MoveAndSlide();
@@ -119,6 +119,10 @@ public partial class PlayerController : CharacterBody3D
 
     // =========================================================
     // Small input hooks let isolated test views reuse collision, crouch and movement without copying the controller.
+    protected virtual Vector3 UpdateHorizontalVelocity(Vector3 current, Vector3 target, float dt)
+        => current.MoveToward(target, Mathf.Max(1, _settings.Acceleration) * dt);
+
+    // =========================================================
     protected virtual bool IsMovementKey(Key key) => key == Key.Up || key == Key.Down || key == Key.Left || key == Key.Right || key == Key.Shift;
     protected virtual Vector2 ReadMovementInput() => new(
         (Input.IsPhysicalKeyPressed(Key.Right) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Left) ? 1 : 0),
