@@ -24,7 +24,7 @@ public partial class FirearmController : Node3D
         _shotRandom.Randomize();
         _cooldown = new Timer { Name = "Cooldown", OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
         AddChild(_cooldown); _cooldown.Timeout += OnCooldown;
-        _effects = new FirearmShotEffects { Name = "ShotEffects" }; AddChild(_effects); _effects.Initialize(RuntimeSettings);
+        _effects = new FirearmShotEffects { Name = "ShotEffects" }; AddChild(_effects); _effects.Initialize(RuntimeSettings, Muzzle);
         _audio = new AudioStreamPlayer3D { Name = "ShotAudio", Stream = RuntimeSettings.ShotSound, VolumeDb = RuntimeSettings.ShotVolumeDb };
         AddChild(_audio);
         _query = new PhysicsRayQueryParameters3D { CollisionMask = RuntimeSettings.HitMask, HitFromInside = true };

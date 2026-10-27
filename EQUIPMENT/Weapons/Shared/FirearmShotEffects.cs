@@ -9,13 +9,15 @@ public partial class FirearmShotEffects : Node3D
     private FirearmSettings _settings = null!;
     private int _nextTracer;
     private float _flashTime;
+    private Marker3D _muzzle = null!;
 
     // =========================================================
     // Create a capped number of reusable tracers once at equip time, not during automatic fire.
     // TopLevel keeps the fired streak at its world-space position as the shooter moves.
-    public void Initialize(FirearmSettings settings)
+    public void Initialize(FirearmSettings settings, Marker3D muzzle)
     {
-        _settings = settings; TopLevel = true;
+        _settings = settings; _muzzle = muzzle; TopLevel = true;
+        PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // Recycled world-space streaks must not blend from previous shots.
         var material = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
             AlbedoColor = settings.ShotColor, NoDepthTest = false };
         var box = new BoxMesh { Size = Vector3.One };
@@ -56,6 +58,7 @@ public partial class FirearmShotEffects : Node3D
             tracer.GlobalTransform = new Transform3D(
                 new Basis(facing.X * width, facing.Y * width, facing.Z * length),
                 (start + end) * 0.5f);
+            tracer.ResetPhysicsInterpolation();
             tracer.Visible = true; _tracerTime[slot] = duration;
         }
         else { tracer.Visible = false; _tracerTime[slot] = 0; }
@@ -75,7 +78,13 @@ public partial class FirearmShotEffects : Node3D
         if (_flashTime > 0)
         {
             _flashTime = Mathf.Max(0f, _flashTime - dt);
-            if (_flashTime <= 0) _flash.Visible = false; else active = true;
+            if (_flashTime <= 0) _flash.Visible = false;
+            else
+            {
+                // Attached flash follows the rendered barrel; fired streaks remain in world space.
+                if (IsInstanceValid(_muzzle)) _flash.GlobalPosition = _muzzle.GetGlobalTransformInterpolated().Origin;
+                active = true;
+            }
         }
         for (int i = 0; i < _tracerTime.Length; i++)
         {

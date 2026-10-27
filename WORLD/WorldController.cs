@@ -67,6 +67,10 @@ public partial class WorldController : Node3D
         var camera = GetNode<Camera>("Camera");
         camera.Initialize(player, CameraSettings);
         terrain.Call("set_camera", camera);
+        // Finalize native coverage after data/sculpt and camera binding, before actors activate.
+        var collision = terrain.Get("collision").AsGodotObject();
+        collision.Call("set_mode", 3); // FULL_GAME, including distant horde spawns.
+        collision.Call("build");
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(PlayerSettings, camera);
         InitializeEquipment(player, camera);

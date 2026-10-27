@@ -19,7 +19,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private PhysicsRayQueryParameters3D _groundRay = null!;
     private PhysicsShapeQueryParameters3D _recoveryQuery = null!;
     private CollisionShape3D _bodyShape = null!;
-    private bool _reportedGroundFailure;
+    private bool _reportedGroundFailure, _awaitingSpawnGround, _reportedSpawnGround;
     private Vector3 _home, _goal;
     private bool _hasGoal, _configured;
     private ulong _restUntil;
@@ -81,6 +81,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver
             ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;
         if (_visibility == null) GD.PushWarning("Zombie target must provide body samples and a physics body; eyesight disabled.");
         _health.Configure(_config.HealthProfile);
+        _awaitingSpawnGround = groundHeight != null; _reportedSpawnGround = false;
+        ResetPhysicsInterpolation();
         _configured = true; _hasGoal = false; IsChasing = false; _restUntil = 0; Activate();
     }
 
@@ -107,6 +109,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private void Think()
     {
         if (!IsActive || !_configured) return;
+        if (_awaitingSpawnGround && !ConfirmSpawnGround())
+        { _brain.Start(Mathf.Max(0.1f, _config.SightIntervalSeconds)); return; }
         CheckGroundPenetration();
         bool chasing = false;
         if (IsInstanceValid(_target) && _target!.IsInsideTree() && _visibility != null && _sightTarget != null)
@@ -155,6 +159,29 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     }
 
     // =========================================================
+    // Confirm native spawn collision on the existing staggered physics timer before enabling gravity.
+    private bool ConfirmSpawnGround()
+    {
+        float height = _groundHeight!(GlobalPosition);
+        bool confirmed = false;
+        if (float.IsFinite(height))
+        {
+            _groundRay.From = new Vector3(GlobalPosition.X, height + 0.6f, GlobalPosition.Z);
+            _groundRay.To = new Vector3(GlobalPosition.X, height - 0.6f, GlobalPosition.Z);
+            var hit = GetWorld3D().DirectSpaceState.IntersectRay(_groundRay);
+            confirmed = hit.Count > 0 && hit["normal"].AsVector3().Y >= Mathf.Cos(FloorMaxAngle);
+        }
+        if (confirmed) { _awaitingSpawnGround = false; SetPhysicsProcess(true); return true; }
+        Velocity = Vector3.Zero; SetPhysicsProcess(false);
+        if (!_reportedSpawnGround)
+        {
+            GD.PushWarning($"Zombie spawn waiting for solid terrain: position={GlobalPosition}, terrain_height={height}, mask={CollisionMask}. No gravity until confirmed; check Terrain3D collision coverage.");
+            _reportedSpawnGround = true;
+        }
+        return false;
+    }
+
+    // =========================================================
     // Use the existing staggered physics timer only while falling. The world optionally supplies open-terrain height.
     private void CheckGroundPenetration()
     {
@@ -191,6 +218,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     // Only moving/falling zombies run physics; waiting or stopped zombies retain just their low-rate decision timer.
     public override void _PhysicsProcess(double delta)
     {
+        if (_awaitingSpawnGround) { SetPhysicsProcess(false); return; }
         float dt = (float)delta;
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance) : 0.4f;

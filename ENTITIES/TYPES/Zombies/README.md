@@ -70,3 +70,11 @@ Cost: existing timer only while actor active, cheap gates before up to 2 LOS ray
 Brief local checks: build, F6 World and FPS; approach from behind vs front, check open crouch remains visible, crouch behind medium solid cover, full wall/ridge blocks and stepping out reacquires, arms lower after loss, F7 hides/shows cones, death/unload clean, robot unchanged. Godot/.NET unavailable here; runtime checks remain outstanding.
 
 Zombie_002 is now explicitly placed by WorldController in both world views: three separate RunnerSpawnOffsets in WorldMaster, retaining the 12 slow placements. Native grounding, tree/rock exclusions and F7 debug registration reuse existing placement. Runner behavior/stats remain those of its prefab; local runtime validation pending.
+
+## Missing collision at horde spawns — awaiting local validation
+
+Owner logs show multiple horde actors falling below terrain height ~4m with no solid surface found by recovery. Actual native collision failure is not yet reproduced. World now explicitly sets runtime FULL_GAME coverage and rebuilds after terrain data/sculpt and camera binding, before actors activate.
+
+Actors with an open-terrain sampler wait at spawn until the existing staggered physics brain timer confirms a walkable collider within 0.6m of expected terrain height. Gravity/movement sleep until confirmation; one warning identifies missing ground and that timer retries. This guards startup falls without inventing collision or teleporting through geometry. Persistent warnings mean actors remain waiting and native collision still needs diagnosis. Later penetration recovery stays unchanged. Placement resets interpolation. No new timer/frame loop or scans; one startup ray per actor, low-rate retries only while waiting. Future cave spawns must omit/replace the open-terrain sampler.
+
+Source/loop review only; compilation not verified (Godot/.NET unavailable). Build and F6 World: inspect all 20 horde spawns, chase over their ground, slopes/cliff edges, inspect Output for spawn-wait/penetration warnings, then check FPS. Runtime success and the underlying collision failure remain awaiting local validation.

@@ -11,3 +11,7 @@ Other firearm scenes can reuse the same mechanics and typed Resource.
 [ACCURACY_IMPLEMENTATION_PLAN.md](ACCURACY_IMPLEMENTATION_PLAN.md) tracks the shot-spread
 foundation (ACC0) and proposed player-specific stance/movement accuracy (ACC1).
 Projectile weapons, melee, ammo/reload and inventory remain future tasks.
+
+## Interpolated shot presentation — awaiting local validation
+
+Shared effects disable automatic interpolation of recycled world-space tracers and reset each reused transform. The flash follows the muzzle's interpolated position during the existing active render callback, including when cover makes the gameplay ray start at the shoulder. Damage/cover queries and fixed shot segments remain unchanged. No idle loop, allocations or extra physics queries. Applies to rifle, machine gun and FPS. Source/loop review only; compilation not verified (Godot/.NET unavailable). Build and check moving/turning automatic fire, cover, switching and FPS; feedback must expire/sleep and cancel on unequip.
