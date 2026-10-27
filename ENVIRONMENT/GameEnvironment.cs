@@ -36,9 +36,30 @@ public partial class GameEnvironment : Node3D
         var environment = (Godot.Environment)SkyController.Sky.GetNode("SkyDome").Get("environment").AsGodotObject();
         Haze.Initialize(terrain, player, camera, Settings, environment);
         camera.SettingsChanged += Haze.RefreshView;
+        SkyController.AtmosphereSettingsApplied += ApplyRays; ApplyRays();
+    }
+
+    // =========================================================
+    // Configure the existing pass and directional lights without extra lights, volumes or callbacks.
+    private void ApplyRays()
+    {
+        bool enabled = Settings.LightRaysEnabled && Settings.LightRaysDensity > 0 &&
+            ProjectSettings.GetSetting("rendering/renderer/rendering_method", "forward_plus").AsString() == "forward_plus";
+        var sky = (WorldEnvironment)SkyController.Sky;
+        sky.GetNode<DirectionalLight3D>("SunLight").LightVolumetricFogEnergy = enabled ? Mathf.Max(0, Settings.SunRayEnergy) : 0;
+        sky.GetNode<DirectionalLight3D>("MoonLight").LightVolumetricFogEnergy = enabled ? Mathf.Max(0, Settings.MoonRayEnergy) : 0;
+        sky.Environment.VolumetricFogAlbedo = Colors.White;
+        sky.Environment.VolumetricFogEmission = Colors.Black;
+        sky.Environment.VolumetricFogAmbientInject = 0.15f;
+        sky.Environment.VolumetricFogAnisotropy = Mathf.Clamp(Settings.RayAnisotropy, -0.9f, 0.9f);
+        Haze.SetFogBaseline(enabled, enabled ? Mathf.Clamp(Settings.LightRaysDensity, 0, 0.01f) : 0,
+            Mathf.Clamp(Settings.LightRaysLength, 20, 160));
     }
 
     // =========================================================
     public override void _ExitTree()
-    { if (IsInstanceValid(_camera)) _camera!.SettingsChanged -= Haze.RefreshView; }
+    {
+        if (IsInstanceValid(SkyController)) SkyController.AtmosphereSettingsApplied -= ApplyRays;
+        if (IsInstanceValid(_camera)) _camera!.SettingsChanged -= Haze.RefreshView;
+    }
 }

@@ -20,7 +20,7 @@ public partial class FirstPersonFog : Node, IDebugOverlayView
         _fogSettings = (EnvironmentConfig)environment.Duplicate(true);
         _fog = new PlayerDistanceFog { Name = "DistanceFog" }; AddChild(_fog);
         _fogSettings.DistanceFogEnabled = _settings.DistanceFogEnabled;
-        _fog.Initialize(camera, player, _fogSettings, cameraDistance: true);
+        _fog.Initialize(camera, player, _fogSettings, cameraDistance: true, atmosphere: environment);
         SetProcess(false); SetPhysicsProcess(false);
         Apply();
     }

@@ -14,6 +14,7 @@ public partial class MuzzleFlashLight : OmniLight3D
     {
         _settings = (LightingSettings)settings.Duplicate(true);
         ShadowEnabled = false; OmniAttenuation = 1;
+        LightVolumetricFogEnergy = 0; // Brief flashes must not leave temporal trails in the shared ray fog.
         LightColor = _settings.MuzzleLightColor; OmniRange = Mathf.Clamp(_settings.MuzzleLightRange, 0.5f, 15);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off;
         Visible = false; LightEnergy = 0; SetProcess(false); SetPhysicsProcess(false);

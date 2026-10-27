@@ -6,6 +6,11 @@ public partial class SkyController : Node
     [Export] public EnvironmentConfig Settings { get; set; } = null!;
     [Export] public Node Sky { get; set; } = null!;
     private bool _paused, _preview;
+    private float _lastDaylight = -1;
+    private Node _clock = null!;
+    private DirectionalLight3D _sun = null!;
+    private Callable _timeChanged, _refreshAtmosphere;
+    public event System.Action? AtmosphereSettingsApplied;
 
     // =========================================================
     // Apply configuration once after Sky3D and its timer have entered the tree.
@@ -15,7 +20,12 @@ public partial class SkyController : Node
         Sky.Set("minutes_per_day", Mathf.Max(1, Settings.DayLengthMinutes));
         Sky.Set("update_interval", Mathf.Max(0.016f, Settings.UpdateInterval));
         Sky.Set("editor_time_enabled", false);
-        ApplyMist();
+        _clock = Sky.GetNode("TimeOfDay"); _sun = Sky.GetNode<DirectionalLight3D>("SunLight");
+        _refreshAtmosphere = Callable.From(UpdateAtmosphere);
+        // Sky3D emits time_changed before updating celestial transforms; defer until that setter finishes.
+        _timeChanged = Callable.From<float>(_ => _refreshAtmosphere.CallDeferred());
+        _clock.Connect("time_changed", _timeChanged);
+        ApplyMist(); ApplyAtmosphere();
         SetPaused(Settings.StartPaused);
         SetProcess(false); SetPhysicsProcess(false);
     }
@@ -35,7 +45,37 @@ public partial class SkyController : Node
 
     // =========================================================
     // Direct Sky3D setters immediately update its existing sun and timer.
-    public void ApplyTime() => Sky.Set("current_time", Mathf.PosMod(Settings.StartHour, 24));
+    public void ApplyTime() { Sky.Set("current_time", Mathf.PosMod(Settings.StartHour, 24)); UpdateAtmosphere(); }
+
+    // =========================================================
+    // Explicit controls refresh lighting and the shared volumetric baseline, even with solar time paused.
+    public void ApplyAtmosphere()
+    {
+        Sky.GetNode("SkyDome").Set("moon_light_energy", Mathf.Max(0, Settings.MoonlightEnergy));
+        _lastDaylight = -1; UpdateAtmosphere(); AtmosphereSettingsApplied?.Invoke();
+    }
+
+    // =========================================================
+    // Use Sky3D's actual solar elevation (including its date/location), rather than another clock calculation.
+    private void UpdateAtmosphere()
+    {
+        if (!IsInsideTree() || !IsInstanceValid(_sun)) return;
+        float daylight = Mathf.SmoothStep(0, 1, Mathf.Clamp((_sun.Position.Y + 0.18f) / 0.43f, 0, 1));
+        bool changed = Mathf.Abs(daylight - _lastDaylight) >= 0.0005f;
+        var environment = ((WorldEnvironment)Sky).Environment;
+        Color ambient = Settings.NightAmbientColor.Lerp(Settings.DayAmbientColor, daylight);
+        float energy = Mathf.Lerp(Mathf.Max(0, Settings.NightAmbientEnergy), Mathf.Max(0, Settings.AmbientLightEnergy), daylight);
+        if (environment.AmbientLightColor != ambient) environment.AmbientLightColor = ambient;
+        if (!Mathf.IsEqualApprox(environment.AmbientLightEnergy, energy)) environment.AmbientLightEnergy = energy;
+        if (changed) { _lastDaylight = daylight; Settings.SetDaylight(daylight); }
+    }
+
+    // =========================================================
+    public override void _ExitTree()
+    {
+        if (IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
+            _clock.Disconnect("time_changed", _timeChanged);
+    }
     // =========================================================
     public void ApplyCycle()
     {

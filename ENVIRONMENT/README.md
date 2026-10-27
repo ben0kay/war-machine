@@ -1,5 +1,7 @@
 # ENVIRONMENT — current shared prefab
 
+Day/night fog, readable shared ambient lighting, FPS sky visibility and adjustable sun/moon volumetric rays are implemented, **awaiting local validation**. See the [day/night guide](SHARED_ENVIRONMENT_README.md#day--night-lighting-and-rays--awaiting-local-validation). Use Environment → Lighting / atmosphere in either shared debug overlay. The historical fixed-fog/WE5 notes below predate this implementation.
+
 Use [Environment.tscn](Environment.tscn) for the active top-down and FPS test views. See [shared environment guide](SHARED_ENVIRONMENT_README.md) for scene ownership, shared defaults, initialization and testing. Both views now share ground haze as well as Sky3D/weather. Existing wilderness APIs remain supported. Current FPS controls are one left-hand expandable panel; F8/F9 instructions below are historical.
 
 # ENVIRONMENT — Shared atmosphere

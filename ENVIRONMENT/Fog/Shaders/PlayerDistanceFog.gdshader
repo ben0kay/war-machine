@@ -7,6 +7,7 @@ uniform bool camera_distance = false;
 uniform vec2 player_xz = vec2(0.0);
 uniform float clear_radius = 24.0;
 uniform float fog_radius = 48.0;
+uniform float sky_opacity = 1.0;
 uniform float opacity = 1.0;
 uniform vec4 fog_color : source_color = vec4(0.39, 0.46, 0.48, 1.0);
 uniform float edge_variation = 2.0;
@@ -17,7 +18,14 @@ void vertex() {
 
 void fragment() {
     float depth = texture(depth_texture, SCREEN_UV).r;
-    float amount = 1.0; // Background sky has no finite surface and stays obscured.
+    // Reveal the existing sky above a softly fogged horizon in FPS; overhead retains its opaque background.
+    #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+    vec4 far_view = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 1.0, 1.0);
+    #else
+    vec4 far_view = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.00001, 1.0);
+    #endif
+    vec3 ray = normalize((INV_VIEW_MATRIX * vec4(far_view.xyz, 0.0)).xyz);
+    float amount = camera_distance ? mix(1.0, sky_opacity, smoothstep(0.0, 0.3, ray.y)) : 1.0;
     if (depth > 0.000001) {
         #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
         vec3 ndc = vec3(SCREEN_UV, depth) * 2.0 - 1.0;

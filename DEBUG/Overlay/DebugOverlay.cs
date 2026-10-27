@@ -92,6 +92,43 @@ public partial class DebugOverlay : PanelContainer
             value => { _environment.DayLengthMinutes = value; _sky.ApplyCycle(); });
         var pause = new CheckButton { Text = "Pause day / night", ButtonPressed = _environment.StartPaused, FocusMode = FocusModeEnum.None };
         rows.AddChild(pause); pause.Toggled += value => { _sky.SetPaused(value); _copy.Text = "Copy settings"; };
+        rows = AddSection(environmentRows, "Lighting / atmosphere");
+        var responsiveFog = new CheckButton { Text = "Fog follows day / night", ButtonPressed = _environment.TimeResponsiveFog, FocusMode = FocusModeEnum.None };
+        rows.AddChild(responsiveFog);
+        responsiveFog.Toggled += value => { _environment.TimeResponsiveFog = value; _sky.ApplyAtmosphere(); _copy.Text = "Copy settings"; };
+        var rays = new CheckButton { Text = "Sun / moon rays (Forward+)", ButtonPressed = _environment.LightRaysEnabled, FocusMode = FocusModeEnum.None };
+        rows.AddChild(rays);
+        rays.Toggled += value => { _environment.LightRaysEnabled = value; _sky.ApplyAtmosphere(); _copy.Text = "Copy settings"; };
+        AddBoundSlider(rows, "Day ambient energy", 0, 2, 0.01, _environment.AmbientLightEnergy,
+            value => { _environment.AmbientLightEnergy = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Night ambient energy", 0, 2, 0.01, _environment.NightAmbientEnergy,
+            value => { _environment.NightAmbientEnergy = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Moonlight energy", 0, 2, 0.01, _environment.MoonlightEnergy,
+            value => { _environment.MoonlightEnergy = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "FPS sky fog opacity", 0, 1, 0.01, _environment.FpsSkyFogOpacity,
+            value => { _environment.FpsSkyFogOpacity = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Ray fog density", 0, 0.01, 0.0001, _environment.LightRaysDensity,
+            value => { _environment.LightRaysDensity = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Ray fog range (m)", 20, 160, 1, _environment.LightRaysLength,
+            value => { _environment.LightRaysLength = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Sun ray strength", 0, 8, 0.1, _environment.SunRayEnergy,
+            value => { _environment.SunRayEnergy = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Moon ray strength", 0, 8, 0.1, _environment.MoonRayEnergy,
+            value => { _environment.MoonRayEnergy = value; _sky.ApplyAtmosphere(); });
+        AddBoundSlider(rows, "Ray forward scattering", -0.9, 0.9, 0.01, _environment.RayAnisotropy,
+            value => { _environment.RayAnisotropy = value; _sky.ApplyAtmosphere(); });
+        var NightFogColorPicker = new ColorPickerButton { Text = "Night fog colour", Color = _environment.NightFogColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+        rows.AddChild(NightFogColorPicker);
+        NightFogColorPicker.ColorChanged += value => { _environment.NightFogColor = value; _sky.ApplyAtmosphere(); _copy.Text = "Copy settings"; };
+        var DuskFogColorPicker = new ColorPickerButton { Text = "Dusk fog colour", Color = _environment.DuskFogColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+        rows.AddChild(DuskFogColorPicker);
+        DuskFogColorPicker.ColorChanged += value => { _environment.DuskFogColor = value; _sky.ApplyAtmosphere(); _copy.Text = "Copy settings"; };
+        var NightAmbientColorPicker = new ColorPickerButton { Text = "Night ambient colour", Color = _environment.NightAmbientColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+        rows.AddChild(NightAmbientColorPicker);
+        NightAmbientColorPicker.ColorChanged += value => { _environment.NightAmbientColor = value; _sky.ApplyAtmosphere(); _copy.Text = "Copy settings"; };
+        var DayAmbientColorPicker = new ColorPickerButton { Text = "Day ambient colour", Color = _environment.DayAmbientColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+        rows.AddChild(DayAmbientColorPicker);
+        DayAmbientColorPicker.ColorChanged += value => { _environment.DayAmbientColor = value; _sky.ApplyAtmosphere(); _copy.Text = "Copy settings"; };
         rows = AddSection(environmentRows, "Weather and shared wind");
         var weatherEnabled = new CheckButton { Text = "Weather enabled", ButtonPressed = _environment.WeatherEnabled, FocusMode = FocusModeEnum.None };
         rows.AddChild(weatherEnabled);
@@ -257,6 +294,21 @@ public partial class DebugOverlay : PanelContainer
     {
         var values = new Dictionary<string, object>
         {
+            [nameof(_environment.TimeResponsiveFog)] = _environment.TimeResponsiveFog,
+            [nameof(_environment.NightFogColor)] = new[] { _environment.NightFogColor.R, _environment.NightFogColor.G, _environment.NightFogColor.B, _environment.NightFogColor.A },
+            [nameof(_environment.DuskFogColor)] = new[] { _environment.DuskFogColor.R, _environment.DuskFogColor.G, _environment.DuskFogColor.B, _environment.DuskFogColor.A },
+            [nameof(_environment.DayAmbientColor)] = new[] { _environment.DayAmbientColor.R, _environment.DayAmbientColor.G, _environment.DayAmbientColor.B, _environment.DayAmbientColor.A },
+            [nameof(_environment.NightAmbientColor)] = new[] { _environment.NightAmbientColor.R, _environment.NightAmbientColor.G, _environment.NightAmbientColor.B, _environment.NightAmbientColor.A },
+            [nameof(_environment.AmbientLightEnergy)] = _environment.AmbientLightEnergy,
+            [nameof(_environment.NightAmbientEnergy)] = _environment.NightAmbientEnergy,
+            [nameof(_environment.MoonlightEnergy)] = _environment.MoonlightEnergy,
+            [nameof(_environment.FpsSkyFogOpacity)] = _environment.FpsSkyFogOpacity,
+            [nameof(_environment.LightRaysEnabled)] = _environment.LightRaysEnabled,
+            [nameof(_environment.LightRaysDensity)] = _environment.LightRaysDensity,
+            [nameof(_environment.LightRaysLength)] = _environment.LightRaysLength,
+            [nameof(_environment.SunRayEnergy)] = _environment.SunRayEnergy,
+            [nameof(_environment.MoonRayEnergy)] = _environment.MoonRayEnergy,
+            [nameof(_environment.RayAnisotropy)] = _environment.RayAnisotropy,
             [nameof(_environment.DistanceFogEnabled)] = _environment.DistanceFogEnabled,
             [nameof(_environment.DistanceFogStart)] = _environment.DistanceFogStart,
             [nameof(_environment.DistanceFogEnd)] = _environment.DistanceFogEnd,

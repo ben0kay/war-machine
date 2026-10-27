@@ -5,7 +5,8 @@ public partial class PlayerDistanceFog : Node
 {
     private Camera3D _camera = null!;
     private PlayerController _player = null!;
-    private EnvironmentConfig _settings = null!;
+    private EnvironmentConfig _settings = null!, _atmosphere = null!;
+    private bool _atmosphereSubscribed;
     private ShaderMaterial? _material;
     private MeshInstance3D? _overlay;
     private bool _subscribed, _cameraDistance;
@@ -14,8 +15,8 @@ public partial class PlayerDistanceFog : Node
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
 
     // =========================================================
-    public void Initialize(Camera3D camera, PlayerController player, EnvironmentConfig settings, bool cameraDistance = false)
-    { _camera = camera; _player = player; _settings = settings; _cameraDistance = cameraDistance; ApplySettings(); }
+    public void Initialize(Camera3D camera, PlayerController player, EnvironmentConfig settings, bool cameraDistance = false, EnvironmentConfig? atmosphere = null)
+    { _camera = camera; _player = player; _settings = settings; _atmosphere = atmosphere ?? settings; _cameraDistance = cameraDistance; ApplySettings(); }
 
     // =========================================================
     // Zero/disabled means no draw and no movement subscription; sliders explicitly reactivate it.
@@ -34,15 +35,30 @@ public partial class PlayerDistanceFog : Node
         if (IsInstanceValid(_overlay)) _overlay!.Visible = enabled;
         if (enabled && !_cameraDistance && !_subscribed) { _player.PositionChanged += UpdateCenter; _subscribed = true; }
         else if ((!enabled || _cameraDistance) && _subscribed) { _player.PositionChanged -= UpdateCenter; _subscribed = false; }
+        if (enabled && !_atmosphereSubscribed) { _atmosphere.AtmosphereChanged += ApplyAtmosphere; _atmosphereSubscribed = true; }
+        else if (!enabled && _atmosphereSubscribed) { _atmosphere.AtmosphereChanged -= ApplyAtmosphere; _atmosphereSubscribed = false; }
         if (!enabled) return;
         _material!.SetShaderParameter("camera_distance", _cameraDistance);
         float start = Mathf.Max(1, _settings.DistanceFogStart);
         _material!.SetShaderParameter("clear_radius", start);
         _material.SetShaderParameter("fog_radius", Mathf.Max(start + 1, _settings.DistanceFogEnd));
         _material.SetShaderParameter("opacity", Mathf.Clamp(_settings.DistanceFogOpacity, 0, 1));
-        _material.SetShaderParameter("fog_color", _settings.DistanceFogColor);
+        ApplyAtmosphere();
         _material.SetShaderParameter("edge_variation", Mathf.Clamp(_settings.DistanceFogEdgeVariation, 0, Mathf.Min(8, start * 0.25f)));
         UpdateCenter(_player.GlobalPosition);
+    }
+
+    // =========================================================
+    // Shared solar state tints each view's own daytime fog colour without changing its distance/culling settings.
+    private void ApplyAtmosphere()
+    {
+        if (_material == null) return;
+        float day = _atmosphere.Daylight;
+        Color tint = !_atmosphere.TimeResponsiveFog ? _settings.DistanceFogColor :
+            day < 0.5f ? _atmosphere.NightFogColor.Lerp(_atmosphere.DuskFogColor, day * 2) :
+            _atmosphere.DuskFogColor.Lerp(_settings.DistanceFogColor, day * 2 - 1);
+        _material.SetShaderParameter("fog_color", tint);
+        _material.SetShaderParameter("sky_opacity", _cameraDistance ? Mathf.Clamp(_atmosphere.FpsSkyFogOpacity, 0, 1) : 1f);
     }
 
     // =========================================================
@@ -53,6 +69,7 @@ public partial class PlayerDistanceFog : Node
     // =========================================================
     public override void _ExitTree()
     {
+        if (_atmosphereSubscribed) _atmosphere.AtmosphereChanged -= ApplyAtmosphere;
         if (_subscribed && IsInstanceValid(_player)) _player.PositionChanged -= UpdateCenter;
         if (IsInstanceValid(_overlay)) _overlay!.QueueFree();
         _subscribed = false;

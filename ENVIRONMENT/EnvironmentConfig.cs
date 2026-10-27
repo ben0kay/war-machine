@@ -4,6 +4,26 @@ using Godot;
 [GlobalClass]
 public partial class EnvironmentConfig : Resource
 {
+    // Runtime solar state is shared explicitly with view-specific fog profiles.
+    public event System.Action? AtmosphereChanged;
+    public float Daylight { get; private set; } = 1;
+    public void SetDaylight(float value) { Daylight = value; AtmosphereChanged?.Invoke(); }
+
+    [ExportGroup("Day / night atmosphere")]
+    [Export] public bool TimeResponsiveFog { get; set; } = true;
+    [Export] public Color NightFogColor { get; set; } = new(0.035f, 0.05f, 0.08f);
+    [Export] public Color DuskFogColor { get; set; } = new(0.24f, 0.22f, 0.25f);
+    [Export] public Color NightAmbientColor { get; set; } = new(0.22f, 0.29f, 0.42f);
+    [Export] public Color DayAmbientColor { get; set; } = new(0.65f, 0.70f, 0.76f);
+    [Export] public float NightAmbientEnergy { get; set; } = 0.55f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float FpsSkyFogOpacity { get; set; } = 0.08f;
+    [ExportGroup("Sun / moon rays / Forward+")]
+    [Export] public bool LightRaysEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,0.01,0.0001")] public float LightRaysDensity { get; set; } = 0.0015f;
+    [Export(PropertyHint.Range, "20,160,1")] public float LightRaysLength { get; set; } = 100;
+    [Export(PropertyHint.Range, "0,8,0.1")] public float SunRayEnergy { get; set; } = 1.5f;
+    [Export(PropertyHint.Range, "0,8,0.1")] public float MoonRayEnergy { get; set; } = 1.2f;
+    [Export(PropertyHint.Range, "-0.9,0.9,0.01")] public float RayAnisotropy { get; set; } = 0.55f;
     [ExportGroup("Gameplay lighting")]
     [Export] public float AmbientLightEnergy { get; set; } = 0.8f;
     [Export] public float MoonlightEnergy { get; set; } = 0.8f;

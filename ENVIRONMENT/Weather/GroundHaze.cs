@@ -175,6 +175,19 @@ public partial class GroundHaze : Node3D
     }
 
     // =========================================================
+    // Shared ray controls own the baseline; haze keeps its local pass when rays are switched off.
+    public void SetFogBaseline(bool enabled, float density, float length)
+    {
+        if (!_initialized) return;
+        if (_ownsFog)
+        { _oldEnabled = enabled; _oldDensity = density; _oldLength = length; }
+        _environment.VolumetricFogEnabled = enabled || _ownsFog;
+        _environment.VolumetricFogDensity = density;
+        _environment.VolumetricFogLength = length;
+        if (_ownsFog) EnableFog();
+    }
+
+    // =========================================================
     private void RestoreFog()
     {
         if (!_ownsFog || !IsInstanceValid(_environment)) return;
