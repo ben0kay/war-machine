@@ -21,10 +21,12 @@ public partial class WorldTuningPanel : PanelContainer
     private Callable _timeChanged;
     private HSlider _hour = null!;
     private Label _hourLabel = null!;
+    private ZombieVisionDebug? _visionDebug;
+    private CheckButton? _visionToggle;
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null)
     {
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
         SetProcess(false); SetPhysicsProcess(false);
@@ -154,6 +156,16 @@ public partial class WorldTuningPanel : PanelContainer
             value => pines.Settings.HeightMultiplier = value, pines.ApplySettings);
         AddBoundSlider(rows, "Pine wind", 0, 1, 0.05, pines.Settings.LeafWindStrength,
             value => { pines.Settings.LeafWindStrength = value; pines.ApplyWind(); });
+        if (visionDebug != null)
+        {
+            rows = AddSection(rootRows, "Debug");
+            _visionDebug = visionDebug;
+            _visionToggle = new CheckButton { Text = "Show zombie sight cones",
+                ButtonPressed = visionDebug.ConesVisible, FocusMode = FocusModeEnum.None };
+            rows.AddChild(_visionToggle);
+            _visionToggle.Toggled += visionDebug.SetConesVisible;
+            _visionDebug.VisibilityChanged += OnVisionDebugChanged;
+        }
         _copy = new Button { Text = "Copy settings", FocusMode = FocusModeEnum.None }; outer.AddChild(_copy);
         _clock = _sky.Sky.GetNode("TimeOfDay");
         _timeChanged = Callable.From<float>(OnTimeChanged);
@@ -178,6 +190,11 @@ public partial class WorldTuningPanel : PanelContainer
         button.Toggled += open => { body.Visible = open; button.Text = (open ? "− " : "+ ") + title; };
         return body;
     }
+
+    // =========================================================
+    // F7 can change visibility while the panel is open; silent synchronization prevents recursive callbacks.
+    private void OnVisionDebugChanged(bool visible)
+    { if (IsInstanceValid(_visionToggle)) _visionToggle!.SetPressedNoSignal(visible); }
 
     // =========================================================
     // Controls receive mouse input without capturing keyboard focus from walking.
@@ -309,6 +326,7 @@ public partial class WorldTuningPanel : PanelContainer
     {
         if (GodotObject.IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
             _clock.Disconnect("time_changed", _timeChanged);
+        if (_visionDebug != null && IsInstanceValid(_visionDebug)) _visionDebug.VisibilityChanged -= OnVisionDebugChanged;
         if (GodotObject.IsInstanceValid(_camera)) _camera.SettingsChanged -= Refresh;
     }
 }

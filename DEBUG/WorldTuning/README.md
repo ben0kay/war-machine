@@ -15,3 +15,7 @@ The overhead panel now accepts the optional PlayerDistanceFog owner and exposes 
 Camera, Environment and Foliage are disclosure buttons. Environment contains Distance fog, Day/night, Weather and shared wind, and Ground haze; Foliage contains Grass and Pine trees. Sections start collapsed and change visibility only on clicks. FPS panels are untouched. Haze enabled/density/height/noise/drift/definition/turbulence/colour apply on input; radius applies on drag release. Shared wind heading also reapplies haze. Copy settings includes all haze fields and wind vector. Runtime resources only; no UI polling. Local Godot layout/input/clipboard acceptance pending.
 
 The scroll area grows/shrinks with expanded content via MinimumSizeChanged, capped to the viewport; collapsed sections do not leave a full-height blank panel.
+
+## Debug — zombie sight cones
+
+The left-hand top-down controls now include a top-level **Debug** section with a **Show zombie sight cones** checkbox. It is connected to the existing world-local `ZombieVisionDebug` manager and the **F7** shortcut, so either changes the same state and F7 updates the checkbox without emitting a duplicate toggle. All current zombie variants' red fan meshes are affected; sight/LOS and AI are unchanged. Future registered zombies inherit current debug visibility while preserving their `ZombieSettings.ShowVisionCone` authoring flag. No per-frame work or gameplay tuning settings added; changes are runtime-only. Local Godot/.NET build and visual checks pending.

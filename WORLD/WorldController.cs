@@ -16,6 +16,7 @@ public partial class WorldController : Node3D
     protected Camera _camera = null!;
     private PlayerDistanceFog? _distanceFog;
     private GroundHaze? _groundHaze;
+    private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
 
     // =========================================================
@@ -120,6 +121,8 @@ public partial class WorldController : Node3D
         UpdateWeatherCoverage();
         InitializeDistanceFog(camera, player);
         InitializeGroundHaze(terrain, camera, player);
+        _visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
+        GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
         SpawnZombies(data, player, horde.Slow, horde.Fast);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
@@ -171,7 +174,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = new WorldTuningPanel(); DebugControls.AddChild(panel);
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug);
     }
 
     // =========================================================
@@ -286,12 +289,10 @@ public partial class WorldController : Node3D
     private void SpawnZombies(GodotObject terrainData, PlayerController player, Vector2[] hordeSlow, Vector2[] hordeFast)
     {
         var group = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies");
-        var visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
-        GetNode("DebugUIRoot").AddChild(visionDebug);
-        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", Settings.ZombieSpawnOffsets, 0);
-        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", Settings.RunnerSpawnOffsets, 104729);
-        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", hordeSlow, 209759);
-        SpawnZombieSet(terrainData, player, group, visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", hordeFast, 314573);
+        SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", Settings.ZombieSpawnOffsets, 0);
+        SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", Settings.RunnerSpawnOffsets, 104729);
+        SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", hordeSlow, 209759);
+        SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", hordeFast, 314573);
     }
 
     // =========================================================

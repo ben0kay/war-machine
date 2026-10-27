@@ -6,6 +6,8 @@ public partial class ZombieVisionDebug : Node
 {
     private readonly List<ZombieController> _zombies = new();
     private bool _visible = true;
+    public bool ConesVisible => _visible;
+    public event System.Action<bool>? VisibilityChanged;
     private static readonly StandardMaterial3D ConeMaterial = new()
     {
         ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
@@ -34,19 +36,30 @@ public partial class ZombieVisionDebug : Node
         var cone = new MeshInstance3D { Name = "DebugVisionCone", Mesh = mesh, MaterialOverride = ConeMaterial,
             Position = Vector3.Up * settings.EyeHeight, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         zombie.VisualRoot.AddChild(cone); zombie.AttachVisionDebug(cone); _zombies.Add(zombie);
+        zombie.SetVisionDebugVisible(_visible && settings.ShowVisionCone);
     }
 
     // =========================================================
-    // One input-only observer for the small test population; no process, physics, polling or extra LOS queries.
-    public override void _UnhandledKeyInput(InputEvent @event)
+    // Single source of truth for F7 and the overhead checkbox; affects debug meshes, never AI eyesight.
+    public void SetConesVisible(bool visible)
     {
-        if (@event is not InputEventKey key || !key.Pressed || key.Echo || key.PhysicalKeycode != Key.F7) return;
-        _visible = !_visible;
+        if (_visible == visible) return;
+        _visible = visible;
         for (int i = _zombies.Count - 1; i >= 0; i--)
         {
             if (!IsInstanceValid(_zombies[i])) { _zombies.RemoveAt(i); continue; }
-            _zombies[i].SetVisionDebugVisible(_visible);
+            var settings = (ZombieSettings)_zombies[i].RuntimeSettings;
+            _zombies[i].SetVisionDebugVisible(visible && settings.ShowVisionCone);
         }
+        VisibilityChanged?.Invoke(_visible);
+    }
+
+    // =========================================================
+    // F7 remains available in both world perspectives with no frame callbacks or additional LOS queries.
+    public override void _UnhandledKeyInput(InputEvent @event)
+    {
+        if (@event is not InputEventKey key || !key.Pressed || key.Echo || key.PhysicalKeycode != Key.F7) return;
+        SetConesVisible(!_visible);
         GetViewport().SetInputAsHandled();
     }
 }
