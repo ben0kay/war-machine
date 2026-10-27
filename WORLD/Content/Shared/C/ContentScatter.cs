@@ -8,8 +8,14 @@ public partial class ContentScatter : Node3D
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
-    private WorldConfig _world = null!;
-    private readonly Dictionary<Vector2I, List<MultiMeshInstance3D>> _chunks = new();
+    private Node3D _anchor = null!;
+    private int _worldSize;
+    private Vector2 _spawn;
+    private float _spawnClearance;
+    private Shape3D[] _shapes = System.Array.Empty<Shape3D>();
+    private float _rockClearance;
+    public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
+    private readonly Dictionary<Vector2I, List<Node3D>> _chunks = new();
     private Mesh[] _meshes = System.Array.Empty<Mesh>();
     private FastNoiseLite _patch = null!;
     private ShaderMaterial? _wind, _stone;
@@ -21,8 +27,16 @@ public partial class ContentScatter : Node3D
     // Saved terrain is read-only. Movement and map signals wake placement, never per-frame polling.
     public void Initialize(Node3D terrain, ExplorationController explorer, WorldConfig world)
     {
-        _data = terrain.Get("data").AsGodotObject(); _explorer = explorer; _world = world;
-        _explorer.ViewPositionChanged += Move;
+        _explorer = explorer; _explorer.ViewPositionChanged += Move;
+        InitializeView(terrain, explorer, world.Size, world.SpawnXZ, 0);
+    }
+
+    // =========================================================
+    // Shared active-world entry point, independent of the parked explorer and without a second scatter implementation.
+    public void InitializeView(Node3D terrain, Node3D anchor, int worldSize, Vector2 spawn, float spawnClearance = 12)
+    {
+        _data = terrain.Get("data").AsGodotObject(); _anchor = anchor; _worldSize = worldSize;
+        _spawn = spawn; _spawnClearance = spawnClearance;
         _data.Connect("height_maps_changed", Callable.From(QueueRefresh)); _initialized = true;
         SetProcess(false); SetPhysicsProcess(false); ApplySettings();
     }
@@ -31,9 +45,11 @@ public partial class ContentScatter : Node3D
     // Explicit rebuild/disable owns all transient batches; imported art bypasses generation.
     public void ApplySettings()
     {
-        foreach (var nodes in _chunks.Values) foreach (var node in nodes) { RemoveChild(node); node.QueueFree(); }
+        foreach (var nodes in _chunks.Values) foreach (var node in nodes) { if (node is StaticBody3D body) body.CollisionLayer = 0; RemoveChild(node); node.QueueFree(); }
         _chunks.Clear(); _meshes = System.Array.Empty<Mesh>(); _wind = null; _stone = null;
         _center = new Vector2I(int.MinValue, int.MinValue);
+        _shapes = System.Array.Empty<Shape3D>();
+        if (_patch != null) { _patch.Dispose(); _patch = null!; }
         if (!_initialized || !Settings.Enabled || Settings.Density <= 0) return;
         _chunkSize = Mathf.Clamp(Settings.ChunkSize, 16, 64);
         _patch = new FastNoiseLite { Seed = Settings.Seed, Frequency = Mathf.Max(0.001f, Settings.PatchFrequency) };
@@ -65,7 +81,17 @@ public partial class ContentScatter : Node3D
                 });
             }
         }
-        _meshes = meshes.ToArray(); Move(_explorer.GlobalPosition);
+        _meshes = meshes.ToArray();
+        _shapes = new Shape3D[_meshes.Length]; _rockClearance = 0;
+        for (int i = 0; i < _meshes.Length; i++)
+        {
+            if (Settings.CollisionEnabled && Settings.Kind == ContentScatterSettings.ContentKind.Rocks)
+                _shapes[i] = _meshes[i].CreateConvexShape();
+            Aabb bounds = _meshes[i].GetAabb();
+            for (int j = 0; j < 8; j++) _rockClearance = Mathf.Max(_rockClearance, bounds.GetEndpoint(j).Length());
+        }
+        _rockClearance *= Mathf.Max(0.1f, Mathf.Max(Settings.MinimumScale, Settings.MaximumScale));
+        Move(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -92,6 +118,9 @@ public partial class ContentScatter : Node3D
 
     // =========================================================
     // Chunk crossing creates entering cells and evicts distant ones; native culling handles rendering.
+    public void UpdateAnchor(Vector3 position) => Move(position);
+
+    // =========================================================
     private void Move(Vector3 position)
     {
         if (_meshes.Length == 0) return;
@@ -102,8 +131,8 @@ public partial class ContentScatter : Node3D
         foreach (var key in _chunks.Keys)
             if (Mathf.Abs(key.X - center.X) > radius + 1 || Mathf.Abs(key.Y - center.Y) > radius + 1) remove.Add(key);
         foreach (var key in remove)
-        { foreach (var node in _chunks[key]) { RemoveChild(node); node.QueueFree(); } _chunks.Remove(key); }
-        int count = Mathf.CeilToInt((float)_world.Size / _chunkSize);
+        { foreach (var node in _chunks[key]) { if (node is StaticBody3D body) body.CollisionLayer = 0; RemoveChild(node); node.QueueFree(); } _chunks.Remove(key); }
+        int count = Mathf.CeilToInt((float)_worldSize / _chunkSize);
         for (int x = Mathf.Max(0, center.X - radius); x <= Mathf.Min(count - 1, center.X + radius); x++)
             for (int z = Mathf.Max(0, center.Y - radius); z <= Mathf.Min(count - 1, center.Y + radius); z++)
             { var key = new Vector2I(x, z); if (!_chunks.ContainsKey(key)) CreateChunk(key); }
@@ -125,7 +154,13 @@ public partial class ContentScatter : Node3D
             if (random.Randf() > Mathf.Clamp(Settings.Density, 0, 1)) continue;
             var pos = new Vector3((key.X * _chunkSize) + (x + random.RandfRange(0.15f, 0.85f)) * step, 0,
                 key.Y * _chunkSize + (z + random.RandfRange(0.15f, 0.85f)) * step);
-            if (pos.X >= _world.Size - 2 || pos.Z >= _world.Size - 2 || _patch.GetNoise2D(pos.X, pos.Z) < Settings.PatchThreshold) continue;
+            if (pos.X >= _worldSize - 2 || pos.Z >= _worldSize - 2 || _patch.GetNoise2D(pos.X, pos.Z) < Settings.PatchThreshold) continue;
+            var xz = new Vector2(pos.X, pos.Z);
+            if (_spawnClearance > 0 && xz.DistanceTo(_spawn) < _spawnClearance + _rockClearance) continue;
+            bool excluded = false;
+            foreach (Rect2 area in ExclusionAreas)
+                if (area.Grow(_rockClearance).HasPoint(xz)) { excluded = true; break; }
+            if (excluded) continue;
             float h = Height(pos), hx = Height(pos + Vector3.Right), hz = Height(pos + Vector3.Back);
             if (!float.IsFinite(h) || !float.IsFinite(hx) || !float.IsFinite(hz)) continue;
             var normal = new Vector3(h - hx, 1, h - hz).Normalized();
@@ -140,7 +175,8 @@ public partial class ContentScatter : Node3D
             pos.Y = h - 0.03f;
             bins[random.RandiRange(0, bins.Length - 1)].Add(new Transform3D(basis.Scaled(Vector3.One * scale), pos - anchor));
         }
-        var nodes = new List<MultiMeshInstance3D>();
+        var nodes = new List<Node3D>();
+        StaticBody3D? collision = null;
         for (int i = 0; i < bins.Length; i++)
         {
             if (bins[i].Count == 0) continue;
@@ -150,6 +186,17 @@ public partial class ContentScatter : Node3D
                 VisibilityRangeEnd = Mathf.Clamp(Settings.RenderDistance, 16, 256), VisibilityRangeEndMargin = 4,
                 CastShadow = Settings.CastShadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off };
             AddChild(node); nodes.Add(node);
+            if (_shapes[i] != null)
+            {
+                if (collision == null)
+                {
+                    collision = new StaticBody3D { Name = "RockCollisions", Position = anchor,
+                        CollisionLayer = Settings.CollisionLayer, CollisionMask = 0 };
+                    AddChild(collision); nodes.Add(collision);
+                }
+                foreach (Transform3D transform in bins[i])
+                    collision.AddChild(new CollisionShape3D { Shape = _shapes[i], Transform = transform });
+            }
         }
         _chunks.Add(key, nodes);
     }
@@ -165,6 +212,7 @@ public partial class ContentScatter : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        if (_patch != null) _patch.Dispose();
         if (!_initialized) return;
         if (IsInstanceValid(_explorer)) _explorer.ViewPositionChanged -= Move;
         if (IsInstanceValid(_data)) _data.Disconnect("height_maps_changed", Callable.From(QueueRefresh));

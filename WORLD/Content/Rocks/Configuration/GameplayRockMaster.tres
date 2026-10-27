@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ContentScatterSettings" load_steps=3 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Shared/C/ContentScatterSettings.cs" id="1"]
+[ext_resource type="Material" path="res://WORLD/Content/Rocks/Configuration/StoneMaterial.tres" id="2"]
+[resource]
+script = ExtResource("1")
+Kind = 3
+Seed = 5014
+Density = 0.35
+Spacing = 12.0
+RenderDistance = 96.0
+Size = 1.2
+Detail = 12
+PrimaryColor = Color(0.33, 0.35, 0.36, 1)
+AccentColor = Color(0.46, 0.47, 0.43, 1)
+WindStrength = 0.0
+
+SurfaceMaterial = ExtResource("2")
+RockTextureScale = 0.8
+RockNormalStrength = 0.65
+RockMossAmount = 0.35
+RockWetness = 0.15
+CollisionEnabled = true
+CollisionLayer = 1

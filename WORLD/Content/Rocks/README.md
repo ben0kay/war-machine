@@ -1,6 +1,6 @@
 # Rocks
 
-Procedural decorative preview integrated into TestWorld. `C/` owns the generator; `Configuration/RockMaster.tres` owns artwork and placement defaults; `Artwork/` is reserved for replacement models. Shared placement and geometry helpers live in WORLD/Content/Shared/C. F9 settings require Apply/Rebuild. No terrain writes or per-instance processing. Awaiting user visual/FPS validation.
+Procedural rocks reused in both the active world and parked TestWorld. The active profile has solid collision; the legacy profile remains decorative. `C/` owns the generator; `Configuration/RockMaster.tres` owns artwork and placement defaults; `Artwork/` is reserved for replacement models. Shared placement and geometry helpers live in WORLD/Content/Shared/C. F9 settings require Apply/Rebuild. No terrain writes or per-instance processing. Awaiting user visual/FPS validation.
 
 ## Stone surface
 
@@ -19,3 +19,17 @@ For the Codex integration handoff (not yet implemented), see [TOPDOWN_INTEGRATIO
 ## Shape/material variation
 
 Rocks now generate nine **deliberately distinct** low-poly mesh profiles: small loose stone, fieldstone, angular block, long low stone, broken upright, broad slab, tall angular stone, large boulder and wide outcrop. Four irregular height rings with faceted shoulders/crowns avoid every rock being a pointed cone. Meshes are generated once per variant and reuse the existing CC0 triplanar material. Existing random yaw/scale placement remains. Triplanar sampling uses each instance's local coordinate frame plus a position-derived offset, so texture orientation follows the stone rotation instead of every rock sharing world-aligned strata. Moss remains oriented by world up. Material remains shared, with no per-rock CPU animation.
+
+## Active world rocks and cliff test
+
+WorldController initializes the existing ContentScatter with the active player, reusing all nine RockGenerator silhouettes/materials. Runtime batches appear under WorldActorsRoot/PersistentPropsRoot/Rocks in both top-down and inherited FPS views. Configuration/GameplayRockMaster.tres is the separate active profile: density 0.35, spacing 12m, range 96m, size 1.2, collision enabled on terrain/solid layer 1. Existing player/zombie/rifle masks already include that layer. Parked RockMaster retains decorative defaults.
+
+Static collision uses one cached convex hull per shared variant and one StaticBody3D per occupied chunk, with per-instance shapes matching mesh transforms. No per-rock controller or tick. Nearby chunk crossing creates/evicts batches and collision together; rebuild/OFF removes collision immediately before deferred freeing. Convex hulls approximate crevices/flat concavities conservatively. Small rock slopes can be walked over; large/steep boulder faces block movement.
+
+Building/porch/forecourt/car and cliff clearings are supplied before placement. Candidate centers reject rectangles expanded by the largest scaled mesh radius, preventing boulder edges intruding on footprints. Initial zombie starts, player spawn and a conservative robot-route corridor are also excluded. Pine placement retains its existing scenery exclusions and receives the cliff/path clearings. These masks apply on initial placement, streaming and explicit rebuilds. No terrain edits or rebake.
+
+C/CliffTestMesh.cs builds a separate collidable rock outcrop under TerrainRoot/CliffTest. Default center is (-4,+56)m from spawn, height 9m, plateau footprint roughly 26x24m. Walk south from spawn: a north-facing 6m-wide ramp starts about 20m south and rises about 21 degrees to the plateau. The plateau and approach use separate clearings so the whole neighborhood is not stripped of grass. Top is walkable; faceted steep sides are not ramps, and edges have no rails so actors can fall down. Bottom remains ordinary saved terrain. This is a mesh-based hill/cliff test, not Terrain3D sculpting. No falling damage, navigation/pathfinding, vaulting or cliff AI is introduced.
+
+WorldMaster owns CliffEnabled/Offset/Height/Width/Depth/RampLength/PathWidth. Generator clamps unsafe dimensions and keeps ramp length at least 2.5x height, below the player's slope limit. Geometry and exact trimesh collision build once and stay dormant. Existing fog can obscure the plateau until approached; increase visibility range or disable edge fog to inspect it from farther away.
+
+Checks: source/resource/setting bindings, exclusion ordering and conservative radius, collision lifecycle, ramp angle/side geometry and whitespace. No Godot/.NET available: build, collision/grounding, visual slope/join and streaming checks remain local. F6 WORLD/World.tscn, walk south up the ramp, explore the top, step off an edge and attempt the side walls; bump rocks, inspect building/path clearings, walk away/back. Brief FPS check uses the same shared layout. No rebake needed.

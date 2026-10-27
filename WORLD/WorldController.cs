@@ -15,6 +15,7 @@ public partial class WorldController : Node3D
     protected WeatherBridge _weather = null!;
     protected Camera _camera = null!;
     private PlayerDistanceFog? _distanceFog;
+    private ContentScatter _rocks = null!;
 
     // =========================================================
     // Shared by the overhead panel and inherited FPS crosshair; resolved only during startup.
@@ -70,6 +71,8 @@ public partial class WorldController : Node3D
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
         var sceneryClearings = PlaceScenery(data, out var grassClearings);
+        foreach (Rect2 cliffClearing in PlaceCliff(data))
+        { sceneryClearings.Add(cliffClearing); grassClearings.Add(cliffClearing); }
         _grass = new TerrainGrass { Name = "Grass",
             Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
@@ -85,6 +88,17 @@ public partial class WorldController : Node3D
             _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
+        _rocks = new ContentScatter { Name = "Rocks",
+            Settings = (ContentScatterSettings)GD.Load<ContentScatterSettings>("res://WORLD/Content/Rocks/Configuration/GameplayRockMaster.tres").Duplicate(true),
+            EnvironmentSettings = EnvironmentSettings };
+        foreach (Rect2 clearing in sceneryClearings) _rocks.ExclusionAreas.Add(clearing);
+        foreach (Vector2 offset in Settings.ZombieSpawnOffsets)
+            _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
+        // Keep the giant's route and foot corridor free of new solid boulders.
+        _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
+        GetNode("WorldActorsRoot/PersistentPropsRoot").AddChild(_rocks);
+        _rocks.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
+        player.PositionChanged += _rocks.UpdateAnchor;
         InitializeOcclusion(camera, player);
         _weather = new WeatherBridge { Name = "Weather" }; GetNode("SystemsRoot/EnvironmentRoot").AddChild(_weather);
         _weather.InitializeView(camera, player, EnvironmentSettings);
@@ -96,7 +110,7 @@ public partial class WorldController : Node3D
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = ControlsHelp
-            + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast" : "\nRobot placement failed; see Output. Player preview remains available.");
+            + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Cliff path south" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
     // =========================================================
@@ -203,6 +217,19 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    // A separate solid outcrop tests elevation/drop-offs without modifying the user's saved Terrain3D bake.
+    private Godot.Collections.Array<Rect2> PlaceCliff(GodotObject terrainData)
+    {
+        if (!Settings.CliffEnabled) return new();
+        Vector2 position = Settings.SpawnXZ + Settings.CliffOffset;
+        float height = terrainData.Call("get_height", new Vector3(position.X, 0, position.Y)).AsSingle();
+        if (!float.IsFinite(height)) { GD.PushError("Cliff test has no ground; skipped."); return new(); }
+        var cliff = new CliffTestMesh { Name = "CliffTest", Position = new Vector3(position.X, height, position.Y) };
+        GetNode("TerrainRoot").AddChild(cliff);
+        return cliff.Build(Settings.CliffHeight, Settings.CliffWidth, Settings.CliffDepth, Settings.CliffRampLength, Settings.CliffPathWidth);
+    }
+
+    // =========================================================
     // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.
     private void SpawnZombies(GodotObject terrainData, PlayerController player)
     {
@@ -232,6 +259,7 @@ public partial class WorldController : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        if (IsInstanceValid(_player) && IsInstanceValid(_rocks)) _player.PositionChanged -= _rocks.UpdateAnchor;
         if (IsInstanceValid(_camera)) _camera.SettingsChanged -= UpdateWeatherCoverage;
         if (IsInstanceValid(_player) && IsInstanceValid(_pines)) _player.PositionChanged -= _pines.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_grass)) _player.PositionChanged -= _grass.UpdateAnchor;

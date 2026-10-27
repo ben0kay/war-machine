@@ -17,6 +17,9 @@ public partial class ContentScatterSettings : Resource
     [Export] public float PatchFrequency { get; set; } = 0.025f;
     [Export] public float PatchThreshold { get; set; } = -0.1f;
     [Export] public bool CastShadows { get; set; }
+    [ExportGroup("Collision")]
+    [Export] public bool CollisionEnabled { get; set; }
+    [Export(PropertyHint.Layers3DPhysics)] public uint CollisionLayer { get; set; } = 1;
     [ExportGroup("Generated Artwork")]
     [Export] public float MinimumScale { get; set; } = 0.8f;
     [Export] public float MaximumScale { get; set; } = 1.3f;
