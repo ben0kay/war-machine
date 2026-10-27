@@ -1,4 +1,4 @@
-// Building002: walk-in timber ranger lodge with genuine window/door openings and a divided interior.
+// Building002: two-storey walk-in ranger lodge with usable interior stairs and floor-tagged geometry.
 // C# creates the provisional low-poly art and static collision once; imported replacements belong in Artwork/.
 using Godot;
 
@@ -8,6 +8,8 @@ public partial class Building002Mesh : Node3D
     [Export] public Building002Settings Settings { get; set; } = null!;
     [Export] public bool ShowRoof { get; set; } = true;
     private Node3D? _roof;
+    private Node3D? _level0Visuals, _level1Visuals;
+    private float _level0Opacity = 1, _level1Opacity = 1;
 
     // =========================================================
     // Procedural art is built only once at scene load; idle scene has no ticking callbacks.
@@ -27,6 +29,27 @@ public partial class Building002Mesh : Node3D
     }
 
     // =========================================================
+    // Visual-only fade entrypoint for future building-level camera controller. Physics remains collidable.
+    // Other camera occlusion fades currently act on the entire prefab; Codex must compose those effects.
+    public void SetFloorOpacity(int floor, float opacity)
+    {
+        opacity = Mathf.Clamp(opacity, 0f, 1f);
+        Node3D? visual = floor == 0 ? _level0Visuals : floor == 1 ? _level1Visuals : null;
+        if (visual == null) return;
+        if (floor == 0) { if (Mathf.IsEqualApprox(opacity, _level0Opacity)) return; _level0Opacity = opacity; }
+        else { if (Mathf.IsEqualApprox(opacity, _level1Opacity)) return; _level1Opacity = opacity; }
+        ApplyOpacity(visual, opacity);
+    }
+
+    // =========================================================
+    // Only called on floor opacity changes, never per frame. Group contains visuals, not colliders.
+    private static void ApplyOpacity(Node root, float opacity)
+    {
+        if (root is MeshInstance3D mesh) mesh.Transparency = 1f - opacity;
+        foreach (Node child in root.GetChildren()) ApplyOpacity(child, opacity);
+    }
+
+    // =========================================================
     // Solid outside shell with a real 2m walk-in entrance, windows and two passable interior door gaps.
     private void Build()
     {
@@ -34,12 +57,21 @@ public partial class Building002Mesh : Node3D
         float w = Mathf.Clamp(s.Width, 14f, 24f), d = Mathf.Clamp(s.Depth, 10f, 18f);
         float h = Mathf.Clamp(s.WallHeight, 3.4f, 5f), rise = Mathf.Clamp(s.RoofRise, 1.4f, 3.5f);
         float hx = w * 0.5f, hz = d * 0.5f;
+        float upperHeight = Mathf.Clamp(s.UpperWallHeight, 2.5f, 3.4f);
         var generated = StructureGeometry.Group(this, "Generated");
-        var shell = StructureGeometry.Group(generated, "Exterior");
-        var detail = StructureGeometry.Group(generated, "TimberAndProps");
-        var rooms = StructureGeometry.Group(generated, "Rooms");
-        _roof = StructureGeometry.Group(generated, "RoofVisuals"); _roof.Visible = ShowRoof;
-        var body = StructureGeometry.Body(generated);
+        var lower = StructureGeometry.Group(generated, "Level_0");
+        var upper = StructureGeometry.Group(generated, "Level_1");
+        lower.SetMeta("floor_level", 0); lower.SetMeta("floor_elevation", 0f);
+        upper.SetMeta("floor_level", 1); upper.SetMeta("floor_elevation", h);
+        lower.AddToGroup("building_floor_0"); upper.AddToGroup("building_floor_1");
+        _level0Visuals = StructureGeometry.Group(lower, "Visuals");
+        _level1Visuals = StructureGeometry.Group(upper, "Visuals");
+        var shell = StructureGeometry.Group(_level0Visuals, "Exterior");
+        var detail = StructureGeometry.Group(_level0Visuals, "TimberAndProps");
+        var rooms = StructureGeometry.Group(_level0Visuals, "Rooms");
+        _roof = StructureGeometry.Group(_level1Visuals, "RoofVisuals"); _roof.Visible = ShowRoof;
+        var body = StructureGeometry.Body(lower);
+        var upperBody = StructureGeometry.Body(upper);
         var wood = StructureGeometry.Paint(s.Timber);
         var woodLight = StructureGeometry.Paint(s.Timber.Lightened(0.16f));
         var woodDark = StructureGeometry.Paint(s.Timber.Darkened(0.27f));
@@ -160,26 +192,220 @@ public partial class Building002Mesh : Node3D
                     new(0.10f, 1.05f, 0.10f), woodDark);
         }
 
-        StructureGeometry.GableRoof(_roof, body, w, d, h, rise, slate, slateLight, 9);
-        StructureGeometry.GableEnd(shell, "EastGable",  hx, hz, h, rise, wood);
-        StructureGeometry.GableEnd(shell, "WestGable", -hx, hz, h, rise, wood);
+        StructureGeometry.GableRoof(_roof, upperBody, w, d, h + upperHeight, rise, slate, slateLight, 9);
+        StructureGeometry.GableEnd(_roof, "EastGable",  hx, hz, h + upperHeight, rise, wood);
+        StructureGeometry.GableEnd(_roof, "WestGable", -hx, hz, h + upperHeight, rise, wood);
         // Flat lean-to roof over veranda, hidden with the main roof for top-down interior testing.
         StructureGeometry.Box(_roof, null, "PorchRoof", new(0, 3.52f, front + 1.48f),
             new(w - 1.55f, 0.22f, 3.44f), slate);
         StructureGeometry.Box(_roof, null, "PorchRoofFascia", new(0, 3.42f, front + 3.15f),
             new(w - 1.38f, 0.33f, 0.18f), trim);
-        StructureGeometry.Box(_roof, null, "ChimneyStack", new(-w * 0.25f, h + rise + 0.48f, -1.1f),
+        StructureGeometry.Box(_roof, null, "ChimneyStack", new(-w * 0.25f, h + upperHeight + rise + 0.48f, -1.1f),
             new(1.25f, 2.20f, 1.25f), stoneDark);
-        StructureGeometry.Box(_roof, null, "ChimneyCap", new(-w * 0.25f, h + rise + 1.65f, -1.1f),
+        StructureGeometry.Box(_roof, null, "ChimneyCap", new(-w * 0.25f, h + upperHeight + rise + 1.65f, -1.1f),
             new(1.54f, 0.19f, 1.53f), stone);
         StructureGeometry.Box(detail, null, "RangerStationSign", new(0, 3.45f, front + 0.24f),
             new(3.6f, 0.43f, 0.13f), trim);
         for (int i = 0; i < 5; i++)
             StructureGeometry.Box(detail, null, "SignInlay", new(-1.40f + i * 0.70f, 3.45f, front + 0.32f),
                 new(0.35f, 0.17f, 0.045f), accent);
-        AddShowcaseDetails(generated, body, s, hx, hz, h);
+        AddShowcaseDetails(_level0Visuals, body, s, hx, hz, h);
+        BuildUpperFloor(generated, _level1Visuals, upperBody, w, d, h, upperHeight,
+            wood, woodLight, woodDark, slateLight, trim, glass, stone);
     }
 
+
+
+    // =========================================================
+    // The second storey is kept on a separate, tagged structural floor. All coordinates are local
+    // to the building. Upper floors and walls use dedicated solid collision that never fades.
+    private static void BuildUpperFloor(Node3D generated, Node3D upperVisuals, StaticBody3D upperBody,
+        float width, float depth, float floorY, float wallHeight,
+        Material wood, Material woodLight, Material woodDark, Material bedding, Material trim,
+        Material glass, Material stone)
+    {
+        float hx = width * 0.5f, hz = depth * 0.5f, top = floorY + wallHeight;
+        var deck = StructureGeometry.Group(upperVisuals, "FloorDeck");
+        var walls = StructureGeometry.Group(upperVisuals, "ExteriorWalls");
+        var furnishings = StructureGeometry.Group(upperVisuals, "Furnishings");
+        var partitions = StructureGeometry.Group(upperVisuals, "Partitions");
+
+        // Reserve a genuine open stairwell. The upper deck has four independent solid spans,
+        // not a complete floor with a hidden/uncollidable hole painted into it.
+        const float shaftLeft = -0.20f, shaftRight = 1.90f, stairFront = 4.55f, stairRear = -1.80f;
+        const float deckInset = 0.24f, deckThickness = 0.24f;
+        float deckCenter = floorY - deckThickness * 0.5f;
+        FloorSpan(deck, upperBody, "WestUpperFloor", -hx + deckInset, shaftLeft,
+            -hz + deckInset, hz - deckInset, deckCenter, deckThickness, woodDark);
+        FloorSpan(deck, upperBody, "EastUpperFloor", shaftRight, hx - deckInset,
+            -hz + deckInset, hz - deckInset, deckCenter, deckThickness, woodDark);
+        FloorSpan(deck, upperBody, "RearUpperLanding", shaftLeft, shaftRight,
+            -hz + deckInset, stairRear, deckCenter, deckThickness, woodDark);
+        FloorSpan(deck, upperBody, "FrontUpperLanding", shaftLeft, shaftRight,
+            stairFront, hz - deckInset, deckCenter, deckThickness, woodDark);
+
+        // Upper exterior: true apertures in solid walls, two windows on front and back.
+        // No long crossing facade strip; opening widths and collision match the visuals.
+        foreach (float z in new[] { -hz, hz })
+        {
+            string face = z > 0 ? "UpperFront" : "UpperRear";
+            StructureGeometry.WallX(walls, upperBody, face + "FarLeft", -hx, -5.2f, z, floorY, top, wood);
+            UpperWindow(walls, upperBody, face + "LeftWindow", -5.2f, -3.1f, z, floorY, top, wood, glass, trim);
+            StructureGeometry.WallX(walls, upperBody, face + "Middle", -3.1f, 3.1f, z, floorY, top, wood);
+            UpperWindow(walls, upperBody, face + "RightWindow", 3.1f, 5.2f, z, floorY, top, wood, glass, trim);
+            StructureGeometry.WallX(walls, upperBody, face + "FarRight", 5.2f, hx, z, floorY, top, wood);
+            StructureGeometry.Box(walls, null, face + "SillTrim", new(0, floorY + 0.15f, z + (z > 0 ? 0.15f : -0.15f)),
+                new(width - 0.30f, 0.17f, 0.12f), trim);
+        }
+        // Side upper windows face the garden, with real wall gaps and glazing.
+        foreach (float x in new[] { -hx, hx })
+        {
+            string side = x > 0 ? "UpperEast" : "UpperWest";
+            StructureGeometry.WallZ(walls, upperBody, side + "Rear", x, -hz, -1.35f, floorY, top, wood);
+            StructureGeometry.WallZ(walls, upperBody, side + "Front", x, 1.35f, hz, floorY, top, wood);
+            StructureGeometry.WallZ(walls, upperBody, side + "Sill", x, -1.35f, 1.35f,
+                floorY, floorY + 0.80f, wood);
+            StructureGeometry.WallZ(walls, upperBody, side + "Header", x, -1.35f, 1.35f,
+                floorY + 2.04f, top, wood);
+            StructureGeometry.Box(walls, upperBody, side + "Glass",
+                new(x + (x > 0 ? 0.14f : -0.14f), floorY + 1.42f, 0),
+                new(0.06f, 1.24f, 2.70f), glass);
+            StructureGeometry.Box(walls, null, side + "WindowMullion",
+                new(x + (x > 0 ? 0.24f : -0.24f), floorY + 1.42f, 0),
+                new(0.10f, 1.25f, 0.08f), trim);
+        }
+
+        // One upstairs bedroom and a common landing/workspace, divided by a genuine door opening.
+        const float roomX = -2.65f;
+        StructureGeometry.WallZ(partitions, upperBody, "BedroomWallRear", roomX,
+            -hz + 0.25f, -1.20f, floorY, top - 0.15f, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, upperBody, "BedroomWallFront", roomX,
+            0.90f, hz - 0.25f, floorY, top - 0.15f, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, upperBody, "BedroomDoorHeader", roomX,
+            -1.20f, 0.90f, floorY + 2.24f, top - 0.15f, woodLight, 0.15f);
+
+        // Upstairs furniture is deliberately off the landing and out of the staircase clearance.
+        StructureGeometry.Box(furnishings, upperBody, "GuestBedFrame",
+            new(-hx + 2.10f, floorY + 0.42f, -2.7f), new(1.90f, 0.74f, 3.15f), trim);
+        StructureGeometry.Box(furnishings, null, "GuestMattress",
+            new(-hx + 2.10f, floorY + 0.85f, -2.7f), new(1.78f, 0.15f, 3.0f), bedding);
+        StructureGeometry.Box(furnishings, null, "GuestBlanket",
+            new(-hx + 2.10f, floorY + 0.96f, -2.0f), new(1.76f, 0.08f, 1.40f), woodLight);
+        StructureGeometry.Box(furnishings, null, "GuestPillow",
+            new(-hx + 2.10f, floorY + 1.02f, -3.80f), new(1.20f, 0.14f, 0.50f), stone);
+        StructureGeometry.Box(furnishings, upperBody, "GuestWardrobe",
+            new(-hx + 0.82f, floorY + 1.0f, 2.80f), new(0.90f, 2.00f, 1.40f), woodDark);
+        StructureGeometry.Box(furnishings, null, "GuestWardrobeDoors",
+            new(-hx + 1.29f, floorY + 1.08f, 2.80f), new(0.055f, 1.70f, 1.25f), trim);
+        StructureGeometry.Box(furnishings, upperBody, "UpperStudyDesk",
+            new(hx - 2.20f, floorY + 0.57f, -hz + 1.45f), new(2.65f, 1.08f, 0.85f), woodDark);
+        StructureGeometry.Box(furnishings, null, "StudyDeskTop",
+            new(hx - 2.20f, floorY + 1.16f, -hz + 1.45f), new(2.80f, 0.10f, 1.08f), woodLight);
+        StructureGeometry.Box(furnishings, upperBody, "SupplyChest",
+            new(hx - 1.80f, floorY + 0.45f, hz - 1.60f), new(1.55f, 0.82f, 1.15f), woodDark);
+        StructureGeometry.Box(furnishings, null, "SupplyChestLid",
+            new(hx - 1.80f, floorY + 0.88f, hz - 1.60f), new(1.65f, 0.09f, 1.25f), trim);
+        for (int i = 0; i < 3; i++)
+            StructureGeometry.Box(furnishings, null, "UpperBooks",
+                new(hx - 3.0f + i * 0.27f, floorY + 1.28f, -hz + 1.45f),
+                new(0.15f, 0.20f + i * 0.05f, 0.38f), i % 2 == 0 ? trim : stone);
+
+        // The stairwell remains open above the visible 22-step flight.
+        // Low waist railings guard the upstairs edges but leave the rear landing open to enter/exit.
+        foreach (float x in new[] { shaftLeft, shaftRight })
+        {
+            StructureGeometry.Box(furnishings, upperBody, "UpperStairGuard",
+                new(x, floorY + 0.51f, (stairFront + stairRear) * 0.5f),
+                new(0.12f, 1.02f, stairFront - stairRear), trim);
+            for (int j = 0; j <= 3; j++)
+                StructureGeometry.Box(furnishings, null, "UpperRailPost",
+                    new(x, floorY + 0.52f, stairRear + j * (stairFront - stairRear) / 3f),
+                    new(0.20f, 1.04f, 0.20f), woodLight);
+        }
+        BuildStairs(generated, floorY, shaftLeft, shaftRight, stairFront, stairRear, woodLight, woodDark, trim);
+    }
+
+    // =========================================================
+    // Collidable flat deck rectangles around the open stairwell; never put a floor collider over stairs.
+    private static void FloorSpan(Node3D visuals, StaticBody3D collision, string name,
+        float minX, float maxX, float minZ, float maxZ, float y, float thickness, Material material)
+    {
+        if (maxX <= minX || maxZ <= minZ) return;
+        StructureGeometry.Box(visuals, collision, name,
+            new((minX + maxX) * 0.5f, y, (minZ + maxZ) * 0.5f),
+            new(maxX - minX, thickness, maxZ - minZ), material);
+    }
+
+    // =========================================================
+    // Full upper window opening with separate sill/header, matching glass and non-colliding trim.
+    private static void UpperWindow(Node3D visuals, StaticBody3D collision, string name,
+        float minX, float maxX, float z, float floorY, float top,
+        Material wall, Material glass, Material trim)
+    {
+        const float sill = 0.84f, windowTop = 2.05f;
+        StructureGeometry.WallX(visuals, collision, name + "Sill", minX, maxX,
+            z, floorY, floorY + sill, wall);
+        StructureGeometry.WallX(visuals, collision, name + "Header", minX, maxX,
+            z, floorY + windowTop, top, wall);
+        float midX = (minX + maxX) * 0.5f, offset = z > 0 ? 0.14f : -0.14f;
+        StructureGeometry.Box(visuals, collision, name + "Glass",
+            new(midX, floorY + (sill + windowTop) * 0.5f, z + offset),
+            new(maxX - minX, windowTop - sill, 0.06f), glass);
+        StructureGeometry.Box(visuals, null, name + "WindowSillTrim",
+            new(midX, floorY + sill, z + offset * 1.5f),
+            new(maxX - minX + 0.12f, 0.10f, 0.13f), trim);
+        StructureGeometry.Box(visuals, null, name + "WindowMullion",
+            new(midX, floorY + (sill + windowTop) * 0.5f, z + offset * 1.5f),
+            new(0.08f, windowTop - sill, 0.10f), trim);
+    }
+
+    // =========================================================
+    // Stair visuals show proper treads and risers. Physics uses ONE invisible inclined box:
+    // a CharacterBody3D won't automatically step up individual 0.18m vertical collision risers.
+    // Ramp angle is about 33 degrees with default 4.0m floor rise, under player's 46 degree limit.
+    private static void BuildStairs(Node3D generated, float rise, float left, float right,
+        float front, float rear, Material tread, Material riser, Material rail)
+    {
+        var stairs = StructureGeometry.Group(generated, "Stairs_0_to_1");
+        stairs.SetMeta("connects_floor_from", 0);
+        stairs.SetMeta("connects_floor_to", 1);
+        stairs.SetMeta("lower_elevation", 0f);
+        stairs.SetMeta("upper_elevation", rise);
+        stairs.AddToGroup("building_stairs");
+        var visuals = StructureGeometry.Group(stairs, "Visuals");
+        var collision = StructureGeometry.Body(stairs);
+        float run = front - rear, stepDepth = run / 22f, stepRise = rise / 22f;
+        float centerX = (left + right) * 0.5f, width = right - left - 0.22f;
+        for (int i = 0; i < 22; i++)
+        {
+            float z = front - (i + 0.5f) * stepDepth, top = (i + 1) * stepRise;
+            // Shallow visible tread plus the vertical front riser, neither has a vertical-step collider.
+            StructureGeometry.Box(visuals, null, "StepTread", new(centerX, top - 0.035f, z),
+                new(width, 0.07f, stepDepth - 0.01f), tread);
+            StructureGeometry.Box(visuals, null, "StepRiser",
+                new(centerX, top - stepRise * 0.5f, z + stepDepth * 0.46f),
+                new(width, stepRise, 0.07f), riser);
+        }
+        float pitch = Mathf.Atan2(rise, run), slopedLength = Mathf.Sqrt(run * run + rise * rise);
+        collision.AddChild(new CollisionShape3D { Name = "SmoothWalkableRamp",
+            Position = new Vector3(centerX, rise * 0.5f - 0.025f, (front + rear) * 0.5f),
+            Rotation = new Vector3(pitch, 0, 0),
+            Shape = new BoxShape3D { Size = new Vector3(width, 0.15f, slopedLength) } });
+        // Sloping handrails parallel the ramp and are outside the usable walking width.
+        foreach (float x in new[] { left + 0.07f, right - 0.07f })
+        {
+            StructureGeometry.Box(visuals, collision, "StairHandrail",
+                new(x, rise * 0.5f + 0.83f, (front + rear) * 0.5f),
+                new(0.09f, 0.10f, slopedLength), rail, pitch);
+            for (int i = 0; i <= 5; i++)
+            {
+                float u = i / 5f;
+                StructureGeometry.Box(visuals, null, "StairNewel",
+                    new(x, rise * u + 0.40f, front - u * run),
+                    new(0.10f, 0.80f, 0.10f), rail);
+            }
+        }
+    }
 
     // =========================================================
     // A separate dressing pass: all details remain optional visuals or selective furniture collision.

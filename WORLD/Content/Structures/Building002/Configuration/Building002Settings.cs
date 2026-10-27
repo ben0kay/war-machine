@@ -9,6 +9,8 @@ public partial class Building002Settings : Resource
     [Export(PropertyHint.Range, "10,18,0.5")] public float Depth { get; set; } = 13f;
     [Export(PropertyHint.Range, "3.4,5.0,0.1")] public float WallHeight { get; set; } = 4.0f;
     [Export(PropertyHint.Range, "1.4,3.5,0.1")] public float RoofRise { get; set; } = 2.6f;
+    [ExportGroup("Upper floor")]
+    [Export(PropertyHint.Range, "2.5,3.4,0.1")] public float UpperWallHeight { get; set; } = 2.8f;
     [ExportGroup("Colours")]
     [Export] public Color Timber { get; set; } = new(0.45f, 0.40f, 0.32f);
     [Export] public Color Roof { get; set; } = new(0.26f, 0.34f, 0.29f);
