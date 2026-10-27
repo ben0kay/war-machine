@@ -58,6 +58,7 @@ public partial class WorldController : Node3D
         if (!BindTerrainAppearance(terrain, out string appearanceError))
         { status.Text = appearanceError; GD.PushError(appearanceError); return; }
         var data = terrain.Get("data").AsGodotObject();
+        var mountainPath = GameplayMountain.Apply(terrain, data, Settings);
         Vector3 spawn = new(Settings.SpawnXZ.X, 0, Settings.SpawnXZ.Y);
         float height = data.Call("get_height", spawn).AsSingle();
         if (!float.IsFinite(height)) { status.Text = "Saved preview terrain has no ground at spawn; inspect the preview bake/settings."; GD.PushError(status.Text); return; }
@@ -71,7 +72,7 @@ public partial class WorldController : Node3D
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
         var sceneryClearings = PlaceScenery(data, out var grassClearings);
-        foreach (Rect2 cliffClearing in PlaceCliff(data))
+        foreach (Rect2 cliffClearing in mountainPath)
         { sceneryClearings.Add(cliffClearing); grassClearings.Add(cliffClearing); }
         _grass = new TerrainGrass { Name = "Grass",
             Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
@@ -110,7 +111,7 @@ public partial class WorldController : Node3D
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = ControlsHelp
-            + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Cliff path south" : "\nRobot placement failed; see Output. Player preview remains available.");
+            + (patrolReady ? " · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Terrain mountain path south" : "\nRobot placement failed; see Output. Player preview remains available.");
     }
 
     // =========================================================
@@ -214,19 +215,6 @@ public partial class WorldController : Node3D
         low -= Vector2.One * margin; high += Vector2.One * margin + new Vector2(0, approach);
         clearings.Add(new Rect2(low, high - low));
         GD.Print($"{instance.Name} placed at {instance.GlobalPosition}; offset {offset} from spawn.");
-    }
-
-    // =========================================================
-    // A separate solid outcrop tests elevation/drop-offs without modifying the user's saved Terrain3D bake.
-    private Godot.Collections.Array<Rect2> PlaceCliff(GodotObject terrainData)
-    {
-        if (!Settings.CliffEnabled) return new();
-        Vector2 position = Settings.SpawnXZ + Settings.CliffOffset;
-        float height = terrainData.Call("get_height", new Vector3(position.X, 0, position.Y)).AsSingle();
-        if (!float.IsFinite(height)) { GD.PushError("Cliff test has no ground; skipped."); return new(); }
-        var cliff = new CliffTestMesh { Name = "CliffTest", Position = new Vector3(position.X, height, position.Y) };
-        GetNode("TerrainRoot").AddChild(cliff);
-        return cliff.Build(Settings.CliffHeight, Settings.CliffWidth, Settings.CliffDepth, Settings.CliffRampLength, Settings.CliffPathWidth);
     }
 
     // =========================================================

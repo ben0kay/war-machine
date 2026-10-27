@@ -62,3 +62,5 @@ Implementation references: Godot's advanced physics interpolation camera guidanc
 SO2 preserves this inherited camera index and FPS input/aiming. Environment/vegetation/zombies/props now use shared organizational roots. The new top-down PlayerDistanceFog is explicitly omitted by the FPS composition hook. Local inherited-scene and shutdown validation remains pending.
 
 The shared world rock/cliff addition also appears here: collidable boulders and a ramp/plateau south of spawn, with building/path exclusions. FPS-specific movement, aiming and fog behavior are unchanged. Local collision/terrain-join checks remain pending.
+
+The shared cliff test now uses real Terrain3D heightmaps rather than a separate mesh ramp/plateau. Both views share the same south mountain and native collision; FPS camera/input remain unchanged. No rebake needed; local slope/edge tests remain pending.

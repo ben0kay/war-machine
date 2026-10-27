@@ -16,9 +16,9 @@ Building003Offset = Vector2(42, 32)
 Car001Offset = Vector2(24, 42)
 
 CliffEnabled = true
-CliffOffset = Vector2(-4, 56)
-CliffHeight = 9.0
-CliffWidth = 26.0
-CliffDepth = 24.0
-CliffRampLength = 24.0
-CliffPathWidth = 6.0
+CliffOffset = Vector2(-6, 76)
+CliffHeight = 12.0
+CliffWidth = 44.0
+CliffDepth = 36.0
+CliffRampLength = 38.0
+CliffPathWidth = 10.0
