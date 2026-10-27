@@ -10,6 +10,7 @@ public partial class Camera : Camera3D
     private Vector3 _target;
     private float _zoomTarget;
     private bool _initialized;
+    private ulong _lastMovementTick;
 
     // =========================================================
     // Wait for explicit test-world setup, without assuming the existing explorer or input map.
@@ -21,6 +22,7 @@ public partial class Camera : Camera3D
     {
         if (_initialized) _player.PositionChanged -= OnPlayerMoved;
         _player = player; _settings = settings;
+        PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // Render-frame camera must not be interpolated twice.
         Projection = settings.UsePerspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
         Fov = Mathf.Clamp(settings.PerspectiveFov, 25, 90); KeepAspect = KeepAspectEnum.Height; Current = true; Near = 0.1f; Far = 1800;
         settings.CameraPitchDegrees = Mathf.Clamp(settings.CameraPitchDegrees, 25, 80);
@@ -28,6 +30,8 @@ public partial class Camera : Camera3D
         _zoomTarget = ClampZoom(settings.CameraSize); Size = _zoomTarget;
         settings.CameraSize = _zoomTarget;
         _target = player.GlobalPosition;
+        player.ResetPhysicsInterpolation();
+        _ = player.GetGlobalTransformInterpolated(); // Prime follow-target history before movement.
         GlobalPosition = DesiredPosition();
         player.PositionChanged += OnPlayerMoved; _initialized = true;
         Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -36,7 +40,8 @@ public partial class Camera : Camera3D
 
     // =========================================================
     // Camera-relative axes are projected onto the actual 3D ground plane by the player.
-    private void OnPlayerMoved(Vector3 position) { _target = position; SetProcess(true); }
+    private void OnPlayerMoved(Vector3 position)
+    { _lastMovementTick = Engine.GetPhysicsFrames(); SetProcess(true); }
 
     // =========================================================
     // Mouse wheel smoothly changes orthographic size within bounded test-only settings.
@@ -99,6 +104,7 @@ public partial class Camera : Camera3D
     // Continue only until both follow and zoom settle; no constant transform/uniform assignments at rest.
     public override void _Process(double delta)
     {
+        _target = _player.GetGlobalTransformInterpolated().Origin;
         float weight = 1 - Mathf.Exp(-Mathf.Max(0.1f, _settings.FollowSmoothing) * (float)delta);
         Vector3 desired = DesiredPosition();
         bool moving = GlobalPosition.DistanceSquaredTo(desired) > 0.00001f;
@@ -106,7 +112,8 @@ public partial class Camera : Camera3D
         if (moving) GlobalPosition = GlobalPosition.Lerp(desired, weight); else if (GlobalPosition != desired) GlobalPosition = desired;
         if (zooming) Size = Mathf.Lerp(Size, _zoomTarget, weight); else if (Size != _zoomTarget) Size = _zoomTarget;
         if (moving || zooming) ViewChanged?.Invoke();
-        if (!moving && !zooming) SetProcess(false);
+        // Finish the last physics interval before sleeping, even if this frame still sees the old target.
+        if (!moving && !zooming && Engine.GetPhysicsFrames() > _lastMovementTick) SetProcess(false);
     }
 
     // =========================================================

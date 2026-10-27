@@ -51,6 +51,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
             _standingQuery = new PhysicsShapeQueryParameters3D { Shape = standing, CollisionMask = CollisionMask,
                 Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         }
+        ResetPhysicsInterpolation(); // Do not blend spawn placement/generated rig from the authored origin.
         _initialized = true; Velocity = Vector3.Zero; SetPhysicsProcess(true);
     }
 
