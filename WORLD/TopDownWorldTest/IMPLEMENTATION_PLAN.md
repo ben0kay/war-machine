@@ -77,6 +77,10 @@ Implemented only TD2 on the existing implement-td0-td1 branch. Direct Robot_001 
 
 Source/resource/scene wiring, route distance/camera projection calculations and whitespace checks passed. Godot/.NET unavailable: **build, saved terrain bake, two complete patrol/scan cycles, foot planting, player sensing, audio and runtime unload are unverified**. Existing first-run bake instructions still apply. TD3 remains Planned. One commit for this authorized job; published on the same feature branch, not main.
 
+## Optional robot-versus-zombie encounter expansion
+
+**ZS0–ZS3 are planned only** in [ROBOT_ZOMBIE_SANDBOX_PLAN.md](ROBOT_ZOMBIE_SANDBOX_PLAN.md), intended for this existing scene on `implement-td0-td1`. They are separate from TD3 and do not alter TD0–TD2 acceptance/status.
+
 ## Suggested Codex instruction
 
 Read the referenced files and implement **TD0–TD3 together** as one small, standalone `WORLD/TopDownWorldTest/topdownWorldTest.tscn` preview. Use separate simple Terrain3D ground with a hill, one primitive animated low-poly walking player, an angled following orthographic camera, and the **existing Robot_001** performing its real patrol/stop/cyan scan loop. No vegetation, rocks, caves, grass, weather or combat. Preserve the original world completely. Keep validation short, update documentation, then commit/push once.
