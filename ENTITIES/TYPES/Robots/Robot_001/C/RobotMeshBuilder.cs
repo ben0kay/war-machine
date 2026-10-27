@@ -215,8 +215,8 @@ public static class RobotMeshBuilder
         for (int side = -1; side <= 1; side += 2)
         {
             Part(hip, $"ThighSideShield{side}", Box,
-                new(side * 0.77f, 0.12f, -thigh * 0.42f),
-                new(0.28f, 1.53f, thigh * 0.72f), armour)
+                new(side * 0.78f, 0.08f, -thigh * 0.42f),
+                new(0.27f, 1.47f, thigh * 0.72f), armour)
                 .Rotation = new Vector3(0.04f, 0, side * 0.10f);
             Part(hip, $"HipCoupler{side}", Joint, new(side * 0.76f, 0.02f, -0.38f),
                 new(0.55f, 0.50f, 0.55f), steel);
@@ -247,9 +247,17 @@ public static class RobotMeshBuilder
             Part(foot, $"FootSideIdentifier{side}", Box, new(side * 1.02f, 0.41f, -0.20f),
                 new(0.055f, 0.13f, 0.55f), marking);
         }
-        Part(hip, "ThighFrontBracing", Box, new(0, 0.78f, -thigh * 0.47f),
-            new(1.30f, 0.20f, thigh * 0.56f), edge);
-        Part(hip, "ThighShieldStencil", Box, new(0, 0.91f, -thigh * 0.40f),
+        // The previous thin *brushed-steel* top slab almost met the side shield surface
+        // (0.005 m difference) and flashed between very bright and dark at walking angles.
+        // Give the cover a real painted-armour thickness, with clear depth separation.
+        // A tiny steel inset still catches highlights without making the whole thigh flash.
+        Part(hip, "ThighFrontBracing", Box, new(0, 0.94f, -thigh * 0.47f),
+            new(1.26f, 0.34f, thigh * 0.56f), armour);
+        for (int side = -1; side <= 1; side += 2)
+            Part(hip, $"ThighFrontSteelRib{side}", Box,
+                new(side * 0.49f, 1.145f, -thigh * 0.47f),
+                new(0.055f, 0.025f, thigh * 0.40f), edge);
+        Part(hip, "ThighShieldStencil", Box, new(0, 1.155f, -thigh * 0.40f),
             new(0.62f, 0.035f, 0.13f), marking);
         Part(knee, "KneeForwardRam", Box, new(0, 0.67f, -0.18f),
             new(1.26f, 0.36f, 0.80f), joints);
