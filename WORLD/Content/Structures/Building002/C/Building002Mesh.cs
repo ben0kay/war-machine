@@ -177,6 +177,170 @@ public partial class Building002Mesh : Node3D
         for (int i = 0; i < 5; i++)
             StructureGeometry.Box(detail, null, "SignInlay", new(-1.40f + i * 0.70f, 3.45f, front + 0.32f),
                 new(0.35f, 0.17f, 0.045f), accent);
+        AddShowcaseDetails(generated, body, s, hx, hz, h);
+    }
+
+
+    // =========================================================
+    // A separate dressing pass: all details remain optional visuals or selective furniture collision.
+    // Keep exterior openings, walk-through interior partitions and overall footprint untouched.
+    private static void AddShowcaseDetails(Node3D generated, StaticBody3D body,
+        Building002Settings settings, float hx, float hz, float h)
+    {
+        var exterior = StructureGeometry.Group(generated, "ShowcaseExterior");
+        var interior = StructureGeometry.Group(generated, "ShowcaseInterior");
+        var carved = StructureGeometry.Paint(settings.Timber.Darkened(0.18f));
+        var pale = StructureGeometry.Paint(settings.Timber.Lightened(0.24f));
+        var moss = StructureGeometry.Paint(new Color(0.29f, 0.38f, 0.24f));
+        var leaves = StructureGeometry.Paint(new Color(0.39f, 0.52f, 0.31f));
+        var clay = StructureGeometry.Paint(new Color(0.57f, 0.34f, 0.25f));
+        var paper = StructureGeometry.Paint(new Color(0.72f, 0.68f, 0.53f));
+        var ink = StructureGeometry.Paint(new Color(0.26f, 0.31f, 0.28f));
+        var steel = StructureGeometry.Paint(new Color(0.32f, 0.37f, 0.38f), 0.18f);
+        var cloth = StructureGeometry.Paint(new Color(0.32f, 0.43f, 0.39f));
+        var yellow = StructureGeometry.Paint(settings.Accent);
+
+        // EXTERIOR: continuous horizontal clapboard/shadow-line accents. Skip the door and front window glazing.
+        for (float y = 0.73f; y < h - 0.38f; y += 0.52f)
+        {
+            foreach (float z in new[] { -hz - 0.14f, hz + 0.14f })
+            {
+                if (z > 0 && y > 1.15f && y < 3.02f)
+                {
+                    foreach (var seg in new[] { (-hx + 0.15f, -5.55f), (-2.95f, -1.06f),
+                                               (1.06f, 3.43f), (6.06f, hx - 0.15f) })
+                        StructureGeometry.Box(exterior, null, "FrontWeatherboard",
+                            new((seg.Item1 + seg.Item2) * 0.5f, y, z),
+                            new(seg.Item2 - seg.Item1, 0.065f, 0.045f), carved);
+                }
+                else StructureGeometry.Box(exterior, null, "Weatherboard",
+                    new(0, y, z), new(hx * 2f - 0.32f, 0.065f, 0.045f), carved);
+            }
+        }
+        foreach (float x in new[] { -hx - 0.15f, hx + 0.15f })
+            for (float y = 0.80f; y < h - 0.38f; y += 0.58f)
+            {
+                if (y > 1.15f && y < 2.84f)
+                {
+                    StructureGeometry.Box(exterior, null, "SideBoardRear", new(x, y, -hz * 0.68f),
+                        new(0.055f, 0.06f, hz * 0.52f), carved);
+                    StructureGeometry.Box(exterior, null, "SideBoardFront", new(x, y, hz * 0.70f),
+                        new(0.055f, 0.06f, hz * 0.47f), carved);
+                }
+                else StructureGeometry.Box(exterior, null, "SideWeatherboard", new(x, y, 0),
+                    new(0.055f, 0.06f, hz * 2f - 0.35f), carved);
+            }
+
+        // Weathering as thin geometry patches rather than GPU decals or additional shader passes.
+        foreach (float x in new[] { -hx + 1.2f, -hx + 2.9f, hx - 1.55f })
+        {
+            StructureGeometry.Box(exterior, null, "SidingStain", new(x, 0.72f, hz + 0.158f),
+                new(0.18f, 0.91f, 0.018f), moss);
+            StructureGeometry.Box(exterior, null, "BottomMoss", new(x + 0.20f, 0.26f, hz + 0.17f),
+                new(0.75f, 0.24f, 0.023f), moss);
+        }
+        // Wall plaques/noticeboard and exterior electrical/conduit detailing are shallow and non-colliding.
+        StructureGeometry.Box(exterior, null, "TrailNoticeBacking", new(-hx + 1.56f, 2.15f, hz + 0.21f),
+            new(1.45f, 1.18f, 0.12f), carved);
+        StructureGeometry.Box(exterior, null, "TrailNoticePaper", new(-hx + 1.56f, 2.17f, hz + 0.29f),
+            new(1.19f, 0.92f, 0.015f), paper);
+        for (int i = 0; i < 4; i++)
+            StructureGeometry.Box(exterior, null, "NoticeLine", new(-hx + 1.5f, 2.38f - i * 0.16f, hz + 0.31f),
+                new(0.74f, 0.028f, 0.017f), ink);
+        StructureGeometry.Box(exterior, null, "UtilityConduit", new(hx + 0.19f, 2.25f, hz - 1.15f),
+            new(0.08f, 2.65f, 0.08f), steel);
+        StructureGeometry.Box(exterior, null, "MeterHousing", new(hx + 0.29f, 1.74f, hz - 1.15f),
+            new(0.22f, 0.62f, 0.52f), steel);
+
+        // Porch furniture stays away from the centre entrance and its approach.
+        foreach (float x in new[] { -hx + 2.65f, hx - 2.65f })
+        {
+            StructureGeometry.Box(exterior, body, "PorchBenchLegA", new(x - 0.75f, 0.36f, hz + 1.98f),
+                new(0.13f, 0.71f, 0.45f), carved);
+            StructureGeometry.Box(exterior, body, "PorchBenchLegB", new(x + 0.75f, 0.36f, hz + 1.98f),
+                new(0.13f, 0.71f, 0.45f), carved);
+            StructureGeometry.Box(exterior, null, "PorchBenchSeat", new(x, 0.76f, hz + 1.98f),
+                new(1.80f, 0.14f, 0.54f), pale);
+            StructureGeometry.Box(exterior, null, "PorchBenchBack", new(x, 1.12f, hz + 2.22f),
+                new(1.80f, 0.68f, 0.14f), carved);
+        }
+        foreach (float x in new[] { -hx + 0.65f, hx - 0.65f })
+        {
+            StructureGeometry.Cylinder(exterior, "TerracottaPot", new(x, 0.26f, hz + 1.20f),
+                0.28f, 0.46f, clay, 8);
+            StructureGeometry.Cylinder(exterior, "PotSoil", new(x, 0.51f, hz + 1.20f),
+                0.245f, 0.05f, carved, 8);
+            for (int i = 0; i < 5; i++)
+                StructureGeometry.Box(exterior, null, "PlantLeaves",
+                    new(x + Mathf.Sin(i * 1.25f) * 0.16f, 0.72f + i * 0.07f,
+                        hz + 1.2f + Mathf.Cos(i * 1.25f) * 0.16f),
+                    new(0.09f, 0.40f, 0.15f), i % 2 == 0 ? moss : leaves,
+                    Mathf.Sin(i * 1.25f) * 0.45f);
+        }
+        StructureGeometry.Box(exterior, null, "Doormat", new(0, 0.137f, hz + 0.64f),
+            new(1.38f, 0.018f, 0.65f), cloth);
+        StructureGeometry.Box(exterior, null, "PorchCrate", new(-hx + 0.65f, 0.37f, hz + 2.10f),
+            new(0.65f, 0.68f, 0.65f), carved);
+        for (int i = 0; i < 2; i++)
+            StructureGeometry.Box(exterior, null, "CrateBand", new(-hx + 0.65f, 0.27f + i * 0.28f, hz + 2.45f),
+                new(0.65f, 0.08f, 0.035f), pale);
+
+        // INTERIOR: posters, map, shelving details, reception papers, radio and a hanging wall clock.
+        // Keep pieces slim near walls; no extra collision for paper, decor or small possessions.
+        StructureGeometry.Box(interior, null, "LargeRangerMap", new(-1.35f, 2.14f, hz - 0.19f),
+            new(2.30f, 1.28f, 0.08f), carved);
+        StructureGeometry.Box(interior, null, "MapSurface", new(-1.35f, 2.14f, hz - 0.25f),
+            new(2.06f, 1.03f, 0.035f), paper);
+        for (int i = 0; i < 4; i++)
+            StructureGeometry.Box(interior, null, "MapContours", new(-2.02f + i * 0.44f, 2.18f, hz - 0.275f),
+                new(0.065f, 0.70f - (i % 2) * 0.18f, 0.018f), moss);
+
+        for (int i = 0; i < 3; i++)
+        {
+            StructureGeometry.Box(interior, null, "DeskPaper", new(-3.55f + i * 0.42f, 1.41f,
+                hz - 2.15f), new(0.31f, 0.018f, 0.42f), paper);
+            StructureGeometry.Box(interior, null, "Pencil", new(-3.5f + i * 0.30f, 1.44f,
+                hz - 2.45f), new(0.035f, 0.022f, 0.29f), yellow);
+        }
+        StructureGeometry.Box(interior, null, "DeskRadio", new(-2.23f, 1.54f, hz - 2.15f),
+            new(0.43f, 0.35f, 0.30f), steel);
+        StructureGeometry.Box(interior, null, "RadioFace", new(-2.23f, 1.55f, hz - 1.985f),
+            new(0.29f, 0.17f, 0.02f), ink);
+        StructureGeometry.Box(interior, null, "RadioAntenna", new(-2.35f, 1.91f, hz - 2.17f),
+            new(0.02f, 0.53f, 0.02f), steel);
+
+        // Wall shelves inside the small rear office; contents remain cosmetic.
+        for (int i = 0; i < 3; i++)
+        {
+            float y = 1.10f + i * 0.48f;
+            StructureGeometry.Box(interior, null, "OfficeWallShelf", new(-hx + 2.18f, y, -hz + 0.24f),
+                new(2.25f, 0.09f, 0.42f), pale);
+            for (int j = 0; j < 5; j++)
+                StructureGeometry.Box(interior, null, "FieldManuals", new(-hx + 1.34f + j * 0.33f, y + 0.19f, -hz + 0.24f),
+                    new(0.18f, 0.33f, 0.26f), j % 2 == 0 ? cloth : carved);
+        }
+        StructureGeometry.Box(interior, null, "OfficeNotice", new(-5.05f, 2.17f, -hz + 0.18f),
+            new(1.20f, 0.90f, 0.06f), paper);
+        StructureGeometry.Box(interior, null, "CabinetDoorDetail", new(-hx + 1.10f, 1.16f, -hz + 1.75f),
+            new(1.23f, 1.65f, 0.05f), carved);
+        StructureGeometry.Box(interior, null, "BunkBlanket", new(hx - 2f, 1.20f, -hz + 2.65f),
+            new(1.55f, 0.08f, 1.68f), cloth);
+        StructureGeometry.Box(interior, null, "BunkFoldedBlanket", new(hx - 2f, 1.27f, -hz + 3.14f),
+            new(1.27f, 0.09f, 0.50f), pale);
+        StructureGeometry.Box(interior, null, "LanternBase", new(hx - 1.05f, 1.25f, -hz + 4.40f),
+            new(0.30f, 0.10f, 0.30f), steel);
+        StructureGeometry.Box(interior, null, "LanternGlass", new(hx - 1.05f, 1.44f, -hz + 4.40f),
+            new(0.21f, 0.30f, 0.21f), yellow);
+        StructureGeometry.Box(interior, null, "LanternCap", new(hx - 1.05f, 1.62f, -hz + 4.40f),
+            new(0.33f, 0.10f, 0.33f), steel);
+        StructureGeometry.Box(interior, null, "WallClockBacking", new(1.65f, 2.40f, hz - 0.17f),
+            new(0.68f, 0.68f, 0.09f), carved);
+        StructureGeometry.Box(interior, null, "WallClockFace", new(1.65f, 2.40f, hz - 0.23f),
+            new(0.54f, 0.54f, 0.02f), paper);
+        StructureGeometry.Box(interior, null, "ClockHandVertical", new(1.65f, 2.48f, hz - 0.255f),
+            new(0.028f, 0.23f, 0.015f), ink);
+        StructureGeometry.Box(interior, null, "ClockHandHorizontal", new(1.73f, 2.40f, hz - 0.255f),
+            new(0.20f, 0.028f, 0.015f), ink);
     }
 
     // =========================================================

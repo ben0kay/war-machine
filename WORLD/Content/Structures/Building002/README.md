@@ -28,3 +28,14 @@ Approximate footprint **17m × 13m**, wall height **4m**, gable roof peak **6.6m
 WorldController instances this prefab on saved terrain in both WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Its offset is editable in WORLD/Configuration/WorldMaster.tres. Actual generated bounds plus approach margins exclude pines, including external porch/canopy geometry. Terrain is read-only and the parked legacy FPS world is unchanged. See WORLD/README.md for the shared layout.
 
 Godot/.NET are unavailable here; compile, grounding, interior access, collider and camera checks remain for local validation.
+
+## Enhanced detail showcase — additive pass
+
+Building002 now generates extra low-poly C# detail **within its original footprint**. The existing shell, veranda, rooms, openings and base collision are retained.
+
+- **Exterior:** horizontal timber weatherboard accents, subtle green weathering/moss geometry, porch trail noticeboard with paper lines, utility meter/conduit, two benches, small crate, doormat and **small potted plants** (no trees).
+- **Interior:** ranger wall map with markings, desk paperwork and pencils, tabletop radio with antenna, office wall shelves and manuals, cupboard fascia, bunk blankets, bedside lantern and a wall clock.
+- **Approach:** these are modeled geometry details rather than screen-space decals or textures; no new shaders, physics simulations, lights, AI or per-frame processing. Major furniture/porch post collision remains; lightweight dressing is mostly cosmetic, to avoid excessive collision shapes.
+- **Layering:** `Generated/ShowcaseExterior` and `Generated/ShowcaseInterior` are grouped separately so a later pass can refine or replace the dressing without reconstructing the building shell. The entire enhancement lives in `C/Building002Mesh.cs` and can be used in both the top-down world and the inherited FPS preview.
+
+This is a practical example of developing a prop in layers: **shell → usable rooms → furnishings → material/architectural dressing → small storytelling props**. It does not create an imported model or a complete loot/interaction system. Build and view locally to judge densities, placement and collision; authoring here did not include a Godot render test.
