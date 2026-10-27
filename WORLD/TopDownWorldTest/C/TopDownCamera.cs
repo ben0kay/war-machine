@@ -3,6 +3,7 @@ using Godot;
 
 public partial class TopDownCamera : Camera3D
 {
+    public event System.Action? SettingsChanged;
     private TopDownPlayer _player = null!;
     private TopDownTestSettings _settings = null!;
     private Vector3 _target;
@@ -20,8 +21,10 @@ public partial class TopDownCamera : Camera3D
         if (_initialized) _player.PositionChanged -= OnPlayerMoved;
         _player = player; _settings = settings;
         Projection = ProjectionType.Orthogonal; Current = true; Near = 0.1f; Far = 1800;
-        RotationDegrees = new Vector3(-Mathf.Clamp(settings.CameraPitchDegrees, 25, 80), settings.CameraYawDegrees, 0);
+        settings.CameraPitchDegrees = Mathf.Clamp(settings.CameraPitchDegrees, 25, 80);
+        RotationDegrees = new Vector3(-settings.CameraPitchDegrees, settings.CameraYawDegrees, 0);
         _zoomTarget = ClampZoom(settings.CameraSize); Size = _zoomTarget;
+        settings.CameraSize = _zoomTarget;
         _target = player.GlobalPosition;
         GlobalPosition = DesiredPosition();
         player.PositionChanged += OnPlayerMoved; _initialized = true;
@@ -40,8 +43,30 @@ public partial class TopDownCamera : Camera3D
         if (!_initialized || input is not InputEventMouseButton mouse || !mouse.Pressed) return;
         int direction = mouse.ButtonIndex == MouseButton.WheelUp ? -1 : mouse.ButtonIndex == MouseButton.WheelDown ? 1 : 0;
         if (direction == 0) return;
-        _zoomTarget = ClampZoom(_zoomTarget + direction * Mathf.Max(0.1f, _settings.ZoomStep));
-        SetProcess(true); GetViewport().SetInputAsHandled();
+        SetZoom(_zoomTarget + direction * Mathf.Max(0.1f, _settings.ZoomStep));
+        GetViewport().SetInputAsHandled();
+    }
+
+    // =========================================================
+    // Pitch changes keep the player centred immediately; yaw and screen-relative movement axes stay fixed.
+    public void SetPitch(float degrees)
+    {
+        if (!_initialized) return;
+        _settings.CameraPitchDegrees = Mathf.Clamp(degrees, 25, 80);
+        RotationDegrees = new Vector3(-_settings.CameraPitchDegrees, _settings.CameraYawDegrees, 0);
+        GlobalPosition = DesiredPosition();
+        SettingsChanged?.Invoke();
+    }
+
+    // =========================================================
+    // Wheel and slider share one zoom target and notify the panel only when an input changes it.
+    public void SetZoom(float size)
+    {
+        if (!_initialized) return;
+        _zoomTarget = ClampZoom(size);
+        _settings.CameraSize = _zoomTarget;
+        SetProcess(true);
+        SettingsChanged?.Invoke();
     }
 
     // =========================================================

@@ -25,6 +25,7 @@ A missing terrain bake displays setup instructions instead of dropping the playe
 - `C/TopDownWorldTest.cs`: load-only composition, runtime settings copy, safe spawn sampling and the active camera's Terrain3D registration.
 - `C/TopDownPlayer.cs`: separate 1.8m visible box humanoid and one capsule, gravity, floor snap, acceleration/braking, collision and one joint animation driver. Existing ExplorationController is untouched.
 - `C/TopDownCamera.cs`: 45° yaw / 55° down, orthographic size 48m, smoothly follows the physical root and zooms between 20–80m.
+- `C/TopDownCameraControls.cs`: live camera panel with downward tilt (25–80°) and view-size sliders. Wheel zoom updates the same value. **Copy settings** copies labelled numeric JSON for the current camera setup to the clipboard; paste it into chat to request new defaults. Copies the chosen zoom target even while smoothing finishes. Runtime changes are temporary and do not save the master resource. Pitch preserves player centring; yaw stays fixed so movement axes remain consistent. Signal-driven UI has no polling loop and releases its camera subscription on exit.
 - `Configuration/TopDownTestMaster.tres` / `C/TopDownTestSettings.cs`: test-only player/camera settings and bake-time seed/spawn/relief/hill settings. No source masters are mutated during gameplay.
 
 Preview reuses existing terrain material/assets, with their legacy grass mesh disabled. No grass emitter, trees, rocks, cave, weather, haze or F9 panel is instanced. A basic procedural sky, ambient light and shadowed sun are used; no extra sky addon/controller coupling. The actual existing Robot_001 scene is directly instanced for **TD2**; its shared files are unchanged.
@@ -40,6 +41,8 @@ Movement key/focus changes wake player PhysicsProcess. It runs during movement/d
 Here: source review, resource/path/ID checks, camera-axis and hill-slope calculations, C# delimiter smoke checks and `git diff --check`. **No build, native terrain bake, scene load or runtime/render check was possible**: Godot/.NET absent. These phases are implemented but **Awaiting Validation**.
 
 Brief local check: bake once and confirm the second bake refuses overwrite; run preview; test W/A/S/D screen directions, diagonal speed, Shift, stopping, focus loss, wheel bounds, steady follow and walking over the hill without falling. Check idle callbacks settle. Confirm F5 still opens the original world. Appearance/FPS acceptance stays with the owner; no extensive test suite was added.
+
+Camera tuning follow-up: source wiring and whitespace reviewed; Godot/.NET still unavailable here. Locally drag tilt to both limits, adjust view size and use wheel zoom off the panel, confirm walking still works after clicking sliders, then click Copy settings and paste into a text editor/chat to compare the numeric values with the labels. Reopening the scene should restore authored defaults. No terrain rebake is needed for camera tuning.
 
 ## TD2 — Existing robot patrol
 

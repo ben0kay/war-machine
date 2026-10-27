@@ -31,6 +31,9 @@ public partial class TopDownWorldTest : Node3D
         terrain.Call("set_camera", camera);
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(Settings, camera);
+        var cameraControls = new TopDownCameraControls();
+        GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
+        cameraControls.Initialize(camera, Settings);
         bool patrolReady = GetNode<TopDownRobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
         status.Text = "Top-down test · WASD screen-relative walk · Shift run · Wheel zoom\nF6 in editor: Run Current Scene"
             + (patrolReady ? " · Robot patrol west/southwest of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
