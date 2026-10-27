@@ -4,8 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-public partial class WorldTuningPanel : PanelContainer
+public partial class DebugOverlay : PanelContainer
 {
+    private IDebugOverlayView? _view;
     private Camera _camera = null!;
     private CameraSettings _settings = null!;
     private HSlider _pitch = null!, _yaw = null!, _zoom = null!, _fov = null!;
@@ -26,61 +27,61 @@ public partial class WorldTuningPanel : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null)
     {
+        _view = view;
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
         SetProcess(false); SetPhysicsProcess(false);
-        Position = new Vector2(16, 90);
-        CustomMinimumSize = new Vector2(330, 0);
-        var margin = new MarginContainer();
-        foreach (string side in new[] { "left", "right", "top", "bottom" })
-            margin.AddThemeConstantOverride("margin_" + side, 12);
-        AddChild(margin);
-        var outer = new VBoxContainer(); margin.AddChild(outer);
+        _copy = GetNode<Button>("Margin/Outer/Copy");
+        GetNode<Label>("Margin/Outer/Hint").Text = view == null ? "Debug controls" : "Debug controls · Esc to use · click world to resume";
         float maximumPanelHeight = Mathf.Clamp(GetViewportRect().Size.Y - 180, 180, 520);
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(350, 120),
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
-        outer.AddChild(scroll);
-        var rows = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        rows.AddThemeConstantOverride("separation", 8); scroll.AddChild(rows);
+        var scroll = GetNode<ScrollContainer>("Margin/Outer/Scroll");
+        var rows = GetNode<VBoxContainer>("Margin/Outer/Scroll/Rows");
         var rootRows = rows;
         rootRows.MinimumSizeChanged += () => scroll.CustomMinimumSize = new Vector2(350,
             Mathf.Clamp(rootRows.GetCombinedMinimumSize().Y, 120, maximumPanelHeight));
-        rows = AddSection(rootRows, "Camera");
-        rows.AddChild(new Label { Text = "Camera · live preview" });
-        _projection = new OptionButton { FocusMode = FocusModeEnum.None };
-        _projection.AddItem("Orthographic"); _projection.AddItem("Perspective"); rows.AddChild(_projection);
-        _projection.ItemSelected += index => _camera.SetProjectionMode(index == 1);
-        _fovLabel = new Label(); rows.AddChild(_fovLabel);
-        _fov = AddSlider(rows, 25, 90, 0.5);
-        _fov.ValueChanged += value => _camera.SetPerspectiveFov((float)value);
-        _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
-        _pitch = AddSlider(rows, 25, 80, 0.5);
-        rows.AddChild(new Label { Text = "25° low angle → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
-        _yawLabel = new Label(); rows.AddChild(_yawLabel);
-        _yaw = AddSlider(rows, 0, 360, 1);
-        _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
-        _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
-            Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
-        var environmentRows = AddSection(rootRows, "Environment");
-        rows = AddSection(environmentRows, "Distance fog");
-        if (distanceFog != null)
+        if (_view == null)
         {
-            rows.AddChild(new Label { Text = "Visibility fog · distance from player" });
-            var enabled = new CheckButton { Text = "Edge fog enabled", ButtonPressed = _environment.DistanceFogEnabled, FocusMode = FocusModeEnum.None };
-            rows.AddChild(enabled);
-            enabled.Toggled += value => { _environment.DistanceFogEnabled = value; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
-            AddBoundSlider(rows, "Clear radius (m)", 5, 100, 1, _environment.DistanceFogStart,
-                value => { _environment.DistanceFogStart = value; distanceFog.ApplySettings(); });
-            AddBoundSlider(rows, "Full fog radius (m)", 6, 160, 1, _environment.DistanceFogEnd,
-                value => { _environment.DistanceFogEnd = value; distanceFog.ApplySettings(); });
-            AddBoundSlider(rows, "Fog opacity", 0, 1, 0.01, _environment.DistanceFogOpacity,
-                value => { _environment.DistanceFogOpacity = value; distanceFog.ApplySettings(); });
-            AddBoundSlider(rows, "Fog edge variation (m)", 0, 8, 0.1, _environment.DistanceFogEdgeVariation,
-                value => { _environment.DistanceFogEdgeVariation = value; distanceFog.ApplySettings(); });
-            var tint = new ColorPickerButton { Text = "Fog color", Color = _environment.DistanceFogColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
-            rows.AddChild(tint);
-            tint.ColorChanged += color => { _environment.DistanceFogColor = color; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
+            rows = AddSection(rootRows, "Camera");
+            rows.AddChild(new Label { Text = "Camera · live preview" });
+            _projection = new OptionButton { FocusMode = FocusModeEnum.None };
+            _projection.AddItem("Orthographic"); _projection.AddItem("Perspective"); rows.AddChild(_projection);
+            _projection.ItemSelected += index => _camera.SetProjectionMode(index == 1);
+            _fovLabel = new Label(); rows.AddChild(_fovLabel);
+            _fov = AddSlider(rows, 25, 90, 0.5);
+            _fov.ValueChanged += value => _camera.SetPerspectiveFov((float)value);
+            _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
+            _pitch = AddSlider(rows, 25, 80, 0.5);
+            rows.AddChild(new Label { Text = "25° low angle → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
+            _yawLabel = new Label(); rows.AddChild(_yawLabel);
+            _yaw = AddSlider(rows, 0, 360, 1);
+            _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
+            _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
+                Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
+        }
+        var environmentRows = AddSection(rootRows, "Environment");
+        if (_view != null) _view.BuildControls(environmentRows, rootRows);
+        else
+        {
+            rows = AddSection(environmentRows, "Distance fog");
+            if (distanceFog != null)
+            {
+                rows.AddChild(new Label { Text = "Visibility fog · distance from player" });
+                var enabled = new CheckButton { Text = "Edge fog enabled", ButtonPressed = _environment.DistanceFogEnabled, FocusMode = FocusModeEnum.None };
+                rows.AddChild(enabled);
+                enabled.Toggled += value => { _environment.DistanceFogEnabled = value; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
+                AddBoundSlider(rows, "Clear radius (m)", 5, 100, 1, _environment.DistanceFogStart,
+                    value => { _environment.DistanceFogStart = value; distanceFog.ApplySettings(); });
+                AddBoundSlider(rows, "Full fog radius (m)", 6, 160, 1, _environment.DistanceFogEnd,
+                    value => { _environment.DistanceFogEnd = value; distanceFog.ApplySettings(); });
+                AddBoundSlider(rows, "Fog opacity", 0, 1, 0.01, _environment.DistanceFogOpacity,
+                    value => { _environment.DistanceFogOpacity = value; distanceFog.ApplySettings(); });
+                AddBoundSlider(rows, "Fog edge variation (m)", 0, 8, 0.1, _environment.DistanceFogEdgeVariation,
+                    value => { _environment.DistanceFogEdgeVariation = value; distanceFog.ApplySettings(); });
+                var tint = new ColorPickerButton { Text = "Fog color", Color = _environment.DistanceFogColor, EditAlpha = false, FocusMode = FocusModeEnum.None };
+                rows.AddChild(tint);
+                tint.ColorChanged += color => { _environment.DistanceFogColor = color; distanceFog.ApplySettings(); _copy.Text = "Copy settings"; };
+            }
         }
         rows = AddSection(environmentRows, "Day / night");
         _hourLabel = new Label(); rows.AddChild(_hourLabel);
@@ -92,17 +93,22 @@ public partial class WorldTuningPanel : PanelContainer
         var pause = new CheckButton { Text = "Pause day / night", ButtonPressed = _environment.StartPaused, FocusMode = FocusModeEnum.None };
         rows.AddChild(pause); pause.Toggled += value => { _sky.SetPaused(value); _copy.Text = "Copy settings"; };
         rows = AddSection(environmentRows, "Weather and shared wind");
+        var weatherEnabled = new CheckButton { Text = "Weather enabled", ButtonPressed = _environment.WeatherEnabled, FocusMode = FocusModeEnum.None };
+        rows.AddChild(weatherEnabled);
+        weatherEnabled.Toggled += value => { _environment.WeatherEnabled = value; weather.ApplySettings(); _copy.Text = "Copy settings"; };
         AddBoundSlider(rows, "Rain intensity", 0, 1, 0.01, _environment.RainIntensity,
             value => { _environment.RainIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Snow intensity", 0, 1, 0.01, _environment.SnowIntensity,
             value => { _environment.SnowIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Local mist", 0, 1, 0.01, _environment.LocalMistIntensity,
             value => { _environment.LocalMistIntensity = value; weather.ApplySettings(); });
+        AddBoundSlider(rows, "Airborne motes", 0, 1, 0.01, _environment.AirborneIntensity,
+            value => { _environment.AirborneIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Wind strength", 0, 2, 0.01, _environment.GrassWindStrength,
             value => { _environment.GrassWindStrength = value; weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
         AddBoundSlider(rows, "Wind heading (degrees)", 0, 360, 1, _environment.WindHeading,
             value => { _environment.WindHeading = value; float angle = Mathf.DegToRad(value);
-                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
+                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
         AddBoundSlider(rows, "Gusts", 0, 1, 0.01, _environment.WeatherGusts,
             value => { _environment.WeatherGusts = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Turbulence", 0, 2, 0.01, _environment.WeatherTurbulence,
@@ -146,17 +152,18 @@ public partial class WorldTuningPanel : PanelContainer
             _visionToggle.Toggled += visionDebug.SetConesVisible;
             _visionDebug.VisibilityChanged += OnVisionDebugChanged;
         }
-        _copy = new Button { Text = "Copy settings", FocusMode = FocusModeEnum.None }; outer.AddChild(_copy);
         _clock = _sky.Sky.GetNode("TimeOfDay");
         _timeChanged = Callable.From<float>(OnTimeChanged);
         _clock.Connect("time_changed", _timeChanged);
         OnTimeChanged(_sky.Sky.Get("current_time").AsSingle());
-        _pitch.ValueChanged += OnPitchChanged;
-        _yaw.ValueChanged += OnYawChanged;
-        _zoom.ValueChanged += OnZoomChanged;
+        if (_view == null)
+        {
+            _pitch.ValueChanged += OnPitchChanged;
+            _yaw.ValueChanged += OnYawChanged;
+            _zoom.ValueChanged += OnZoomChanged;
+        }
         _copy.Pressed += CopySettings;
-        _camera.SettingsChanged += Refresh;
-        Refresh();
+        if (_view == null) { _camera.SettingsChanged += Refresh; Refresh(); }
     }
 
     // =========================================================
@@ -294,6 +301,8 @@ public partial class WorldTuningPanel : PanelContainer
             [nameof(_environment.StartHour)] = _sky.Sky.Get("current_time").AsSingle(),
             [nameof(_environment.StartPaused)] = _environment.StartPaused,
             [nameof(_environment.DayLengthMinutes)] = _environment.DayLengthMinutes,
+            [nameof(_environment.WeatherEnabled)] = _environment.WeatherEnabled,
+            [nameof(_environment.AirborneIntensity)] = _environment.AirborneIntensity,
             [nameof(_environment.RainIntensity)] = _environment.RainIntensity,
             [nameof(_environment.SnowIntensity)] = _environment.SnowIntensity,
             [nameof(_environment.LocalMistIntensity)] = _environment.LocalMistIntensity,
@@ -305,6 +314,7 @@ public partial class WorldTuningPanel : PanelContainer
             [nameof(_environment.WeatherFallSpeed)] = _environment.WeatherFallSpeed,
             [nameof(_environment.WeatherQuality)] = _environment.WeatherQuality
         };
+        _view?.WriteSnapshot(values);
         DisplayServer.ClipboardSet("War Machine · World camera and environment settings\n"
             + JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true }));
         _copy.Text = "Copied! Paste these settings into chat";
@@ -317,6 +327,6 @@ public partial class WorldTuningPanel : PanelContainer
         if (GodotObject.IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
             _clock.Disconnect("time_changed", _timeChanged);
         if (_visionDebug != null && IsInstanceValid(_visionDebug)) _visionDebug.VisibilityChanged -= OnVisionDebugChanged;
-        if (GodotObject.IsInstanceValid(_camera)) _camera.SettingsChanged -= Refresh;
+        if (_view == null && GodotObject.IsInstanceValid(_camera)) _camera.SettingsChanged -= Refresh;
     }
 }

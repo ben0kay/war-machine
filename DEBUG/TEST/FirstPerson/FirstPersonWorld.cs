@@ -6,6 +6,7 @@ public partial class FirstPersonWorld : WorldController
     private FirstPersonFog _fpsFog = null!;
     protected override string ControlsHelp => "FIRST PERSON TEST · arrows walk · Shift run · Right Ctrl crouch\nMouse look · Left click fire · Esc: use left debug controls · Click world: resume";
     protected override bool EnableHorde => false;
+    protected override IDebugOverlayView? OverlayView => _fpsFog;
 
     // =========================================================
     protected override void InitializeEquipment(PlayerController player, Camera camera)
@@ -36,18 +37,7 @@ public partial class FirstPersonWorld : WorldController
         DebugControls.AddChild(crosshair);
         crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center);
         crosshair.OffsetLeft = -10; crosshair.OffsetRight = 10; crosshair.OffsetTop = -14; crosshair.OffsetBottom = 14;
-        var panel = new PanelContainer { Name = "FPSDebugControls", Position = new Vector2(20, 90) };
-        DebugControls.AddChild(panel);
-        var margin = new MarginContainer(); panel.AddChild(margin);
-        foreach (string side in new[] { "left", "right", "top", "bottom" }) margin.AddThemeConstantOverride("margin_" + side, 10);
-        var outer = new VBoxContainer(); margin.AddChild(outer);
-        outer.AddChild(new Label { Text = "Debug controls · Esc to use · click world to resume" });
-        var root = FirstPersonTuningSections.AddScroll(outer,
-            Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 220, 180, 580));
-        var weatherPanel = new FirstPersonWeatherPanel { Name = "FirstPersonWeatherPanel" };
-        GetNode("SystemsRoot/EnvironmentRoot").AddChild(weatherPanel);
-        weatherPanel.Initialize(_environmentScene.SkyController, _weather, _grass, _pines, root, _groundHaze!);
-        _fpsFog.BuildControls(weatherPanel.EnvironmentRows, root);
+        base.InitializeControls(camera);
     }
 
     // =========================================================

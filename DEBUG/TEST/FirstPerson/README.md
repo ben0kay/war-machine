@@ -94,3 +94,7 @@ F8/F9 are mutually exclusive. Opening releases mouse capture, swapping panels ke
 ## Scene parse correction
 
 Removed an invalid hash-prefixed explanatory comment from FirstPersonTest.tscn. Godot treated '#' as a colour token and failed before the inherited root node ("Invalid color code: #" / "Expected '['"). The hierarchy/shared environment is unchanged. Source scene-token/resource-ID checks completed; reopen the scene and F6 locally. Actual Godot loading and C# compilation remain unverified here.
+
+## Shared overlay scene
+
+The test inherits DEBUG/Overlay/DebugOverlay.tscn from World. Common weather/time/haze/foliage/zombie-debug tools are built once in DebugOverlay.cs; only FPS fog/rendering is provided by FirstPersonFog's IDebugOverlayView adapter. The duplicated FPS weather panel is removed. See ../../../DEBUG/Overlay/README.md. Build and visual/input checks pending locally.

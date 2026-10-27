@@ -2,7 +2,7 @@
 // No frame callbacks or per-object polling; shared shader follows renderer camera matrices automatically.
 using Godot;
 
-public partial class FirstPersonFog : Node
+public partial class FirstPersonFog : Node, IDebugOverlayView
 {
     private FirstPersonCamera _camera = null!;
     private FirstPersonSettings _settings = null!;
@@ -69,6 +69,24 @@ public partial class FirstPersonFog : Node
         box.AddChild(new Label { Text = name });
         var slider = new HSlider { MinValue = min, MaxValue = max, Step = 1, Value = value, FocusMode = Control.FocusModeEnum.None, Scrollable = false };
         slider.ValueChanged += next => { set((float)next); Apply(); }; box.AddChild(slider);
+    }
+
+    // =========================================================
+    // Replace overhead-only snapshot fields with this adapter's effective FPS profile.
+    public void WriteSnapshot(System.Collections.Generic.Dictionary<string, object> values)
+    {
+        foreach (string key in new[] { "DistanceFogEnabled", "DistanceFogStart", "DistanceFogEnd", "DistanceFogOpacity",
+            "DistanceFogEdgeVariation", "DistanceFogColor", "UsePerspective", "PerspectiveFov", "CameraPitchDegrees",
+            "CameraYawDegrees", "CameraSize", "CameraDistance", "MinimumZoom", "MaximumZoom", "MinimumPerspectiveDistance",
+            "MaximumPerspectiveDistance", "ZoomStep", "FollowSmoothing", "ObstructionFadeEnabled", "ObstructedOpacity",
+            "ObstructionRadius", "ObstructionChecksPerSecond", "ObstructionFadeSeconds" }) values.Remove(key);
+        values["View"] = "FirstPerson";
+        values["DistanceFogEnabled"] = _settings.DistanceFogEnabled;
+        values["FogStartDistance"] = _fogSettings.DistanceFogStart;
+        values["FogEndDistance"] = _fogSettings.DistanceFogEnd;
+        values["FogCullBuffer"] = Mathf.Clamp(_settings.FogCullBuffer, 8, 200);
+        values["FogColor"] = new[] { _settings.FogColor.R, _settings.FogColor.G, _settings.FogColor.B, _settings.FogColor.A };
+        values["FieldOfView"] = _camera.Fov;
     }
 
     // =========================================================

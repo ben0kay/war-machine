@@ -148,10 +148,13 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    protected virtual IDebugOverlayView? OverlayView => null;
+
+    // =========================================================
     protected virtual void InitializeControls(Camera camera)
     {
-        var panel = new WorldTuningPanel(); DebugControls.AddChild(panel);
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug);
+        var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView);
     }
 
     // =========================================================

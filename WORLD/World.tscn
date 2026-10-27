@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 [ext_resource type="Script" path="res://WORLD/WorldController.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -15,6 +15,8 @@
 [ext_resource type="Resource" path="res://PLAYER/Configuration/PlayerMaster.tres" id="11"]
 [ext_resource type="Resource" path="res://CAMERA/Configuration/CameraMaster.tres" id="12"]
 [ext_resource type="PackedScene" path="res://UI/GameplayHUD/Hotbar/Hotbar.tscn" id="13"]
+
+[ext_resource type="PackedScene" path="res://DEBUG/Overlay/DebugOverlay.tscn" id="debug_overlay"]
 
 [sub_resource type="Resource" id="RobotStartup"]
 script = ExtResource("9")
@@ -64,6 +66,8 @@ Settings = SubResource("RobotStartup")
 
 [node name="DebugUIRoot" type="Node" parent="."]
 [node name="Controls" type="CanvasLayer" parent="DebugUIRoot"]
+[node name="DebugOverlay" parent="DebugUIRoot/Controls" instance=ExtResource("debug_overlay")]
+
 [node name="Status" type="Label" parent="DebugUIRoot/Controls"]
 offset_left = 16.0
 offset_top = 16.0
