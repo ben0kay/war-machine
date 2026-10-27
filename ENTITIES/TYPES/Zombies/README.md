@@ -36,3 +36,13 @@ Controllers/settings now live directly in this folder. Procedural geometry is in
 ## Building placement and trunk collision
 
 Zombies now collide with pine trunks via physics layer 5. This prevents walking through trees; movement remains a direct slow approach, without navigation around obstacles. Spawn locations receive small pine clearings. The robot does not collide with this trunk layer.
+
+## Ground penetration diagnostic / bounded recovery
+
+A screenshot reported a zombie sinking near the original hill. Source inspection confirmed FULL_GAME Terrain3D collision (mode 3), terrain layer 1 and zombie mask 23 including terrain. No direct position writes occur during normal zombie movement, only MoveAndSlide. The exact runtime failure has not been reproduced or identified; this follow-up is a defensive recovery/diagnostic, not a confirmed underlying terrain fix.
+
+WorldController now supplies an optional terrain-height delegate to InitializeTarget; zombie behavior still has no Terrain3D type dependency. On its existing staggered 0.4s physics brain timer, only an airborne/falling zombie samples that height. If its feet have sunk more than GroundRecoveryDepth (default 0.75m), it casts one cached ray around the expected surface and checks capsule clearance. Only a walkable solid hit plus a clear destination permits recovery; velocity/interpolation reset afterward. No surface/blocked destination means no teleport. One warning per actor records its world position, terrain height, mask and recovery result for local diagnosis.
+
+Ordinary falls from the cliff are above lower terrain, so this check does not catch/hold them in the air. Terrain holes/missing regions return NaN and are left alone. The optional height contract represents open terrain: do not supply it unchanged to future underground/cave actors. GroundRecoveryEnabled/Depth live in ZombieMaster; callers without a sampler keep prior behavior. No new timer/frame callback, no idle ground queries or whole-world scan. Existing collision masks and movement settings remain unchanged.
+
+Validation: source guards, masks, optional-call compatibility, normal cliff-fall versus below-ground conditions and whitespace reviewed. Godot/.NET unavailable: original issue reproduction, engine physics queries and runtime recovery remain unverified. Pull/build and F6 the world; walk zombies across the hill foot, along rocks and down cliff edges. If sinking repeats, capture Output's `Zombie ground penetration` warning with the location/result. No terrain rebake or edits.

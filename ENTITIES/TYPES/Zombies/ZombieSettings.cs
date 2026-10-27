@@ -10,6 +10,9 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float WanderSpeed { get; set; } = 0.65f;
     [Export] public float ChaseSpeed { get; set; } = 1.15f;
     [Export] public float WanderRadius { get; set; } = 10;
+    [ExportGroup("Ground recovery")]
+    [Export] public bool GroundRecoveryEnabled { get; set; } = true;
+    [Export] public float GroundRecoveryDepth { get; set; } = 0.75f;
     [ExportGroup("Awareness")]
     [Export] public float DetectionRange { get; set; } = 18;
     [Export] public float LoseRange { get; set; } = 23;

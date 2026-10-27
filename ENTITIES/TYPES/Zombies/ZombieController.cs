@@ -10,6 +10,11 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private ZombieSettings _config = null!;
     private Timer _brain = null!;
     private readonly RandomNumberGenerator _random = new();
+    private System.Func<Vector3, float>? _groundHeight;
+    private PhysicsRayQueryParameters3D _groundRay = null!;
+    private PhysicsShapeQueryParameters3D _recoveryQuery = null!;
+    private CollisionShape3D _bodyShape = null!;
+    private bool _reportedGroundFailure;
     private Vector3 _home, _goal;
     private bool _hasGoal, _configured;
     private ulong _restUntil;
@@ -30,15 +35,20 @@ public partial class ZombieController : EntityCore, IDamageReceiver
             AddChild(_brain); _brain.Timeout += Think;
         }
         FloorSnapLength = 0.5f;
+        _bodyShape = GetNode<CollisionShape3D>("CollisionShape3D");
+        _groundRay = new PhysicsRayQueryParameters3D { CollisionMask = 1,
+            Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
+        _recoveryQuery = new PhysicsShapeQueryParameters3D { Shape = _bodyShape.Shape, CollisionMask = CollisionMask,
+            Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
     }
 
     // =========================================================
     // World owns placement and target references; the entity has no dependency on PlayerController or Terrain3D.
-    public void InitializeTarget(Node3D player, uint seed)
+    public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
-        Deactivate(); _target = player; _home = GlobalPosition; _random.Seed = seed;
+        Deactivate(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
         _health.Configure(_config.HealthProfile);
         _configured = true; _hasGoal = false; IsChasing = false; _restUntil = 0; Activate();
     }
@@ -66,6 +76,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver
     private void Think()
     {
         if (!IsActive || !_configured) return;
+        CheckGroundPenetration();
         bool chasing = false;
         if (IsInstanceValid(_target))
         {
@@ -85,6 +96,39 @@ public partial class ZombieController : EntityCore, IDamageReceiver
         }
         if (_hasGoal || !IsOnFloor()) SetPhysicsProcess(true);
         _brain.Start(0.4);
+    }
+
+    // =========================================================
+    // Use the existing staggered physics timer only while falling. The world optionally supplies open-terrain height.
+    private void CheckGroundPenetration()
+    {
+        if (!_config.GroundRecoveryEnabled || _groundHeight == null || IsOnFloor() || Velocity.Y >= -0.1f) return;
+        float height = _groundHeight(GlobalPosition);
+        // Holes/missing terrain return NaN; ordinary cliff falls remain ABOVE the lower ground and are untouched.
+        if (!float.IsFinite(height) || GlobalPosition.Y >= height - Mathf.Max(0.25f, _config.GroundRecoveryDepth)) return;
+        Vector3 before = GlobalPosition;
+        _groundRay.From = new Vector3(before.X, height + 0.6f, before.Z);
+        _groundRay.To = new Vector3(before.X, height - 0.6f, before.Z);
+        var space = GetWorld3D().DirectSpaceState;
+        var hit = space.IntersectRay(_groundRay);
+        string result = "no solid ground detected above sunk zombie";
+        if (hit.Count > 0 && hit["normal"].AsVector3().Y >= Mathf.Cos(FloorMaxAngle))
+        {
+            Vector3 position = hit["position"].AsVector3() + Vector3.Up * 0.12f;
+            Transform3D shapeTransform = _bodyShape.GlobalTransform;
+            shapeTransform.Origin += position - before; _recoveryQuery.Transform = shapeTransform;
+            if (space.IntersectShape(_recoveryQuery, 1).Count == 0)
+            {
+                GlobalPosition = position; Velocity = Vector3.Zero; ResetPhysicsInterpolation(); SetPhysicsProcess(true);
+                result = $"recovered onto confirmed solid surface at {position}";
+            }
+            else result = "recovery blocked by another collider";
+        }
+        if (!_reportedGroundFailure)
+        {
+            GD.PushWarning($"Zombie ground penetration: position={before}, terrain_height={height}, mask={CollisionMask}; {result}.");
+            _reportedGroundFailure = true;
+        }
     }
 
     // =========================================================

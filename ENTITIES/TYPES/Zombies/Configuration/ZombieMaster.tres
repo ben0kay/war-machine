@@ -20,3 +20,5 @@ DetectionRange = 18.0
 LoseRange = 23.0
 StopDistance = 1.3
 HealthProfile = SubResource("ZombieHealth")
+GroundRecoveryEnabled = true
+GroundRecoveryDepth = 0.75

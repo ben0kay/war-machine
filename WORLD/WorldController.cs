@@ -243,7 +243,8 @@ public partial class WorldController : Node3D
             if (!float.IsFinite(height)) { GD.PushWarning("Skipped zombie spawn outside preview terrain."); continue; }
             var zombie = scene.Instantiate<ZombieController>();
             group.AddChild(zombie); zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
-            zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + i * 7919)));
+            zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + i * 7919)),
+                point => terrainData.Call("get_height", point).AsSingle());
         }
     }
 
