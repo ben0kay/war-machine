@@ -29,7 +29,7 @@ public partial class PlayerController : CharacterBody3D
 
     // =========================================================
     // Cache ground-plane camera axes and build a small original model once.
-    public void Initialize(PlayerSettings settings, Camera3D camera)
+    public virtual void Initialize(PlayerSettings settings, Camera3D camera)
     {
         _settings = settings;
         _screenRight = camera.GlobalBasis.X; _screenRight.Y = 0; _screenRight = _screenRight.Normalized();
@@ -62,8 +62,7 @@ public partial class PlayerController : CharacterBody3D
             _toggleCrouch = !_toggleCrouch;
             SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); return;
         }
-        if (key.PhysicalKeycode == Key.Up || key.PhysicalKeycode == Key.Left || key.PhysicalKeycode == Key.Down
-            || key.PhysicalKeycode == Key.Right || key.PhysicalKeycode == Key.Shift)
+        if (IsMovementKey(key.PhysicalKeycode))
             SetPhysicsProcess(true);
     }
 
@@ -94,11 +93,8 @@ public partial class PlayerController : CharacterBody3D
             _capsule.Height = Mathf.Lerp(1.8f, 1.4f, _crouch);
             _collider.Position = Vector3.Up * (_capsule.Height * 0.5f);
         }
-        Vector2 keys = GetWindow().HasFocus() ? new Vector2(
-            (Input.IsPhysicalKeyPressed(Key.Right) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Left) ? 1 : 0),
-            (Input.IsPhysicalKeyPressed(Key.Up) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Down) ? 1 : 0)) : Vector2.Zero;
-        keys = keys.Normalized();
-        Vector3 direction = (_screenRight * keys.X + _screenForward * keys.Y).Normalized();
+        Vector2 keys = GetWindow().HasFocus() ? ReadMovementInput().Normalized() : Vector2.Zero;
+        Vector3 direction = GetMovementDirection(keys);
         float speed = Mathf.Max(0.1f, _settings.WalkSpeed) * (IsCrouching ? Mathf.Clamp(_settings.CrouchSpeedMultiplier, 0.1f, 1) : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1, _settings.RunMultiplier) : 1);
         Vector3 horizontal = new(Velocity.X, 0, Velocity.Z);
         horizontal = horizontal.MoveToward(direction * speed, Mathf.Max(1, _settings.Acceleration) * dt);
@@ -120,6 +116,16 @@ public partial class PlayerController : CharacterBody3D
         if (IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _crouch == (IsCrouching ? 1 : 0))
         { Velocity = Vector3.Zero; _phase = 0; Pose(0, 0); SetPhysicsProcess(false); }
     }
+
+    // =========================================================
+    // Small input hooks let isolated test views reuse collision, crouch and movement without copying the controller.
+    protected virtual bool IsMovementKey(Key key) => key == Key.Up || key == Key.Down || key == Key.Left || key == Key.Right || key == Key.Shift;
+    protected virtual Vector2 ReadMovementInput() => new(
+        (Input.IsPhysicalKeyPressed(Key.Right) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Left) ? 1 : 0),
+        (Input.IsPhysicalKeyPressed(Key.Up) ? 1 : 0) - (Input.IsPhysicalKeyPressed(Key.Down) ? 1 : 0));
+    protected virtual Vector3 GetMovementDirection(Vector2 keys) => (_screenRight * keys.X + _screenForward * keys.Y).Normalized();
+    protected Node3D VisualRoot => _art;
+    public float CapsuleHeight => _capsule.Height;
 
     // =========================================================
     // The actor owns its holding pose and socket; equipment owns everything about firing.

@@ -17,7 +17,7 @@ public partial class Camera : Camera3D
 
     // =========================================================
     // Fixed angle looks at the physics root's middle, never at its bobbing visual model.
-    public void Initialize(PlayerController player, CameraSettings settings)
+    public virtual void Initialize(PlayerController player, CameraSettings settings)
     {
         if (_initialized) _player.PositionChanged -= OnPlayerMoved;
         _player = player; _settings = settings;
@@ -92,7 +92,7 @@ public partial class Camera : Camera3D
         ViewChanged?.Invoke(); SettingsChanged?.Invoke();
     }
 
-    public float ViewHeight => _settings.UsePerspective
+    public virtual float ViewHeight => _settings.UsePerspective
         ? 2 * _settings.CameraDistance * Mathf.Tan(Mathf.DegToRad(Fov * 0.5f)) : _settings.CameraSize;
 
     // =========================================================
@@ -117,6 +117,10 @@ public partial class Camera : Camera3D
     // Reversed authored limits remain safe and predictable.
     private float ClampZoom(float value) => Mathf.Clamp(value, Mathf.Max(5, Mathf.Min(_settings.MinimumZoom, _settings.MaximumZoom)),
         Mathf.Max(5, Mathf.Max(_settings.MinimumZoom, _settings.MaximumZoom)));
+
+    // =========================================================
+    // Derived debug cameras notify aim adapters without depending on the overhead follow implementation.
+    protected void NotifyViewChanged() => ViewChanged?.Invoke();
 
     // =========================================================
     // Target unload cannot retain a camera subscription.

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="FirstPersonSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://DEBUG/TEST/FirstPerson/CONFIGURATION/FirstPersonSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+FieldOfView = 75.0
+MouseSensitivity = 0.12
+MaximumPitch = 85.0
+EyeInset = 0.15
+WeaponOffset = Vector3(0.22, -0.22, -0.32)

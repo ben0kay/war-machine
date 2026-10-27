@@ -36,3 +36,7 @@ After selecting the saved gameplay data directory, WorldController explicitly bi
 Building001 now spawns on sampled terrain at WorldSettings.Building001Offset=(4,-32), about 32m north of player spawn. Its default footprint is roughly 30m from the robot patrol route at the nearest edge, with no terrain edits. Pines are excluded from the footprint/loading apron/approach and initial zombie spawn points. Existing prefab wall/roof collision and camera fade are reused.
 
 Validation for this follow-up: source/resource paths, collision masks, shared thickness sampling, building-versus-route spacing and whitespace reviewed. Godot/.NET unavailable: local build, tree collision, depot grounding/doorway and fade checks remain pending. Pull/build and F6 WORLD/World.tscn; walk north to the depot, bump trunks with player/zombies, check rifle obstruction and pine OFF/rebuild. No rebake required.
+
+## Alternate first-person test
+
+DEBUG/TEST/FirstPerson/FirstPersonTest.tscn inherits World.tscn. Small virtual composition hooks let it replace presentation/input adapters and supply its own grass profile without copying world/entity logic. The normal scene keeps its existing defaults. See the test README for controls and pending local validation.

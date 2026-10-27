@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="VegetationConfig" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/VegetationConfig.cs" id="1"]
+[resource]
+script = ExtResource("1")
+Enabled = true
+Quality = 1
+Density = 0.9
+ParticleBudget = 120000
+SimulationFps = 30
+CastShadows = false
+RenderDistance = 32.0
+TileWidth = 16.0
+FadeStartFraction = 0.66
+MinimumNormalY = 0.87
+Height = 0.45
+BladeWidth = 0.085
+ClumpHeightBoost = 0.55
+PatchNoiseScale = 0.01
+PatchThresholds = Vector2(0.025, 0.2)
+ClumpThresholds = Vector2(0.2, 0.8)
+BladeColor = Color(0.20, 0.22, 0.05, 1)
+Seed = 78341
+
+WindMultiplier = 0.4
+BladeSections = 4
+FilterPaintedRock = false

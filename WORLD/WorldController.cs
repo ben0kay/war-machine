@@ -8,11 +8,12 @@ public partial class WorldController : Node3D
     [Export] public PlayerSettings PlayerSettings { get; set; } = null!;
     [Export] public CameraSettings CameraSettings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
-    private PinePlacement _pines = null!;
-    private TerrainGrass _grass = null!;
+    [Export] public VegetationConfig GrassSettings { get; set; } = null!;
+    protected PinePlacement _pines = null!;
+    protected TerrainGrass _grass = null!;
     private PlayerController _player = null!;
-    private WeatherBridge _weather = null!;
-    private Camera _camera = null!;
+    protected WeatherBridge _weather = null!;
+    protected Camera _camera = null!;
 
     // =========================================================
     // Runtime settings remain separate from both the authoring master and original world resources.
@@ -61,11 +62,10 @@ public partial class WorldController : Node3D
         terrain.Call("set_camera", camera);
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
         player.Initialize(PlayerSettings, camera);
-        var equipment = new PlayerWeaponController { Name = "Equipment" }; player.AddChild(equipment);
-        equipment.Initialize(player, camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"));
+        InitializeEquipment(player, camera);
         _camera = camera; _player = player;
         _grass = new TerrainGrass { Name = "Grass",
-            Settings = (VegetationConfig)GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres").Duplicate(true),
+            Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
         AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
@@ -79,20 +79,40 @@ public partial class WorldController : Node3D
             _pines.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
         AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
-        var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
-        occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
+        InitializeOcclusion(camera, player);
         _weather = new WeatherBridge { Name = "Weather" }; AddChild(_weather);
         _weather.InitializeView(camera, player, EnvironmentSettings);
         camera.SettingsChanged += UpdateWeatherCoverage;
         GetViewport().SizeChanged += UpdateWeatherCoverage;
         UpdateWeatherCoverage();
-        var cameraControls = new WorldTuningPanel();
-        GetNode<CanvasLayer>("Controls").AddChild(cameraControls);
-        cameraControls.Initialize(camera, CameraSettings, GetNode<SkyController>("Environment"), _weather, _grass, _pines);
+        InitializeControls(camera);
         SpawnZombies(data, player);
         bool patrolReady = GetNode<RobotPlacement>("RobotPatrol").Initialize(terrain, player, Settings);
-        status.Text = "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene"
+        status.Text = ControlsHelp
             + (patrolReady ? " · Robot patrol west/southwest of spawn · Building001 north of spawn" : "\nRobot placement failed; see Output. Player preview remains available.");
+    }
+
+    // =========================================================
+    // View-specific adapters are replaceable; terrain, scenery and entity composition remain shared.
+    protected virtual string ControlsHelp => "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Mouse aim · Left click/hold fire · Wheel zoom\nF6 in editor: Run Current Scene";
+    protected virtual void InitializeEquipment(PlayerController player, Camera camera)
+    {
+        var equipment = new PlayerWeaponController { Name = "Equipment" }; player.AddChild(equipment);
+        equipment.Initialize(player, camera, GD.Load<EquipmentConfig>("res://EQUIPMENT/Configuration/EquipmentMaster.tres"));
+    }
+
+    // =========================================================
+    protected virtual void InitializeOcclusion(Camera camera, PlayerController player)
+    {
+        var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
+        occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
+    }
+
+    // =========================================================
+    protected virtual void InitializeControls(Camera camera)
+    {
+        var panel = new WorldTuningPanel(); GetNode<CanvasLayer>("Controls").AddChild(panel);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("Environment"), _weather, _grass, _pines);
     }
 
     // =========================================================
@@ -155,7 +175,7 @@ public partial class WorldController : Node3D
 
     // =========================================================
     // Coverage changes only on zoom/pitch input or viewport resize; clear weather remains dormant.
-    private void UpdateWeatherCoverage()
+    protected virtual void UpdateWeatherCoverage()
     {
         _weather.SetOrthographicCoverage(_camera.ViewHeight);
         _grass.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);

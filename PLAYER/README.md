@@ -7,3 +7,5 @@ Active player: `Player.tscn`, `PlayerController.cs`, `PlayerSettings.cs` and `Co
 `LegacyFirstPerson/` contains the parked explorer, flight/FPS settings, camera mode button and scene. The original WORLD/testworld.tscn still instances that scene. Its resources are separate from the active player.
 
 WorldController supplies a runtime PlayerSettings copy after safe terrain placement. Controls remain arrows, Shift run, Right Ctrl crouch, mouse aim/left click fire. No new polling loops or behaviour changes are intended by this relocation. Local compilation and gameplay checks remain pending.
+
+The isolated FPS experiment subclasses this controller under DEBUG/TEST/FirstPerson/PLAYER. Virtual input/direction hooks reuse this same physical movement and crouch implementation. The normal player still uses arrows and cached overhead axes.

@@ -7,3 +7,5 @@ Orthographic/perspective selection, FOV, tilt and wheel/distance zoom retain exi
 ## Camera obstruction fading
 
 Scenery obstruction fading now lives in Occlusion/. CameraOcclusion owns bounded checks and fade interpolation; CameraOccluder opts buildings/walls into a dedicated camera-only layer. Pines supply per-instance canopy bounds/fading. Entities never fade. See Occlusion/README.md for settings, lifecycle and pending local checks.
+
+DEBUG/TEST/FirstPerson/CAMERA subclasses the camera initialization contract for an event-driven eye view. Its implementation and settings stay in the test folder; the active overhead camera retains existing behavior.
