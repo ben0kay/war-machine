@@ -8,6 +8,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     private Node3D _art = null!, _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
     private Node3D _leftFoot = null!, _rightFoot = null!;
     private Node3D _leftKnee = null!, _rightKnee = null!, _upperBody = null!;
+    private Node3D _shoulderGirdle = null!, _leftElbow = null!, _rightElbow = null!;
     private CollisionShape3D _collider = null!;
     private CapsuleShape3D _capsule = null!;
     private PhysicsShapeQueryParameters3D _standingQuery = null!;
@@ -38,8 +39,9 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         if (!_initialized)
         {
             var mesh = new PlayerMeshBuilder(this, _settings);
-            _art = mesh.Art; _upperBody = mesh.UpperBody;
+            _art = mesh.Art; _upperBody = mesh.UpperBody; _shoulderGirdle = mesh.ShoulderGirdle;
             _leftArm = mesh.LeftArm; _rightArm = mesh.RightArm;
+            _leftElbow = mesh.LeftElbow; _rightElbow = mesh.RightElbow;
             _leftLeg = mesh.LeftLeg; _rightLeg = mesh.RightLeg;
             _leftKnee = mesh.LeftKnee; _rightKnee = mesh.RightKnee;
             _leftFoot = mesh.LeftFoot; _rightFoot = mesh.RightFoot; WeaponMount = mesh.WeaponMount;
@@ -112,7 +114,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
             float liftPhase = Mathf.Cos(_phase);
             float gaitStrength = Mathf.Clamp(actualSpeed / Mathf.Max(0.1f, _settings.WalkSpeed), 0f, 1f);
             Pose(Mathf.Sin(_phase) * 0.5f, Mathf.Abs(Mathf.Sin(_phase * 2)) * 0.025f,
-                Mathf.Max(0, liftPhase) * gaitStrength, Mathf.Max(0, -liftPhase) * gaitStrength);
+                Mathf.Max(0, liftPhase) * gaitStrength, Mathf.Max(0, -liftPhase) * gaitStrength, gaitStrength);
         }
         else Pose(0, 0);
         if (_crouch != previousCrouch) WeaponPoseChanged?.Invoke();
@@ -155,15 +157,29 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     }
 
     // =========================================================
-    // One gait driver bends the swinging knee, then counter-rotates the ankle to keep boots level.
-    private void Pose(float angle, float bob, float leftLift = 0, float rightLift = 0)
+    // The same stride clock drives subtle trunk counter-rotation, shoulder movement and natural elbow flex.
+    // Aiming heavily damps these motions to keep the rifle and cursor aligned.
+    private void Pose(float angle, float bob, float leftLift = 0, float rightLift = 0, float gaitStrength = 0)
     {
         float stride = angle * Mathf.Lerp(1, 0.4f, _crouch);
+        float motion = gaitStrength * Mathf.Lerp(1f, 0.35f, _crouch);
+        float aimDamping = _weaponPose ? 0.25f : 1f;
+        float swing = Mathf.Sin(_phase), across = Mathf.Cos(_phase);
+        float torsoTwist = Mathf.DegToRad(Mathf.Clamp(_settings.TorsoTwistDegrees, 0, 8)) * motion * aimDamping;
+        float torsoRoll = Mathf.DegToRad(Mathf.Clamp(_settings.TorsoRollDegrees, 0, 5)) * motion * aimDamping;
+        float shoulderSway = Mathf.DegToRad(Mathf.Clamp(_settings.ShoulderSwayDegrees, 0, 6)) * motion;
         _art.Position = Vector3.Up * (bob * Mathf.Lerp(1, 0.35f, _crouch) - 0.72f * (1 - Mathf.Cos(1.15f * _crouch)));
-        _upperBody.Rotation = new Vector3(0.18f * _crouch, 0, 0);
+        _upperBody.Rotation = new Vector3(0.18f * _crouch, -swing * torsoTwist, across * torsoRoll);
+        _shoulderGirdle.Rotation = new Vector3(0, -swing * shoulderSway * 0.3f * aimDamping,
+            Mathf.Sin(_phase * 2f) * shoulderSway * 0.5f * (_weaponPose ? 0.45f : 1f));
         _leftArm.Rotation = new Vector3(-stride - 0.4f * _crouch, 0, 0);
         _rightArm.Rotation = new Vector3(stride - 0.4f * _crouch, 0, 0);
         if (_weaponPose) { _leftArm.RotationDegrees = _settings.LeftWeaponArmDegrees; _rightArm.RotationDegrees = _settings.RightWeaponArmDegrees; }
+        // Slight forearm lag follows the opposite leg; keep near zero when hands support the rifle.
+        float elbowFlex = Mathf.DegToRad(Mathf.Clamp(_settings.ElbowFlexDegrees, 0, 35)) * motion;
+        float armFreedom = _weaponPose ? 0.07f : 1f;
+        _leftElbow.Rotation = new Vector3(elbowFlex * (0.55f + 0.45f * Mathf.Max(0, -swing)) * armFreedom, 0, 0);
+        _rightElbow.Rotation = new Vector3(elbowFlex * (0.55f + 0.45f * Mathf.Max(0, swing)) * armFreedom, 0, 0);
         _leftLeg.Rotation = new Vector3(stride + 1.15f * _crouch, 0, 0);
         _rightLeg.Rotation = new Vector3(-stride + 1.15f * _crouch, 0, 0);
         // Crouch retains its existing deep knee bend; walking adds up to ~35 degrees on the airborne leg.

@@ -28,8 +28,12 @@ public sealed class PlayerMeshBuilder
 
     private Node3D _art = null!, _upperBody = null!, _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
     private Node3D _leftKnee = null!, _rightKnee = null!, _leftFoot = null!, _rightFoot = null!;
+    private Node3D _shoulderGirdle = null!, _leftElbow = null!, _rightElbow = null!;
     public Node3D Art => _art;
     public Node3D UpperBody => _upperBody;
+    public Node3D ShoulderGirdle => _shoulderGirdle;
+    public Node3D LeftElbow => _leftElbow;
+    public Node3D RightElbow => _rightElbow;
     public Node3D LeftArm => _leftArm;
     public Node3D RightArm => _rightArm;
     public Node3D LeftLeg => _leftLeg;
@@ -82,10 +86,12 @@ public sealed class PlayerMeshBuilder
         Part(_upperBody, "LeftHipPouch", new(-0.235f, 0.06f, 0.025f), new(0.115f, 0.16f, 0.16f), Webbing, Rounded);
         Part(_upperBody, "RightHipPouch", new(0.235f, 0.06f, 0.025f), new(0.115f, 0.16f, 0.16f), Webbing, Rounded);
 
-        // Shoulders retain the same effective positions used by walk, aim and crouch poses.
-        _leftArm = Limb(_upperBody, "LeftArm", new(-0.34f, 0.50f, 0));
-        _rightArm = Limb(_upperBody, "RightArm", new(0.34f, 0.50f, 0));
-        BuildArm(_leftArm); BuildArm(_rightArm);
+        // A centred shoulder pivot lets the whole shoulder girdle counter-sway independently of the rifle socket.
+        // Arms keep their original global rest positions, so existing aiming/crouching pivots remain compatible.
+        _shoulderGirdle = Limb(_upperBody, "ShoulderGirdle", new(0, 0.50f, 0));
+        _leftArm = Limb(_shoulderGirdle, "LeftArm", new(-0.34f, 0, 0));
+        _rightArm = Limb(_shoulderGirdle, "RightArm", new(0.34f, 0, 0));
+        _leftElbow = BuildArm(_leftArm); _rightElbow = BuildArm(_rightArm);
 
         _leftLeg = Limb(_art, "LeftLeg", new(-0.14f, 0.85f, 0));
         _rightLeg = Limb(_art, "RightLeg", new(0.14f, 0.85f, 0));
@@ -94,14 +100,17 @@ public sealed class PlayerMeshBuilder
     }
 
     // =========================================================
-    // Overlapping rounded shapes suggest upper arm, forearm and gloved hand without an elbow driver.
-    private static void BuildArm(Node3D arm)
+    // An elbow pivot keeps upper and lower sleeves together through subtle walking flexion.
+    private static Node3D BuildArm(Node3D arm)
     {
         Part(arm, "Shoulder", new(0, -0.07f, 0), new(0.235f, 0.22f, 0.24f), Jacket, Rounded);
         Part(arm, "Sleeve", new(0, -0.215f, 0), new(0.19f, 0.32f, 0.205f), Jacket, Rounded);
-        Part(arm, "ElbowPatch", new(0, -0.322f, -0.075f), new(0.13f, 0.115f, 0.055f), Vest, Rounded);
-        Part(arm, "Forearm", new(0, -0.385f, 0), new(0.158f, 0.22f, 0.176f), Jacket, Rounded);
-        Part(arm, "Glove", new(0, -0.485f, -0.018f), new(0.16f, 0.155f, 0.172f), Gloves, Rounded);
+        var elbow = Limb(arm, "Elbow", new(0, -0.32f, 0));
+        Part(elbow, "ElbowJoint", Vector3.Zero, new(0.17f, 0.17f, 0.18f), Jacket, Rounded);
+        Part(elbow, "ElbowPatch", new(0, -0.002f, -0.075f), new(0.13f, 0.115f, 0.055f), Vest, Rounded);
+        Part(elbow, "Forearm", new(0, -0.065f, 0), new(0.158f, 0.22f, 0.176f), Jacket, Rounded);
+        Part(elbow, "Glove", new(0, -0.165f, -0.018f), new(0.16f, 0.155f, 0.172f), Gloves, Rounded);
+        return elbow;
     }
 
     // =========================================================

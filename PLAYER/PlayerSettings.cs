@@ -14,6 +14,11 @@ public partial class PlayerSettings : Resource
     [ExportGroup("Walking gait")]
     [Export(PropertyHint.Range, "0,60,1")] public float KneeBendDegrees { get; set; } = 35f;
     [Export(PropertyHint.Range, "0,20,1")] public float FootRollDegrees { get; set; } = 8f;
+    [ExportGroup("Upper-body gait")]
+    [Export(PropertyHint.Range, "0,8,0.5")] public float TorsoTwistDegrees { get; set; } = 4f;
+    [Export(PropertyHint.Range, "0,5,0.5")] public float TorsoRollDegrees { get; set; } = 1.5f;
+    [Export(PropertyHint.Range, "0,6,0.5")] public float ShoulderSwayDegrees { get; set; } = 2.5f;
+    [Export(PropertyHint.Range, "0,35,1")] public float ElbowFlexDegrees { get; set; } = 14f;
     [ExportGroup("Equipment pose")]
     [Export] public Vector3 WeaponProbeOffset { get; set; } = new(0, 0.38f, 0);
     [Export] public Vector3 WeaponMountOffset { get; set; } = new(0.24f, 0.40f, -0.45f);
