@@ -113,6 +113,10 @@ public partial class Camera : Camera3D
         ViewChanged?.Invoke(); SettingsChanged?.Invoke();
     }
 
+    // Conservative orbit allowance shared by all zoom/pitch settings; smoothing lag is checked separately.
+    public float MaximumRenderOffset => _initialized
+        ? Mathf.Max(1, Mathf.Max(_settings.MinimumPerspectiveDistance, _settings.MaximumPerspectiveDistance)) + 0.9f : 32;
+
     public virtual float ViewHeight => _settings.UsePerspective
         ? 2 * _settings.CameraDistance * Mathf.Tan(Mathf.DegToRad(Fov * 0.5f)) : _settings.CameraSize;
 

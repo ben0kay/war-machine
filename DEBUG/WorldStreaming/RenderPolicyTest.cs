@@ -42,6 +42,23 @@ public partial class RenderPolicyTest : Node
             var policy = new WorldRenderCulling(); AddChild(policy);
             policy.Initialize(fog, camera, player, new WorldRenderSettings(), props); policy.Flush();
             Check(policy.RegisteredCount == 3 && mesh.VisibilityRangeEnd > 0, "only eligible native objects registered/capped");
+            int refreshes = policy.FullRefreshCount;
+            float stableEnd = mesh.VisibilityRangeEnd;
+            for (int i = 0; i < 20; i++)
+            {
+                camera.SetZoom(i % 2 == 0 ? 15 : 20);
+                camera.SetYaw(i * 10);
+                policy.Flush();
+            }
+            camera.SetProjectionMode(true);
+            for (int i = 0; i < 20; i++)
+            {
+                camera.SetZoom(i % 2 == 0 ? 15 : 25);
+                camera._Process(0.016);
+                policy.Flush();
+            }
+            Check(policy.FullRefreshCount == refreshes && mesh.VisibilityRangeEnd == stableEnd,
+                "zoom/orbit/projection/smoothing do not refresh scenery ranges");
             Check(lod.VisibilityRangeBegin == 20 && lod.VisibilityRangeEnd <= 90, "LOD start and authored ceiling preserved");
             Check(lamp.DistanceFadeEnabled && !lamp.Visible, "native light fade without enabling fixture");
             Check(exempt.VisibilityRangeEnd == 0, "exempt owner preserved");

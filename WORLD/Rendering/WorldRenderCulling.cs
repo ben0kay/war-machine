@@ -19,7 +19,8 @@ public partial class WorldRenderCulling : Node
     private Camera _camera = null!;
     private PlayerController _player = null!;
     private bool _initialized, _queued, _force, _viewSubscribed;
-    private float _cameraY = float.NaN, _horizontal = float.NaN;
+    private float _playerY = float.NaN, _offset = float.NaN;
+    public int FullRefreshCount { get; private set; }
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -30,7 +31,7 @@ public partial class WorldRenderCulling : Node
         if (_initialized) return;
         _fog = fog; _camera = camera; _player = player; Settings = settings; _roots = roots; _initialized = true;
         GetTree().NodeAdded += OnAdded; GetTree().NodeRemoved += OnRemoved;
-        _fog.SettingsApplied += ApplySettings; _camera.SettingsChanged += ApplySettings;
+        _fog.SettingsApplied += ApplySettings; _camera.SettingsChanged += OnViewChanged;
         foreach (Node root in roots) Discover(root);
         ApplySettings();
     }
@@ -53,11 +54,11 @@ public partial class WorldRenderCulling : Node
     // This fast signal guard runs only during existing camera activity. Native culling itself follows every frame.
     private void OnViewChanged()
     {
-        float horizontal = new Vector2(_camera.GlobalPosition.X - _player.GlobalPosition.X,
-            _camera.GlobalPosition.Z - _player.GlobalPosition.Z).Length();
+        if (!_viewSubscribed) return;
         float step = WorldRenderEnvelope.Safe(Settings.CameraRefreshStep, 2, 1, 8);
-        if (!float.IsFinite(_cameraY) || Mathf.Abs(_cameraY - _camera.GlobalPosition.Y) >= step
-            || Mathf.Abs(_horizontal - horizontal) >= step) QueueRefresh();
+        float required = RequiredOffset();
+        if (!float.IsFinite(_playerY) || Mathf.Abs(_playerY - _player.GlobalPosition.Y) >= step
+            || !float.IsFinite(_offset) || required > _offset) QueueRefresh();
     }
 
     // =========================================================
@@ -109,13 +110,33 @@ public partial class WorldRenderCulling : Node
             if (!_force) Apply(entry);
         }
         _pending.Clear();
-        float horizontal = new Vector2(_camera.GlobalPosition.X - _player.GlobalPosition.X,
-            _camera.GlobalPosition.Z - _player.GlobalPosition.Z).Length();
-        bool changed = _force || (Settings.Enabled && _fog.FullyOpaque &&
-            (!float.IsFinite(_cameraY) || !Mathf.IsEqualApprox(_cameraY, _camera.GlobalPosition.Y)
-            || !Mathf.IsEqualApprox(_horizontal, horizontal)));
-        if (changed) foreach (Entry entry in _entries.Values) if (IsInstanceValid(entry.Node)) Apply(entry);
-        _cameraY = _camera.GlobalPosition.Y; _horizontal = horizontal; _force = false;
+        float step = WorldRenderEnvelope.Safe(Settings.CameraRefreshStep, 2, 1, 8);
+        bool changed = _force || (_viewSubscribed &&
+            (!float.IsFinite(_playerY) || Mathf.Abs(_playerY - _player.GlobalPosition.Y) >= step
+            || !float.IsFinite(_offset) || RequiredOffset() > _offset));
+        if (changed)
+        {
+            _playerY = _player.GlobalPosition.Y;
+            _offset = RequiredOffset() + step * 2;
+            FullRefreshCount++;
+            foreach (Entry entry in _entries.Values) if (IsInstanceValid(entry.Node)) Apply(entry);
+        }
+        _force = false;
+    }
+
+    // =========================================================
+    private float RequiredOffset() => Mathf.Max(_camera.MaximumRenderOffset,
+        _camera.GlobalPosition.DistanceTo(_player.GlobalPosition));
+
+    // =========================================================
+    // Bound every allowed orbit, including follow lag. Zoom/yaw cannot invalidate this envelope.
+    private float PolicyEnd(Aabb bounds, float buffer)
+    {
+        if (_fog.CameraMetric) return WorldRenderEnvelope.End(bounds, Vector3.Zero, Vector3.Zero, _fog.OpaqueRadius, true, buffer);
+        Vector3 half = bounds.Size * 0.5f;
+        float reach = _fog.OpaqueRadius + new Vector2(half.X, half.Z).Length();
+        float height = Mathf.Abs(bounds.GetCenter().Y - _playerY);
+        return new Vector2(reach, height).Length() + _offset + buffer;
     }
 
     // =========================================================
@@ -139,8 +160,7 @@ public partial class WorldRenderCulling : Node
                     WorldRenderEnvelope.Safe(Settings.DeformationPadding, 2, 0, 8));
                 float safety = buffer + Mathf.Max(0, geometry.VisibilityRangeEndMargin)
                     + (geometry.CastShadow == GeometryInstance3D.ShadowCastingSetting.Off ? 0 : shadow);
-                float policy = WorldRenderEnvelope.End(bounds, _camera.GlobalPosition, _player.GlobalPosition,
-                    _fog.OpaqueRadius, _fog.CameraMetric, safety);
+                float policy = PolicyEnd(bounds, safety);
                 if (float.IsFinite(policy) && policy > 0) end = WorldRenderEnvelope.Cap(authored, policy);
             }
             if (!Mathf.IsEqualApprox(geometry.VisibilityRangeEnd, end)) geometry.VisibilityRangeEnd = end;
@@ -155,8 +175,7 @@ public partial class WorldRenderCulling : Node
             radius *= Mathf.Max(Mathf.Abs(scale.X), Mathf.Max(Mathf.Abs(scale.Y), Mathf.Abs(scale.Z)));
             Aabb influence = new(light.GlobalPosition - Vector3.One * radius, Vector3.One * radius * 2);
             float length = WorldRenderEnvelope.Safe(Settings.LightFadeLength, 8, 1, 32);
-            float end = WorldRenderEnvelope.End(influence, _camera.GlobalPosition, _player.GlobalPosition,
-                _fog.OpaqueRadius, _fog.CameraMetric, buffer + shadow + length);
+            float end = PolicyEnd(influence, buffer + shadow + length);
             if (!float.IsFinite(end)) { Restore(entry); return; }
             // Existing authored fades own their curve (restored above). Never alter Visible, energy or fixture state.
             float begin = Mathf.Max(0, end - length);
@@ -191,7 +210,7 @@ public partial class WorldRenderCulling : Node
         GetTree().NodeAdded -= OnAdded; GetTree().NodeRemoved -= OnRemoved;
         if (IsInstanceValid(_fog)) _fog.SettingsApplied -= ApplySettings;
         if (IsInstanceValid(_camera))
-        { _camera.SettingsChanged -= ApplySettings; if (_viewSubscribed) _camera.ViewChanged -= OnViewChanged; }
+        { _camera.SettingsChanged -= OnViewChanged; if (_viewSubscribed) _camera.ViewChanged -= OnViewChanged; }
         foreach (Entry entry in _entries.Values) Restore(entry);
         _entries.Clear(); _pending.Clear(); _roots = System.Array.Empty<Node>();
     }
