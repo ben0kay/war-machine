@@ -1,6 +1,8 @@
 shader_type fog;
 
 uniform sampler2D terrain_heights : filter_linear, repeat_disable;
+uniform sampler2D building_exclusion_mask : filter_linear, repeat_disable;
+uniform float building_mask_texels = 1.0;
 uniform vec2 terrain_origin;
 uniform float terrain_span = 80.0;
 uniform float terrain_texels = 21.0;
@@ -49,6 +51,9 @@ void fog() {
     float coverage = 1.0 - smoothstep(coverage_radius * 0.6, coverage_radius, radius);
     float valid = smoothstep(0.98, 1.0, terrain.g);
     vec2 in_map = step(vec2(0.0), map_uv) * step(map_uv, vec2(1.0));
-    DENSITY = density * (base + smoky * 0.8) * envelope * coverage * valid * in_map.x * in_map.y;
+    // GH1: floorplan/canopy cutout bakes once per 8m tile, not a per-froxel loop over buildings.
+    vec2 building_uv = (map_uv * (building_mask_texels - 1.0) + 0.5) / building_mask_texels;
+    float building_clearance = textureLod(building_exclusion_mask, building_uv, 0.0).r;
+    DENSITY = density * (base + smoky * 0.8) * envelope * coverage * valid * in_map.x * in_map.y * building_clearance;
     ALBEDO = fog_color.rgb;
 }

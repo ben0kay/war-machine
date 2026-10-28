@@ -4,6 +4,8 @@ using Godot;
 [GlobalClass]
 public partial class ZombieSettings : EntitySettings
 {
+    [ExportGroup("Injury locomotion")]
+    [Export] public ZombieLocomotionSettings? LocomotionProfile { get; set; }
     [ExportGroup("Anatomy")]
     [Export] public AnatomySettings? AnatomyProfile { get; set; }
     [ExportGroup("Health")]
@@ -32,6 +34,8 @@ public partial class ZombieSettings : EntitySettings
     [Export(PropertyHint.Range, "0,20,0.1")] public float ShovePushSpeed { get; set; } = 4f;
     [Export(PropertyHint.Range, "0,20,0.1")] public float ShoveMaxPushSpeed { get; set; } = 10f;
     [Export(PropertyHint.Range, "0,40,0.5")] public float ShoveBrakingAcceleration { get; set; } = 9f;
+    [ExportGroup("Damaging melee backstep")]
+    [Export(PropertyHint.Range, "0.1,1,0.05")] public float MeleeMaxStaggerSeconds { get; set; } = 0.55f;
     [ExportGroup("Movement")]
     [Export] public float WanderSpeed { get; set; } = 0.78f;
     [Export] public float ChaseSpeed { get; set; } = 1.38f;
@@ -44,6 +48,8 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float EyeHeight { get; set; } = 1.6f;
     [Export] public float SightIntervalSeconds { get; set; } = 0.4f;
     [Export(PropertyHint.Layers3DPhysics)] public uint SightBlockerMask { get; set; } = 17;
+    [ExportGroup("Investigation triggers")]
+    [Export] public bool HitInvestigationEnabled { get; set; } = true;
     [ExportGroup("Last seen investigation")]
     [Export] public bool LastSeenInvestigationEnabled { get; set; } = true;
     // X early, Y moderate, Z thorough. Nonnegative weights are normalized per episode.
@@ -61,4 +67,13 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float DetectionRange { get; set; } = 22.5f;
     [Export] public float LoseRange { get; set; } = 28.75f;
     [Export] public float StopDistance { get; set; } = 1.3f;
+    // =========================================================
+    // Preserve existing authored .tres property names/values while providing a species-independent runtime policy.
+    public InvestigationSettings CreateInvestigationSettings() => new()
+    {
+        Weights = InvestigationWeights, EarlyFraction = EarlyInvestigationFraction,
+        ModerateFraction = ModerateInvestigationFraction, TimeScale = InvestigationTimeScale,
+        TimeAllowance = InvestigationTimeAllowance, MaximumSeconds = InvestigationMaxSeconds,
+        LookSeconds = InvestigationLookSeconds
+    };
 }

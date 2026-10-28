@@ -1,3 +1,5 @@
+> **ELD2 source implementation (2026-10-28), awaiting local validation:** [Injury locomotion and World/FPS acceptance](LOCOMOTION_README.md). Both variants share limp, one-leg shuffle, low living crawl and immobilization. Debug panel buttons demonstrate injuries without HP changes. Existing attacks/ELD3 and ZD1–ZD3 remain deferred. This supersedes older ELD2-Planned/upright-legless descriptions below.
+
 > **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../../../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
 
 > **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../../Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
@@ -282,7 +284,7 @@ A corpse missing two legs should still be visibly missing those legs when it sin
 |---|---|---|
 | **ELD0** | Shared anatomical region detection and damage routing | Existing combat pipeline |
 | **ELD1** | Limb condition, sever thresholds, visual removal and mandatory missing-limb death preservation — **Implemented; Awaiting Validation** | ELD0 and existing ZD0 |
-| **ELD2** | Limp, hop, crawl and immobilized locomotion | ELD1 |
+| **ELD2** | Limp, hop, crawl and immobilized locomotion — **Implemented; Awaiting Validation** | ELD1 |
 | **ELD3** | Claw/bite attack capability filtering | ELD1 and CM5 |
 | **ELD4** | Optional bounded detached debris and additional corpse presentation polish | ELD1 and ZD0 |
 | **ELD5** | Balance, performance, debug tools and all-variant regression | Prior ELD phases |

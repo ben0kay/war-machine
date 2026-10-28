@@ -1,3 +1,7 @@
 # Shared melee equipment adapter
 
 MeleeWeaponController duplicates its MeleeSettings once, retains a reusable MeleeAttack, and dispatches confirmed contacts through HitTargetResolver. It exposes Equip, TryStart, Advance and Cancel. Current cosmetic pose is the baseball-bat coil/side sweep/follow-through; future thrust/knife variants require separately authorized presentation work, not another damage system. View-specific offsets are authored in the melee master. No idle callbacks.
+
+## CM3 bat presentation refinement — 2026-10-28
+
+`FirstPersonMeleeSwing.cs` is a small FPS-only camera-local procedural arc, invoked from `MeleeWeaponController.ApplyPose` when first-person. It animates the actual model/grip position from left to right as well as yaw/pitch/roll, rather than using the shared overhead world-oriented bat pose. Gameplay contact remains in the same `MeleeAttack.AdvanceSweep` event window. No per-frame work outside active attacks. `MeleeSettings` adds two FPS-only swing extent fields, configured in the bat master; the top-down animation path remains untouched. Zombie backsteps are owned by their actor reaction, not by this model renderer.

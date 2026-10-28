@@ -60,6 +60,11 @@ public partial class MeleeWeaponController : Node3D
     // Coil beside the shoulder, sweep flat across the body, follow through, then recover to the authored hold.
     private void ApplyPose(float elapsed)
     {
+        if (_firstPerson)
+        {
+            FirstPersonMeleeSwing.Apply(this, _rest, RuntimeSettings, elapsed);
+            return;
+        }
         float windup = Safe(RuntimeSettings.WindupSeconds, 0.001f, 1);
         float active = Safe(RuntimeSettings.ActiveSeconds, 0.001f, 1);
         float recovery = Safe(RuntimeSettings.RecoverySeconds, 0.001f, 1);

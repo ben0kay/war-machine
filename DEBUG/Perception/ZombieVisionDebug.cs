@@ -40,6 +40,22 @@ public partial class ZombieVisionDebug : Node
     }
 
     // =========================================================
+    // Explicit debug-button lookup, using this existing registration list; never a frame/global scene scan.
+    public ZombieController? FindNearest(Vector3 position, float range)
+    {
+        ZombieController? nearest = null; float best = range * range;
+        for (int i = _zombies.Count - 1; i >= 0; i--)
+        {
+            ZombieController zombie = _zombies[i];
+            if (!GodotObject.IsInstanceValid(zombie) || zombie.IsQueuedForDeletion()) { _zombies.RemoveAt(i); continue; }
+            if (!zombie.IsActive || zombie.Health <= 0) continue;
+            float distance = zombie.GlobalPosition.DistanceSquaredTo(position);
+            if (distance <= best) { best = distance; nearest = zombie; }
+        }
+        return nearest;
+    }
+
+    // =========================================================
     // Single source of truth for F7 and the overhead checkbox; affects debug meshes, never AI eyesight.
     public void SetConesVisible(bool visible)
     {

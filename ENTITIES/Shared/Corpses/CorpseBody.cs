@@ -17,13 +17,13 @@ public partial class CorpseBody : RigidBody3D
 
     // =========================================================
     public void Initialize(Node3D visual, Transform3D at, ICorpsePoseAdapter pose, Vector3 hint, Vector3 velocity,
-        uint seed, CorpseSettings settings)
+        uint seed, CorpseSettings settings, bool alignPivotToVisual = false)
     {
         _settings = settings; _pose = pose;
         var random = new RandomNumberGenerator { Seed = seed };
         Vector3 direction = FallDirection(hint, random.RandfRange(-Mathf.Pi, Mathf.Pi));
         direction = direction.Rotated(Vector3.Up, random.RandfRange(-0.15f, 0.15f));
-        GlobalTransform = new Transform3D(at.Basis.Orthonormalized(), at.Origin + Vector3.Up * settings.PivotHeight);
+        GlobalTransform = new Transform3D(at.Basis.Orthonormalized(), at.Origin + (alignPivotToVisual ? at.Basis.Y.Normalized() : Vector3.Up) * settings.PivotHeight);
         _start = GlobalPosition;
         _shape = new CollisionShape3D { Shape = new BoxShape3D { Size = settings.ProxySize } }; AddChild(_shape);
         CollisionLayer = 0; CollisionMask = 1; // Contact static world only; no actor, bullet, sight or camera target layer.

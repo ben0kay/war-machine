@@ -34,6 +34,8 @@ public partial class EnvironmentConfig : Resource
     [Export(PropertyHint.Range, "0,1,0.01")] public float DistanceFogOpacity { get; set; } = 1;
     [Export] public Color DistanceFogColor { get; set; } = new(0.39f, 0.46f, 0.48f);
     [Export(PropertyHint.Range, "0,8,0.1")] public float DistanceFogEdgeVariation { get; set; } = 2;
+    [ExportGroup("Ground haze building exclusion")]
+    [Export(PropertyHint.Range, "0.1,5,0.05")] public float GroundHazeExclusionFadeMeters { get; set; } = 1.25f;
     [ExportGroup("Sky3D Time")]
     [Export(PropertyHint.Range, "0,23.99,0.01")] public float StartHour { get; set; } = 9f;
     [Export(PropertyHint.Range, "1,1440,1")] public float DayLengthMinutes { get; set; } = 24f;

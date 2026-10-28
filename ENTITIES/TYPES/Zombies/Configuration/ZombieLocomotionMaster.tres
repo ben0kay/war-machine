@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ZombieLocomotionSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Zombies/Configuration/ZombieLocomotionSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+LimpMultiplier = 0.60
+HopMultiplier = 0.35
+MaximumHopSpeed = .65
+CrawlSpeed = .45

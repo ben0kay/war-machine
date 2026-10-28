@@ -18,6 +18,9 @@ public partial class MeleeSettings : Resource
     [Export] public Vector3 FirstPersonOffset { get; set; } = new(0.20f, -0.28f, -0.38f);
     [Export(PropertyHint.Range, "0,85,1")] public float HoldPitchDegrees { get; set; } = 49f;
     [Export(PropertyHint.Range, "-90,90,1")] public float HoldYawDegrees { get; set; } = -14f;
+    [ExportGroup("First-person blunt sweep")]
+    [Export(PropertyHint.Range, "0.1,1.2,0.05")] public float FirstPersonWindupLeft { get; set; } = 0.85f;
+    [Export(PropertyHint.Range, "0.1,1.2,0.05")] public float FirstPersonFollowRight { get; set; } = 0.70f;
     [ExportGroup("Attack timing")]
     [Export(PropertyHint.Range, "0,1,0.01")] public float WindupSeconds { get; set; } = 0.10f;
     [Export(PropertyHint.Range, "0.01,1,0.01")] public float ActiveSeconds { get; set; } = 0.12f;
