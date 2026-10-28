@@ -1,7 +1,17 @@
-[gd_resource type="Resource" script_class="WorldSettings" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WorldSettings" load_steps=4 format=3]
 [ext_resource type="Script" path="res://WORLD/WorldSettings.cs" id="1"]
+[ext_resource type="Script" path="res://WORLD/Streaming/WorldSectionSettings.cs" id="sections_script"]
+[sub_resource type="Resource" id="sections"]
+script = ExtResource("sections_script")
+WorldId = "war-machine-main"
+Origin = Vector2(0, 0)
+SectionSize = 128.0
+LogicalBounds = Rect2(0, 0, 1024, 1024)
+ShowHeading = true
+ShowGrid = false
 [resource]
 script = ExtResource("1")
+Sections = SubResource("sections")
 Seed = 48193
 SpawnXZ = Vector2(512, 550)
 GroundHeight = 4.0

@@ -80,7 +80,7 @@ public sealed class VillageLayout
 
     // =========================================================
     // Reusable art is built synchronously at Ready; collect actual transformed corners once, not per frame.
-    private static Rect2 Bounds(Node3D root)
+    public static Rect2 Bounds(Node3D root)
     {
         Vector2 low = new(float.PositiveInfinity, float.PositiveInfinity), high = new(float.NegativeInfinity, float.NegativeInfinity);
         foreach (Node child in root.FindChildren("*", "MeshInstance3D", true, false))

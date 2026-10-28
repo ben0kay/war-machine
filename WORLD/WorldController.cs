@@ -191,6 +191,7 @@ public partial class WorldController : Node3D
         _visionDebug.SetConesVisible(ShowZombieSightConesOnStart);
         GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
+        InitializeSectionDiagnostics(player);
         SpawnZombies(data, player, horde.Slow, horde.Fast);
         SpawnDeerPreview(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings, _village?.Structures);
@@ -236,6 +237,27 @@ public partial class WorldController : Node3D
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
         panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView);
+    }
+
+    // =========================================================
+    // Read current static placements once. WS0 diagnostics never take over their lifecycle or save gameplay state.
+    private void InitializeSectionDiagnostics(PlayerController player)
+    {
+        try
+        {
+            var manifest = WorldManifestCapture.Capture(GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures"), Settings.Sections, Settings.Seed);
+            var diagnostic = new WorldSectionDiagnostics { Name = "WorldSections" };
+            GetNode<Control>("GameplayHUD/Screen").AddChild(diagnostic);
+            diagnostic.Initialize(player, manifest, Settings.Sections);
+            if (Settings.Sections.ShowHeading)
+            {
+                var status = DebugControls.GetNode<Label>("Status");
+                float shift = Mathf.Max(0, 52 - status.OffsetTop);
+                status.OffsetTop += shift; status.OffsetBottom += shift;
+            }
+        }
+        catch (System.Exception error) when (error is System.ArgumentException or System.IO.InvalidDataException or System.OverflowException or System.Text.Json.JsonException)
+        { GD.PushWarning($"WS0 diagnostics unavailable: {error.Message}"); }
     }
 
     // =========================================================

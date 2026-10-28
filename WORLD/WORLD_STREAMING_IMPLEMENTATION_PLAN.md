@@ -1,6 +1,6 @@
 # WS — Finite world, streaming and town authoring
 
-**Status: PLAN ONLY (2026-10-28). WS0–WS7 are Planned.** This job authorizes this document and explanation of the first step, not runtime implementation. Branch: `implement-td0-td1`; one commit per subsequently authorized job. Read root README, CodePreferences, this plan, WORLD README and current owning sources before each phase. Do not resume the parked wilderness roadmap or generate a giant map automatically.
+**Status (2026-10-28): WS0 implemented in source, awaiting local validation. WS1–WS7 remain Planned.** Owner explicitly authorized WS0 with a top-centre current-section heading and optional diagnostic grid. Branch: `implement-td0-td1`; one commit per subsequently authorized job. Read root README, CodePreferences, this plan, WORLD README and current owning sources before each phase. Do not resume the parked wilderness roadmap or generate a giant map automatically.
 
 ## Direction
 
@@ -12,7 +12,7 @@ Use deliberate town layout plus constrained procedural assistance. The owner pla
 
 | Phase | Deliverable | Dependencies | Suggested executor | State |
 | --- | --- | --- | --- | --- |
-| **WS0** | Section/identity/placement contract and read-only boundary/ownership proof | Current active world/asset audit | Codex; Regular Chat design review | Planned |
+| **WS0** | Section/identity/placement contract and read-only boundary/ownership proof | Current active world/asset audit | Codex; Regular Chat design review | Implemented; Awaiting Validation |
 | **WS1** | Shared fog-aware render/relevance policy for procedural and imported assets | WS0; current fog/vegetation audit | Codex; owner visual check | Planned |
 | **WS2** | Bounded loading/unloading of a few static test sections | WS0; WS1 compatible visibility | Codex | Planned |
 | **WS3** | Persistent state round-trip and safe unload/save lifecycle | WS2; coordinate existing IX8/BI4 plans | Codex; Copilot local checks | Planned |
@@ -163,4 +163,12 @@ Related plans: [world hierarchy](WORLD_SCENE_RESTRUCTURE_PLAN.md), [village](VIL
 - How existing vegetation batches map to section relevance without overlapping ownership; how current fog metrics constrain render envelopes.
 - Record terrain streaming/collision limitations honestly. A working static-object streamer is not proof of a streamed gigantic terrain.
 
-**Recommended next authorized task:** implement **WS0 only**. Deliver the contract, small manifest round-trip and optional read-only section/ownership diagnostic on the current world. Review it before WS1/WS2. No runtime code or settings were changed by this planning job.
+**Next step after WS0 local acceptance:** separately authorize WS1, then WS2. Do not automatically implement them.
+
+## WS0 implementation handoff — 2026-10-28
+
+Added typed section defaults under WorldMaster, a plain finite manifest/placement/asset-ID model, explicit five-instance bootstrap identities and startup read-only capture from the actual store/building nodes. Geometry and scene transforms are not changed. The store owns its composed children once; overlap cells are dependencies, not duplicate instances. The initial logical bounds match the existing 1024m test area; default cell size is 128m with origin (0,0). Negative-coordinate support is tested separately with configurable negative bounds. Descriptions round-trip in memory, preserving IDs/transform/seed/override strings; no disk gameplay save exists.
+
+The requested top-centre heading shows current section (default spawn 4,4), with an explicit outside-bounds status. F3 toggles a nine-cell map of section IDs, owner counts and footprint outlines. Heading updates at cell/bounds changes from existing movement signals. No new Process/PhysicsProcess/timer, actor lifecycle changes, terrain modification or culling. Both displays OFF removes movement subscriptions; input-only F3 remains. Existing help is shifted below the heading. The optional map scales to smaller viewports on resize events only; the heading stays anchored.
+
+Read [Streaming/README.md](Streaming/README.md) for the migration/exclusion map, limitations and identity rules; [DEBUG/WorldStreaming/README.md](../DEBUG/WorldStreaming/README.md) for test commands. Source/resource/whitespace checks performed. `dotnet build war-machine.csproj` could not run because dotnet is absent (exit 127); Godot is absent too. Contract smoke test, world/FPS heading/grid/owner checks, layout and visual acceptance are pending. No measured performance claim. Delivery SHA is recorded in the job response; this handoff is part of that commit.
