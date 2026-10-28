@@ -44,8 +44,9 @@ public partial class ConvenienceStoreMesh : Node3D
         _roof = Role(ground, "RoofAndAwning", "roof"); _roof.Visible = ShowRoof;
         var body = StructureGeometry.Body(ground);
 
-        var stucco = StructureGeometry.Paint(s.Walls);
-        var insideWall = StructureGeometry.Paint(s.Walls.Lightened(0.12f));
+        // Textured opaque standard materials preserve the shared geometry-based wall fade.
+        var stucco = WallFinish(s, false);
+        var insideWall = WallFinish(s, true);
         var metal = StructureGeometry.Paint(s.Trim, 0.18f);
         var accent = StructureGeometry.Paint(s.Accent);
         var concrete = StructureGeometry.Paint(s.Floor);
@@ -143,6 +144,34 @@ public partial class ConvenienceStoreMesh : Node3D
         Marker(markers, "FrontEntrance", new Vector3(0, 0.12f, front + 0.35f));
         Marker(markers, "StockroomEntrance", new Vector3(0, 0.12f, divider));
         Marker(markers, "RearExit", new Vector3((serviceLeft + serviceRight) * 0.5f, 0.12f, rear - 0.4f));
+    }
+
+    // =========================================================
+    // Build only two opaque wall materials (exterior / brighter partition) from shared
+    // NoiseTexture2D resources. World triplanar avoids stretching across wide box walls.
+    // StandardMaterial3D remains a valid opaque blocker for shared exterior camera occlusion.
+    private static StandardMaterial3D WallFinish(ConvenienceStoreSettings s, bool interior)
+    {
+        Color color = interior ? s.Walls.Lightened(0.12f) : s.Walls;
+        if (!s.UseTexturedWalls) return StructureGeometry.Paint(color);
+        const string assets = "res://WORLD/Content/Assets/Structures/ConvenienceStore001/Artwork/Materials/";
+        var albedo = ResourceLoader.Load<Texture2D>(assets + "StuccoColor.tres");
+        if (albedo == null)
+        {
+            GD.PushWarning("ConvenienceStore001: stucco colour texture missing; using plain wall finish.");
+            return StructureGeometry.Paint(color);
+        }
+        var normal = s.WallBumpStrength > 0f
+            ? ResourceLoader.Load<Texture2D>(assets + "StuccoNormal.tres") : null;
+        float repeats = Mathf.Clamp(s.WallTextureRepeatsPerMeter, 0.15f, 2f);
+        return new StandardMaterial3D
+        {
+            AlbedoColor = color, AlbedoTexture = albedo,
+            Roughness = Mathf.Clamp(s.WallRoughness, 0.6f, 1f), Metallic = 0f,
+            Uv1Triplanar = true, Uv1WorldTriplanar = true, Uv1Scale = Vector3.One * repeats,
+            NormalEnabled = normal != null, NormalTexture = normal,
+            NormalScale = Mathf.Clamp(s.WallBumpStrength, 0f, 1f)
+        };
     }
 
     // =========================================================
