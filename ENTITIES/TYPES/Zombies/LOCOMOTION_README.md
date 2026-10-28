@@ -1,3 +1,5 @@
+> **Startup resource correction (2026-10-28):** Godot rejected leading-dot floats in the locomotion masters (`.65`, `.45`, `.75`). They now use `0.65`, `0.45`, `0.75` without changing values. This fixes the first resource parse error that prevented ZombieMaster/runner settings loading and caused subsequent EntitySettings casts/null references. Unconfigured/inactive zombies also disable their physics callback immediately. Source/token checks passed; local Godot resource loading and spawn acceptance remain pending. Pull, rebuild, restart the World/FPS scene and clear old error history before retesting.
+
 # ELD2 — living injury locomotion
 
 **Implemented in source, awaiting local compilation/physics/visual acceptance (2026-10-28).** Both standard and runner use the same ZombieLocomotion helper and existing ZombieController AI. No CM5 attacks, ELD3 attack filtering, detached debris or ZD1–ZD3 work is included. The master remains [ANATOMY_COMBAT_CORPSE_PLAN.md](ANATOMY_COMBAT_CORPSE_PLAN.md).

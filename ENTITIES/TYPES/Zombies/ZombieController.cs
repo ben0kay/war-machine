@@ -470,6 +470,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // Only moving/falling zombies run physics; waiting or stopped zombies retain just their low-rate decision timer.
     public override void _PhysicsProcess(double delta)
     {
+        // A failed resource/Ready or a not-yet-configured spawn must never cascade into per-tick exceptions.
+        if (!_configured || !IsActive) { SetPhysicsProcess(false); return; }
         if (_awaitingSpawnGround) { SetPhysicsProcess(false); return; }
         float dt = (float)delta;
         RemoveReactionPose();

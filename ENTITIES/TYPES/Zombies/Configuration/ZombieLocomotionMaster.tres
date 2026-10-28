@@ -4,5 +4,5 @@
 script = ExtResource("1")
 LimpMultiplier = 0.60
 HopMultiplier = 0.35
-MaximumHopSpeed = .65
-CrawlSpeed = .45
+MaximumHopSpeed = 0.65
+CrawlSpeed = 0.45
