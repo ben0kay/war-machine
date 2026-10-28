@@ -39,3 +39,5 @@ RecoilRecoveryDelaySeconds = 0.12
 VisualRecoilKickMeters = 0.035
 VisualRecoilPitchDegrees = 2.0
 VisualRecoilRecoverySeconds = 0.12
+FpsCameraRecoilFollowDegreesPerSecond = 10.0
+FpsVisualClimbMultiplier = 0.7

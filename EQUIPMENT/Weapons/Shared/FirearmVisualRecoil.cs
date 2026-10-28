@@ -7,9 +7,9 @@ public sealed class FirearmVisualRecoil
     private readonly Node3D? _visual;
     private readonly FirearmSettings _settings;
     private readonly Transform3D _rest;
-    private float _amount;
+    private float _amount, _sustainedRiseDegrees;
     public float Amount => _amount;
-    public bool IsActive => _amount > 0.0001f;
+    public bool IsActive => _amount > 0.0001f || Mathf.Abs(_sustainedRiseDegrees) > 0.0001f;
 
     // =========================================================
     // Keep the authored visual placement for either camera mode and restore it on every interruption.
@@ -43,10 +43,20 @@ public sealed class FirearmVisualRecoil
     }
 
     // =========================================================
+    // FPS-only additional sustained muzzle rise; does not change the real Muzzle or RC1 behavior.
+    public void SetSustainedRise(float degrees)
+    {
+        float next = Safe(degrees, 0f, 15f);
+        if (Mathf.IsEqualApprox(next, _sustainedRiseDegrees)) return;
+        _sustainedRiseDegrees = next;
+        Apply();
+    }
+
+    // =========================================================
     // Always restore authored visual pose, including when an old gun is reused after a switch.
     public void Cancel()
     {
-        _amount = 0f;
+        _amount = 0f; _sustainedRiseDegrees = 0f;
         Apply();
     }
 
@@ -56,7 +66,8 @@ public sealed class FirearmVisualRecoil
     private void Apply()
     {
         if (!GodotObject.IsInstanceValid(_visual)) return;
-        float angle = Mathf.DegToRad(Safe(_settings.VisualRecoilPitchDegrees, 0f, 20f) * _amount);
+        float angle = Mathf.DegToRad(Safe(_settings.VisualRecoilPitchDegrees, 0f, 20f) * _amount
+            + _sustainedRiseDegrees);
         float kick = Safe(_settings.VisualRecoilKickMeters, 0f, 0.2f) * _amount;
         var pitch = new Basis(Vector3.Right, angle);
         _visual!.Transform = _rest * new Transform3D(pitch, Vector3.Back * kick);

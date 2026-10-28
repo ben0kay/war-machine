@@ -56,4 +56,9 @@ public partial class FirearmSettings : Resource
     // FPS-only local adjustment relative to FirstPersonMaster. Does not change overhead weapon mounts.
     [Export] public Vector3 FirstPersonOffset { get; set; } = Vector3.Zero;
     [Export(PropertyHint.Range, "0.4,1.5,0.01")] public float FirstPersonScale { get; set; } = 1f;
+    [ExportGroup("FPS camera recoil (FPS only)")]
+    // The recoil offset is physically applied to the FPS camera, NOT applied again to the bullet ray.
+    [Export(PropertyHint.Range, "1,90,1")] public float FpsCameraRecoilFollowDegreesPerSecond { get; set; } = 16f;
+    // Additional purely visual sustained model rise, on top of ordinary shot kick.
+    [Export(PropertyHint.Range, "0,2,0.05")] public float FpsVisualClimbMultiplier { get; set; } = 0.6f;
 }

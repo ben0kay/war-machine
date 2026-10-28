@@ -61,3 +61,7 @@ The master now authors `RecoilPitchPerShotDegrees=0.55`, `RecoilMaxPitchDegrees=
 ## RC2 FPS recoil (2026-10-28)
 
 The existing +0.55°/shot capped 4.5° recoil now climbs in **real FPS 3D shot direction**, independently of random spread; it is not just a flat crosshair effect. A shared Visual-only helper animates 0.035m backward and 2° up per accepted shot with 0.12s recovery, pooling/capping overlapping 600-RPM impulses. The actual muzzle remains stationary relative to the firearm root. Both top-down and FPS use the same core and per-gun master. No additional FPS camera kick was added. Build and playtest still required; RC0-only notes above are historical.
+
+## FPS camera recoil refinement (2026-10-28)
+
+MachineGunMaster now has `FpsCameraRecoilFollowDegreesPerSecond=10.0` and `FpsVisualClimbMultiplier=0.7`. FPS full-auto progressively tilts the **actual camera** upward toward the existing RC0 4.5° maximum, and the Visual gun pitches a little further up as it kicks; the player can drag mouse down to compensate. FPS bullets use the physically updated camera aim plus the original independent random spread, without doubling recoil. Primary top-down behavior does not change. Source only; Godot visual testing pending.

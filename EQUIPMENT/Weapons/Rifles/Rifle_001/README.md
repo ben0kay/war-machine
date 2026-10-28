@@ -84,3 +84,7 @@ The master now authors 2.0° pitch per accepted shot, 3.0° maximum, no horizont
 ## RC2 FPS recoil (2026-10-28)
 
 The original RC0 master values now drive real ballistic recoil in both top-down (RC1) and FPS (RC2) modes, including the 2.0° accepted-shot climb and 0.09m/5°/0.22s visual rifle kick. One shared `FirearmVisualRecoil` animates only the Visual child, leaving the physical muzzle/cover/hit pipeline unchanged. FPS does not force the camera pitch. Build/visual checks outstanding; older RC0-only notes above are historical.
+
+## FPS camera recoil refinement (2026-10-28)
+
+RifleMaster now has `FpsCameraRecoilFollowDegreesPerSecond=30.0` and `FpsVisualClimbMultiplier=0.55`. FPS accepted rifle shots briefly pitch the physical camera upward using its existing RC0 2°/shot accumulation, while the visual kick still animates independently. Mouse-look can counter it, and recoil recovers after a pause. This is FPS-only; the top-down RC1 camera remains unchanged. Local Godot compilation and feel check pending.

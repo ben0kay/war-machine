@@ -11,6 +11,7 @@ public partial class FirstPersonWeapon : Node
     private bool _held, _requested;
     private PlayerQuickMelee? _shove;
     private FirearmVisualRecoil? _visualRecoil;
+    private float _displayedCameraRecoil;
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -78,25 +79,50 @@ public partial class FirstPersonWeapon : Node
     }
 
     // =========================================================
-    // A real accepted shot starts one additive model pulse, without changing camera look.
+    // Accepted shots begin a bounded gun kick and wake a smooth FPS camera climb.
     private void OnShotAccepted()
     {
         _visualRecoil?.Kick();
-        if (_visualRecoil?.IsActive == true) SetProcess(true);
+        // RC0's accepted-shot impulse becomes a smooth camera target; no extra bullet offset.
+        SetProcess(true);
     }
 
     // =========================================================
-    // Cosmetic recovery is active-only. The shared firearm independently recovers its ballistic state.
+    // =========================================================
+    // Recoil physically rotates the FPS camera, so the real camera aim ray is authoritative.
+    // Smoothly follow the single RC0 angle; the player can pull down to counter during a burst.
+    // No work runs once both camera and model settle.
     public override void _Process(double delta)
     {
-        if (_visualRecoil?.IsActive != true) { SetProcess(false); return; }
-        _visualRecoil.Advance((float)delta);
-        if (!_visualRecoil.IsActive) SetProcess(false);
+        if (!IsInstanceValid(_camera) || !IsInstanceValid(_weapon))
+        { CancelVisualRecoil(); return; }
+        if (_player.GameplayInputBlocked || !GetWindow().HasFocus()
+            || Input.MouseMode != Input.MouseModeEnum.Captured || GetViewport().GuiGetFocusOwner() != null)
+        {
+            CancelVisualRecoil(); _weapon!.CancelFeedback(); return;
+        }
+        float dt = float.IsFinite((float)delta) ? Mathf.Clamp((float)delta, 0f, 0.1f) : 0f;
+        _visualRecoil?.Advance(dt);
+        float target = _weapon!.RecoilOffsetDegrees.Y;
+        float speed = Mathf.Clamp(_weapon.RuntimeSettings.FpsCameraRecoilFollowDegreesPerSecond, 1f, 90f);
+        _displayedCameraRecoil = Mathf.MoveToward(_displayedCameraRecoil, target, speed * dt);
+        _camera.SetWeaponRecoilPitch(_displayedCameraRecoil);
+        _visualRecoil?.SetSustainedRise(_displayedCameraRecoil
+            * Mathf.Clamp(_weapon.RuntimeSettings.FpsVisualClimbMultiplier, 0f, 2f));
+        if (_visualRecoil?.IsActive != true && target <= 0.0001f && _displayedCameraRecoil <= 0.0001f)
+            SetProcess(false);
     }
 
     // =========================================================
+    // Interruptions restore authored gun visuals and clear only the recoil part of camera pitch.
+    // The player's independent mouse-look direction is never overwritten or reset.
     private void CancelVisualRecoil()
-    { _visualRecoil?.Cancel(); SetProcess(false); }
+    {
+        _displayedCameraRecoil = 0f;
+        if (IsInstanceValid(_camera)) _camera.SetWeaponRecoilPitch(0f);
+        _visualRecoil?.Cancel();
+        SetProcess(false);
+    }
 
     // =========================================================
     private void RequestShot() { _requested = true; SetPhysicsProcess(true); }
@@ -119,9 +145,9 @@ public partial class FirstPersonWeapon : Node
             _query.From = origin; _query.To = origin + direction * _weapon!.RuntimeSettings.Range;
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_query);
             Vector3 aim = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
-            // RC2: camera's up axis rotates the *real 3D shot ray* before random spread.
-            // Keep the crosshair and mouse-look unchanged; don't add extra camera recoil.
-            _weapon!.TryFire(aim, origin, _camera.GlobalBasis.Y);
+            // The FPS camera itself is already tilted upward by cumulative recoil.
+            // Using the default firing overload prevents applying the angle twice.
+            _weapon!.TryFire(aim, origin);
         }
         if (_shove?.IsActive == true)
         {

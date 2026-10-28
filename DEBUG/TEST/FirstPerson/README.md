@@ -116,3 +116,7 @@ The shared F1 [placeable spawner](../../PlaceableSpawner/README.md) now works in
 ## CM2-D — side-on shove
 
 Implemented: two-handed sideways gun push in overhead/FPS, driven by existing attack timing. Focus/menu/switch/unload cancels and restores the gun; pending fire waits for recovery. No idle pose processing. See COMBAT/README.md CM2-D handoff for tuning and deferred local build/visual checks. Prior no-animation statements are historical.
+
+## FPS camera climb — RC2 refinement (2026-10-28)
+
+Firing the machine gun now smoothly inclines the **actual camera view upward**, with the gun itself progressively rising relative to the view. Player mouse-look can pull downward to control continuous fire; after release, the temporary recoil pitch recovers, leaving mouse aim intact. FPS bullets travel according to the actual camera-targeted 3D ray, with separate random spread, and no duplicated recoil angle. The old fixed-crosshair RC2 explanation elsewhere above is superseded **for FPS only**; primary top-down RC1 does **not** move its camera. Inspect [recoil plan](../../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) and FPS equipment README. Local Godot build/visual validation pending.
