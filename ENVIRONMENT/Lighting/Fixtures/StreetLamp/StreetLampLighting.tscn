@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/StreetLampLighting.cs" id="1"]
+[ext_resource type="Resource" path="res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/StreetLampLightingMaster.tres" id="2"]
+
+[node name="StreetLampLighting" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+
+[node name="Downlight" type="SpotLight3D" parent="."]
+
+[node name="AmbientFill" type="OmniLight3D" parent="."]

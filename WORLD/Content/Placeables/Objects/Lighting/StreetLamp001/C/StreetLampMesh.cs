@@ -1,6 +1,5 @@
-// Reusable parking/street lamp. One-time low-poly metal model and two native light sources.
-// The downlight illuminates the ground; a weaker omni adds diffuse spill by the lamp head.
-// No per-frame polling, timer, flicker or world placement. Runtime enable/disable is explicit.
+// Stationary streetlamp geometry and collision only; lighting behaviour/settings live in ENVIRONMENT/Lighting.
+// The fixture forwards SetLampEnabled to its reusable lighting subscene without running any update loop.
 using Godot;
 
 [Tool]
@@ -8,12 +7,10 @@ public partial class StreetLampMesh : Node3D
 {
     [Export] public StreetLampSettings Settings { get; set; } = null!;
 
-    private SpotLight3D _downlight = null!;
-    private OmniLight3D _fill = null!;
+    private StreetLampLighting _lighting = null!;
     private StandardMaterial3D? _bulbMaterial;
-    private bool _lightsOn;
 
-    // Reuse the same box and tapered pole primitives across all instances.
+    // Reuse one pair of meshes for all fixture instances, including disabled lamps.
     private static readonly CylinderMesh PoleMesh = new()
     {
         TopRadius = 0.068f, BottomRadius = 0.115f,
@@ -26,60 +23,25 @@ public partial class StreetLampMesh : Node3D
     };
 
     // =========================================================
-    // Light nodes are authored inside the scene; only their settings/positions are changed here.
+    // Position a self-contained light scene at the physical lamp head after building the model.
+    // Child _Ready executes before parent _Ready, so the light scene is already configured.
     public override void _Ready()
     {
-        _downlight = GetNode<SpotLight3D>("Lighting/Downlight");
-        _fill = GetNode<OmniLight3D>("Lighting/AmbientFill");
+        _lighting = GetNode<StreetLampLighting>("Lighting");
         if (GetNodeOrNull<Node3D>("Generated") == null) BuildModel();
-        ConfigureLights();
+        var s = Settings ?? new StreetLampSettings();
+        _lighting.Position = new Vector3(0, Mathf.Clamp(s.PoleHeight, 4f, 8f) - 0.48f,
+            Mathf.Clamp(s.ArmReach, 0.6f, 1.7f));
+        if (_bulbMaterial != null) _lighting.BindLedPanel(_bulbMaterial);
         SetProcess(false); SetPhysicsProcess(false);
     }
 
     // =========================================================
-    // An external future site/time-of-day controller can toggle this without ticking each lamp.
-    // Setting the visible flags false also stops the native GPU lights, not just their colour.
+    // Preserve the existing public lamp toggle for future site/night scheduling.
+    // Illumination, shadow state, fog and emission are owned by ENVIRONMENT/Lighting.
     public void SetLampEnabled(bool enabled)
     {
-        _lightsOn = enabled;
-        if (!GodotObject.IsInstanceValid(_downlight) || !GodotObject.IsInstanceValid(_fill)) return;
-        var s = Settings ?? new StreetLampSettings();
-        _downlight.Visible = enabled && s.SpotEnergy > 0f;
-        _fill.Visible = enabled && s.FillEnabled && s.FillEnergy > 0f;
-        if (_bulbMaterial != null) _bulbMaterial.EmissionEnabled = enabled;
-    }
-
-    // =========================================================
-    // Copy the typed master once; no live config binding or per-frame light property writes.
-    private void ConfigureLights()
-    {
-        var s = Settings ?? new StreetLampSettings();
-        float height = Mathf.Clamp(s.PoleHeight, 4f, 8f);
-        float reach = Mathf.Clamp(s.ArmReach, 0.6f, 1.7f);
-        Vector3 bulbLocation = new(0, height - 0.48f, reach);
-
-        // Godot SpotLight3D emits along local -Z; rotating -90 degrees around X points -Z down.
-        _downlight.Position = bulbLocation;
-        _downlight.RotationDegrees = new Vector3(-90f, 0, 0);
-        _downlight.LightColor = s.LightColor;
-        _downlight.LightEnergy = Mathf.Clamp(s.SpotEnergy, 0, 6f);
-        _downlight.SpotRange = Mathf.Clamp(s.SpotRange, 6f, 20f);
-        _downlight.SpotAngle = Mathf.Clamp(s.SpotHalfAngle, 20f, 75f);
-        _downlight.SpotAttenuation = Mathf.Clamp(s.SpotFalloff, 0.2f, 3f);
-        _downlight.SpotAngleAttenuation = Mathf.Clamp(s.ConeEdgeSoftness, 0.3f, 4f);
-        _downlight.LightVolumetricFogEnergy = Mathf.Clamp(s.SpotFogEnergy, 0, 1f);
-        _downlight.ShadowEnabled = s.SpotShadows;
-
-        // Spherical secondary light: deliberately dim and shadowless to avoid doubling spot costs.
-        _fill.Position = bulbLocation;
-        _fill.LightColor = s.LightColor;
-        _fill.LightEnergy = Mathf.Clamp(s.FillEnergy, 0, 2f);
-        _fill.OmniRange = Mathf.Clamp(s.FillRange, 3f, 13f);
-        _fill.OmniAttenuation = Mathf.Clamp(s.FillFalloff, 0.2f, 3f);
-        _fill.LightVolumetricFogEnergy = Mathf.Clamp(s.FillFogEnergy, 0, 1f);
-        _fill.ShadowEnabled = false;
-
-        SetLampEnabled(s.LightsEnabled);
+        if (GodotObject.IsInstanceValid(_lighting)) _lighting.SetEnabled(enabled);
     }
 
     // =========================================================
@@ -134,12 +96,12 @@ public partial class StreetLampMesh : Node3D
         StructureGeometry.Box(art, null, "LightBezel", new(0, h - 0.425f, reach),
             new(0.64f, 0.025f, 0.45f), dark);
 
+        // The fixture owns this physical panel only; the lighting component supplies glow/tint.
         _bulbMaterial = new StandardMaterial3D
         {
-            AlbedoColor = s.LightColor, Roughness = 0.65f,
+            AlbedoColor = new Color(0.16f, 0.16f, 0.16f), Roughness = 0.65f,
             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            Emission = s.LightColor, EmissionEnabled = s.LightsEnabled,
-            EmissionEnergyMultiplier = 1.2f
+            EmissionEnabled = false
         };
         StructureGeometry.Box(art, null, "LEDPanel", new(0, h - 0.446f, reach),
             new(0.56f, 0.014f, 0.37f), _bulbMaterial);

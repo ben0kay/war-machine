@@ -1,5 +1,5 @@
-# Fixed reusable light fixtures
+# Fixed reusable light fixture models
 
-Physical lighting fixtures live in `Placeables/Objects/Lighting/` because they are fixed, non-pickup-able world objects. Their **models** are independent of the environments in which they appear; future real-light effects and flicker behaviours should reuse `ENVIRONMENT/Lighting/` when appropriate.
+World content owns the **physical** objects (metal lamp poles, heads, collision, mounts) only. **All real lighting code, native Light3D nodes and illumination presets live in `ENVIRONMENT/Lighting/Fixtures/`**, and the physical fixtures instance those lighting scenes at their emitters.
 
-[StreetLamp001](StreetLamp001/README.md) is now a standalone pole/LED prefab with two native Godot lights: a downward spotlight and soft omni fill. Its geometry and lighting are implemented; no site/world placement or flicker controller exists yet.
+[StreetLamp001](StreetLamp001/README.md) now instances `ENVIRONMENT/Lighting/Fixtures/StreetLamp/StreetLampLighting.tscn` and delegates its existing `SetLampEnabled(bool)` method to the light component. The standalone light scene controls downward spot, soft omni spill and LED emission. No site/world placement, flicker or day/night coupling is implemented yet.
