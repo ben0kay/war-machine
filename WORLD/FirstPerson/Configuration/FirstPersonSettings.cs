@@ -1,4 +1,4 @@
-// Read-only first-person experiment defaults. Shared gameplay resources remain independent.
+// Authored first-person view defaults. Shared gameplay resources remain independent.
 using Godot;
 
 [GlobalClass]

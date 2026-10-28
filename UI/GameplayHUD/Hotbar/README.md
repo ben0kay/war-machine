@@ -1,6 +1,6 @@
 # Hotbar — nine-slot visual foundation
 
-The reusable `Hotbar.tscn` is a **code-free CanvasLayer** instanced directly in `WORLD/World.tscn` as `GameplayHUD`. The inherited FPS debug test also displays it. The separate parked F5 first-person wilderness scene is unchanged; use **F6** with `WORLD/World.tscn` or `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`.
+The reusable `Hotbar.tscn` is a **code-free CanvasLayer** instanced directly in `WORLD/World.tscn` as `GameplayHUD`. The inherited FPS debug test also displays it. The separate parked F5 first-person wilderness scene is unchanged; use **F6** with `WORLD/World.tscn` or `WORLD/FirstPerson/FirstPersonWorld.tscn`.
 
 ### Appearance and layout
 

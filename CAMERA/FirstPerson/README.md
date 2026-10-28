@@ -1,3 +1,5 @@
+> **Current ownership:** Production FPS adapter/profile in `CAMERA/FirstPerson`. [View composition and settings](../../WORLD/FirstPerson/README.md). Older test-folder statements below are historical; current paths and behaviour are defined by the promoted source.
+
 # CAMERA
 
 `FirstPersonCamera.cs` replaces overhead follow with eye-height perspective and mouse look. Settings are in ../CONFIGURATION/FirstPersonMaster.tres. No per-frame follow loop.

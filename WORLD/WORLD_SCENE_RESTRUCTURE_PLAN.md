@@ -32,7 +32,7 @@ Future streamed props/entities should live under `WorldActorsRoot/ChunkActorsRoo
 - After SO1, WORLD/World.tscn authors Terrain3D under TerrainRoot, Player and the complete RobotPatrol subtree under WorldActorsRoot/PersistentEntitiesRoot, and Controls/Status under DebugUIRoot. Camera remains directly under World.
 - WorldController creates sky, Environment controller, Weather, Grass, Pines, Structures, Objects and Zombies at runtime. The Structures/Objects groups contain three buildings and one car.
 - All three buildings and Car001 are already placed in both top-down and inherited FPS views. WorldMaster offsets, terrain grounding, collisions and separate grass/tree exclusion masks must be preserved.
-- DEBUG/TEST/FirstPerson/FirstPersonTest.tscn inherits World.tscn and overrides Player and Camera scripts by node path. FirstPersonWorld separately looks up Controls for its crosshair.
+- WORLD/FirstPerson/FirstPersonWorld.tscn inherits World.tscn and overrides Player and Camera scripts by node path. FirstPersonWorld separately looks up Controls for its crosshair.
 - Camera/player/vegetation/enemies receive explicit references. Their internal node paths should not change just because their owner is reparented.
 - The fantasy 2D reference has TerrainRoot, SystemsRoot, DebugUIRoot, WorldActorsRoot (PersistentEntitiesRoot, PersistentPropsRoot, ChunkActorsRoot, PreviewSceneryRoot) and GameplayUIRoot. Its YSort/2D metadata is not applicable here.
 
@@ -50,7 +50,7 @@ Future streamed props/entities should live under `WorldActorsRoot/ChunkActorsRoo
 
 **Objective:** establish the actual current dependencies before moving anything. Read root README, CodePreferences, WORLD README, this plan and the actual scenes/controllers. The fantasy reference has been inspected for this plan update; inspect again only if its relevant structure changes.
 
-**Files:** WORLD/World.tscn, WorldController.cs, Encounters/RobotPlacement.cs; DEBUG/TEST/FirstPerson/FirstPersonTest.tscn and FirstPersonWorld.cs. Check camera/player/vegetation consumers for ancestor/sibling lookups, and all resource/NodePath references involving moved nodes.
+**Files:** WORLD/World.tscn, WorldController.cs, Encounters/RobotPlacement.cs; WORLD/FirstPerson/FirstPersonWorld.tscn and FirstPersonWorld.cs. Check camera/player/vegetation consumers for ancestor/sibling lookups, and all resource/NodePath references involving moved nodes.
 
 **Starting map (verify against current source):**
 
@@ -92,7 +92,7 @@ If authorized later, give each prop exactly one placement owner: authored instan
 
 ## SO4 — Local acceptance and handoff
 
-Build the C# project and F6 WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Inspect Local/Remote roots and verify player movement/crouch/aim, robot patrol/scanning, zombies, terrain textures/collision, weather, pines, four props and clear grass on paved/interior areas. Check world unload/reload for duplicate nodes or subscription errors. Keep checks proportional per CodePreferences; no profiling claims without measurements.
+Build the C# project and F6 WORLD/World.tscn and WORLD/FirstPerson/FirstPersonWorld.tscn. Inspect Local/Remote roots and verify player movement/crouch/aim, robot patrol/scanning, zombies, terrain textures/collision, weather, pines, four props and clear grass on paved/interior areas. Check world unload/reload for duplicate nodes or subscription errors. Keep checks proportional per CodePreferences; no profiling claims without measurements.
 
 One commit per authorized job, preserving unrelated branch updates. Record the eventual implementation commit SHA and actual checks in the handoff; update phase status after each authorized task. SO0/SO1 source and path checks are complete; the implementation SHA is supplied in the commit handoff (this section is included in that same commit).
 

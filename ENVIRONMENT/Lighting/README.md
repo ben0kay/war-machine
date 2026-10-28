@@ -16,7 +16,7 @@ Campfire flame/fuel/flicker, persistent-light relevance/shadows, robot lights an
 
 ## Local validation
 
-Source/loop/resource wiring and a numeric nested-budget model were checked. **Compilation, Godot runtime, listening and visual/performance acceptance are unverified: no Godot/.NET executable here.** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. At night, fire/switch both guns while moving; verify brief warm lighting, no shadows/stuck light, focus loss and reload. Assign a short **non-looping** WAV/OGG to RifleShot.tres Stream, fire/hold and move, verify exactly one sound per accepted shot and no MG sound. Check the Remote tree for one Audio service/player listener; inspect stopping/switching/unload and OFF. Stress caps with temporary cue requests; do not assume measured performance from source checks. No terrain rebake needed.
+Source/loop/resource wiring and a numeric nested-budget model were checked. **Compilation, Godot runtime, listening and visual/performance acceptance are unverified: no Godot/.NET executable here.** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `WORLD/FirstPerson/FirstPersonWorld.tscn`. At night, fire/switch both guns while moving; verify brief warm lighting, no shadows/stuck light, focus loss and reload. Assign a short **non-looping** WAV/OGG to RifleShot.tres Stream, fire/hold and move, verify exactly one sound per accepted shot and no MG sound. Check the Remote tree for one Audio service/player listener; inspect stopping/switching/unload and OFF. Stress caps with temporary cue requests; do not assume measured performance from source checks. No terrain rebake needed.
 
 ## Static fixture lighting — StreetLamp refactor
 

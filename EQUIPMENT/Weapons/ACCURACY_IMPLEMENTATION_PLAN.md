@@ -25,7 +25,7 @@ PLAYER/
       PlayerAccuracy.cs                # calculates multiplier from actual movement/stance
       PlayerAccuracySettings.cs        # editor-tunable multipliers
       README.md
-DEBUG/TEST/FirstPerson/
+WORLD/FirstPerson/
   EQUIPMENT/FirstPersonWeapon.cs       # ACC1: supplies same player movement modifier
 ```
 
@@ -38,7 +38,7 @@ The **player controls accuracy effects due to stance/movement**, while **weapon 
 - Add `ShotSpread.Apply(Vector3 aimDirection, float maxDegrees, RandomNumberGenerator rng)`, which samples once inside a cone using a random disk at the muzzle; raycast distance automatically amplifies the visible offset. Near-vertical directions remain stable. No unbounded Gaussian/external assets.
 - In `FirearmController.TryFire()`, **check equip/muzzle/cooldown first**, normalize aim and apply spread exactly once, then perform the existing probe-to-muzzle obstruction ray and hit ray. Existing weapon damage, typed hit delivery, effect tracer endpoints, audio, timer, target position, aim adapters and collision mask are preserved.
 - Reuse a per-weapon `RandomNumberGenerator`, initialized once. No additional firing raycast, polling callback, recoil component, input action, scene node or timer.
-- Both top-down `PLAYER/Equipment/PlayerWeaponController.cs` and inherited FPS `DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs` already call the **same** `FirearmController.TryFire`; they need no ACC0 changes.
+- Both top-down `PLAYER/Equipment/PlayerWeaponController.cs` and inherited FPS `EQUIPMENT/Weapons/FirstPerson/FirstPersonWeapon.cs` already call the **same** `FirearmController.TryFire`; they need no ACC0 changes.
 - Do not randomize the crosshair position or camera direction; the tracer should correctly show the deviation. A 0.30° max deviation at 30m is up to ~0.16m sideways, at 60m ~0.31m.
 
 ## ACC1 — player movement and crouch accuracy — FUTURE / NOT STARTED
@@ -77,7 +77,7 @@ Only if requested: transient recoil-induced bloom for sustained automatic fire, 
 
 1. `dotnet build war-machine.csproj` in a Godot .NET SDK environment, then F6 `WORLD/World.tscn`.
 2. Shoot nearby and distant targets while standing still; deviation should be modest close-up but noticeable at longer distances. Try `BaseSpreadDegrees = 0` then `0.30` in RifleMaster.
-3. F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`: same rifle spread; FPS centre-screen aim remains unmoved.
+3. F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`: same rifle spread; FPS centre-screen aim remains unmoved.
 4. Check shoulder-to-muzzle obstruction at walls/cover; no shooting through a barrel obstruction. Confirm accurate hit damage and tracers still terminate at actual impact.
 5. Check holding fire, cooldown, ALT-TAB/focus loss and hovering UI: no accidental extra shots; no idle callbacks added.
 6. After ACC1 only: crouch still improves; crouch moving is worse than crouch still; walking and sprinting are worse than standing.

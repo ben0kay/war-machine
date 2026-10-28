@@ -9,7 +9,7 @@
 ## Confirmed implementation and ownership
 
 ```text
-DEBUG/TEST/FirstPerson/
+WORLD/FirstPerson/
   CAMERA/
     FirstPersonCamera.cs              existing FPS camera, composes bob with interpolated eye
     FirstPersonHeadBob.cs             NEW plain C# state helper, not a Godot scene node
@@ -42,7 +42,7 @@ Settings are authored only in existing FPS configuration; enable=false is an eas
 
 ## Acceptance checklist and open limitations
 
-- `dotnet build war-machine.csproj`, then run `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` (F6). Check walk, reverse, strafe, sprint, crouch, prone, leap/fall, stop-start, walking into a wall, slope/stairs, released pointer/Escape and inventory input block.
+- `dotnet build war-machine.csproj`, then run `WORLD/FirstPerson/FirstPersonWorld.tscn` (F6). Check walk, reverse, strafe, sprint, crouch, prone, leap/fall, stop-start, walking into a wall, slope/stairs, released pointer/Escape and inventory input block.
 - Verify no bob just from mouse look, no wobble when stationary or wall-blocked, gentle return to true neutral after stopping, no lost mouse aim, no cancellation of permanent recoil, unchanged gun/muzzle obstruction, weapon alignment and crosshair ray, no eye clipping through nearby cover.
 - Inspect FPS camera processing when idle: the render callback should turn off once eye interpolation and bob have settled. Check `WORLD/World.tscn` top-down camera and MMB rotation as regression.
 - No local compilation or in-engine motion/performance measurements were available from the authoring environment; acceptance and comfort tuning remain to be tested by the user.

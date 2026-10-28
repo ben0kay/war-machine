@@ -4,7 +4,7 @@ using Godot;
 public partial class FirstPersonWorld : WorldController
 {
     private FirstPersonFog _fpsFog = null!;
-    protected override string ControlsHelp => "FIRST PERSON TEST · arrows walk · Shift run · Left Ctrl/C crouch · Right Ctrl prone · Right click jump\nMouse look · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
+    protected override string ControlsHelp => "FIRST PERSON · arrows walk · Shift run · Left Ctrl/C crouch · Right Ctrl prone · Right click jump\nMouse look · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
     protected override IDebugOverlayView? OverlayView => _fpsFog;
 
     // =========================================================
@@ -12,7 +12,7 @@ public partial class FirstPersonWorld : WorldController
     protected override WorldStreamingSettings CreateStreamingSettings()
     {
         var profile = (WorldStreamingSettings)Settings.Streaming.Duplicate(true);
-        var view = ((FirstPersonCamera)_camera).TestSettings;
+        var view = ((FirstPersonCamera)_camera).ViewSettings;
         float band = Mathf.Max(profile.MovementStep * 4 + 1, view.StreamingHysteresisDistance);
         profile.UnloadDistance = profile.LoadDistance + band;
         return profile;
@@ -26,7 +26,7 @@ public partial class FirstPersonWorld : WorldController
     }
 
     // =========================================================
-    // The FPS debug adapter owns its own slots; shared AM1 HUD observes that selected gun.
+    // The FPS adapter owns its own slots; shared AM1 HUD observes that selected gun.
     protected override WeaponSlots? ResolveWeaponSlots(PlayerController player)
     { return player.GetNodeOrNull<WeaponSlots>("FirstPersonEquipment/WeaponSlots"); }
 

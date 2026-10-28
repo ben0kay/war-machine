@@ -17,7 +17,7 @@ public partial class FirstPersonFog : Node, IDebugOverlayView
     public void Initialize(FirstPersonCamera camera, PlayerController player, EnvironmentConfig environment)
     {
         _camera = camera; _originalFar = camera.Far;
-        _settings = (FirstPersonSettings)camera.TestSettings.Duplicate(true);
+        _settings = (FirstPersonSettings)camera.ViewSettings.Duplicate(true);
         _fogSettings = (EnvironmentConfig)environment.Duplicate(true);
         _fog = new PlayerDistanceFog { Name = "DistanceFog" }; AddChild(_fog);
         _fogSettings.DistanceFogEnabled = _settings.DistanceFogEnabled;

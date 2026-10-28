@@ -1,3 +1,5 @@
+> **FPS ownership:** Active FPS presentation is promoted out of DEBUG/TEST. See the [FPS ownership guide](../../WORLD/FirstPerson/README.md). Shared gameplay and current tuning are unchanged; local validation pending.
+
 # Weapons
 
 Shared/ holds the reusable hitscan controller, settings, shot spread and a

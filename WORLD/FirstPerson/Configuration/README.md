@@ -1,3 +1,5 @@
+> **Current ownership:** Production FPS adapter/profile in `WORLD/FirstPerson/Configuration`. [View composition and settings](../README.md). Older test-folder statements below are historical; current paths and behaviour are defined by the promoted source.
+
 # CONFIGURATION
 
 `FirstPersonMaster.tres` uses FirstPersonSettings.cs for FOV, sensitivity, pitch, eye inset and weapon placement. These are read-only test defaults; shared masters are not edited.

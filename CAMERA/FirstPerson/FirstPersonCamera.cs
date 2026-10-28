@@ -3,7 +3,7 @@ using Godot;
 
 public partial class FirstPersonCamera : Camera
 {
-    [Export] public FirstPersonSettings TestSettings { get; set; } = null!;
+    [Export] public FirstPersonSettings ViewSettings { get; set; } = null!;
     private PlayerController _actor = null!;
     private bool _ready;
     private Vector3 _previousEye, _currentEye;
@@ -16,10 +16,10 @@ public partial class FirstPersonCamera : Camera
     public override void Initialize(PlayerController player, CameraSettings settings)
     {
         _actor = player;
-        Projection = ProjectionType.Perspective; Fov = Mathf.Clamp(TestSettings.FieldOfView, 40, 110);
+        Projection = ProjectionType.Perspective; Fov = Mathf.Clamp(ViewSettings.FieldOfView, 40, 110);
         Near = 0.05f; Far = 1800; Current = true; Rotation = Vector3.Zero;
         _lookPitchDegrees = 0f;
-        GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - TestSettings.EyeInset);
+        GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - ViewSettings.EyeInset);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // We interpolate translation only, never mouse rotation.
         _previousEye = _currentEye = GlobalPosition;
         _headBob.Reset();
@@ -40,12 +40,12 @@ public partial class FirstPersonCamera : Camera
         { Input.MouseMode = Input.MouseModeEnum.Captured; _actor.SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
-            float sensitivity = Mathf.Clamp(TestSettings.MouseSensitivity, 0.01f, 1);
-            float limit = Mathf.Clamp(TestSettings.MaximumPitch, 10, 89);
+            float sensitivity = Mathf.Clamp(ViewSettings.MouseSensitivity, 0.01f, 1);
+            float limit = Mathf.Clamp(ViewSettings.MaximumPitch, 10, 89);
             Vector3 angle = RotationDegrees;
             angle.Y = Mathf.Wrap(angle.Y - motion.ScreenRelative.X * sensitivity, -180, 180);
             // Positive pitch looks upward; inverted mode makes mouse-up look down.
-            float verticalDelta = (TestSettings.InvertMouseY ? 1f : -1f) * motion.ScreenRelative.Y;
+            float verticalDelta = (ViewSettings.InvertMouseY ? 1f : -1f) * motion.ScreenRelative.Y;
             // Mouse movement is the permanent aim, including any recoil-induced rise.
             // The weapon adds one-way pitch; firing stops do not automatically lower the view.
             _lookPitchDegrees = Mathf.Clamp(_lookPitchDegrees + verticalDelta * sensitivity, -limit, limit);
@@ -62,7 +62,7 @@ public partial class FirstPersonCamera : Camera
     public void ApplyWeaponRecoilKick(float degrees)
     {
         if (!_ready || !float.IsFinite(degrees) || degrees <= 0f) return;
-        float limit = Mathf.Clamp(TestSettings.MaximumPitch, 10f, 89f);
+        float limit = Mathf.Clamp(ViewSettings.MaximumPitch, 10f, 89f);
         float next = Mathf.Clamp(_lookPitchDegrees + degrees, -limit, limit);
         if (Mathf.IsEqualApprox(next, _lookPitchDegrees)) return;
         _lookPitchDegrees = next;
@@ -77,16 +77,16 @@ public partial class FirstPersonCamera : Camera
         PlayerController.MovementStance stance, float physicsDelta)
     {
         if (!_ready) return;
-        Vector3 eye = _actor.GlobalPosition + Vector3.Up * Mathf.Max(0.5f, capsuleHeight - TestSettings.EyeInset);
+        Vector3 eye = _actor.GlobalPosition + Vector3.Up * Mathf.Max(0.5f, capsuleHeight - ViewSettings.EyeInset);
         _previousEye = _currentEye; _currentEye = eye; _sampleTick = Engine.GetPhysicsFrames();
-        float reset = Mathf.Max(1f, TestSettings.TeleportResetDistance);
+        float reset = Mathf.Max(1f, ViewSettings.TeleportResetDistance);
         if (_previousEye.DistanceSquaredTo(eye) > reset * reset)
         { _previousEye = eye; _headBob.Reset(); SetEye(eye); SetProcess(false); return; }
         bool gameplay = Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus()
             && !_actor.GameplayInputBlocked && !_actor.IsDead;
         _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay,
-            movingInput && gameplay, stance, TestSettings);
-        if (!TestSettings.InterpolateTranslation || _previousEye == _currentEye)
+            movingInput && gameplay, stance, ViewSettings);
+        if (!ViewSettings.InterpolateTranslation || _previousEye == _currentEye)
         {
             SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate); return;
         }
@@ -120,11 +120,11 @@ public partial class FirstPersonCamera : Camera
     public override void _Process(double delta)
     {
         if (!_ready) { SetProcess(false); return; }
-        bool interpolating = TestSettings.InterpolateTranslation && Engine.GetPhysicsFrames() <= _sampleTick
+        bool interpolating = ViewSettings.InterpolateTranslation && Engine.GetPhysicsFrames() <= _sampleTick
             && _previousEye != _currentEye;
         Vector3 baseEye = interpolating ? _previousEye.Lerp(_currentEye, (float)Engine.GetPhysicsInterpolationFraction())
             : _currentEye;
-        bool bobbing = _headBob.Advance((float)delta, TestSettings);
+        bool bobbing = _headBob.Advance((float)delta, ViewSettings);
         SetEye(BobbedEye(baseEye));
         if (!interpolating && !bobbing) SetProcess(false);
     }

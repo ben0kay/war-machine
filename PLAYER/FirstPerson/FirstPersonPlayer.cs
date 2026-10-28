@@ -10,7 +10,7 @@ public partial class FirstPersonPlayer : PlayerController
     // Keep the existing actor identity for zombies, but hide its third-person art from the eye camera.
     public override void Initialize(PlayerSettings settings, Camera3D camera)
     {
-        _view = (FirstPersonCamera)camera; _fps = _view.TestSettings;
+        _view = (FirstPersonCamera)camera; _fps = _view.ViewSettings;
         var movement = (PlayerSettings)settings.Duplicate(true);
         movement.WalkSpeed = Mathf.Max(0.1f, _fps.WalkSpeed);
         movement.RunMultiplier = Mathf.Max(1, _fps.RunMultiplier);

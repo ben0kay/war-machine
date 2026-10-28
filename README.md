@@ -1,3 +1,5 @@
+> **FPS promotion (2026-10-28):** FPS is now an explicitly supported gameplay view under [WORLD/FirstPerson](WORLD/FirstPerson/README.md), with view adapters in their owning feature folders. This supersedes older descriptions of the active FPS view as a debug-only experiment. Top-down and FPS share gameplay state and world content; no priority/balance change or automatic dual-view feature implementation is implied. Source implemented; local build/runtime validation pending.
+
 > **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](ENTITIES/TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). Approved overall planning direction for shared anatomical hits, injury-driven zombie movement/attack capabilities and injury-preserving corpse handoff. ELD0–ELD5 remain Planned; existing Combat, Player and ZD phase ownership/statuses are preserved. No anatomy gameplay is implemented by this documentation update.
 
 > **Shared prone locomotion (2026-10-28):** Right Ctrl toggles a first-pass prone/crawl stance in top-down and FPS using the same PlayerController; Left Ctrl/C now controls crouch. Slow prone speed (0.17×, 0.85m/s at base walk), a 0.75m low capsule, active-only crawl pose, overhead clearance tests and FPS eye height follow. This is an upright **low collision proxy**, not a full-length horizontal prone collider. Source implemented, local .NET/Godot acceptance pending. [PLAYER README](PLAYER/README.md).
@@ -48,11 +50,11 @@ The active game prototype uses a **3D angled overhead camera**, defaulting to or
 
 **Develop gameplay for the top-down experience by default.** New mechanics should live in shared gameplay owners where practical rather than be tied to an FPS camera. Changing the camera for a debug comparison must not silently redefine the project's main direction.
 
-### Side experiment: `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`
+### Side experiment: `WORLD/FirstPerson/FirstPersonWorld.tscn`
 
 The FPS test intentionally remains available to see how the **same playable world** looks and feels from eye level. It inherits the active world and reuses terrain, buildings, entities, equipment, weather and shared gameplay logic, while substituting first-person input/camera/presentation. It is **a debug/prototyping tool, not an alternative main game or an obligation to support every future feature equally in both views**.
 
-Keep its specialized work under `DEBUG/TEST/FirstPerson/` whenever possible. Shared improvements can flow to both perspectives where appropriate, but **do not prioritize FPS-specific polish over top-down gameplay** without an explicit request.
+Keep its specialized work under `WORLD/FirstPerson/` whenever possible. Shared improvements can flow to both perspectives where appropriate, but **do not prioritize FPS-specific polish over top-down gameplay** without an explicit request.
 
 ### Older first-person wilderness: retained, parked
 
@@ -113,7 +115,7 @@ Some planned owners (for example persistence and inventory) are **not fully impl
 
 1. Open the project in a compatible **Godot .NET** editor and build the C# project.
 2. For the **main top-down prototype**, open `WORLD/World.tscn` and press **F6**. Arrow keys move relative to the view; Shift runs; Right Ctrl crouches; mouse aims; left click/hold fires; mouse wheel zooms. Scene-local tuning/debug controls expose further settings.
-3. For the **first-person comparison only**, open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` and press **F6**. Read its [test README](DEBUG/TEST/FirstPerson/README.md) for mouse capture and controls.
+3. For the **first-person comparison only**, open `WORLD/FirstPerson/FirstPersonWorld.tscn` and press **F6**. Read its [test README](WORLD/FirstPerson/History.md) for mouse capture and controls.
 4. **F5 currently launches the parked `WORLD/testworld.tscn`**, not the top-down game. Do not change the startup scene without authorization.
 
 If the active scene reports missing gameplay terrain, follow [WORLD/README.md](WORLD/README.md) to perform the one-time saved-terrain bake/migration. Do not overwrite existing terrain data or rebake as a normal runtime step.
@@ -135,7 +137,7 @@ Start with this README for intent, then read the owning README, relevant plan an
 - [COMBAT/IMPLEMENTATION_PLAN.md](COMBAT/IMPLEMENTATION_PLAN.md) — impact and stagger foundation implemented/awaiting validation; remaining quick melee, bat, knife and zombie outgoing attacks tracked there
 - [INTERACTION/IMPLEMENTATION_PLAN.md](INTERACTION/IMPLEMENTATION_PLAN.md) — **new master plan (IX0–IX8; nothing implemented):** physical props and carrying/throwing, cupboards, destructible planks, item identity, rifle placement and scavenging; see [INTERACTION overview](INTERACTION/README.md)
 - [WORLD/Content/Assets/Objects/README.md](WORLD/Content/Assets/Objects/README.md) — **new model library:** fixed Objects versus pickup-able Props, Bookcase001 and Book001 original GLBs, future furnishing catalogue
-- [DEBUG/TEST/FirstPerson/README.md](DEBUG/TEST/FirstPerson/README.md) — optional FPS comparison
+- [WORLD/FirstPerson/History.md](WORLD/FirstPerson/History.md) — optional FPS comparison
 - [WORLD/RESTRUCTURE.md](WORLD/RESTRUCTURE.md) and [WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md](WORLD/WORLD_SCENE_RESTRUCTURE_PLAN.md) — current world restructuring/validation history
 - [NOTES/ideas.md](NOTES/ideas.md) — optional ideas, not an approved roadmap
 - [ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md), [WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md](WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md) and [WORLD/Content/Caves/IMPLEMENTATION_PLAN.md](WORLD/Content/Caves/IMPLEMENTATION_PLAN.md) — feature/historical plans, not automatic next steps

@@ -1,12 +1,12 @@
 # Current FPS testing controls
 
-> **FPS recoil RC2 (2026-10-28):** Real accumulated 3D aim climb and gun-model kick are implemented in source, with view camera rotation left unchanged to avoid double recoil. [RC2 plan and validation handoff](../../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Build and visual tests pending locally.
+> **FPS recoil RC2 (2026-10-28):** Real accumulated 3D aim climb and gun-model kick are implemented in source, with view camera rotation left unchanged to avoid double recoil. [RC2 plan and validation handoff](../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Build and visual tests pending locally.
 
-**Environment is now shared with top-down**, including ground haze, via the EnvironmentRoot inherited from World.tscn. One left-hand expandable panel replaces F8/F9 windows. Escape releases mouse for controls; click the world to resume. See [current environment controls](ENVIRONMENT/README.md) and [shared scene guide](../../../ENVIRONMENT/SHARED_ENVIRONMENT_README.md). Older F8/F9 panel descriptions below are historical. Compilation/visual acceptance pending locally.
+**Environment is now shared with top-down**, including ground haze, via the EnvironmentRoot inherited from World.tscn. One left-hand expandable panel replaces F8/F9 windows. Escape releases mouse for controls; click the world to resume. See [current environment controls](../../ENVIRONMENT/FirstPerson/README.md) and [shared scene guide](../../ENVIRONMENT/SHARED_ENVIRONMENT_README.md). Older F8/F9 panel descriptions below are historical. Compilation/visual acceptance pending locally.
 
 # First-person world test
 
-Open `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`, build C#, then press **F6**. Same branch: `implement-td0-td1`. This is an inherited version of `WORLD/World.tscn`, using the same saved terrain, all three buildings, open-door car, pines/collisions, zombies, robot, environment, equipment and damage. No new terrain bake is needed when the active world already runs. F5 and the active top-down scene are unchanged.
+Open `WORLD/FirstPerson/FirstPersonWorld.tscn`, build C#, then press **F6**. Same branch: `implement-td0-td1`. This is an inherited version of `WORLD/World.tscn`, using the same saved terrain, all three buildings, open-door car, pines/collisions, zombies, robot, environment, equipment and damage. No new terrain bake is needed when the active world already runs. F5 and the active top-down scene are unchanged.
 
 ## Controls
 
@@ -91,7 +91,7 @@ Shared test equipment/population: **1 = Rifle_001, 2 = MachineGun_001**; rifle s
 
 The FPS test now has a **F8 weather/time** debug panel separate from **F9 fog/render distance**. The F8 scroll panel can set the hour, pause/unpause time, day length, weather enabled, rain, snow, local mist, airborne motes, wind, gusts, turbulence, particle size/fall speed and quality. "Copy weather & time settings" exports runtime values to the clipboard; none are written to authoring resources. This reuses the exact shared Sky3D/weather/vegetation owners used by the top-down world.
 
-F8/F9 are mutually exclusive. Opening releases mouse capture, swapping panels keeps it released, closing restores capture only if it was captured beforehand. Escape closes the panel while leaving the mouse released. UI clicks cannot trigger camera recapture/weapon fire. Everything is input/signal-driven; no new update loop. See [FPS environment README](ENVIRONMENT/README.md). **Local validation pending:** build, F6 FPS, test day/night and weather toggles, swap F8/F9, escape/focus/input, and briefly load the overhead world.
+F8/F9 are mutually exclusive. Opening releases mouse capture, swapping panels keeps it released, closing restores capture only if it was captured beforehand. Escape closes the panel while leaving the mouse released. UI clicks cannot trigger camera recapture/weapon fire. Everything is input/signal-driven; no new update loop. See [FPS environment README](../../ENVIRONMENT/FirstPerson/README.md). **Local validation pending:** build, F6 FPS, test day/night and weather toggles, swap F8/F9, escape/focus/input, and briefly load the overhead world.
 
 ## Scene parse correction
 
@@ -111,7 +111,7 @@ Press Q while mouse is captured to attempt the same shared melee shove as overhe
 
 ## F1 placeable artwork preview
 
-The shared F1 [placeable spawner](../../PlaceableSpawner/README.md) now works in FPS and overhead tests. F1 releases mouse capture for its debug menu; closing with F1/Close restores it, while Esc leaves cursor visible. The previews have no physics and are not saved to the level.
+The shared F1 [placeable spawner](../../DEBUG/PlaceableSpawner/README.md) now works in FPS and overhead tests. F1 releases mouse capture for its debug menu; closing with F1/Close restores it, while Esc leaves cursor visible. The previews have no physics and are not saved to the level.
 
 ## CM2-D — side-on shove
 
@@ -119,7 +119,7 @@ Implemented: two-handed sideways gun push in overhead/FPS, driven by existing at
 
 ## FPS camera climb — RC2 refinement (2026-10-28)
 
-Firing the machine gun now smoothly inclines the **actual camera view upward**, with the gun itself progressively rising relative to the view. Player mouse-look can pull downward to control continuous fire; after release, the temporary recoil pitch recovers, leaving mouse aim intact. FPS bullets travel according to the actual camera-targeted 3D ray, with separate random spread, and no duplicated recoil angle. The old fixed-crosshair RC2 explanation elsewhere above is superseded **for FPS only**; primary top-down RC1 does **not** move its camera. Inspect [recoil plan](../../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) and FPS equipment README. Local Godot build/visual validation pending.
+Firing the machine gun now smoothly inclines the **actual camera view upward**, with the gun itself progressively rising relative to the view. Player mouse-look can pull downward to control continuous fire; after release, the temporary recoil pitch recovers, leaving mouse aim intact. FPS bullets travel according to the actual camera-targeted 3D ray, with separate random spread, and no duplicated recoil angle. The old fixed-crosshair RC2 explanation elsewhere above is superseded **for FPS only**; primary top-down RC1 does **not** move its camera. Inspect [recoil plan](../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) and FPS equipment README. Local Godot build/visual validation pending.
 
 ## FPS recoil no longer pans down on release (2026-10-28)
 
@@ -141,4 +141,4 @@ Source/math checks passed; no local Godot/.NET runtime available. Build and F6 F
 
 ## FPS mouse sensitivity and proposed head bob — 2026-10-28
 
-The authored mouse-look sensitivity in `CONFIGURATION/FirstPersonMaster.tres` is now **0.10** (previously 0.12), a ~17% reduction applied to both yaw and pitch; no FPS aim or recoil code changes. A small, separately authorized **walking head-bob plan** lives in [CAMERA/HEAD_BOB_IMPLEMENTATION_PLAN.md](CAMERA/HEAD_BOB_IMPLEMENTATION_PLAN.md). It is intentionally **not implemented** with this setting change. Test mouse-look comfort in the inherited FPS scene and verify top-down controls remain unchanged.
+The authored mouse-look sensitivity in `CONFIGURATION/FirstPersonMaster.tres` is now **0.10** (previously 0.12), a ~17% reduction applied to both yaw and pitch; no FPS aim or recoil code changes. A small, separately authorized **walking head-bob plan** lives in [CAMERA/HEAD_BOB_IMPLEMENTATION_PLAN.md](../../CAMERA/FirstPerson/HEAD_BOB_IMPLEMENTATION_PLAN.md). It is intentionally **not implemented** with this setting change. Test mouse-look comfort in the inherited FPS scene and verify top-down controls remain unchanged.

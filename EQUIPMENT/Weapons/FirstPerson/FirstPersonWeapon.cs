@@ -26,7 +26,7 @@ public partial class FirstPersonWeapon : Node
         _query = new PhysicsRayQueryParameters3D { HitFromInside = true,
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
-        _slots.Initialize(equipment, player, camera, camera.TestSettings.WeaponOffset, audio);
+        _slots.Initialize(equipment, player, camera, camera.ViewSettings.WeaponOffset, audio);
         SwitchWeapon(0);
         if (_weapon != null) { _shove = new PlayerQuickMelee(player); player.GameplayInputBlockChanged += OnInputBlocked; }
     }
@@ -44,7 +44,7 @@ public partial class FirstPersonWeapon : Node
         // =========================================================
         // Each gun may override its FPS view-model fit; root scaling also moves the real muzzle
         // marker consistently, while the shared top-down mount remains unaffected.
-        _weapon.Position = _camera.TestSettings.WeaponOffset + _weapon.RuntimeSettings.FirstPersonOffset;
+        _weapon.Position = _camera.ViewSettings.WeaponOffset + _weapon.RuntimeSettings.FirstPersonOffset;
         _weapon.Scale = Vector3.One * Mathf.Clamp(_weapon.RuntimeSettings.FirstPersonScale, 0.4f, 1.5f);
         _visualRecoil = new FirearmVisualRecoil(_weapon);
         _query.CollisionMask = _weapon.RuntimeSettings.HitMask;

@@ -12,4 +12,4 @@ A compact **160 × 66px** charcoal card with "AMMO", large `30 / ∞` style numb
 
 ## Local checks
 
-`dotnet build war-machine.csproj`; F6 `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Check 1920x1080 and a narrower 1280x720 viewport, health/hotbar gaps, 1/2 selection, shot-by-shot ammo decrement, empty/auto reload, manual R, UI open/focus and no mouse interception. Source integration complete; Godot visual/build validation pending. Full [AM0–AM2 plan](../../../EQUIPMENT/Weapons/AMMO_IMPLEMENTATION_PLAN.md).
+`dotnet build war-machine.csproj`; F6 `WORLD/World.tscn` and `WORLD/FirstPerson/FirstPersonWorld.tscn`. Check 1920x1080 and a narrower 1280x720 viewport, health/hotbar gaps, 1/2 selection, shot-by-shot ammo decrement, empty/auto reload, manual R, UI open/focus and no mouse interception. Source integration complete; Godot visual/build validation pending. Full [AM0–AM2 plan](../../../EQUIPMENT/Weapons/AMMO_IMPLEMENTATION_PLAN.md).

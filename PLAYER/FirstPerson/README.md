@@ -1,3 +1,5 @@
+> **Current ownership:** Production FPS adapter/profile in `PLAYER/FirstPerson`. [View composition and settings](../../WORLD/FirstPerson/README.md). Older test-folder statements below are historical; current paths and behaviour are defined by the promoted source.
+
 # PLAYER
 
 `FirstPersonPlayer.cs` adapts arrow-key and current camera yaw to the existing shared player physics/crouch. Third-person art is hidden; no duplicate movement or procedural mesh code.

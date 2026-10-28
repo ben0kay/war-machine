@@ -25,7 +25,7 @@ Each phase is independently authorized. Complete implementation is not acceptanc
 
 ## Current source reality and existing owners
 
-- `World.tscn` is the primary game; inherited `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` remains a compatibility/debug view. F5 still points at parked `testworld.tscn`; do not change it here.
+- `World.tscn` is the primary game; inherited `WORLD/FirstPerson/FirstPersonWorld.tscn` remains a compatibility/debug view. F5 still points at parked `testworld.tscn`; do not change it here.
 - `WorldController` initializes terrain, village, actors, environment, equipment and HUD. `VillageLayout` measures prefab footprints and reserves approaches/patrols; `Generation/VillageTerrain` grades the existing terrain during initialization. These are not a persistent whole-world streamer.
 - Native terrain is currently one saved gameplay area. Startup requests full-game terrain collision. Vegetation has existing player-centred batch/chunk lifecycles; pine placement already configures visibility ranges. Reuse those mechanisms, not a second independent forest manager.
 - `ENVIRONMENT/Fog/PlayerDistanceFog.cs` supplies distance-fog presentation. Its gameplay/player-centred distance and optional camera-distance policy differ from native geometry visibility ranges. Thick fog is an artistic constraint; it is not automatically CPU suspension or memory unloading.

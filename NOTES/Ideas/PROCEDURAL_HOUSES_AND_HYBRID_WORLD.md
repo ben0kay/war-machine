@@ -84,7 +84,7 @@ At the time this idea was captured, `WORLD/WorldController.cs` procedurally inst
 - Make the **existing saved Terrain3D** available to editor authoring, without rebaking or overwriting it.
 - Introduce an authored structures container (e.g., `WorldActorsRoot/PersistentPropsRoot/Structures/AuthoredBuildings`) for placed instances, distinct from runtime-generated structures.
 - Ensure runtime world initialization **does not create duplicate buildings** at the same site.
-- Keep both the top-down view and inherited `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` using the same authored building assets.
+- Keep both the top-down view and inherited `WORLD/FirstPerson/FirstPersonWorld.tscn` using the same authored building assets.
 - Decide how separately authored regional scenes are loaded/unloaded later, rather than putting every detailed object in one huge permanently active scene.
 
 ## Larger world direction: open-world/hybrid

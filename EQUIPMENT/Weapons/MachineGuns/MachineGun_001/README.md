@@ -36,7 +36,7 @@ Against an unarmoured default 100-HP zombie, **four MG hits** are needed (25 eac
 
 Edit `EQUIPMENT/Configuration/EquipmentMaster.tres` and set `DefaultWeaponScene` to `res://EQUIPMENT/Weapons/MachineGuns/MachineGun_001/MachineGun_001.tscn` in Godot. The default **remains Rifle_001** in source control, with SecondaryWeaponScene now selecting this machine gun. This configuration affects both top-down and the inherited FPS test using `EquipmentMaster`. The current input adapter already supports holding the trigger for automatic fire.
 
-Press F6 in `WORLD/World.tscn`, check the heavier mesh/hand placement, muzzle/tracer start, sustained 600 RPM, damage, spread and nearby-cover blocking. F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` for the FPS alternative.
+Press F6 in `WORLD/World.tscn`, check the heavier mesh/hand placement, muzzle/tracer start, sustained 600 RPM, damage, spread and nearby-cover blocking. F6 `WORLD/FirstPerson/FirstPersonWorld.tscn` for the FPS alternative.
 
 **Important:** Automatic fire now launches short traveling streaks instead of full-length yellow lines. `TracerEveryNShots=2` displays one visible streak per two actual bullets; all accepted bullets still damage, flash/light and play their existing sound. Four pooled core/halo pairs allow overlap without creating firing-time meshes. The muzzle flash remains one reused mesh. The optional shot audio remains **one** `AudioStreamPlayer3D`, so overlapping machine gun sound/loop polish is a separate future task. No runtime/render test claimed here.
 

@@ -26,7 +26,7 @@ Main shop/service hall: about **22m × 12m**, **4.4m** walls, flat industrial ro
 
 ## Active placement
 
-WorldController instances this prefab on saved terrain in both WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Its offset is editable in WORLD/Configuration/WorldMaster.tres. Actual generated bounds plus approach margins exclude pines, including external porch/canopy geometry. Terrain is read-only and the parked legacy FPS world is unchanged. See WORLD/README.md for the shared layout.
+WorldController instances this prefab on saved terrain in both WORLD/World.tscn and WORLD/FirstPerson/FirstPersonWorld.tscn. Its offset is editable in WORLD/Configuration/WorldMaster.tres. Actual generated bounds plus approach margins exclude pines, including external porch/canopy geometry. Terrain is read-only and the parked legacy FPS world is unchanged. See WORLD/README.md for the shared layout.
 
 Godot/.NET are unavailable here; compile, grounding, interior access, collider and camera checks remain for local validation.
 

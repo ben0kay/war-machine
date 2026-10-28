@@ -8,7 +8,7 @@ World-local **stationary** structures are owned here, independently of entities/
 
 **Independent reusable prefab:** [ConvenienceStore001/](ConvenienceStore001/README.md) is now a complete store-only procedural shell with big unglazed windows, shelving, till counter, stockroom and back door. Shared structure visibility is wired, and the prefab is composed into the convenience-store site in the active village.
 
-All four buildings are now placed once by WorldController for both WORLD/World.tscn and the inherited DEBUG/TEST/FirstPerson test. Offsets live in WorldMaster; generated bounds reserve tree clearings and approaches. See WORLD/README.md for the layout.
+All four buildings are now placed once by WorldController for both WORLD/World.tscn and the inherited WORLD/FirstPerson test. Offsets live in WorldMaster; generated bounds reserve tree clearings and approaches. See WORLD/README.md for the layout.
 
 The new [Shared/C/StructureGeometry.cs](Shared/C/StructureGeometry.cs) holds only simple reusable box, roof, gable and collider-building methods for Building002/003; Building001 remains unchanged.
 

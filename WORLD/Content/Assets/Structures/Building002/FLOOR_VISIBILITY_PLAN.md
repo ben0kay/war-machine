@@ -49,7 +49,7 @@ Floor metadata is set at generator runtime. `Building002Mesh.SetFloorOpacity(flo
 4. The upper floor may have collidable glazing. For sight raycasts, glass must be classified separately from opaque blockers; this is **not** solved by visually fading the upstairs mesh.
 5. The upper stairwell is an actual gap. If hiding Level 1 entirely, the staircase still needs visible geometry for the player to understand ascent. Don't fade the stair meshes by default.
 6. Watch for the `CameraOccluder` whole-building fade compatibility. Its current implementation caches `MeshInstance3D.Transparency` once; naive `SetFloorOpacity` writes may be overwritten on the next occlusion update. Solve compositing centrally during FL3 before declaring auto fades production-ready.
-7. Preserve the single prefab shared by `WORLD/World.tscn` and inherited `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Prefer auto fade only for the angled top-down camera; FPS can use existing manual roof toggle if needed.
+7. Preserve the single prefab shared by `WORLD/World.tscn` and inherited `WORLD/FirstPerson/FirstPersonWorld.tscn`. Prefer auto fade only for the angled top-down camera; FPS can use existing manual roof toggle if needed.
 8. React only on entering a building footprint, position/stance/vertical movement, camera-change events and transition animations. Idle scene should settle; no per-structure unbounded `_Process`.
 9. Don't change the player controller, zombie intelligence, shared sensor APIs or building placement offsets as a side effect. Existing forest lodge front (+Z), solid entrance, partitions and foot corridor stay usable.
 

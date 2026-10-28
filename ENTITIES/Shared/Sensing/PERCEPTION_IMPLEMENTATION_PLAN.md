@@ -171,7 +171,7 @@ These are **tuning proposals, not probabilities or values presently implemented*
 
 ## 9. Minimum functional tests and acceptance
 
-Brief build/smoke checks at the active `WORLD/World.tscn` and inherited `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` (if runnable):
+Brief build/smoke checks at the active `WORLD/World.tscn` and inherited `WORLD/FirstPerson/FirstPersonWorld.tscn` (if runnable):
 - Open ground: standing and crouched player both visible in the allowed cone/range.
 - Medium cover: standing head visible, crouched head/torso hidden.
 - Full building wall and Terrain3D ridge: sight blocked; moving out of cover reacquires.
@@ -204,4 +204,4 @@ Performance: no new timers, per-frame queries, global scans or processing nodes.
 
 Validation here: source/state/lifecycle and new C# loop review, git diff --check, numeric policy checks for tier variation, assigned-distance vs timeout for both 1.15m/s shamblers and 8.3m/s runners, frozen clue and actual-position anchor contract. These numeric/source checks do not execute Godot AI. Godot/.NET unavailable: **compilation not verified**.
 
-Local handoff: `dotnet build war-machine.csproj`; F6 `WORLD/World.tscn`, then briefly `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Let at least five zombies see you, hide behind solid cover and move while hidden: goals should remain frozen with independent early/mid/full travel, then stop/dwell and wander around their new stopping area. Check slow/runner, reacquisition during travel/look/braking, near-zero clue distance, wall trapping, tree/door/body clearance during wandering and isolated uneven ground. Set weights temporarily to (1,0,0)/(0,1,0)/(0,0,1) to exercise each tier, then restore defaults. Check bullet/shove/death, deactivate/reactivate and unload; F7 still indicates potential sight range. Inspect stationary brain/physics costs locally. PER3+ and HE0+ remain unimplemented.
+Local handoff: `dotnet build war-machine.csproj`; F6 `WORLD/World.tscn`, then briefly `WORLD/FirstPerson/FirstPersonWorld.tscn`. Let at least five zombies see you, hide behind solid cover and move while hidden: goals should remain frozen with independent early/mid/full travel, then stop/dwell and wander around their new stopping area. Check slow/runner, reacquisition during travel/look/braking, near-zero clue distance, wall trapping, tree/door/body clearance during wandering and isolated uneven ground. Set weights temporarily to (1,0,0)/(0,1,0)/(0,0,1) to exercise each tier, then restore defaults. Check bullet/shove/death, deactivate/reactivate and unload; F7 still indicates potential sight range. Inspect stationary brain/physics costs locally. PER3+ and HE0+ remain unimplemented.

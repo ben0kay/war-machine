@@ -1,6 +1,6 @@
 # Shared Environment scene
 
-`ENVIRONMENT/Environment.tscn` is the reusable atmosphere prefab for **both** `WORLD/World.tscn` and its inherited `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`.
+`ENVIRONMENT/Environment.tscn` is the reusable atmosphere prefab for **both** `WORLD/World.tscn` and its inherited `WORLD/FirstPerson/FirstPersonWorld.tscn`.
 
 - Root `GameEnvironment.cs`: one runtime copy of Settings, startup composition and explicit view binding.
 - `Sky`: the existing WildernessSky scene and sole WorldEnvironment. Sky3D still owns sky/light/time.
@@ -34,7 +34,7 @@ Light rays use a thin global volumetric baseline in the existing Forward+ pass a
 
 Rays require shadow-casting geometry between light and camera/fog; expect subtle shafts between trees and around roof edges, not beams at every angle. The late distance overlay progressively conceals far shafts. The volumetric pass adds GPU cost even at low density; toggle rays and haze separately on the target PC. Thin foliage may not cast fine volumetric shadows at the existing resolution. No custom shadow shader, cloud-shadow projection, interior fog exclusion or automatic exposure was added.
 
-Brief checks: source/resource/API/loop/lifetime review only; no Godot/.NET executable available, so compilation, shader compilation and visual/performance acceptance remain unverified. Locally run `dotnet build war-machine.csproj`, then F6 WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Scrub time through noon, sunset, midnight and dawn while paused and running; confirm darker night fog, readable silhouettes, smooth transitions and a visible FPS sky when looking upward. Test rays on/off/zero, haze on/off/zero in all combinations, reactivation, scene reload and changed fog distances. Inspect shafts through trees/buildings at several sun/moon angles, FPS horizon seams, moon/cloud visibility, temporal trails and GPU frame time. No terrain rebake.
+Brief checks: source/resource/API/loop/lifetime review only; no Godot/.NET executable available, so compilation, shader compilation and visual/performance acceptance remain unverified. Locally run `dotnet build war-machine.csproj`, then F6 WORLD/World.tscn and WORLD/FirstPerson/FirstPersonWorld.tscn. Scrub time through noon, sunset, midnight and dawn while paused and running; confirm darker night fog, readable silhouettes, smooth transitions and a visible FPS sky when looking upward. Test rays on/off/zero, haze on/off/zero in all combinations, reactivation, scene reload and changed fog distances. Inspect shafts through trees/buildings at several sun/moon angles, FPS horizon seams, moon/cloud visibility, temporal trails and GPU frame time. No terrain rebake.
 
 ## Planned interior exclusions
 

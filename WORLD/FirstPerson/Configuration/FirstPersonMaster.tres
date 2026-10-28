@@ -1,5 +1,5 @@
 [gd_resource type="Resource" script_class="FirstPersonSettings" load_steps=2 format=3]
-[ext_resource type="Script" path="res://DEBUG/TEST/FirstPerson/CONFIGURATION/FirstPersonSettings.cs" id="1"]
+[ext_resource type="Script" path="res://WORLD/FirstPerson/Configuration/FirstPersonSettings.cs" id="1"]
 [resource]
 script = ExtResource("1")
 FieldOfView = 75.0

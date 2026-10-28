@@ -1,3 +1,5 @@
+> **FPS ownership:** Active FPS presentation is promoted out of DEBUG/TEST. See the [FPS ownership guide](../WORLD/FirstPerson/README.md). Shared gameplay and current tuning are unchanged; local validation pending.
+
 # ENVIRONMENT — current shared prefab
 
 **Planned interior effect exclusions:** [INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md](INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md) — IE0–IE4: shared building interior/shelter volumes, local ground-haze exclusion in both views and **first-person-only rain hiding**. Top-down rain remains unchanged, including perspective overhead. Plan only.
