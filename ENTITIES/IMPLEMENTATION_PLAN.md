@@ -1,3 +1,5 @@
+> **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). This coordinates future shared anatomy, zombie injury locomotion and corpse handoff. Existing entity/robot phases and species integrations retain their scope/status; no ELD production work is authorized yet.
+
 # RM — Reusable Entity, Mechanical Walker and Scanning Prototype
 
 > **State:** **RM0–RM5 implemented, Awaiting Validation.** Owner confirmed patrol/scanning after grounding correction. Latest job authorized RM5 plus organic cave noise; new visuals/controls/audio still need local acceptance.

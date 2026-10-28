@@ -1,3 +1,5 @@
+> **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](../../ENTITIES/TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). Reuse the existing BodyRegion enum and compatible condition/damage foundations; preserve player critical-versus-limb vitality rules, healing and HUD. Future PH-HIT consumes shared region detection when authorized; ELD does not automatically implement it.
+
 # BodyCondition and Vitality — design specification for PH0/PH1
 
 **PH0/PH1 implemented in source, awaiting local validation (2026-10-28).** Authoritative implementation gates are in [PLAYER implementation plan](../IMPLEMENTATION_PLAN.md). All work occurs on `implement-td0-td1`.

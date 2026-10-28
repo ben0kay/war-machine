@@ -1,3 +1,5 @@
+> **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](ANATOMY_COMBAT_CORPSE_PLAN.md). ZD0–ZD3 retain fall/pile/lifetime/budget ownership and current statuses. ELD1 must preserve severed appearance on the death-triggering hit through the existing ZD0 adapter; optional debris is ELD4. This narrowly extends the older amputations non-goal only when ELD1 is explicitly authorized; it does not authorize ZD1–ZD3 or a second corpse framework.
+
 # ZD — Zombie death, lightweight ragdoll falls and persistent corpse piles
 
 > **Status: ZD0 implemented in source, awaiting local build/physics/visual validation. ZD1–ZD3 remain proposed.** ZD0 explicitly authorized by owner; implementation on `implement-td0-td1`. This is **not** a true `Skeleton3D` / `PhysicalBoneSimulator3D` articulated ragdoll; it deliberately begins with a **physics-assisted ragdoll-like collapse** for the project's existing procedural `Node3D` limb joints. Real articulated ragdolls can be assessed separately after performance/visual testing.

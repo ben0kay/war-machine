@@ -1,3 +1,5 @@
+> **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](../ENTITIES/TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). Combat keeps hit/damage delivery and CM5 attack scheduling. ELD0 adds compatible region routing; ELD3 supplies anatomy-based attack eligibility only after separately authorized CM5. Existing combat phase states and weapon balance remain unchanged.
+
 # CM — Melee, shove and hit-reaction implementation plan
 
 > **Current status: Owner confirms prior CM0/CM1 and CM2-A/B1/B2/C local validation is okay (Accepted). CM2-D implemented in source, Awaiting Validation for compilation/animation fit; CM3–CM5 Planned.** See COMBAT/README.md for the current handoff. Work on `implement-td0-td1`; do not auto-implement later phases.

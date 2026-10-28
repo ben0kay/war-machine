@@ -1,3 +1,5 @@
+> **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](../ENTITIES/TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). PH0/PH1 and player vitality/healing rules remain intact. Future PH-HIT should reuse the ELD0 region-detection foundation when separately authorized; no player injury penalties, severing or state migration are authorized by this link.
+
 # PLAYER — Health, Body Condition, Vitals and Survival Implementation Plan
 
 > **PH0/PH1 implemented in source (2026-10-28), awaiting local build/runtime/visual validation.** The player is not a traditional on-screen 100 HP bar. PH0 will establish hidden overall **Vitality** (generic life/death) plus independent **six-region BodyCondition** (head, torso, both arms, both legs). PH1 will display a compact body silhouette/condition readout, not the generic player HP bar. Damageable regions are foundation now; actual limping, impaired aiming, bleeding, fractures and medical treatment are later, individually authorized features. This decision supersedes all older HP-bar/temporary-debug-label PH0/PH1 prose anywhere in this repo.

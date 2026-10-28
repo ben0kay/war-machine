@@ -1,3 +1,5 @@
+> **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](ANATOMY_COMBAT_CORPSE_PLAN.md). ELD0–ELD5 are Planned. Combat, player-condition and ZD plans remain their implementation owners; the master coordinates region hits, limb state, living injury movement and injury-preserving death. No new gameplay is implemented by this documentation update.
+
 > **ZD0 implemented in source, awaiting local validation:** normal and runner zombie deaths transfer their existing visuals into the [shared corpse fall owner](../../Shared/Corpses/README.md), collapse using one temporary physics proxy, then freeze without collision or idle updates. [ZD plan](DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md): ZD1 pile slowdown, ZD2 five-minute sinking cleanup and ZD3 budgets remain planned. No articulated ragdoll or timed removal yet.
 
 # Zombies
