@@ -1,6 +1,6 @@
 # ConvenienceStore001 — standalone roadside convenience-store prefab
 
-**Status: store-only model implemented; local Godot C# build, render and walking tests pending.** This is **not the complete PL0B phase**. The site scene and streetlamp prefab remain empty; the store is not placed in `WORLD/World.tscn` or the FPS world.
+**Status: store-only model implemented; local Godot C# build, render and walking tests pending.** This is **not the complete PL0B phase**. The store now appears as an instance in the reusable convenience-store site; neither is placed in `WORLD/World.tscn` or the FPS world.
 
 ## What is modeled
 
@@ -15,7 +15,7 @@
 
 `ConvenienceStore001.tscn` has one `[Tool]` `ConvenienceStoreMesh` root and one **direct `StructureVisibility` child**, referencing the same `Configuration/ConvenienceStoreMaster.tres`. `ConvenienceStoreSettings.cs : StructureSettings` exposes dimensions, stockroom size, shelf height, furniture toggle and six basic palette colours plus the inherited fade settings. `C/ConvenienceStoreMesh.cs` builds using `Structures/Shared/C/StructureGeometry.cs` and metadata from `StructureLayout.Occupied/Level/Visual`. Independent `walls`, `contents` and `roof` roles enable the same top-down reveal/occlusion logic as existing buildings; collision never fades. No per-frame or per-physics process.
 
-**Do not auto-place or assemble this into the parent site yet.** For top-down visibility when it is eventually instanced, the building needs to be discoverable under the world's `Structures` hierarchy, or deliberately registered by the owner. Neither the parking lot nor street lamps should inherit its fading.
+**This building is now instanced by the parent site; do not place the whole site in the world until PL1.** For top-down visibility when it is eventually instanced, the building needs to be discoverable under the world's `Structures` hierarchy, or deliberately registered by the owner. Neither the parking lot nor street lamps should inherit its fading.
 
 ## Testing and later additions
 

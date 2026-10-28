@@ -1,6 +1,6 @@
 # ParkingLot001 — reusable asphalt and parking foundation
 
-**Status: PL0A implemented, awaiting local Godot/C# compilation and visual validation.** This is an independent prefab, **not** yet assembled into ConvenienceStoreSite001 or placed in the active top-down/FPS world.
+**Status: PL0A implemented, awaiting local Godot/C# compilation and visual validation.** This independent prefab is now instanced by ConvenienceStoreSite001, but the assembled site is not placed in the active top-down/FPS world.
 
 ### Files and use
 

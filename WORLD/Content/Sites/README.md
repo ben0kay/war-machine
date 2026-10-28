@@ -1,8 +1,8 @@
 # Reusable world sites (assemblies)
 
-**Scaffold only.** A *site* is a composition of independent prefabs at one location: parking lot, building, street lamps, cars, signs and future props. It is not a building type or a new terrain/lighting manager.
+A *site* is a composition of independent prefabs at one location: parking lot, building, street lamps, cars, signs and future props. It is not a building type or a new terrain/lighting manager.
 
-- [ConvenienceStoreSite001](ConvenienceStoreSite001/README.md) — future roadside store and car park, currently an inert empty scene.
+- [ConvenienceStoreSite001](ConvenienceStoreSite001/README.md) — future roadside store and car park, now an assembled scene with three existing Car001 hatchbacks and four streetlamps, not yet world-placed.
 - `Infrastructure/` owns reusable asphalt/curb/road pieces independently of the site.
 - `Structures/` owns reusable buildings and their shared top-down visibility.
 - `Placeables/Objects/` owns fixed objects such as lamps.

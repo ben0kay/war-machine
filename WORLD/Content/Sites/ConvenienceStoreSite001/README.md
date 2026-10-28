@@ -1,25 +1,41 @@
-# ConvenienceStoreSite001 — future roadside site
+# ConvenienceStoreSite001 — assembled reusable roadside location
 
-**Status: site assembly still empty. PL0A reusable [ParkingLot001](../../Infrastructure/ParkingLots/ParkingLot001/README.md) is implemented separately, awaiting Godot validation; next planned phase PL0B. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).**
+**Status:** PL0B assembled, Godot build/visual validation pending. **Not placed in the active world**; PL1 is the next phase. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
-Scene: `ConvenienceStoreSite001.tscn` — currently a valid *empty* Node3D root, with no instantiated lot, building, cars, lamps, collisions, lighting or world placement.
+This is a **native Godot PackedScene composition**: all existing models stay independent, with editable local child transforms and no new site C# controller or per-frame logic.
 
-**Future site composition (PL0B or later):**
 ```text
 ConvenienceStoreSite001
-  ParkingLot         instance Infrastructure/ParkingLots/ParkingLot001.tscn
-  Store              instance Structures/ConvenienceStore001.tscn
-  ParkedCars         instances of existing Objects/Cars/Car001/Car001.tscn
-  StreetLighting     instances of Placeables/Objects/Lighting/StreetLamp001.tscn
-  SiteMarkers        entrance, road connection, test player location
+├── ParkingLot                  ParkingLot001.tscn
+├── Structures
+│   └── Store                   ConvenienceStore001.tscn
+├── ParkedCars
+│   ├── Car_Bay02               Car001.tscn
+│   ├── Car_Bay05               Car001.tscn
+│   └── Car_Bay08               Car001.tscn
+├── StreetLighting
+│   ├── Lamp_WestStore          StreetLamp001.tscn
+│   ├── Lamp_EastStore          StreetLamp001.tscn
+│   ├── Lamp_WestApproach       StreetLamp001.tscn
+│   └── Lamp_EastApproach       StreetLamp001.tscn
+└── SiteMarkers                 FrontEntrance, RearServiceExit,
+                                RoadConnection, PlayerTestSpawn
 ```
 
-The parent owns layout/positions, **not** child art, light animation, building fades or car logic. Each child remains usable outside this site. The site should eventually be instantiated once by the appropriate world placement system; no runtime scene composition is done by this placeholder.
+## Authored layout (metres; root space)
 
-`Configuration/SiteMaster.tres` is a valid but empty generic Godot Resource. `Configuration/ConvenienceStoreSiteSettings.cs` is intentionally empty; neither is attached or used by the scene yet. Replace with typed configurable dimensions/relative prefab positions when the site assembly is authorized, and duplicate authoring resources before runtime tuning.
+- Main ParkingLot001 at origin, 40 × 28m main asphalt with 8 bays, +Z road and -Z store. Top of asphalt Y=0.12m.
+- Store root at **(0,0,-19.75)**, with front (+Z) at Z=-13.75: its central entrance aligns with the parking lot's lowered sidewalk access. Rear service exit faces further -Z. Store uses the existing StructureVisibility directly.
+- Existing **Car001** hatchbacks placed in bay **02** (-7.75,0.12,-8.03), **05** (1.55,0.12,-8.03), **08** (10.85,0.12,-8.03). Cars face -Z toward store; each keeps its open driver door, static collision and camera occluder. Adjacent unused spaces give the open doors room.
+- Four **StreetLamp001** at X=-14/+14, Z=-8.2 and X=-14.5/+14.5, Z=8.5; all Y=0.12. West lamps yaw +90°, east lamps yaw -90° so the light-head arms point inwards over the pavement. Real light behaviour and masters stay under `ENVIRONMENT/Lighting/Fixtures/StreetLamp/`.
+- Passive site markers: front entry at (0,0.12,-13.4), rear service exit (5.7,0.12,-26.2), road connection (0,0.12,20), test spawn (0,0.16,4). **No character is spawned.**
 
-**PL0A delivered:** the independent parking-lot prefab now has asphalt, bays, curbs and markers. It is intentionally **not** instanced into this site. PL0B will compose the store, lamps, cars and the lot into one reusable scene; PL1 will place that scene in the world. The current-branch, adapted [implementation plan](IMPLEMENTATION_PLAN.md) is now the canonical PL roadmap; the original main-branch version is historical only.
+Children are genuine **scene instances**, not copied geometry. Their local transforms can be edited manually in Godot. If the parking lot's dimensions or bay count change, realign the cars/store/lamps manually: the site does not poll markers or automatically rearrange itself. `SiteMaster.tres` and the still-blank site-settings C# file remain future PL1 world-placement placeholders, not active duplicate transform settings.
 
-**PL0B progress:** [ConvenienceStore001](../../Structures/ConvenienceStore001/README.md) is now authored independently, with big empty windows, retail shelves, checkout and stockroom/rear exit. Parent site and lamp prefab remain untouched. No world placement has occurred.
+**Structure visibility:** when PL1 places the *entire site* under `WorldActorsRoot/PersistentPropsRoot/Structures`, nested store visibility can register through the existing recursive discovery, while the lot/lamps/cars remain independently owned. Don't tag the entire site with building fade.
 
-**PL0B lamp progress:** [StreetLamp001](../../Placeables/Objects/Lighting/StreetLamp001/README.md) is now a built independent lamp with a real downward spot and soft omni fill, plus a simple on/off method. The parent site is still empty, no cars/lights/store are placed in the world and there is no automatic time-of-day or flicker yet.
+**Lighting:** four lamps default to steady ON for preview (up to eight actual local lights, shadows off); automatic day/night switching, one flickering lamp, range relevance and Sky3D coordination remain PL2. No new site lighting components were introduced.
+
+**PL1 terrain:** full footprint approximately X ±20, Z -26..20, plus rear-door access and clearing margin. Find sufficiently level Terrain3D and reserve trees/grass/rocks across store, lot, cars, lamps and approach; **no rebake or world placement happened in PL0B**.
+
+**Local checks:** after pulling and building C#, open `ConvenienceStoreSite001.tscn` in the 3D editor. Confirm all **9 child scene instances** resolve and show mesh art; cars sit in painted bays with open doors, store front meets sidewalk, lamp bases are not floating, interior/rear exit stay navigable. The scene doesn't include a camera or sky; test nighttime illumination in a temporary dark test environment. **Godot runtime, visual and collision validation remain outstanding.**

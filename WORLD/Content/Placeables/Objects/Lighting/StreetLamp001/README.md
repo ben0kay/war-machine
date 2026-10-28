@@ -1,6 +1,6 @@
 # StreetLamp001 — physical reusable street-lamp fixture
 
-**Status:** independent fixture and reusable lighting component wired; **Godot/.NET runtime validation pending**. It is **not yet instanced into the convenience-store site** or active world.
+**Status:** independent fixture and reusable lighting component wired; **Godot/.NET runtime validation pending**. It is now instanced four times in the reusable convenience-store site, but that site is not placed in the active world.
 
 The physical lamp stays at `WORLD/Content/Placeables/Objects/Lighting/StreetLamp001/`; all real local lighting code, light nodes and lighting configuration now live under [ENVIRONMENT/Lighting/Fixtures/StreetLamp](../../../../../ENVIRONMENT/Lighting/Fixtures/StreetLamp/README.md).
 
