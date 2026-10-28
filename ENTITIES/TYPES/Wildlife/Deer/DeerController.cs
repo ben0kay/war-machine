@@ -23,7 +23,8 @@ public partial class DeerController : EntityCore, IDamageReceiver
     private Vector3 _anchor, _goal;
     private ulong _restUntil;
     private float _gait, _stuck;
-    private bool _configured, _fleeing, _hasGoal;
+    private bool _configured, _fleeing, _hasGoal, _reportedBlockedGoals, _reportedFirstMove;
+    private int _failedGoalRounds;
 
     // =========================================================
     // The scene master starts dormant. The active world injects target/terrain after placement.
@@ -65,10 +66,14 @@ public partial class DeerController : EntityCore, IDamageReceiver
             ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;
         _random.Seed = seed; _groundHeight = groundHeight;
         _anchor = GlobalPosition; _goal = GlobalPosition;
-        _fleeing = _hasGoal = false; _stuck = _gait = 0f;
+        _fleeing = _hasGoal = _reportedBlockedGoals = _reportedFirstMove = false;
+        _failedGoalRounds = 0; _stuck = _gait = 0f;
         _restUntil = Time.GetTicksMsec() + RestMilliseconds();
         _health.Configure(_config.HealthProfile);
         _configured = true; Activate();
+        // One diagnostic at initialization lets test builds distinguish a sleeping AI
+        // from a deer with obstructed goals; this never logs from the frame loop.
+        GD.Print($"[Deer] AI initialized: active={IsActive}, timer={_brain.TimeLeft:F2}s, pos={GlobalPosition}");
     }
 
     // =========================================================
@@ -114,9 +119,23 @@ public partial class DeerController : EntityCore, IDamageReceiver
         {
             bool found = GroundGoalSampler.TryWander(this, GetWorld3D().DirectSpaceState,
                 _groundRay, _goalQuery, _body, _random, _anchor, _config.WanderRadius,
-                out Vector3 destination);
+                out Vector3 destination, strictSweep: false, maxHeightChange: 2.5f);
+            // A shorter local choice rescues wandering near tree lines where every long
+            // straight line is blocked. No expensive navigation/path rebuild is needed.
+            if (!found) found = GroundGoalSampler.TryWander(this, GetWorld3D().DirectSpaceState,
+                _groundRay, _goalQuery, _body, _random, GlobalPosition,
+                Mathf.Min(3.5f, _config.WanderRadius), out destination,
+                strictSweep: false, maxHeightChange: 1.4f);
             if (found) StartTravel(destination, false);
-            else _restUntil = Time.GetTicksMsec() + RestMilliseconds();
+            else
+            {
+                _restUntil = Time.GetTicksMsec() + RestMilliseconds();
+                if (++_failedGoalRounds >= 3 && !_reportedBlockedGoals)
+                {
+                    _reportedBlockedGoals = true;
+                    GD.PushWarning($"[Deer] 3 wander rounds rejected near {GlobalPosition}. Check terrain and collisions.");
+                }
+            }
         }
         _brain.Start(Mathf.Clamp(_config.DecisionIntervalSeconds, 0.15f, 2f));
     }
@@ -135,11 +154,21 @@ public partial class DeerController : EntityCore, IDamageReceiver
         float length = Mathf.Clamp(_config.FleeDistance, 3f, 40f);
         for (int i = 0; i < 12; i++)
         {
-            float angle = i % 4 == 0 ? 0f : i % 4 == 1 ? 0.22f : i % 4 == 2 ? -0.22f : 0.5f;
-            float factor = i < 4 ? 1f : i < 8 ? 0.65f : 0.38f;
+            float angle = i % 6 switch
+            {
+                0 => 0f, 1 => 0.32f, 2 => -0.32f,
+                3 => 0.65f, 4 => -0.65f, _ => 1.05f
+            };
+            float factor = i < 6 ? 1f : 0.38f;
             Vector3 desired = GlobalPosition + away.Rotated(Vector3.Up, angle) * (length * factor);
-            if (GroundGoalSampler.TryGoal(this, space, _groundRay, _goalQuery, _body, desired, out Vector3 safe))
+            if (GroundGoalSampler.TryGoal(this, space, _groundRay, _goalQuery, _body, desired,
+                out Vector3 safe, strictSweep: false, maxHeightChange: 3f))
             { StartTravel(safe, true); return; }
+        }
+        if (!_reportedBlockedGoals)
+        {
+            _reportedBlockedGoals = true;
+            GD.PushWarning($"[Deer] Cannot find escape route near {GlobalPosition}; will retry sensing.");
         }
         FinishTravel();
     }
@@ -148,7 +177,12 @@ public partial class DeerController : EntityCore, IDamageReceiver
     private void StartTravel(Vector3 destination, bool fleeing)
     {
         _goal = destination; _fleeing = fleeing; _hasGoal = true;
-        _restUntil = 0; _stuck = 0f; SetPhysicsProcess(true);
+        _failedGoalRounds = 0; _restUntil = 0; _stuck = 0f; SetPhysicsProcess(true);
+        if (!_reportedFirstMove)
+        {
+            _reportedFirstMove = true;
+            GD.Print($"[Deer] First travel: fleeing={fleeing}, from={GlobalPosition}, goal={destination}");
+        }
     }
 
     // =========================================================
