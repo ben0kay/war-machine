@@ -1,3 +1,5 @@
+> **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../../ENTITIES/Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
+
 > **ELD0 source implementation (2026-10-28):** [Shared region detection](../../ENTITIES/Shared/Anatomy/README.md) now routes firearm shape hits for both zombie variants in both views. BodyRegion moved to ENTITIES/Shared/Anatomy with values unchanged. Existing damage balance/player rules and melee stay unchanged; no injuries, severing or new attacks. Local build/runtime validation pending.
 
 > **FPS ownership:** Active FPS presentation is promoted out of DEBUG/TEST. See the [FPS ownership guide](../../WORLD/FirstPerson/README.md). Shared gameplay and current tuning are unchanged; local validation pending.

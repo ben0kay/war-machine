@@ -1,3 +1,3 @@
 # Anatomy configuration
 
-AnatomyMaster.tres owns ELD0 box padding and optional hit logging. Each actor duplicates the resource once. No injury thresholds or weapon balance changes belong to ELD0. See [anatomy ownership](../README.md).
+AnatomySettings owns detection padding/logging and ELD1 condition, state fractions, sever threshold/resistance. AnatomyMaster.tres is the shared fallback. Zombie masters select their species profile at `ENTITIES/TYPES/Zombies/Configuration/ZombieAnatomyMaster.tres`; runtime copies protect authored resources. Weapon SeverPower lives in each firearm master, independent of HP damage. Player BodyCondition settings are unchanged. See [anatomy ownership and validation](../README.md).

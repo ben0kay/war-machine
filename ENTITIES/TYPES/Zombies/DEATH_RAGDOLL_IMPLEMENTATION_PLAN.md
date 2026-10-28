@@ -1,3 +1,5 @@
+> **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../../Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
+
 > **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](ANATOMY_COMBAT_CORPSE_PLAN.md). ZD0–ZD3 retain fall/pile/lifetime/budget ownership and current statuses. ELD1 must preserve severed appearance on the death-triggering hit through the existing ZD0 adapter; optional debris is ELD4. This narrowly extends the older amputations non-goal only when ELD1 is explicitly authorized; it does not authorize ZD1–ZD3 or a second corpse framework.
 
 # ZD — Zombie death, lightweight ragdoll falls and persistent corpse piles

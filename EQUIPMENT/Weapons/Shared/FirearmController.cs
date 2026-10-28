@@ -99,7 +99,7 @@ public partial class FirearmController : Node3D
         Vector3 end = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
         if (hit.Count > 0)
         {
-            var packet = new DamagePacket(RuntimeSettings.Damage, RuntimeSettings.DamageKind, _holder, end, direction);
+            var packet = new DamagePacket(RuntimeSettings.Damage, RuntimeSettings.DamageKind, _holder, end, direction, severPower: RuntimeSettings.SeverPower);
             var impact = new CombatImpact(_holder, end, end - _holder!.GlobalPosition,
                 CombatImpactKind.Bullet, RuntimeSettings.BulletImpactStrength, RuntimeSettings.BulletStaggerSeconds);
             HitTargetResolver.Dispatch(hit["collider"].AsGodotObject() as Node, _holder, packet, impact, hit["shape"].AsInt32());

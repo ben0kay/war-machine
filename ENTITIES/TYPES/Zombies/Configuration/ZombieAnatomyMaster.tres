@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AnatomySettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Anatomy/Configuration/AnatomySettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+RegionCondition = 80.0
+DamagedFraction = 0.75
+DisabledFraction = 0.25
+SeverThreshold = 65.0
+SeverResistance = 1.0
+Padding = 0.005
+LogRegionHits = true

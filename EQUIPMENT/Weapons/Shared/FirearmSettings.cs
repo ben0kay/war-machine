@@ -10,6 +10,7 @@ public partial class FirearmSettings : Resource
     [Export(PropertyHint.Range, "0.03,5,0.01")] public float ShotInterval { get; set; } = 0.65f;
     [Export] public bool Automatic { get; set; } = true;
     [Export] public float Damage { get; set; } = 95;
+    [Export(PropertyHint.Range, "0,10,0.05")] public float SeverPower { get; set; }
     [Export] public DamageType DamageKind { get; set; } = DamageType.Physical;
     [Export] public float Range { get; set; } = 90;
     [ExportGroup("Ammunition & reload (AM0)")]

@@ -13,7 +13,7 @@ public static class HitTargetResolver
         {
             DamagePacket hit = damage.Value;
             damage = new DamagePacket(hit.Amount, hit.Type, hit.Source, hit.Position, hit.Direction,
-                anatomy.RegionForShape(shapeIndex));
+                anatomy.RegionForShape(shapeIndex), hit.SeverPower);
         }
         int depth = 0;
         for (Node? node = collider; node != null && depth < 32; node = node.GetParent(), depth++)

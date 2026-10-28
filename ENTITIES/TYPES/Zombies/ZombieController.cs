@@ -7,6 +7,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private uint _corpseSeed;
     private bool _deathHandled;
     private AnatomyHitboxes _anatomy = null!;
+    private ZombieAnatomy _anatomyVisual = null!;
+    public AnatomyComponent? Anatomy { get; private set; }
+    private bool _receivingHit;
     public BodyRegion LastHitRegion { get; private set; } = BodyRegion.Unknown;
     public uint AnatomicalHitCount { get; private set; }
     public float Health => _health == null ? 0 : _health.CurrentHealth;
@@ -68,7 +71,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private void BuildAnatomy()
     {
         _anatomy = new AnatomyHitboxes { Name = "AnatomyHitboxes" }; AddChild(_anatomy);
-        _anatomy.Initialize(this, GD.Load<AnatomySettings>("res://ENTITIES/Shared/Anatomy/Configuration/AnatomyMaster.tres"));
+        _anatomy.Initialize(this, (Settings as ZombieSettings)?.AnatomyProfile
+            ?? GD.Load<AnatomySettings>("res://ENTITIES/Shared/Anatomy/Configuration/AnatomyMaster.tres"));
         Node3D head = VisualRoot.GetNode<Node3D>("Head");
         var pivots = new[] { VisualRoot, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
         var regions = new[] { BodyRegion.Torso, BodyRegion.Head, BodyRegion.LeftArm, BodyRegion.RightArm,
@@ -76,6 +80,17 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         var boundaries = new System.Collections.Generic.HashSet<Node3D>(pivots);
         for (int i = 0; i < pivots.Length; i++) _anatomy.AddRegion(pivots[i], regions[i], boundaries);
         _anatomy.SyncPose();
+        _anatomyVisual = new ZombieAnatomy(_leftArm, _rightArm, _leftLeg, _rightLeg);
+    }
+
+    // =========================================================
+    // Species-specific injury effects stay at this adapter boundary; shared state never knows mesh names.
+    private void OnAnatomyChanged(BodyRegion region, LimbState state)
+    {
+        if (state == LimbState.Severed) _anatomy.DisableRegion(region);
+        _anatomyVisual.Apply(Anatomy!.Capture());
+        if (_anatomy.RuntimeSettings.LogRegionHits)
+            GD.Print($"[ELD1] {GetPath()} region={region} state={state} condition={Anatomy.Condition(region):0.##}");
     }
 
     // =========================================================
@@ -117,6 +132,12 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         _visibility = player is CollisionObject3D body && _sightTarget != null
             ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;
         if (_visibility == null) GD.PushWarning("Zombie target must provide body samples and a physics body; eyesight disabled.");
+        if (Anatomy != null) Anatomy.StateChanged -= OnAnatomyChanged;
+        Anatomy = new AnatomyComponent(_config.AnatomyProfile ?? _anatomy.RuntimeSettings);
+        Anatomy.StateChanged += OnAnatomyChanged;
+        _anatomyVisual.Apply(Anatomy.Capture());
+        _anatomy.RestoreRegions(CollisionLayer);
+        LastHitRegion = BodyRegion.Unknown; AnatomicalHitCount = 0;
         _health.Configure(_config.HealthProfile);
         _awaitingSpawnGround = groundHeight != null; _reportedSpawnGround = false;
         ResetPhysicsInterpolation();
@@ -127,15 +148,24 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // Shared health owns all damage maths. Species code only decides whether hits are accepted and how death looks.
     public void ReceiveHit(DamagePacket hit)
     {
-        if (!IsActive || !_configured) return;
-        LastHitRegion = hit.Region;
-        if (hit.Region != BodyRegion.Unknown)
+        if (_receivingHit || !IsActive || !_configured || _health.IsDead) return;
+        _receivingHit = true;
+        try
         {
-            AnatomicalHitCount++;
-            if (_anatomy.RuntimeSettings.LogRegionHits)
-                GD.Print($"[ELD0] {GetPath()} region={hit.Region} incoming={hit.Amount:0.##} point={hit.Position}");
+            DamageResult resolved = DamageResolver.Resolve(hit, _health.RuntimeSettings);
+            if (resolved.Amount <= 0) return;
+            // Commit injury and visual removal before the synchronous HealthComponent.Died callback.
+            Anatomy!.ApplyResolved(resolved);
+            LastHitRegion = hit.Region;
+            if (hit.Region != BodyRegion.Unknown)
+            {
+                AnatomicalHitCount++;
+                if (_anatomy.RuntimeSettings.LogRegionHits)
+                    GD.Print($"[ELD0] {GetPath()} region={hit.Region} incoming={hit.Amount:0.##} point={hit.Position}");
+            }
+            _health.ApplyResolvedDamage(resolved);
         }
-        _health.ApplyDamage(hit);
+        finally { _receivingHit = false; }
     }
 
     // =========================================================
@@ -213,9 +243,11 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Vector3 velocity = Velocity;
         var joints = new System.Collections.Generic.List<Node3D> { _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
         var head = visual.GetNodeOrNull<Node3D>("Head"); if (head != null) joints.Add(head);
-        var pose = new ZombieCorpsePose(_corpseSeed, joints.ToArray());
+        AnatomySnapshot injuries = Anatomy!.Capture();
+        var pose = new ZombieCorpsePose(_corpseSeed, injuries, joints.ToArray());
         var owner = CorpseOwner;
         Deactivate(); _configured = false; CollisionLayer = CollisionMask = 0;
+        _anatomyVisual.Apply(injuries); // Explicitly preserve the final snapshot after Pose(0)/reaction reset.
         Hide();
         // Keep the disabled actor until the deferred visual transfer finishes; never leave corpse physics under it.
         Callable.From(() =>

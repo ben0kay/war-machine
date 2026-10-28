@@ -1,3 +1,5 @@
+> **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../../Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
+
 > **ELD0 implemented in source (2026-10-28), awaiting local validation.** [Implementation, configuration and World acceptance](../../Shared/Anatomy/README.md). Both zombie variants use precise firearm region shapes; current damage remains unchanged. ELD1–ELD5 remain Planned. Owner prefers testing in World/FPS; no dedicated anatomy test scenes required. Top-down probability remains a separately tunable future option, not part of ELD0. This status supersedes the original all-Planned wording below.
 
 # War Machine — Unified Entity Combat, Anatomy, Locomotion and Corpse Architecture
@@ -277,7 +279,7 @@ A corpse missing two legs should still be visibly missing those legs when it sin
 | Phase | Deliverable | Dependencies |
 |---|---|---|
 | **ELD0** | Shared anatomical region detection and damage routing | Existing combat pipeline |
-| **ELD1** | Limb condition, sever thresholds, visual removal and mandatory missing-limb death preservation | ELD0 and existing ZD0 |
+| **ELD1** | Limb condition, sever thresholds, visual removal and mandatory missing-limb death preservation — **Implemented; Awaiting Validation** | ELD0 and existing ZD0 |
 | **ELD2** | Limp, hop, crawl and immobilized locomotion | ELD1 |
 | **ELD3** | Claw/bite attack capability filtering | ELD1 and CM5 |
 | **ELD4** | Optional bounded detached debris and additional corpse presentation polish | ELD1 and ZD0 |

@@ -3,12 +3,14 @@ using Godot;
 
 public sealed class ZombieCorpsePose : ICorpsePoseAdapter
 {
+    public AnatomySnapshot Injuries { get; }
     private readonly Node3D[] _joints;
     private readonly Vector3[] _from, _to;
 
     // =========================================================
-    public ZombieCorpsePose(uint seed, params Node3D[] joints)
+    public ZombieCorpsePose(uint seed, AnatomySnapshot injuries, params Node3D[] joints)
     {
+        Injuries = injuries;
         _joints = joints; _from = new Vector3[joints.Length]; _to = new Vector3[joints.Length];
         var random = new RandomNumberGenerator { Seed = seed ^ 0x9e3779b9u };
         for (int i = 0; i < joints.Length; i++)

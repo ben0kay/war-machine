@@ -77,6 +77,22 @@ public partial class AnatomyHitboxes : Area3D
     }
 
     // =========================================================
+    // Remove every physical query shape for a severed region, including thigh and shin owners.
+    public void DisableRegion(BodyRegion region)
+    {
+        foreach (var entry in _regions)
+            if (entry.Value == region) ShapeOwnerSetDisabled(entry.Key, true);
+    }
+
+    // =========================================================
+    // Explicit actor reset/reuse restores hurtboxes without recreating geometry.
+    public void RestoreRegions(uint layer)
+    {
+        foreach (var entry in _regions) ShapeOwnerSetDisabled(entry.Key, false);
+        CollisionLayer = layer;
+    }
+
+    // =========================================================
     public BodyRegion RegionForShape(int shape)
         => shape >= 0 && _regions.TryGetValue(ShapeFindOwner(shape), out BodyRegion region) ? region : BodyRegion.Unknown;
 

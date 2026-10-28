@@ -1,3 +1,5 @@
+> **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
+
 # Shared corpse falls — ZD0
 
 **Implemented in source; awaiting compilation and local physics/visual validation.** Only normal zombie and runner 002 deaths opt in. No deer/bear/human integration, articulated skeleton ragdoll, pile slowdown, sinking, timed expiry or crowd budget is implemented here. [Phase plan](../../TYPES/Zombies/DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md).
