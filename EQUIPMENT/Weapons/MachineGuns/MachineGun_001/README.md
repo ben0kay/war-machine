@@ -65,3 +65,7 @@ The existing +0.55°/shot capped 4.5° recoil now climbs in **real FPS 3D shot d
 ## FPS camera recoil refinement (2026-10-28)
 
 MachineGunMaster now has `FpsCameraRecoilFollowDegreesPerSecond=10.0` and `FpsVisualClimbMultiplier=0.7`. FPS full-auto progressively tilts the **actual camera** upward toward the existing RC0 4.5° maximum, and the Visual gun pitches a little further up as it kicks; the player can drag mouse down to compensate. FPS bullets use the physically updated camera aim plus the original independent random spread, without doubling recoil. Primary top-down behavior does not change. Source only; Godot visual testing pending.
+
+## FPS one-way 25° burst climb (2026-10-28)
+
+The MG now has `FpsMaxCameraRecoilBurstDegrees=25.0` and `FpsRecoilBurstResetSeconds=0.35` (independent of unchanged top-down max 4.5°). Each accepted 600-RPM shot adds 0.55° to a **positive-only** camera-rise queue, delivered up to 10°/s. A continuous burst can accumulate about 25° after ~46 shots (~4.6 seconds), without automatically lowering the camera afterward. Moving the mouse is the only normal way to correct the settled view angle; releasing resets the burst budget only after the idle gap, never camera pitch. Existing independent random spread/25 damage/stagger are untouched. Test locally.

@@ -8,7 +8,7 @@ public partial class FirstPersonCamera : Camera
     private bool _ready;
     private Vector3 _previousEye, _currentEye;
     private ulong _sampleTick;
-    private float _lookPitchDegrees, _weaponRecoilPitchDegrees;
+    private float _lookPitchDegrees;
 
     // =========================================================
     // The shared world calls this before the capsule is initialized; use standing height for the first placement.
@@ -17,7 +17,7 @@ public partial class FirstPersonCamera : Camera
         _actor = player;
         Projection = ProjectionType.Perspective; Fov = Mathf.Clamp(TestSettings.FieldOfView, 40, 110);
         Near = 0.05f; Far = 1800; Current = true; Rotation = Vector3.Zero;
-        _lookPitchDegrees = _weaponRecoilPitchDegrees = 0f;
+        _lookPitchDegrees = 0f;
         GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - TestSettings.EyeInset);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // We interpolate translation only, never mouse rotation.
         _previousEye = _currentEye = GlobalPosition;
@@ -44,31 +44,29 @@ public partial class FirstPersonCamera : Camera
             angle.Y = Mathf.Wrap(angle.Y - motion.ScreenRelative.X * sensitivity, -180, 180);
             // Positive pitch looks upward; inverted mode makes mouse-up look down.
             float verticalDelta = (TestSettings.InvertMouseY ? 1f : -1f) * motion.ScreenRelative.Y;
-            // Mouse look remains the user's independent aim; weapon recoil is a temporary
-            // additive pitch that can be countered by looking down during automatic fire.
+            // Mouse movement is the permanent aim, including any recoil-induced rise.
+            // The weapon adds one-way pitch; firing stops do not automatically lower the view.
             _lookPitchDegrees = Mathf.Clamp(_lookPitchDegrees + verticalDelta * sensitivity, -limit, limit);
-            angle.X = Mathf.Clamp(_lookPitchDegrees + _weaponRecoilPitchDegrees, -limit, limit);
+            angle.X = _lookPitchDegrees;
             RotationDegrees = angle; NotifyViewChanged();
             GetViewport().SetInputAsHandled();
         }
     }
 
     // =========================================================
-    // FPS-only camera recoil is additive to the player's own mouse-look pitch.
-    // Keep physical camera bounds and discard recoil with no residual pitch at limits.
-    // Only the FPS weapon's short-lived active callback supplies this value.
-    public void SetWeaponRecoilPitch(float degrees)
+    // FPS-only one-way physical camera kick. This advances the mouse-look orientation itself,
+    // not a temporary offset that springs back on release, Q shove or weapon switching.
+    // The applied amount is clamped by the existing pitch bound; excess is discarded.
+    public void ApplyWeaponRecoilKick(float degrees)
     {
-        if (!_ready) return;
-        float requested = float.IsFinite(degrees) ? Mathf.Clamp(degrees, 0f, 30f) : 0f;
-        if (Mathf.IsEqualApprox(_weaponRecoilPitchDegrees, requested)) return;
-        _weaponRecoilPitchDegrees = requested;
+        if (!_ready || !float.IsFinite(degrees) || degrees <= 0f) return;
         float limit = Mathf.Clamp(TestSettings.MaximumPitch, 10f, 89f);
-        Vector3 rotation = RotationDegrees;
-        float next = Mathf.Clamp(_lookPitchDegrees + requested, -limit, limit);
-        if (Mathf.IsEqualApprox(rotation.X, next)) return;
-        rotation.X = next;
-        RotationDegrees = rotation; NotifyViewChanged();
+        float next = Mathf.Clamp(_lookPitchDegrees + degrees, -limit, limit);
+        if (Mathf.IsEqualApprox(next, _lookPitchDegrees)) return;
+        _lookPitchDegrees = next;
+        Vector3 angle = RotationDegrees;
+        angle.X = next;
+        RotationDegrees = angle; NotifyViewChanged();
     }
 
     // =========================================================

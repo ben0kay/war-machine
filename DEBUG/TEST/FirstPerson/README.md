@@ -120,3 +120,7 @@ Implemented: two-handed sideways gun push in overhead/FPS, driven by existing at
 ## FPS camera climb — RC2 refinement (2026-10-28)
 
 Firing the machine gun now smoothly inclines the **actual camera view upward**, with the gun itself progressively rising relative to the view. Player mouse-look can pull downward to control continuous fire; after release, the temporary recoil pitch recovers, leaving mouse aim intact. FPS bullets travel according to the actual camera-targeted 3D ray, with separate random spread, and no duplicated recoil angle. The old fixed-crosshair RC2 explanation elsewhere above is superseded **for FPS only**; primary top-down RC1 does **not** move its camera. Inspect [recoil plan](../../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) and FPS equipment README. Local Godot build/visual validation pending.
+
+## FPS recoil no longer pans down on release (2026-10-28)
+
+The current FPS behavior is **one-way, shot-driven camera rise**: each rifle or MG shot increases actual view pitch, smoothly delivered by the FPS weapon adapter, and the camera stays at that angle when fire stops. Drag the mouse to readjust. The **MG FPS-only continuous-burst budget is 25°**, while the rifle uses a 3° budget reset between slow shots. The weapon Visual child still settles after its short kick. This supersedes the previous RC2 automatic camera-recovery explanation elsewhere in this README; the top-down camera/recoil system is unchanged. Source only; F6 testing pending.

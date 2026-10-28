@@ -59,6 +59,10 @@ public partial class FirearmSettings : Resource
     [ExportGroup("FPS camera recoil (FPS only)")]
     // The recoil offset is physically applied to the FPS camera, NOT applied again to the bullet ray.
     [Export(PropertyHint.Range, "1,90,1")] public float FpsCameraRecoilFollowDegreesPerSecond { get; set; } = 16f;
+    // Total one-way camera rise allowed in a continuous FPS burst; does not modify top-down recoil.
+    [Export(PropertyHint.Range, "0,85,0.5,suffix:°")] public float FpsMaxCameraRecoilBurstDegrees { get; set; } = 10f;
+    // A gap this long between accepted shots resets the burst budget without moving the camera.
+    [Export(PropertyHint.Range, "0.05,2,0.05,suffix:s")] public float FpsRecoilBurstResetSeconds { get; set; } = 0.4f;
     // Additional purely visual sustained model rise, on top of ordinary shot kick.
     [Export(PropertyHint.Range, "0,2,0.05")] public float FpsVisualClimbMultiplier { get; set; } = 0.6f;
 }

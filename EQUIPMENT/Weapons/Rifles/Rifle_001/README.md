@@ -88,3 +88,7 @@ The original RC0 master values now drive real ballistic recoil in both top-down 
 ## FPS camera recoil refinement (2026-10-28)
 
 RifleMaster now has `FpsCameraRecoilFollowDegreesPerSecond=30.0` and `FpsVisualClimbMultiplier=0.55`. FPS accepted rifle shots briefly pitch the physical camera upward using its existing RC0 2°/shot accumulation, while the visual kick still animates independently. Mouse-look can counter it, and recoil recovers after a pause. This is FPS-only; the top-down RC1 camera remains unchanged. Local Godot compilation and feel check pending.
+
+## FPS one-way rifle pitch (2026-10-28)
+
+The rifle also kicks the actual FPS camera upward **2° for every accepted shot**; there is no downward camera recovery after releasing. `FpsMaxCameraRecoilBurstDegrees=3.0`, reset after a 0.45-second gap without accepted shots, so even held automatic rifle fire at 0.65-second intervals adds another 2° each time. Follow speed 30°/s; shared top-down RC1 limit remains 3°. Re-aim manually between shots. The short visual rifle kick still returns cosmetically. Test locally.

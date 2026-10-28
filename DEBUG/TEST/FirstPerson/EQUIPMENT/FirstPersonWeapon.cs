@@ -11,7 +11,8 @@ public partial class FirstPersonWeapon : Node
     private bool _held, _requested;
     private PlayerQuickMelee? _shove;
     private FirearmVisualRecoil? _visualRecoil;
-    private float _displayedCameraRecoil;
+    private float _pendingCameraRise, _burstCameraRise;
+    private double _lastAcceptedShotSeconds = -1.0;
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -79,19 +80,28 @@ public partial class FirstPersonWeapon : Node
     }
 
     // =========================================================
-    // Accepted shots begin a bounded gun kick and wake a smooth FPS camera climb.
+    // Accepted shots add real camera rise exactly once, using existing per-gun pitch strength.
+    // The FPS burst budget is independent of RC0's smaller top-down recoil cap.
     private void OnShotAccepted()
     {
         _visualRecoil?.Kick();
-        // RC0's accepted-shot impulse becomes a smooth camera target; no extra bullet offset.
-        SetProcess(true);
+        FirearmSettings settings = _weapon!.RuntimeSettings;
+        double now = Time.GetTicksMsec() * 0.001;
+        float pause = Mathf.Clamp(settings.FpsRecoilBurstResetSeconds, 0.05f, 2f);
+        if (_lastAcceptedShotSeconds < 0 || now - _lastAcceptedShotSeconds >= pause) _burstCameraRise = 0f;
+        _lastAcceptedShotSeconds = now;
+        float max = Mathf.Clamp(settings.FpsMaxCameraRecoilBurstDegrees, 0f, 85f);
+        float step = Mathf.Clamp(settings.RecoilPitchPerShotDegrees, 0f, 15f);
+        float allowed = Mathf.Min(step, Mathf.Max(0f, max - _burstCameraRise));
+        _burstCameraRise += allowed;
+        _pendingCameraRise += allowed;
+        if (_visualRecoil?.IsActive == true || _pendingCameraRise > 0f) SetProcess(true);
     }
 
     // =========================================================
-    // =========================================================
-    // Recoil physically rotates the FPS camera, so the real camera aim ray is authoritative.
-    // Smoothly follow the single RC0 angle; the player can pull down to counter during a burst.
-    // No work runs once both camera and model settle.
+    // Drain queued upward impulses at the weapon's configured camera rise speed.
+    // RC0 can recover its own gameplay state for top-down, but NEVER pans FPS down.
+    // Mouse compensation is permanent, and the real 3D firing ray uses this camera direction.
     public override void _Process(double delta)
     {
         if (!IsInstanceValid(_camera) || !IsInstanceValid(_weapon))
@@ -102,24 +112,28 @@ public partial class FirstPersonWeapon : Node
             CancelVisualRecoil(); _weapon!.CancelFeedback(); return;
         }
         float dt = float.IsFinite((float)delta) ? Mathf.Clamp((float)delta, 0f, 0.1f) : 0f;
+        float speed = Mathf.Clamp(_weapon!.RuntimeSettings.FpsCameraRecoilFollowDegreesPerSecond, 1f, 90f);
+        float applied = Mathf.Min(_pendingCameraRise, speed * dt);
+        _pendingCameraRise = Mathf.Max(0f, _pendingCameraRise - applied);
+        if (applied > 0f) _camera.ApplyWeaponRecoilKick(applied);
+
         _visualRecoil?.Advance(dt);
-        float target = _weapon!.RecoilOffsetDegrees.Y;
-        float speed = Mathf.Clamp(_weapon.RuntimeSettings.FpsCameraRecoilFollowDegreesPerSecond, 1f, 90f);
-        _displayedCameraRecoil = Mathf.MoveToward(_displayedCameraRecoil, target, speed * dt);
-        _camera.SetWeaponRecoilPitch(_displayedCameraRecoil);
-        _visualRecoil?.SetSustainedRise(_displayedCameraRecoil
-            * Mathf.Clamp(_weapon.RuntimeSettings.FpsVisualClimbMultiplier, 0f, 2f));
-        if (_visualRecoil?.IsActive != true && target <= 0.0001f && _displayedCameraRecoil <= 0.0001f)
+        // Sustained model pitch remains temporary; the camera's achieved rise does not recover.
+        float extraRise = _weapon.RecoilOffsetDegrees.Y
+            * Mathf.Clamp(_weapon.RuntimeSettings.FpsVisualClimbMultiplier, 0f, 2f);
+        _visualRecoil?.SetSustainedRise(extraRise);
+        if (_pendingCameraRise <= 0.0001f && _visualRecoil?.IsActive != true
+            && _weapon.RecoilOffsetDegrees.Y <= 0.0001f)
             SetProcess(false);
     }
 
     // =========================================================
-    // Interruptions restore authored gun visuals and clear only the recoil part of camera pitch.
-    // The player's independent mouse-look direction is never overwritten or reset.
+    // Interruptions clear queued rise and gun animation, never forcibly lower FPS aim.
     private void CancelVisualRecoil()
     {
-        _displayedCameraRecoil = 0f;
-        if (IsInstanceValid(_camera)) _camera.SetWeaponRecoilPitch(0f);
+        _pendingCameraRise = 0f;
+        _burstCameraRise = 0f;
+        _lastAcceptedShotSeconds = -1.0;
         _visualRecoil?.Cancel();
         SetProcess(false);
     }

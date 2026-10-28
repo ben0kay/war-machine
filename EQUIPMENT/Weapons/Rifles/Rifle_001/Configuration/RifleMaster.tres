@@ -38,4 +38,6 @@ VisualRecoilKickMeters = 0.09
 VisualRecoilPitchDegrees = 5.0
 VisualRecoilRecoverySeconds = 0.22
 FpsCameraRecoilFollowDegreesPerSecond = 30.0
+FpsMaxCameraRecoilBurstDegrees = 3.0
+FpsRecoilBurstResetSeconds = 0.45
 FpsVisualClimbMultiplier = 0.55

@@ -72,3 +72,7 @@ The primary top-down `PlayerWeaponController` now uses the third-argument recoil
 ## FPS-only camera-driven sustained recoil refinement (2026-10-28)
 
 The shared ballistic `FirearmRecoil` still accumulates independently of `ShotSpread`. The FPS adapter now applies that state to the physical FPS camera and calls the **two-argument** `TryFire` (instead of also rotating the 3D shot ray), preventing double recoil; the top-down view keeps the third-argument recoil direction and its current camera behavior. `FirearmVisualRecoil` gained optional `SetSustainedRise` for the FPS gun model only. The model's real sibling Muzzle marker remains unchanged. Per-gun FPS climb smoothing and model-rise multipliers are in each `.tres`. Full handoff: [recoil plan](../RECOIL_IMPLEMENTATION_PLAN.md).
+
+## FPS one-way camera recoil (2026-10-28)
+
+`FirstPersonWeapon` now uses a shot-accepted FPS **per-burst** camera-rise budget and positive-only camera impulses. It **does not** drive camera rotation from the falling `FirearmRecoil.RecoilOffsetDegrees`; RC0's recoil recovery remains relevant to top-down and transient gun Visual animation only. The FPS camera keeps its new mouse-look pitch after each shot. The original two-argument FPS `TryFire` continues to avoid double ballistic recoil, while top-down RC1 continues using the three-argument camera-up overload. Settings `FpsMaxCameraRecoilBurstDegrees` and `FpsRecoilBurstResetSeconds` are FPS-only; top-down mastery cap is untouched.

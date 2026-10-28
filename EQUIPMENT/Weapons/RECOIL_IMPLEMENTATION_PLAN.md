@@ -150,3 +150,29 @@ Read root `README.md`, `CodePreferences.md`, this plan, `Weapons/ACCURACY_IMPLEM
 - **No extra projectile simulation, camera aim ray per idle frame, per-bullet scene creation, new input keys, ammo/reload, new projectile physics, change to damage/stagger, ACC1/ACC2 or Q shove redesign.** Clearly say if any local build/gameplay checks were unavailable.
 
 **Implementation status:** RC0–RC2 are now integrated in source. Current work is local compile/visual tuning and acceptance, not another automatically authorized phase. Extra presentation polish is separate.
+
+## RC2 FPS recoil revision — one-way rise and 25° machine-gun burst (2026-10-28)
+
+**Status:** Implemented in source, local compile/playtest pending. This section supersedes the earlier RC2 text that described automatically returning the camera to its original pitch.
+
+**Requested behavior:** In **FPS only**, every accepted shot lifts the actual first-person view, causing the player to adjust mouse aim downward. Releasing the trigger **never automatically pans the camera downward**. The rifle also lifts the view on its slower shots. The MG can drive its view substantially higher during a long burst: **25 degrees** maximum cumulative rise from that uninterrupted burst (interpreting the owner's "25%" request as 25°, an angular value, not a screen percentage). The camera's existing global pitch limit still applies. Top-down recoil behavior is unchanged.
+
+**Implementation details:**
+- `FirstPersonWeapon.OnShotAccepted` queues **one** `RecoilPitchPerShotDegrees` impulse from the active gun's per-weapon master (rifle 2°, MG 0.55°), respecting a **FPS-only** `FpsMaxCameraRecoilBurstDegrees` budget. A gap of `FpsRecoilBurstResetSeconds` between accepted shots resets the *budget only*, not the achieved camera pitch; this lets slow-firing rifles keep kicking at each shot and lets new MG bursts kick again. There is no elapsed-time or trigger-release subtraction from the view.
+- Its existing active-only `_Process` drains queued positive impulses at `FpsCameraRecoilFollowDegreesPerSecond`. These impulses permanently change the actual `FirstPersonCamera` mouse-look pitch via `ApplyWeaponRecoilKick`, bounded by `MaximumPitch`. The camera does not retain or cancel a temporary recoil rotation; any excess at the sky limit is discarded. The render callback sleeps after queued rise and temporary gun mesh feedback settle. **Do not use RC0's recovering `RecoilOffsetDegrees.Y` as a camera-pitch target**, or the old automatic downward pan returns.
+- `FirstPersonCamera.ApplyWeaponRecoilKick` adjusts `_lookPitchDegrees` directly. Mouse movements change that same physical view angle, so pulling the mouse downward compensates. A trigger release, successful Q shove, weapon switch, backpack/UI input block, Escape/mouse release, lost focus or scene exit cancel *pending* impulses and reset the gun Visual child only; **they do not undo already applied camera orientation**.
+- The gun model remains attached to the moving FPS camera. Its existing short kick and extra `FirearmVisualRecoil.SetSustainedRise` continue to recover cosmetically using RC0's active recoil state, **without moving the camera down**. The actual `Muzzle` sibling remains unanimated by the Visual helper. The FPS shot uses `TryFire(aim, origin)`, so real 3D hitscan originates from the now-elevated view; no duplicate ballistic recoil offset or extra physics queries. `ShotSpread.Apply` remains independent and unchanged. Top-down RC1 continues using its camera-up firing overload and original per-gun recoil masters.
+
+**Current tuning (per-weapon `.tres`, FPS only):**
+
+| Field | Rifle 001 | Machine Gun 001 |
+| --- | ---: | ---: |
+| `RecoilPitchPerShotDegrees` (shared impulse magnitude) | 2° | 0.55° |
+| `FpsMaxCameraRecoilBurstDegrees` (new independent FPS limit) | 3° per uninterrupted burst | **25°** per uninterrupted burst |
+| `FpsRecoilBurstResetSeconds` (reset budget, never view pitch) | 0.45 s | 0.35 s |
+| `FpsCameraRecoilFollowDegreesPerSecond` (positive impulses only) | 30°/s | 10°/s |
+| Shared top-down `RecoilMaxPitchDegrees` | 3° | **4.5° unchanged** |
+
+**Numeric check:** MG 0.55° per 0.10s accepted shot needs about 46 bullets to reach the 25° burst budget, assuming uninterrupted fire (first shot also adds a camera impulse). At full trigger, an uninhibited 25° view rise takes about 4.6 seconds before the budget caps, subject to look angle limits. Rifle fires every 0.65s, which exceeds its 0.45s budget reset window, so each accepted rifle shot adds a new 2° upward view kick. Because the camera doesn't return automatically, the user must correct after firing rather than waiting for it to drop.
+
+**Local tests required:** `dotnet build war-machine.csproj`; F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`; fire rifle single shots (camera moves up and **stays up**), rifle held automatic fire (each shot still moves up), MG 2s+ and 5s bursts (~11° and capped ~25°), downward mouse correction mid-burst, release 2s+ (camera does not drop), next burst after 0.35s (new climb budget), looking straight upward at pitch clamp, Q shove, slots 1/2, Escape/recapture, backpack UI, focus loss and scene unload. Verify short kick/visual settled gun, FPS crosshair and real tracer/cover hit alignment; then brief F6 `WORLD/World.tscn` to ensure RC1 stays unchanged. Static source inspection only here; live Godot/.NET and visual acceptance are **not verified**.
