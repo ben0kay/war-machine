@@ -1,6 +1,6 @@
 # PER2A — Alerted-target tracking after initial visual acquisition
 
-**Status: Proposed only; not implemented or authorized for code changes.**
+**Status: PER2A implemented in source (2026-10-28), awaiting local build/gameplay validation.**
 **Date:** 2026-10-28
 **Working branch:** `implement-td0-td1`
 **Scope:** Zombie eyesight retention in shared World (top-down/FPS), including normal Zombie 001 and Runner 002. No navigation, hearing, attacks, weapon or robot changes.
@@ -30,7 +30,7 @@ The requested rule is an **alerted/locked-on visual awareness**, not a 360-degre
 
 | Phase | Work | Suggested assistant | Status |
 | --- | --- | --- | --- |
-| PER2A | Edit one alerted-target sight gate in `ZombieController.Think()`; optionally label F7 overlay as *acquisition cone only*; document impact and validate in world | Regular Chat (small isolated change); Codex for optional broader debug/AI integration | **Planned — awaits explicit approval** |
+| PER2A | Frontal initial acquisition plus angle-independent, physically LOS-gated chase/search retention; F7 still shows the initial acquisition cone | Regular Chat | **Implemented; local validation pending** |
 
 **Performance:** same **0.4s staggered brain timer**, same cached ray query, max two rays per tick and no extra nodes or new frame callbacks. Additional bounded ray checks only for already-alerted zombies outside the original cone. Inactive actors still stop their timer; after investigation ends, the forward cone resumes. This preserves FPS/top-down parity and keeps zombie-specific behaviour outside the generic shared `VisibilityResolver` (future wildlife/robots may choose different rules).
 
@@ -47,4 +47,4 @@ Before implementing PER2A, the user authorized and received these **settings-onl
 - Runner 002 wander **0.85m/s**, chase **8.3m/s** unchanged.
 - No `ZombieController`, `ZombieInvestigation`, `VisibilityResolver`, F7 visualization, attack or hearing runtime changes.
 
-After user approves PER2A, update this document and the owning READMEs with implemented status and local validation results.
+**Implementation note:** `ZombieController.Think()` now bypasses the forward-cone gate only for `IsChasing || IsInvestigating`. Its current range test and shared `VisibilityResolver.CanSee()` head/torso ray requirement remain unchanged. The original last-seen investigation logic remains intact. No damage/hit investigation was added: **the owner explicitly deferred hit-triggered investigation**. No Godot runtime tests were performed.

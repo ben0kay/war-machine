@@ -1,4 +1,4 @@
-> **Proposed PER2A (not implemented):** [Alerted-target tracking after initial detection](ALERTED_TRACKING_PROPOSAL.md) addresses loss of sight when the player runs behind an already chasing zombie. A +25% visual-range balance pass is implemented in both zombie masters; the strict 160° cone still applies during chase for now.
+> **PER2A implemented in source (2026-10-28, local validation pending):** [Alerted tracking](ALERTED_TRACKING_PROPOSAL.md) lets zombies keep LOS-gated pursuit of already acquired targets from behind. Unaware initial detection still uses the 160° cone; the +25% range adjustment remains. **Hit-triggered investigation has not been implemented**.
 
 # Optional sensors and shared perception — RM3 and proposed PER stages
 

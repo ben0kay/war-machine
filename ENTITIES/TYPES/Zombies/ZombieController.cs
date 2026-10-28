@@ -271,7 +271,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     { ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
 
     // =========================================================
-    // Cheap range and visual-facing gates precede bounded head/torso LOS. No hidden live-position pursuit.
+    // Initial frontal acquisition, then angle-independent alerted tracking with mandatory LOS.
+    // Hidden target positions never become confirmed chase goals.
     private void Think()
     {
         if (!IsActive || !_configured) return;
@@ -285,11 +286,21 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         {
             Vector3 offset = _target.GlobalPosition - GlobalPosition; offset.Y = 0;
             float squared = offset.LengthSquared(), range = Mathf.Max(0, VisionRange);
-            Vector3 forward = -VisualRoot.GlobalBasis.Z; forward.Y = 0; forward = forward.Normalized();
-            float threshold = Mathf.Cos(Mathf.DegToRad(Mathf.Clamp(_config.VisionAngleDegrees, 1, 180)) * 0.5f);
-            if (squared <= range * range && (squared < 0.000001f || forward.Dot(offset / Mathf.Sqrt(squared)) >= threshold))
-                chasing = _visibility.CanSee(GetWorld3D().DirectSpaceState,
-                    GlobalPosition + Vector3.Up * _config.EyeHeight, _sightTarget);
+            if (squared <= range * range)
+            {
+                // During an ongoing chase or PER2 search, don't forget an unobstructed
+                // target simply because it ran behind the zombie's visual facing.
+                bool inCone = IsChasing || IsInvestigating;
+                if (!inCone)
+                {
+                    Vector3 forward = -VisualRoot.GlobalBasis.Z; forward.Y = 0; forward = forward.Normalized();
+                    float threshold = Mathf.Cos(Mathf.DegToRad(Mathf.Clamp(_config.VisionAngleDegrees, 1, 180)) * 0.5f);
+                    inCone = squared < 0.000001f || forward.Dot(offset / Mathf.Sqrt(squared)) >= threshold;
+                }
+                if (inCone)
+                    chasing = _visibility.CanSee(GetWorld3D().DirectSpaceState,
+                        GlobalPosition + Vector3.Up * _config.EyeHeight, _sightTarget);
+            }
         }
         if (chasing != IsChasing)
         { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); UpdatePose(0); } }
