@@ -60,3 +60,11 @@ Use `weather.set_camera(new_camera)`. Assigning unrelated component camera field
 - Compare Compatibility and Forward+ in the complete project; the best renderer depends on the rest of the scene.
 
 See `COMPATIBILITY_AND_PERFORMANCE.md` for exact default allocation budgets.
+
+## Custom resource InvalidCastException in editor previews
+
+ParkingLotMesh, ConvenienceStoreMesh, Car001Mesh, the four Building00x mesh builders and streetlamp preview/lighting scripts run with [Tool]. Their exported concrete C# Resource types (and shared StructureSettings base) must also be marked [Tool] as well as [GlobalClass], otherwise the editor can supply a native Godot.Resource placeholder and the generated property setter fails to cast. These are data-only resources; this annotation adds no update loop, physics or regeneration. Resource paths and existing .tres values are preserved.
+
+After pulling the fix on implement-td0-td1, stop play, rebuild the C# project and reopen the editor if it still holds cached script instances. Clear Output and F6 WORLD/World.tscn. Expected current startup includes Village survey / Village graded messages. Old mountain-test and showcase building-offset messages in retained Output can belong to a previous run; confirm against a fresh run before diagnosing them as new village failures. Do not edit generated .godot/mono source files or recreate the settings masters.
+
+Source/attribute dependency and whitespace checks passed. Godot/.NET unavailable here: compilation/editor reload/runtime verification remains local.

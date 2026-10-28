@@ -1,6 +1,7 @@
 // Shared Car001 dimensions, colour and default closed driver-door pose; per-instance overrides live on Car001Mesh.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class Car001Settings : Resource
 {

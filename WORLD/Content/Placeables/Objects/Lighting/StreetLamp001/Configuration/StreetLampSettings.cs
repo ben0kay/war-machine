@@ -1,6 +1,7 @@
 // Geometry-only streetlamp master. Real light settings are owned by ENVIRONMENT/Lighting.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class StreetLampSettings : Resource
 {

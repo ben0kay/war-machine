@@ -1,6 +1,7 @@
 // Editable, world-independent dimensions and visual defaults for the reusable parking apron.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class ParkingLotSettings : Resource
 {

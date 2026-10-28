@@ -1,6 +1,7 @@
 // Reusable native streetlamp illumination; independent of the physical lamp pole/housing.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class StreetLampLightingSettings : Resource
 {

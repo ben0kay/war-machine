@@ -1,6 +1,7 @@
 // Common visibility settings inherited by building-specific art/dimension masters.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class StructureSettings : Resource
 {

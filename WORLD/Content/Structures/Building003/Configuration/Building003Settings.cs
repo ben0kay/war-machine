@@ -1,6 +1,7 @@
 // Roadside fuel/service station appearance and footprint settings for Building003.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class Building003Settings : StructureSettings
 {

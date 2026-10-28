@@ -1,6 +1,7 @@
 // Configurable dimensions and muted rural-industrial colours for Building001; reused by its C# mesh generator.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class Building001Settings : StructureSettings
 {

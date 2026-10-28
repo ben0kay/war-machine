@@ -1,6 +1,7 @@
 // Abandoned two-storey field office with flat roof, balcony, and internal crosswise stairs.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class Building004Settings : StructureSettings
 {

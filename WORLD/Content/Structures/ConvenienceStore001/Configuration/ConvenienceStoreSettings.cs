@@ -1,6 +1,7 @@
 // Inspector-editable dimensions and palette for the independent convenience-store prefab.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class ConvenienceStoreSettings : StructureSettings
 {

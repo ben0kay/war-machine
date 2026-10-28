@@ -1,6 +1,7 @@
 // Ranger lodge palette and dimensions for the one-shot procedural Building002 mesh.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class Building002Settings : StructureSettings
 {
