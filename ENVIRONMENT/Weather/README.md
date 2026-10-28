@@ -60,3 +60,7 @@ Initial source/reference checks only; Godot/.NET are unavailable here. Test rain
 WeatherBridge also accepts an explicit Camera3D and Node3D anchor, without an ExplorationController or cave. TopDownWorldTest uses its player as anchor and SetOrthographicCoverage on zoom/viewport resize to widen the existing rain/snow emitters and culling bounds. Existing FPS initialization still anchors at its camera and retains movement-triggered cave shelter. Particle quality budgets and dormant-zero behaviour are shared; addon sources are unchanged.
 
 Shared scene ownership now lives in ENVIRONMENT/Environment.tscn (GameEnvironment), which owns these existing WeatherBridge/GroundHaze components. EffectsScene and WispsShader can be edited on that prefab. No duplicate implementations. FPS also exposes GroundHazeControls; old F8/F9 modal-panel instructions are superseded by one left-hand panel.
+
+## Interior/shelter roadmap
+
+[../INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md](../INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md) plans shared building volumes and spatial ground-haze masking in both views. Rain shelter/exclusion is explicitly **FPS only**; top-down rain stays unchanged even indoors and even in perspective mode. Other weather effects are independent opt-ins. No new clipping/masking code is implemented by the plan.
