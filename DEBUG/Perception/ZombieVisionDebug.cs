@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public partial class ZombieVisionDebug : Node
 {
     private readonly List<ZombieController> _zombies = new();
+    private readonly ZombieRenderDebug _render = new();
+    public bool VisualsHidden => _render.Hidden;
     private bool _visible = true;
     public bool ConesVisible => _visible;
     public event System.Action<bool>? VisibilityChanged;
@@ -36,7 +38,8 @@ public partial class ZombieVisionDebug : Node
         var cone = new MeshInstance3D { Name = "DebugVisionCone", Mesh = mesh, MaterialOverride = ConeMaterial,
             Position = Vector3.Up * settings.EyeHeight, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         zombie.VisualRoot.AddChild(cone); zombie.AttachVisionDebug(cone); _zombies.Add(zombie);
-        zombie.SetVisionDebugVisible(_visible && settings.ShowVisionCone);
+        _render.Register(zombie.VisualRoot);
+        zombie.SetVisionDebugVisible(_visible && !VisualsHidden && settings.ShowVisionCone);
     }
 
     // =========================================================
@@ -61,14 +64,28 @@ public partial class ZombieVisionDebug : Node
     {
         if (_visible == visible) return;
         _visible = visible;
+        RefreshConeVisibility();
+        VisibilityChanged?.Invoke(_visible);
+    }
+
+    // =========================================================
+    // Hide roots only; existing corpses are tracked via their original visual node, not a separate corpse system.
+    public void SetVisualsHidden(bool hidden)
+    { _render.SetHidden(hidden); RefreshConeVisibility(); }
+
+    // =========================================================
+    private void RefreshConeVisibility()
+    {
         for (int i = _zombies.Count - 1; i >= 0; i--)
         {
             if (!IsInstanceValid(_zombies[i])) { _zombies.RemoveAt(i); continue; }
             var settings = (ZombieSettings)_zombies[i].RuntimeSettings;
-            _zombies[i].SetVisionDebugVisible(visible && settings.ShowVisionCone);
+            _zombies[i].SetVisionDebugVisible(_visible && !VisualsHidden && settings.ShowVisionCone);
         }
-        VisibilityChanged?.Invoke(_visible);
     }
+
+    // =========================================================
+    public override void _ExitTree() { _render.Clear(); _zombies.Clear(); }
 
     // =========================================================
     // F7 remains available in both world perspectives with no frame callbacks or additional LOS queries.

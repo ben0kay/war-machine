@@ -201,6 +201,10 @@ public partial class DebugOverlay : PanelContainer
             _visionDebug.VisibilityChanged += OnVisionDebugChanged;
             if (OS.IsDebugBuild() && player != null)
             {
+                var hideZombies = new CheckButton { Text = "Hide zombie visuals + corpses",
+                    ButtonPressed = visionDebug.VisualsHidden, FocusMode = FocusModeEnum.None };
+                rows.AddChild(hideZombies);
+                hideZombies.Toggled += visionDebug.SetVisualsHidden;
                 ZombieInjuryDebug.Build(AddSection(rows, "Zombie injury tests"), visionDebug, player);
                 AnatomyPerformanceDebug.Build(AddSection(rows, "Anatomy performance"));
             }
