@@ -92,7 +92,8 @@ The major current or anticipated owners are:
 | `VEGETATION/` | Shared grass and plant/tree placement, rendering and distance/idle-cost controls |
 | `DEBUG/` | Tuning tools, diagnostics and the **non-primary FPS test** |
 | `NOTES/` | Concepts, design notes and ideas; not automatically authorized implementation |
-| `UI/`, future shared owners | UI and other features when actually needed; do not create speculative folder hierarchies |
+| `UI/` | Gameplay HUD screen-space layout and static hotbar; future status widgets arranged here, not health state |
+| `FEEDBACK/` | **New folder/documentation foundation only:** FB0 scaffold for future reusable health/defence bars and impact effects; no UI implemented |
 
 Some planned owners (for example persistence and inventory) are **not fully implemented**. Prefer folder READMEs, central configuration resources, replaceable assets and small reusable helpers over unnecessary managers or huge scene trees. Use events, staggered checks, bounded sensing, streaming/relevance and actual sleep/deactivation to keep idle cost low.
 
@@ -113,6 +114,8 @@ Start with this README for intent, then read the owning README, relevant plan an
 
 - [WORLD/README.md](WORLD/README.md) — active world, terrain, structures, scenery and scene setup
 - [PLAYER/README.md](PLAYER/README.md) and [CAMERA/README.md](CAMERA/README.md) — player and main overhead camera
+- [PLAYER/IMPLEMENTATION_PLAN.md](PLAYER/IMPLEMENTATION_PLAN.md) — **PH0–PH5 Planned**, Codex-ready player health/healing/death and later survival stats
+- [FEEDBACK/IMPLEMENTATION_PLAN.md](FEEDBACK/IMPLEMENTATION_PLAN.md) — **FB0 folders/docs present; FB1–FB4 Planned** for shared player/enemy health bars, optional depletable defence bars and feedback effects
 - [ENTITIES/TYPES/Zombies/README.md](ENTITIES/TYPES/Zombies/README.md) — current zombies and explicit limitations
 - [ENTITIES/Shared/Sensing/README.md](ENTITIES/Shared/Sensing/README.md) — shared visibility, hearing proposal and perception phases
 - [EQUIPMENT/Weapons/README.md](EQUIPMENT/Weapons/README.md) — shared gun systems and accuracy work

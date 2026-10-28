@@ -223,7 +223,7 @@ CM2-B1 introduced shove recognition and a stationary pause; CM2-B2 now extends i
 
 **Objective:** Living zombies can deliver telegraphed short melee hits to a damageable player using the **same actor-neutral contact/damage system**; the executor must accept AI-controlled callers without player input. Bears and other creatures may adopt that executor later.
 
-**Dependencies:** **PH0 must be implemented and validated first** (player `IDamageReceiver` and HP/death). CM0 shared contract and at least a basic melee executor from CM2/CM3. PH2 stamina is **optional**, not a blocker; advanced hearing/navigation is optional.
+**Dependencies:** **PH0 must be implemented and validated first** (player `IDamageReceiver` and HP/death), following [PLAYER/IMPLEMENTATION_PLAN.md](../PLAYER/IMPLEMENTATION_PLAN.md). FEEDBACK bars are independently phased in [FEEDBACK/IMPLEMENTATION_PLAN.md](../FEEDBACK/IMPLEMENTATION_PLAN.md) and are **not** a blocker for CM5 damage mechanics. CM0 shared contract and at least a basic melee executor from CM2/CM3. PH2 stamina is **optional**, not a blocker; advanced hearing/navigation is optional.
 
 **Implementation scope:** Existing zombie chase/stop radius triggers a bounded melee attempt with windup/contact/recovery/cooldown while in reach and facing the player. Reuse same impact/damage receiver contracts and world collision/cover checks. Target player health through PH0, optional brief player recoil without disrupting locomotion permanently. Apply target immunity/death gating, respect activated state and prevent horde attacks from every zombie at once via an optional **small concurrency budget** (only if playtesting demonstrates necessity). Weapon and zombie attack schedulers stay actor-owned; no global always-on melee manager.
 

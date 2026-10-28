@@ -1,15 +1,15 @@
 # PLAYER — Health, Vitals and Survival Implementation Plan
 
-> **Plan only — PH0–PH5 are Planned.** No player-health, survival or HUD code is implemented by this document. Implement only the phase expressly authorized by the owner, on the active `implement-td0-td1` branch unless instructed otherwise.
+> **Plan only — PH0–PH5 are Planned.** No player-health, survival or HUD mechanics are implemented by this document. A separate [FEEDBACK foundation](../FEEDBACK/README.md) now exists as **folders and documentation only**; its bars are not functional. Implement only the phase expressly authorized by the owner, on `implement-td0-td1`.
 >
-> **Reviewed:** 2026-10-27 against the active branch's root `README.md`, `CodePreferences.md`, `PLAYER/README.md`, player scene/controller/settings, `WORLD/WorldController.cs` and existing shared damage pipeline. The parked first-person world must remain unchanged.
+> **Baseline reviewed:** 2026-10-27 against root `README.md`, `CodePreferences.md`, player scene/controller/settings, `WORLD/WorldController.cs` and shared damage pipeline. Updated 2026-10-28 for the new FEEDBACK folder plan; FPS inherits the active world and should remain compatible, while the parked `WORLD/testworld.tscn` remains unchanged.
 
 ## Phases at a glance
 
 | Phase | Goal | Suggested assistant | Status |
 | --- | --- | --- | --- |
 | **PH0** | Player health (100 HP), shared damage reception, healing, death, simple HP readout | Codex / ChatGPT Work | **Planned** |
-| **PH1** | Better health HUD and hit/death feedback, no new damage mechanics | Regular Chat for UI plan; Codex / Work for integration | Planned |
+| **PH1** | Coordinate health HUD and hit/death presentation through FEEDBACK FB1/FB4, without new health mechanics | Regular Chat layout; Codex / Work for integration | Planned |
 | **PH2** | Stamina, sprint cost and regeneration | Codex / Work | Planned |
 | **PH3** | Hunger and thirst, slow survival updates and initial consequences | Codex / Work | Planned |
 | **PH4** | Fatigue, rest/sleep and recovery | Codex / Work | Planned |
@@ -35,10 +35,10 @@ PLAYER/
   Player.tscn                       # existing: player root + collision
   Configuration/
     PlayerMaster.tres               # existing: one player master, add grouped vitals profile
-  Stats/                            # PH0 onwards (player-owned state and adapter)
+  Stats/                            # README scaffold exists; PH0 later adds actual state and adapter
     PlayerVitals.cs                 # new: player health wrapper, future vitals signals
     PlayerVitalsSettings.cs         # new: future-extensible profile containing HealthSettings
-    README.md                       # new when PH0 implemented
+    README.md                       # existing scaffold; PH0 updates it
   Survival/                         # PH3+ only (rates, exposures, consequences)
     README.md                       # create with first survival implementation
   Equipment/                        # existing: weapon adapter; reacts to player death
@@ -48,7 +48,8 @@ PLAYER/
 ENTITIES/Shared/Combat/             # existing: damage packets, resolver, health, receiver
 WORLD/World.tscn                    # active scene: wires player and minimal visible readout
 WORLD/WorldController.cs            # composition/event binding only, not damage formulas
-UI/                                  # optional later PH1 reusable HUD, only if justified
+FEEDBACK/                            # FB0 folders/docs exist; actual bars and effects in approved FB1+ phases
+UI/GameplayHUD/                      # existing hotbar; owns screen-space arrangement
 ```
 
 **Proposed scene outline:** `Player (CharacterBody3D / PlayerController, IDamageReceiver)` -> `Vitals (Node / PlayerVitals)` -> `Health (Node / existing HealthComponent)`. Keep the two small components as a grouped child rather than adding several managers to the scene tree. The root receives hits because attacks may resolve `IDamageReceiver` on the collider/ancestor; it simply forwards them. The shared damage resolver must not know about PlayerController, zombies or UI.
@@ -56,6 +57,22 @@ UI/                                  # optional later PH1 reusable HUD, only if 
 **Configuration:** `PlayerSettings` should expose an exported, clearly grouped `PlayerVitalsSettings` profile, authored as a subresource in the single `PLAYER/Configuration/PlayerMaster.tres`. It initially contains `HealthSettings` with **MaxHealth = 100**, armour and resistances defaulting to zero. Runtime systems duplicate resource data; they never overwrite the master. Don't put current HP into `.tres`: it is runtime state, eventually serialized via SAVE.
 
 ## PH0 — First player health pass
+
+### PH0 Codex implementation contract (updated 2026-10-28)
+
+Read this PH0 section, [Stats ownership](Stats/README.md), [shared health](../ENTITIES/Shared/Combat/README.md), [FEEDBACK plan](../FEEDBACK/IMPLEMENTATION_PLAN.md), the actual player/FPS equipment source and `CodePreferences.md` before editing.
+
+**Non-negotiable implementation sequence (PH0 authorization only):**
+
+1. **Model and master:** add the minimum `Stats/PlayerVitals` + `PlayerVitalsSettings` pair described below (or the documented narrower direct-health-profile alternative after checking real source); group a real `HealthSettings` profile under `PlayerSettings`, with default 100 HP, zero armour/resistances in `PlayerMaster.tres`. Player runtime duplicates master settings as it already does; don't mutate shared `.tres`.
+2. **Existing health component:** reuse `HealthComponent.Configure`, `ApplyDamage`, `Damaged`, `Died`. For healing and HP UI, expose an event with the *new* current/max snapshot (a `Damaged` payload alone is insufficient because `DamageResult.Amount` may include overkill); clamp heal, ignore nonfinite/negative inputs and forbid healing dead actors. Don't change the zombie damage/death contract.
+3. **Player root receiver:** implement `IDamageReceiver` at the root `PlayerController`, gate unconfigured/dead/queued state, and forward through vitals, not custom subtraction. Initialize exactly once after player settings/scene are ready; get initial snapshot before binding HUD. Keep `Player.tscn` node alive on death for camera/scene references.
+4. **Death and controls:** one latched death transition; stop player-controlled movement, aim/shoot and Q melee cleanly in **both** the top-down `PlayerWeaponController` and FPS `FirstPersonWeapon` adapters, without pausing the entire scene or breaking camera/render/UI. Don't interfere with equipment 1/2 or Q while alive. Review `_Input`, `_UnhandledInput` and active physics callbacks for post-death action gates.
+5. **Minimal validation UI:** a temporary read-only `Health: current / max` label via existing world debug Controls (shared to inherited FPS where practical), not a styled health bar and not `FEEDBACK/Bars` code. FB1 handles presentation later. No permanent debug damage hotkey.
+6. **Shutdown and evidence:** unsubscribe all health/weapon/HUD event bindings on scene removal; do not add idle stats callbacks. Run `dotnet build war-machine.csproj` if available, then F6 `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Test temporary packet damage/healing/mitigation, single death, post-death controls and zombie shooting regression. Report what actually ran, pending checks and one commit to the required branch.
+
+**PH0 does NOT authorize** zombie attack AI (CM5), FB1/FB2 bars, shield resources, animation polish, stamina, respawn, save system or global gameplay manager. Future FB phases depend on the HP API but are separately approved.
+
 
 **Objective:** A genuinely damageable/healable active player, with 100/100 initial HP, existing mitigation rules, one-time death handling and a minimal visible readout. This establishes the API for future injuries and starvation without implementing those mechanics.
 
@@ -66,7 +83,7 @@ UI/                                  # optional later PH1 reusable HUD, only if 
 2. **Player stats:** Add `PLAYER/Stats/PlayerVitals.cs` plus `PlayerVitalsSettings.cs` and `Stats/README.md`. Configure the existing `HealthComponent` with an isolated copy of the player health profile during player initialization; expose read-only `CurrentHealth`, `MaxHealth`, `IsDead`, `Heal(amount)` and HP/death events. No separate damage formula.
 3. **Root hit receiver:** Make `PLAYER/PlayerController.cs` implement `IDamageReceiver` and forward `ReceiveHit(DamagePacket)` to its player-owned vitals. Reject hits until initialized and once dead. Wire death to input/movement shutdown and inform the weapon adapter so held fire cannot continue; keep player node in scene for later respawn. Decide the smallest visual death reaction (e.g. stop and clearly indicate dead), **not** a ragdoll.
 4. **Scene/master wiring:** Attach a `Vitals/Health` group under `PLAYER/Player.tscn`; add the exported vitals profile under `PlayerSettings`, saved as nested resources in `PLAYER/Configuration/PlayerMaster.tres`. Keep `WorldController` as initialization/composition glue; do not change spawn, camera, terrain, robot or zombie systems.
-5. **Tiny readout:** In the active world's existing `Controls` CanvasLayer, show e.g. `Health: 100 / 100`, updating via an HP-changed event, not per-frame polling. PH1 owns visual styling. Provide a minimal deliberate test path (lightweight local harness/debug-only damage call if necessary), without a permanent gameplay damage hotkey.
+5. **Tiny PH0 readout only:** In the active world's existing `Controls` CanvasLayer, show e.g. `Health: 100 / 100`, updating on an HP-changed event, never per-frame polling. Keep this temporary diagnostic text small; **do not pre-implement FEEDBACK FB1's styled bar or duplicate the hotbar**. Document how to replace/remove it when FB1 is approved. Provide a deliberate local damage/heal test path (temporary harness if necessary), without a permanent gameplay damage hotkey.
 
 **Out of scope:** Zombie contact/melee attacks, robot beams, death animation/ragdoll, respawn, save/load, healing items, automatic HP regeneration, shield/armour equipment, status effects, stamina, food, water, weather damage, and changes to the legacy first-person player.
 
@@ -90,9 +107,9 @@ UI/                                  # optional later PH1 reusable HUD, only if 
 
 **Dependencies:** PH0 accepted (or at least implemented and validated).
 
-**Scope / ownership:** Replace or restyle the temporary world readout with a reusable health bar (prefer `UI/` only when actually needed); percentage/current+max, hit pulse and optional simple directional indicator. Subscribe to HP/death events; keep logic in player vitals, presentation in the HUD. Player death message or overlay may be added; respawn remains separate unless later authorized.
+**Scope / ownership:** PH1 coordinates presentation with [FEEDBACK FB1/FB4](../FEEDBACK/IMPLEMENTATION_PLAN.md); implement the reusable health bar under `FEEDBACK/Bars/Health/`, player presentation under `FEEDBACK/Bars/PlayerStatus/`, and compose it through `UI/GameplayHUD/` rather than creating a second health UI. Replace the PH0 diagnostic readout; show percentage/current+max, hit pulse and optional separately authorized directional indicator. Subscribe to HP/death events; keep logic in player vitals, presentation in the HUD. Player death message or overlay may be added; respawn remains separate unless later authorized.
 
-**Out of scope:** New combat/status types, inventory, enemy attacks, save system, elaborate animations.
+**Out of scope:** New combat/status types, inventory, enemy attacks, save system, elaborate animations, enemy bars (FB2) or shield mechanics (FB3).
 
 **Preserve:** PH0 event API, active camera composition and existing world controls; no duplicate health arithmetic.
 
@@ -182,7 +199,7 @@ UI/                                  # optional later PH1 reusable HUD, only if 
 4. **Small optional alternative:** If `PlayerVitalsSettings` feels redundant during PH0, `PlayerSettings` can directly export `HealthSettings` first, then promote to a nested vitals profile as PH2 approaches. The nested profile is preferred for your eventual many-stat player.
 5. **No work beyond planning is authorized by this document.** Each approved phase should produce one GitHub commit, update this plan and `PLAYER/README.md` with state/known limitations, and give short validation results. State **Implemented**, **Awaiting Validation** and **Accepted** separately, not as synonyms.
 
-**Current verification for this plan:** Repository source and documentation reviewed; no code changed, no Godot build/scene execution. PH0–PH5 remain **Planned** pending explicit authorization.
+**Current verification for this plan:** Existing code and documentation reviewed; no player-health code, assets or scenes changed by the FEEDBACK scaffold. PH0–PH5 remain **Planned** pending explicit authorization. No Godot/C# build or scene execution required for this docs-only change.
 
 ## Combat / melee dependency (separate plan)
 

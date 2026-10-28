@@ -23,3 +23,9 @@ FPS refinement adds a minimal virtual UpdateHorizontalVelocity hook; its base im
 The Q shove is usable while standing, walking or running in both overhead and FPS. Only its impact strength changes: `PlayerQuickMelee` samples real XZ speed once on attack start and scales the reaction through the three new `QuickShoveMaster.tres` movement tuning fields; no extra input, animations or permanent tick loops. Zero-speed pushes are deliberately small, full-speed runs considerably stronger. Knockback remains collision-aware in the zombie receiver and no HP is lost by default. Awaiting in-game tuning.
 
 CM2-D now adds a two-handed side-on gun shove using the existing arm/elbow rig, with an active-only PlayerShovePose helper. Prior no-animation statements describe the earlier CM2-C snapshot. See Equipment/README.md for checks and cancellation. Local animation/build acceptance pending.
+
+## Health/vitals and visual feedback planning (2026-10-28)
+
+**PH0–PH5 remain Planned; no player HP/death logic added yet.** The detailed Codex-ready contract already exists in [PLAYER/IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) and has been updated for the new FEEDBACK ownership. [Stats/README.md](Stats/README.md) reserves the player-owned vitals location, but contains no scripts.
+
+[FEEDBACK/](../FEEDBACK/README.md) is a **documentation/folder scaffold** for reusable health/defence bars and visual hit feedback; its [FB roadmap](../FEEDBACK/IMPLEMENTATION_PLAN.md) is separate from player-health implementation. PH0 first adds actual HP, healing and death plus a tiny diagnostic readout. A later approved FB1 (coordinated with PH1) creates the styled HUD bar under FEEDBACK, composed by UI/GameplayHUD. Enemy bars (FB2) and an actual shield resource/bar (FB3) remain independent.

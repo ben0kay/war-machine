@@ -1,3 +1,3 @@
 # UI
 
-Player-facing UI components are separate from debug overlays and gameplay state. The first component is [GameplayHUD](GameplayHUD/README.md). Use reusable Godot scenes and cheap event-driven updates when actual mechanics are introduced.
+Player-facing UI composition is separate from debug overlays and gameplay state. The first component is [GameplayHUD](GameplayHUD/README.md), currently a static hotbar. Future reusable health/defence bars and combat visual feedback belong under [FEEDBACK](../FEEDBACK/README.md); [FB phases](../FEEDBACK/IMPLEMENTATION_PLAN.md) are **planned presentation only**, while [PLAYER PH0](../PLAYER/IMPLEMENTATION_PLAN.md) owns actual player HP. Assemble screen-space bars under GameplayHUD, not inside the hotbar. Use reusable Godot scenes and cheap event-driven updates when their phases are authorized.
