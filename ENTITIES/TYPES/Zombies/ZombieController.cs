@@ -3,6 +3,9 @@ using Godot;
 
 public partial class ZombieController : EntityCore, IDamageReceiver, IImpactReceiver
 {
+    public CorpseManager? CorpseOwner { get; set; }
+    private uint _corpseSeed;
+    private bool _deathHandled;
     public float Health => _health == null ? 0 : _health.CurrentHealth;
     private HealthComponent _health = null!;
     public bool IsChasing { get; private set; }
@@ -83,6 +86,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
         Deactivate(); ClearReaction(); ClearInvestigation(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
+        _corpseSeed = seed; _deathHandled = false;
         // ZMAT0: spawn-seeded cached material assignment; does not advance the movement RNG.
         ZombieAppearance.Apply(VisualRoot, seed, _config.AppearanceVariationEnabled, _config.BloodChance);
         _sightTarget = player as IPerceptionTarget;
@@ -166,7 +170,30 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // =========================================================
     // The actor owns its death reaction; the resolver has no zombie/robot/deer-specific behaviour.
     private void OnKilled(DamagePacket hit)
-    { Deactivate(); CollisionLayer = 0; CollisionMask = 0; Hide(); QueueFree(); }
+    {
+        if (_deathHandled) return;
+        _deathHandled = true;
+        Node3D visual = VisualRoot;
+        Transform3D at = visual.GlobalTransform;
+        Vector3 velocity = Velocity;
+        var joints = new System.Collections.Generic.List<Node3D> { _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
+        var head = visual.GetNodeOrNull<Node3D>("Head"); if (head != null) joints.Add(head);
+        var pose = new ZombieCorpsePose(_corpseSeed, joints.ToArray());
+        var owner = CorpseOwner;
+        Deactivate(); _configured = false; CollisionLayer = CollisionMask = 0;
+        Hide();
+        // Keep the disabled actor until the deferred visual transfer finishes; never leave corpse physics under it.
+        Callable.From(() =>
+        {
+            if (!IsInstanceValid(this) || !IsInsideTree()) return;
+            try
+            {
+                if (IsInstanceValid(owner) && owner!.IsInsideTree())
+                    owner.TrySpawn(visual, at, pose, hit.Direction, velocity, _corpseSeed);
+            }
+            finally { QueueFree(); }
+        }).CallDeferred();
+    }
 
     // =========================================================
     protected override void OnActivated()

@@ -1,4 +1,4 @@
-> **Future corpse / ragdoll-lite feature (ZD0–ZD3):** [DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md](DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md) proposes falling zombies, frozen corpse piles that mildly slow moving actors, and sinking cleanup starting 5 minutes after death. **Planning only; current code still deletes zombies immediately on death.** Applies to shared ZombieController, including runner 002, when separately authorized.
+> **ZD0 implemented in source, awaiting local validation:** normal and runner zombie deaths transfer their existing visuals into the [shared corpse fall owner](../../Shared/Corpses/README.md), collapse using one temporary physics proxy, then freeze without collision or idle updates. [ZD plan](DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md): ZD1 pile slowdown, ZD2 five-minute sinking cleanup and ZD3 budgets remain planned. No articulated ragdoll or timed removal yet.
 
 # Zombies
 

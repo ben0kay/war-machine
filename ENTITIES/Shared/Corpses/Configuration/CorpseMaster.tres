@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CorpseSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Corpses/Configuration/CorpseSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+Enabled = true
+ProxySize = Vector3(0.65, 1.75, 0.42)
+PivotHeight = 0.95
+MassKg = 65.0
+MaximumFallSeconds = 2.5
+MinimumFallSeconds = 0.8
+StableSeconds = 0.25
+StableSpeed = 0.15
+StableAngularSpeed = 0.3
+PushSpeed = 0.8
+InitialAngularSpeed = 2.7
+LinearDamping = 0.8
+AngularDamping = 1.0
+MaximumTravel = 5.0

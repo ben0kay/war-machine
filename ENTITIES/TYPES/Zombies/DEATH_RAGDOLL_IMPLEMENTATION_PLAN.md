@@ -1,6 +1,6 @@
 # ZD — Zombie death, lightweight ragdoll falls and persistent corpse piles
 
-> **Status: PROPOSED ONLY — no gameplay code, scenes or master settings created by this planning pass.** Prepared for a later, explicitly authorized Codex implementation on `implement-td0-td1`. This is **not** a true `Skeleton3D` / `PhysicalBoneSimulator3D` articulated ragdoll; it deliberately begins with a **physics-assisted ragdoll-like collapse** for the project's existing procedural `Node3D` limb joints. Real articulated ragdolls can be assessed separately after performance/visual testing.
+> **Status: ZD0 implemented in source, awaiting local build/physics/visual validation. ZD1–ZD3 remain proposed.** ZD0 explicitly authorized by owner; implementation on `implement-td0-td1`. This is **not** a true `Skeleton3D` / `PhysicalBoneSimulator3D` articulated ragdoll; it deliberately begins with a **physics-assisted ragdoll-like collapse** for the project's existing procedural `Node3D` limb joints. Real articulated ragdolls can be assessed separately after performance/visual testing.
 >
 > **Intent:** A zombie dies, falls with direction/limb variation, lies in place, contributes to a visible pile and a *soft* obstacle/slowdown for moving actors, then starts sinking **300 seconds (5 minutes) after death**, disappears and releases all resources. Zombies 001 and runner 002 should reuse the same implementation.
 
@@ -17,7 +17,7 @@
 
 | Phase | Deliverable | State |
 | --- | --- | --- |
-| **ZD0** | Death handoff, varied low-cost physics-assisted falling, settle into frozen visual pose | **Proposed** |
+| **ZD0** | Death handoff, varied low-cost physics-assisted falling, settle into frozen visual pose | **Implemented; Awaiting Validation** |
 | **ZD1** | Stationary corpses that visibly pile up, with mild event-driven movement slowdown for passing entities | **Proposed** |
 | **ZD2** | Five-minute corpse lifetime, timed sinking/removal, reliable collision and resource cleanup | **Proposed** |
 | **ZD3** | Crowd/streaming budget, debugging and regression/performance acceptance | **Proposed** |
@@ -57,7 +57,7 @@ WORLD/
   WorldController.cs                       wires one CorpseManager and independent Corpses root
 ```
 
-The new files shown are **proposed**, not present yet. Do **not** create unused Deer/Bear/Humans folders, placeholders, scenes or logic merely because they appear in this diagram. Keep `C/` for generated art only. Plain C# helpers are preferred; the shared manager and active fall owner may be nodes where Godot physics requires them. No extra scene nodes or `_Process` loops per settled corpse, no one-scene-per-species duplicate systems, and no permanent per-limb rigidbody simulation.
+The ZD0 manager/body/pose/settings subset now exists; slowdown, lifetime and other later-phase files shown remain **proposed**. Do **not** create unused Deer/Bear/Humans folders, placeholders, scenes or logic merely because they appear in this diagram. Keep `C/` for generated art only. Plain C# helpers are preferred; the shared manager and active fall owner may be nodes where Godot physics requires them. No extra scene nodes or `_Process` loops per settled corpse, no one-scene-per-species duplicate systems, and no permanent per-limb rigidbody simulation.
 
 ### Shared contract vs. species-specific anatomy
 
@@ -107,3 +107,7 @@ The new files shown are **proposed**, not present yet. Do **not** create unused 
 Not in this feature: player, deer, bear or human death integrations (only the reusable extension seam); amputations/dismemberment; decaying gore; corpse loot or interaction; reanimation; persistent corpses across saves; new enemy navigation; true bone-ragdoll simulation; damaging the player on corpse contact; unlimited solid obstacles; scene-wide physics queries every frame.
 
 **Codex instruction once authorized:** Re-read the root README, `CodePreferences.md`, this document, `ZombieController.cs`, both mesh builders, `EntityCore.cs`, `HealthComponent`, `DamagePacket`, `WorldController.cs`, active collision layers and FPS test. Implement the smallest shared solution, **including the proposed `Shared/Corpses` structure and `ICorpsePoseAdapter` seam**, honoring current `OnKilled` and deactivation ordering. Keep the death/aging/slowdown implementation species-independent and integrate only zombie 001 and runner 002. Update owning READMEs with **implemented vs planned** status. Review diff and do one brief build/basic check when possible; give explicit manual tests if Godot unavailable. Commit all authorized changes **once** to `implement-td0-td1` only. Do not silently expand to other entity species or change combat damage.
+
+## ZD0 implementation handoff — 2026-10-28
+
+Shared Corpses manager/body/settings and ICorpsePoseAdapter implemented; ZombieCorpsePose supplies existing standard/runner biped joints. World/FPS composition binds one independent root, and lethal callbacks latch/deactivate/detach visuals before actor removal. One CCD box proxy drives a bounded hit-directed fall; stable supported horizontal bodies freeze with disabled shape/collision and no idle callbacks. Unsupported or failed falls dismiss at the cap. Original visuals/materials are transferred, not rebuilt. Actual settled-on-settled contacts belong to ZD1 and are not introduced by this phase; slowdown, timed cleanup/sink and crowd budgets remain unimplemented. No other species death changes. Source/reference/whitespace checks only; no Godot/.NET available. Supplied actual-code smoke test and manual wall/slope/both-view checks: DEBUG/Corpses/README.md. Frozen visuals persist until scene teardown until ZD2. Delivery SHA is in the job response.

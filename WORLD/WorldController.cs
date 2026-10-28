@@ -24,6 +24,7 @@ public partial class WorldController : Node3D
     private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
     private VillageLayout? _village;
+    private CorpseManager? _corpses;
     private WorldManifest? _sectionManifest;
     private WorldSectionDiagnostics? _sectionDiagnostics;
     private Node3D _startupTerrain = null!;
@@ -195,6 +196,7 @@ public partial class WorldController : Node3D
         GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
         InitializeSectionDiagnostics(player);
+        InitializeCorpses();
         SpawnZombies(data, player, horde.Slow, horde.Fast);
         SpawnDeerPreview(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings, _village?.Structures);
@@ -295,6 +297,21 @@ public partial class WorldController : Node3D
         }
         catch (System.ArgumentException error)
         { GD.PushWarning($"WS2 streaming unavailable; startup scenery retained: {error.Message}"); }
+    }
+
+    // =========================================================
+    // One independent corpse root/service for both zombie variants and both views. Other species retain their death logic.
+    private void InitializeCorpses()
+    {
+        var root = new Node3D { Name = "Corpses" };
+        GetNode("WorldActorsRoot/PersistentEntitiesRoot").AddChild(root);
+        var manager = new CorpseManager { Name = "CorpseManager" }; GetNode("SystemsRoot").AddChild(manager);
+        try
+        {
+            manager.Initialize(root, GD.Load<CorpseSettings>("res://ENTITIES/Shared/Corpses/Configuration/CorpseMaster.tres"));
+            _corpses = manager;
+        }
+        catch (System.ArgumentException error) { GD.PushWarning($"Corpse falls disabled: {error.Message}"); }
     }
 
     // =========================================================
@@ -554,6 +571,7 @@ public partial class WorldController : Node3D
                 accepted.Add(position);
             }
             else zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
+            zombie.CorpseOwner = _corpses;
             zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + seedOffset + i * 7919)),
                 point => terrainData.Call("get_height", point).AsSingle());
             visionDebug.Register(zombie);
