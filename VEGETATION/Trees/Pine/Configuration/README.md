@@ -12,4 +12,4 @@ The active world and inherited FPS test both use `Configuration/PineMaster.tres`
 
 One model shared by all trees; **no new per-tree scenes, scripts, update loops or spawning rules**. One shared imported mesh copy is created when rebuilding/initializing forest. The existing seed and variant RNG roll keep placement/size/rotation deterministic when switching art source.
 
-**Performance warning:** PineTree001 is ~7,679 triangles across 5 material surfaces and has no custom distant GLB. It is substantially more expensive than a low-poly forest asset when hundreds are visible. Use the existing green/yellow/red FPS counter to compare modes at the same camera position. Runtime Godot import, C# build, visuals and performance are pending local validation.
+**Performance warning:** PineTree001 is ~5,969 triangles across 5 material surfaces and has no custom distant GLB. It is substantially more expensive than a low-poly forest asset when hundreds are visible. Use the existing green/yellow/red FPS counter to compare modes at the same camera position. Runtime Godot import, C# build, visuals and performance are pending local validation.
