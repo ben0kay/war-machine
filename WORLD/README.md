@@ -1,5 +1,8 @@
 # WORLD
 
+**Planned village redesign:** [VILLAGE_IMPLEMENTATION_PLAN.md](VILLAGE_IMPLEMENTATION_PLAN.md) — VG0–VG3 put ConvenienceStoreSite001 at the centre, fit terrain/exclusions across the full site, move showcase buildings outward, reserve a safe robot corridor and replace the default horde with local wanderers. Plan only; current gameplay is unchanged.
+
+
 **Active game scene: `WORLD/World.tscn` — open it and press F6.** `WorldController.cs` composes the player, camera, sky/weather, robot, rifle and zombies. Player/camera scenes and behaviour now live in PLAYER/ and CAMERA/; entities and equipment retain their own folders.
 
 ## Ownership
