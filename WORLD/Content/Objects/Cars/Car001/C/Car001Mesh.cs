@@ -1,11 +1,17 @@
-// Car001: one-shot low-poly abandoned compact hatchback mesh, with driver's door swung open.
-// No vehicle physics/AI; C/ owns temporary Godot C# geometry while Artwork/ holds later GLB assets.
+// Car001: one-shot low-poly abandoned hatchback with a physically separate driver-door pivot.
+// Closed by default; each instance can override its own door pose without mutating the shared master.
+// No vehicle physics/AI; temporary procedural art lives in C/ and future GLB artwork in Artwork/.
 using Godot;
 
 [Tool]
 public partial class Car001Mesh : Node3D
 {
     [Export] public Car001Settings Settings { get; set; } = null!;
+    [ExportGroup("Per-instance car state")]
+    // -1 inherits the master; 0 is fully closed; 1..82 is an outward-open pose.
+    // This is deliberately local to each scene instance, not a shared Resource write.
+    [Export(PropertyHint.Range, "-1,82,1,suffix:°")]
+    public float DriverDoorAngleOverride { get; set; } = -1f;
     private Node3D? _door;
 
     // =========================================================
@@ -17,12 +23,14 @@ public partial class Car001Mesh : Node3D
     }
 
     // =========================================================
-    // An editor/runtime pose control: rotate existing door and its rigid static collision together.
-    // The first prefab is deliberately already open, not an interactive animated door.
+    // Set an individual car's driver-door pose and its attached static collision together.
+    // No shared master mutation, per-frame animation or player interaction is introduced.
     public void SetDoorAngle(float degrees)
     {
-        if (Settings != null) Settings.DoorAngle = Mathf.Clamp(degrees, 0, 82);
-        if (GodotObject.IsInstanceValid(_door)) _door!.RotationDegrees = new Vector3(0, -Mathf.Clamp(degrees, 0, 82), 0);
+        float angle = Mathf.Clamp(degrees, 0f, 82f);
+        DriverDoorAngleOverride = angle;
+        if (GodotObject.IsInstanceValid(_door))
+            _door!.RotationDegrees = new Vector3(0, -angle, 0);
     }
 
     // =========================================================
@@ -35,7 +43,7 @@ public partial class Car001Mesh : Node3D
         var shell = Group(generated, "ChassisAndBody");
         var cabin = Group(generated, "Cabin");
         var detail = Group(generated, "ExteriorDetails");
-        _door = Group(generated, "DriverDoorOpen");
+        _door = Group(generated, "DriverDoor");
         // All collision is static; no RigidBody3D, CharacterBody3D or wheels simulation.
         var body = new StaticBody3D { Name = "StaticCollision", CollisionLayer = 1, CollisionMask = 1 };
         generated.AddChild(body);
@@ -58,7 +66,7 @@ public partial class Car001Mesh : Node3D
         Box(shell, null, "FrontBumper", new(0, 0.56f, -halfL - 0.06f), new(width + 0.13f, 0.24f, 0.18f), black);
         Box(shell, null, "RearBumper", new(0, 0.56f, halfL + 0.06f), new(width + 0.12f, 0.25f, 0.17f), black);
 
-        // Black interior cavity remains visible through the genuinely open driver-side door gap.
+        // Interior cavity remains visible when an individual car's driver door is opened.
         Box(cabin, null, "InteriorFloor", new(0, 0.75f, 0.05f), new(width - 0.29f, 0.07f, 2.12f), black);
         Box(cabin, null, "Dashboard", new(0, 1.06f, -0.79f), new(width - 0.27f, 0.26f, 0.37f), black);
         for (int i = 0; i < 2; i++)
@@ -99,14 +107,16 @@ public partial class Car001Mesh : Node3D
             new(0.06f, roofY - 1.30f, 0.75f), glass);
         Box(cabin, null, "RearQuarterGlassR", new(halfW + 0.10f, 1.59f, 0.90f),
             new(0.06f, roofY - 1.30f, 0.75f), glass);
-        Box(cabin, null, "DoorSillOpenLeft", new(-halfW, 0.83f, -0.20f),
+        Box(cabin, null, "DriverDoorSill", new(-halfW, 0.83f, -0.20f),
             new(0.13f, 0.19f, 1.27f), black);
 
-        // The visible door is a separate hinge pivot on the DRIVER FRONT edge, already swung out ~58 degrees.
-        // Door panel starts behind the hinge; the hinge rotation (negative yaw) swings it toward -X.
+        // Separate front-left hinge pivot with its own collision. Closed at 0 degrees.
+        // An instance's override wins over the master, without writing to the shared Resource.
         _door.Position = new Vector3(-halfW - 0.05f, 0, -0.83f);
-        _door.RotationDegrees = new Vector3(0, -Mathf.Clamp(s.DoorAngle, 0, 82), 0);
-        var doorBody = new StaticBody3D { Name = "OpenDoorCollision", CollisionLayer = 1, CollisionMask = 1 };
+        float initialDoorAngle = DriverDoorAngleOverride >= 0f
+            ? DriverDoorAngleOverride : s.DoorAngle;
+        _door.RotationDegrees = new Vector3(0, -Mathf.Clamp(initialDoorAngle, 0f, 82f), 0);
+        var doorBody = new StaticBody3D { Name = "DriverDoorCollision", CollisionLayer = 1, CollisionMask = 1 };
         _door.AddChild(doorBody);
         Box(_door, doorBody, "OuterDoorPanel", new(0, 1.21f, 0.60f),
             new(0.12f, 0.79f, 1.16f), paint);
