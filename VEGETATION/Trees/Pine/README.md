@@ -23,3 +23,7 @@ CameraOcclusion now queries cached canopy/chunk bounds and fades only the blocki
 ## Building placement and trunk collision
 
 Trunks now have collision on physics layer 5 (bit 16), with one StaticBody3D per populated active chunk and one simple capsule per trunk. Radius shares the exact seeded visual thickness and per-tree scale; default collision height is 4m. Bodies/shapes are created once per chunk and removed on rebuild/OFF/eviction, with no per-tree callbacks. Player/zombie masks include trunks; the robot ignores them for now. Rifle rays also stop on trunks; trees have no damage/falling mechanic yet. World-owned exclusion rectangles keep building approaches and initial zombie positions clear. This supersedes the earlier visual-only note: canopy collision, pathfinding and robot tree destruction remain unimplemented.
+
+## Imported-GLB art comparison (not a runtime replacement)
+
+A separate [PineTree001 authored GLB](../../../WORLD/Content/Assets/Objects/Static/Vegetation/Trees/PineTree001/README.md) is available as a **standalone visual-only F1 preview**. It lives in the canonical authored Objects catalogue and has its own size master. It does **not** change PinePlacement, PineMeshBuilder, PineMaster, the current MultiMesh renderer, wind, LOD, foliage fading or trunk collision. This higher-detail GLB (7,679 triangles) should be visually assessed and optimized/LOD'd before trying it as an instanced forest replacement. Do not copy or duplicate the model into this folder in the meantime.
