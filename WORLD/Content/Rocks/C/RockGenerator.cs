@@ -1,4 +1,4 @@
-// Nine deterministic low-poly rock silhouettes: pebbles, fieldstones, slabs, boulders and outcrops.
+// Eleven low-poly rock silhouettes: nine natural scatter stones plus two optional cover boulders.
 // Temporary visual geometry stays in C/. The same mesh assets can be reused in top-down and FPS worlds.
 using Godot;
 
@@ -10,7 +10,7 @@ public static class RockGenerator
         Material material, int variant = 0)
     {
         using var mesh = new ContentMeshBuilder(material);
-        int type = ((variant % 9) + 9) % 9;
+        int type = ((variant % 11) + 11) % 11;
 
         // Horizontal footprint and height are RELATIVE to RockMaster.Size.
         // Tiny loose stones through big, readable boulders—not nine copies of the same cone.
@@ -26,13 +26,16 @@ public static class RockGenerator
             case 6: radiusX = 0.67f; radiusZ = 0.73f; height = 1.57f; cap = 0.36f; break; // tall angular stone
             case 7: radiusX = 1.29f; radiusZ = 1.10f; height = 1.16f; cap = 0.60f; break; // large boulder
             case 8: radiusX = 1.54f; radiusZ = 1.25f; height = 0.91f; cap = 0.72f; break; // heavy outcrop
+            case 9: radiusX = 1.55f; radiusZ = 0.92f; height = 1.82f; cap = 0.78f; break; // broad standing-height cover boulder
+            case 10: radiusX = 2.05f; radiusZ = 1.05f; height = 1.22f; cap = 0.86f; break; // long crouch-height cover outcrop
         }
 
         float size = Mathf.Max(0.1f, settings.Size);
         // One rotation-independent asymmetry per variant; per-instance yaw/scale is applied later.
         radiusX *= size * random.RandfRange(0.90f, 1.12f);
         radiusZ *= size * random.RandfRange(0.88f, 1.12f);
-        height *= size * random.RandfRange(0.91f, 1.11f);
+        height *= size * random.RandfRange(0.91f, 1.11f)
+            * (type >= 9 ? Mathf.Clamp(settings.RockCoverHeightMultiplier, 0.7f, 1.6f) : 1f);
         int sides = random.RandiRange(7, 11);
         var foot = new Vector3[sides];
         var middle = new Vector3[sides];
@@ -40,10 +43,11 @@ public static class RockGenerator
         var crown = new Vector3[sides];
         float angular = Mathf.Clamp(settings.RockAngularVariation, 0f, 1f);
         float flatness = Mathf.Clamp(settings.RockCrownFlatness, 0f, 1f);
-        bool slabProfile = type == 0 || type == 3 || type == 5 || type == 8;
-        bool fractureProfile = type == 2 || type == 4 || type == 6 || type == 7;
+        bool slabProfile = type == 0 || type == 3 || type == 5 || type == 8 || type == 10;
+        bool fractureProfile = type == 2 || type == 4 || type == 6 || type == 7 || type == 9 || type == 10;
         int chippedCorner = random.RandiRange(0, sides - 1);
         // Broad flat crowns for slabs, broken upper edges for angular stones; no extra polygons.
+        // Cover variants have broad shoulders and enough vertical mass for blocking body-height rays.
         float crownCentreRatio = 1f - flatness * (slabProfile ? 0.10f : 0.05f);
         float bendX = radiusX * random.RandfRange(-0.17f, 0.17f);
         float bendZ = radiusZ * random.RandfRange(-0.17f, 0.17f);

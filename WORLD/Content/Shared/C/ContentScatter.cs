@@ -70,7 +70,9 @@ public partial class ContentScatter : Node3D
                 material = _wind; ApplyWind();
             }
             else material = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1, CullMode = BaseMaterial3D.CullModeEnum.Disabled };
-            for (int i = 0; i < (Settings.Kind == ContentScatterSettings.ContentKind.Rocks ? 9 : 3); i++)
+            int variantCount = Settings.Kind == ContentScatterSettings.ContentKind.Rocks
+                ? (Settings.RockCoverEnabled ? 11 : 9) : 3;
+            for (int i = 0; i < variantCount; i++)
             {
                 var random = new RandomNumberGenerator { Seed = Seed(Settings.Seed, i, 41) };
                 meshes.Add(Settings.Kind switch {
@@ -173,7 +175,19 @@ public partial class ContentScatter : Node3D
             bool grounded = Settings.Kind == ContentScatterSettings.ContentKind.Rocks || Settings.Kind == ContentScatterSettings.ContentKind.FallenLogs;
             var basis = grounded ? new Basis(normal.Cross(forward).Normalized(), normal, forward) : new Basis(Vector3.Up, yaw);
             pos.Y = h - 0.03f;
-            bins[random.RandiRange(0, bins.Length - 1)].Add(new Transform3D(basis.Scaled(Vector3.One * scale), pos - anchor));
+            // Consume the original 0..8 variant RNG roll even with cover enabled, preserving
+            // placement/yaw/scale of later rocks. A position hash picks rare cover shapes.
+            int variant = Settings.Kind == ContentScatterSettings.ContentKind.Rocks
+                ? random.RandiRange(0, Mathf.Min(bins.Length, 9) - 1)
+                : random.RandiRange(0, bins.Length - 1);
+            if (Settings.Kind == ContentScatterSettings.ContentKind.Rocks
+                && Settings.RockCoverEnabled && bins.Length >= 11)
+            {
+                uint coverHash = CoverVariantHash(Settings.Seed, pos);
+                if (coverHash / (float)uint.MaxValue < Mathf.Clamp(Settings.RockCoverChance, 0f, 0.5f))
+                    variant = 9 + (int)((coverHash >> 16) & 1u);
+            }
+            bins[variant].Add(new Transform3D(basis.Scaled(Vector3.One * scale), pos - anchor));
         }
         var nodes = new List<Node3D>();
         StaticBody3D? collision = null;
@@ -199,6 +213,22 @@ public partial class ContentScatter : Node3D
             }
         }
         _chunks.Add(key, nodes);
+    }
+
+    // =========================================================
+    // Stable, allocation-free hash for optional cover varieties. Never advances placement RNG.
+    // Based on the accepted candidate's location and the configured seed, so chunk reloads match.
+    private static uint CoverVariantHash(int seed, Vector3 position)
+    {
+        unchecked
+        {
+            uint x = (uint)Mathf.RoundToInt(position.X * 16f);
+            uint z = (uint)Mathf.RoundToInt(position.Z * 16f);
+            uint h = (uint)seed ^ (x * 0x9e3779b9u) ^ (z * 0x85ebca6bu);
+            h ^= h >> 16; h *= 0x7feb352du;
+            h ^= h >> 15; h *= 0x846ca68bu;
+            return h ^ (h >> 16);
+        }
     }
 
     // =========================================================

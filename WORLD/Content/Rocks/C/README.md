@@ -14,3 +14,14 @@ Editable in `../Configuration/GameplayRockMaster.tres` (active World/FPS) or `..
 These are **one-time mesh generation parameters**; changing the `.tres` requires world restart or explicitly calling `ContentScatter.ApplySettings()`. No per-instance CPU callbacks, procedural texture allocations, added material surfaces, scene nodes, extra physics shapes or new rock spawn logic. Collider hulls automatically derive from the newly generated variant meshes. Moss, surface normals, roughness and normal-map triplanar shader remain unchanged.
 
 The triangle count and material sampling cost remain unchanged per rock; only vertex locations and baked normals change. **Local Godot .NET build, visual assessment and collision checks are pending.** Test near the village/rocks in both camera views, check natural flat/sloped tops, ensure rock hulls still block correctly, and verify safe approach to buildings and doorways.
+
+## R2 — Larger rock silhouettes for open-field cover (2026-10-28)
+
+The original nine rock profiles remain. Two **additional** shared procedural meshes are generated only when `RockCoverEnabled=true` in the active master:
+
+- **Variant 9: Standing-height broad boulder.** RadiusX 1.55, radiusZ 0.92, height 1.82, cap 0.78 (all relative to `Size`). With the active `Size=1.2` and per-instance `MinimumScale=0.8` to `MaximumScale=1.3`, most span roughly 3–5m wide and are ~1.6–3.1m high (actual geometry varies by seeded silhouette). Broad faces give standing-height cover.
+- **Variant 10: Long crouching outcrop.** RadiusX 2.05, radiusZ 1.05, height 1.22, cap 0.86. It forms a longer natural barrier, useful for crouching behind rather than guaranteeing full standing protection.
+
+Both retain the existing five-height-layer faceted rock silhouette, chipped shoulders, rock shader, outward normals and **8 triangles per side**. Each is created **once**, then instanced via existing MultiMesh batches; matching convex collision hulls are cached once each in `ContentScatter`. There are no individual rock-scene nodes or per-object physics callbacks.
+
+`RockCoverHeightMultiplier` affects only variants 9/10, not regular loose stones; adjust through the GameplayRockMaster. Actual hideability is decided by physical eye/weapon line of sight (and player stance), **not an AI “in-cover” flag**.

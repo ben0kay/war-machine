@@ -32,6 +32,12 @@ public partial class ContentScatterSettings : Resource
     // Mesh-only controls: generated once per silhouette/rebuild; don't alter placement RNG.
     [Export(PropertyHint.Range, "0,1,0.05")] public float RockCrownFlatness { get; set; } = 0.65f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float RockAngularVariation { get; set; } = 0.55f;
+    [ExportGroup("Rock Cover Boulders")]
+    // These two additional silhouettes share MultiMesh batching and cached convex hulls.
+    [Export] public bool RockCoverEnabled { get; set; } = false;
+    [Export(PropertyHint.Range, "0,0.5,0.01")] public float RockCoverChance { get; set; } = 0.22f;
+    [Export(PropertyHint.Range, "0.7,1.6,0.05")] public float RockCoverHeightMultiplier { get; set; } = 1f;
+
     [ExportGroup("Rock Surface")]
     [Export] public Material? SurfaceMaterial { get; set; }
     [Export(PropertyHint.Range, "0.1,5,0.05")] public float RockTextureScale { get; set; } = 0.8f;
