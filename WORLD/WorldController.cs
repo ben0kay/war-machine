@@ -244,6 +244,9 @@ public partial class WorldController : Node3D
         var hud = GetNode<Control>("GameplayHUD/Screen");
         var overlay = new HealthBarOverlay { Name = "HealthBars" };
         hud.AddChild(overlay); overlay.Initialize(player, camera);
+        var body = GD.Load<PackedScene>("res://FEEDBACK/Bars/PlayerStatus/BodyConditionWidget.tscn").Instantiate<BodyConditionWidget>();
+        hud.AddChild(body);
+        body.Initialize(player.Vitals, GD.Load<FeedbackSettings>("res://FEEDBACK/Configuration/FeedbackMaster.tres"));
     }
 
     // =========================================================

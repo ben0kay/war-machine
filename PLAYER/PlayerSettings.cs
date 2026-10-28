@@ -4,6 +4,8 @@ using Godot;
 [GlobalClass]
 public partial class PlayerSettings : Resource
 {
+    [ExportGroup("Vitality and body condition")]
+    [Export] public PlayerVitalsSettings Vitals { get; set; } = new();
     [ExportGroup("Movement")]
     [Export] public float WalkSpeed { get; set; } = 5;
     [Export] public float CrouchSpeedMultiplier { get; set; } = 0.45f;

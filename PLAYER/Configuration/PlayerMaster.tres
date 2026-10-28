@@ -1,7 +1,27 @@
-[gd_resource type="Resource" script_class="PlayerSettings" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlayerSettings" load_steps=6 format=3]
 [ext_resource type="Script" path="res://PLAYER/PlayerSettings.cs" id="1"]
+[ext_resource type="Script" path="res://PLAYER/Stats/PlayerVitalsSettings.cs" id="vitals_script"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="health_script"]
+[sub_resource type="Resource" id="health"]
+script = ExtResource("health_script")
+MaxHealth = 100.0
+Armour = 0.0
+PhysicalResistance = 0.0
+EnergyResistance = 0.0
+ExplosiveResistance = 0.0
+FireResistance = 0.0
+[sub_resource type="Resource" id="vitals"]
+script = ExtResource("vitals_script")
+Health = SubResource("health")
+Head = 100.0
+Torso = 100.0
+LeftArm = 100.0
+RightArm = 100.0
+LeftLeg = 100.0
+RightLeg = 100.0
 [resource]
 script = ExtResource("1")
+Vitals = SubResource("vitals")
 WalkSpeed = 5.0
 CrouchSpeedMultiplier = 0.45
 RunMultiplier = 1.6

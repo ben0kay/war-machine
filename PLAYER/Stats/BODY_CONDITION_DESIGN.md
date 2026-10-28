@@ -1,6 +1,6 @@
 # BodyCondition and Vitality — design specification for PH0/PH1
 
-**Design agreed 2026-10-28. Status: planned, no C# or scenes implemented by this document.** Authoritative implementation gates are in [PLAYER implementation plan](../IMPLEMENTATION_PLAN.md). All work occurs on `implement-td0-td1`.
+**PH0/PH1 implemented in source, awaiting local validation (2026-10-28).** Authoritative implementation gates are in [PLAYER implementation plan](../IMPLEMENTATION_PLAN.md). All work occurs on `implement-td0-td1`.
 
 ## Player anatomy at launch
 
@@ -92,4 +92,4 @@ A precise PH-HIT implementation **is not included in PH0 or PH1** unless separat
 
 PH0: six regions independently injectable, critical vs limb damage distinction, single mitigation, correct vitality/death events and NPC regressions, no player HP overlay. PH1: per-region silhouette/colours update and heal separately, works in top-down + FPS without duplicate HUD or hotbar interference, no idle process. PH-HIT later: confirmed true per-limb weapon hit detection and no double damage.
 
-**No code, scenes, config resources or UI artwork have been implemented by this spec.**
+**Implementation now follows this specification.** See the PLAYER plan handoff and DEBUG/TEST/PlayerVitals checks. PH-HIT and later injury consequences remain future work.

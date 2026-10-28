@@ -1,3 +1,5 @@
+> **Current implementation (2026-10-28):** PH0/PH1 now have source implementations: hidden vitality, six independent regions, one-time death/control blocking and an event-driven silhouette. No precision hitboxes, injury consequences or enemy attacks yet. Build/runtime/visual acceptance pending. See IMPLEMENTATION_PLAN.md and Stats/README.md; earlier planned-only descriptions below are historical.
+
 # PLAYER
 
 Active player: `Player.tscn`, `PlayerController.cs`, `PlayerSettings.cs` and `Configuration/PlayerMaster.tres`. Movement, crouch, rig animation and weapon pose stay with the player. `Equipment/PlayerWeaponController.cs` adapts mouse aim/fire to reusable EQUIPMENT mechanics.

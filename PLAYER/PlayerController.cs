@@ -1,8 +1,10 @@
 // Active 1.8m player: physical walking and one visual gait driver, dormant when grounded/idle.
 using Godot;
 
-public partial class PlayerController : CharacterBody3D, IPerceptionTarget
+public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDamageReceiver
 {
+    public PlayerVitals Vitals { get; private set; } = null!;
+    public bool IsDead => Vitals != null && Vitals.IsDead;
     public bool GameplayInputBlocked { get; private set; }
     public event System.Action<bool>? GameplayInputBlockChanged;
 
@@ -10,6 +12,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     // A live-world menu stops only this actor's controls; gravity and every other world owner keep running.
     public void SetGameplayInputBlocked(bool blocked)
     {
+        blocked |= IsDead; // Closing a backpack cannot release the permanent death gate.
         if (GameplayInputBlocked == blocked) return;
         GameplayInputBlocked = blocked; _toggleCrouch = false;
         if (blocked) Velocity = new Vector3(0, Velocity.Y, 0);
@@ -71,8 +74,23 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
                 Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         }
         ResetPhysicsInterpolation(); // Do not blend spawn placement/generated rig from the authored origin.
+        if (Vitals == null)
+        {
+            Vitals = GetNode<PlayerVitals>("Vitals"); Vitals.Initialize(_settings.Vitals);
+            Vitals.Died += OnDied;
+        }
         _initialized = true; Velocity = Vector3.Zero; SetPhysicsProcess(true);
     }
+
+    // =========================================================
+    // The movement capsule has no anatomy metadata: the coordinator deliberately falls back to Torso.
+    public void ReceiveHit(DamagePacket hit)
+    { if (_initialized && !IsQueuedForDeletion() && !IsDead) Vitals.ReceiveHit(hit); }
+
+    // =========================================================
+    // Keep the actor/camera alive. Existing input-block subscribers cancel both views' attacks immediately.
+    private void OnDied()
+    { SetGameplayInputBlocked(true); Input.MouseMode = Input.MouseModeEnum.Visible; }
 
     // =========================================================
     // Refresh only on camera settings changes, not in the player physics loop.
@@ -329,6 +347,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     {
         if (_movementCamera is Camera view && IsInstanceValid(view))
             view.SettingsChanged -= RefreshMovementAxes;
+        if (IsInstanceValid(Vitals)) Vitals.Died -= OnDied;
         _movementCamera = null;
     }
 }

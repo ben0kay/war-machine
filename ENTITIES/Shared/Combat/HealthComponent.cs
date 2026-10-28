@@ -13,7 +13,7 @@ public partial class HealthComponent : Node
     public float MaxHealth { get; private set; }
     public bool IsDead { get; private set; }
     public HealthSettings RuntimeSettings { get; private set; } = null!;
-    private bool _configured;
+    private bool _configured, _changing;
 
     // =========================================================
     public override void _Ready()
@@ -23,6 +23,7 @@ public partial class HealthComponent : Node
     // Explicit initialization/reset; never write runtime damage back into an authored .tres master.
     public void Configure(HealthSettings? settings)
     {
+        if (_changing) return;
         RuntimeSettings = settings != null ? (HealthSettings)settings.Duplicate(true) : new HealthSettings();
         MaxHealth = float.IsFinite(RuntimeSettings.MaxHealth) ? Mathf.Max(1, RuntimeSettings.MaxHealth) : 100;
         CurrentHealth = MaxHealth; IsDead = false; _configured = true;
@@ -35,13 +36,41 @@ public partial class HealthComponent : Node
     {
         if (!_configured || IsDead) return new DamageResult(hit, 0, 0);
         DamageResult result = DamageResolver.Resolve(hit, RuntimeSettings);
-        if (result.Amount <= 0) return result;
-        CurrentHealth = Mathf.Max(0, CurrentHealth - result.Amount);
-        bool lethal = CurrentHealth <= 0;
-        if (lethal) IsDead = true;
-        Damaged?.Invoke(result);
-        HealthChanged?.Invoke(this);
-        if (lethal) Died?.Invoke(hit);
-        return result;
+        return ApplyResolvedDamage(result);
+    }
+
+    // =========================================================
+    // Trusted coordinator path: the caller already used DamageResolver. Never mitigate this result again.
+    public DamageResult ApplyResolvedDamage(in DamageResult result)
+    {
+        if (!_configured || IsDead || _changing || !float.IsFinite(result.Amount) || result.Amount <= 0)
+            return new DamageResult(result.Hit, 0, result.Mitigated);
+        _changing = true;
+        try
+        {
+            CurrentHealth = Mathf.Max(0, CurrentHealth - result.Amount);
+            bool lethal = CurrentHealth <= 0;
+            if (lethal) IsDead = true;
+            Damaged?.Invoke(result);
+            HealthChanged?.Invoke(this);
+            if (lethal) Died?.Invoke(result.Hit);
+            return result;
+        }
+        finally { _changing = false; }
+    }
+
+    // =========================================================
+    // Return actual restored health; ordinary healing cannot reset death or emit unchanged snapshots.
+    public float Heal(float amount)
+    {
+        if (!_configured || IsDead || _changing || !float.IsFinite(amount) || amount <= 0) return 0;
+        float previous = CurrentHealth;
+        CurrentHealth = (float)Math.Min(MaxHealth, (double)previous + amount);
+        float restored = CurrentHealth - previous;
+        if (restored <= 0) return 0;
+        _changing = true;
+        try { HealthChanged?.Invoke(this); }
+        finally { _changing = false; }
+        return restored;
     }
 }

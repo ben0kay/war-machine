@@ -1,3 +1,5 @@
+> **PH0 extension (2026-10-28):** HealthComponent now exposes finite-positive clamped Heal and a trusted ApplyResolvedDamage entry point for coordinators that already used DamageResolver. Existing ApplyDamage resolves exactly once and keeps Damaged → HealthChanged → Died order, latching death before callbacks. Reentrant state changes are ignored during notifications; Configure is an explicit reset outside notifications, never ordinary healing. PlayerVitals commits region state before critical vitality events. NPC packet constructors/resolution are unchanged. Build/runtime validation pending.
+
 # Shared damage pipeline
 
 > **Feedback API addition (2026-10-28):** The existing `HealthComponent` now joins the `health_components` group on Ready and emits `HealthChanged(HealthComponent)` on Configure and successful HP loss for read-only UI consumers. `Damaged`, `Died`, damage formulas and zombie health behavior are unchanged. The feedback manager uses this event for bars **only below full health**. PH0 may reuse the event for future heal updates rather than creating a second incompatible signal.

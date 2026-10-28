@@ -20,7 +20,6 @@ public partial class HealthBarOverlay : Control
     private FeedbackSettings _settings = null!;
     private PackedScene _barPrefab = null!;
     private Camera3D _camera = null!;
-    private PlayerController _player = null!;
     private float _accumulator;
     private bool _initialized;
 
@@ -37,7 +36,7 @@ public partial class HealthBarOverlay : Control
     public void Initialize(PlayerController player, Camera3D camera)
     {
         if (_initialized) return;
-        _player = player; _camera = camera;
+        _camera = camera;
         _settings = (FeedbackSettings)GD.Load<FeedbackSettings>("res://FEEDBACK/Configuration/FeedbackMaster.tres").Duplicate(true);
         _barPrefab = GD.Load<PackedScene>("res://FEEDBACK/Bars/Health/HealthBar.tscn");
         _initialized = true;
@@ -60,7 +59,7 @@ public partial class HealthBarOverlay : Control
     {
         if (!_initialized || _registered.ContainsKey(health) || !IsInstanceValid(health)) return;
         Node3D? actor = FindOwner(health);
-        if (actor == null) return;
+        if (actor == null || actor is PlayerController) return;
         var entry = new Entry(health, actor);
         _registered.Add(health, entry);
         health.HealthChanged += OnHealthChanged;
@@ -121,24 +120,13 @@ public partial class HealthBarOverlay : Control
                 || entry.Health.IsDead || entry.Health.CurrentHealth >= entry.Health.MaxHealth)
             { Refresh(entry); continue; }
 
-            bool playerBar = entry.Actor == _player;
-            float width = Mathf.Clamp(playerBar ? _settings.PlayerBarWidth : _settings.WorldBarWidth, 24f, 320f);
-            float height = Mathf.Clamp(playerBar ? _settings.PlayerBarHeight : _settings.WorldBarHeight, 4f, 28f);
-            Vector2 pos;
-            bool inView = true;
-            if (playerBar)
-            {
-                float margin = Mathf.Clamp(_settings.PlayerMargin, 0f, 120f);
-                pos = new Vector2(margin, viewport.Y - height - margin);
-            }
-            else
-            {
-                Vector3 anchor = entry.Actor.GlobalPosition + Vector3.Up * Mathf.Clamp(_settings.WorldAnchorHeight, 0.5f, 5f);
-                inView = entry.Actor.IsVisibleInTree() && !_camera.IsPositionBehind(anchor);
-                pos = inView ? _camera.UnprojectPosition(anchor) - new Vector2(width * 0.5f, height) : Vector2.Zero;
-                inView = inView && pos.X >= 0f && pos.Y >= 0f
-                    && pos.X + width <= viewport.X && pos.Y + height <= viewport.Y;
-            }
+            float width = Mathf.Clamp(_settings.WorldBarWidth, 24f, 320f);
+            float height = Mathf.Clamp(_settings.WorldBarHeight, 4f, 28f);
+            Vector3 anchor = entry.Actor.GlobalPosition + Vector3.Up * Mathf.Clamp(_settings.WorldAnchorHeight, 0.5f, 5f);
+            bool inView = entry.Actor.IsVisibleInTree() && !_camera.IsPositionBehind(anchor);
+            Vector2 pos = inView ? _camera.UnprojectPosition(anchor) - new Vector2(width * 0.5f, height) : Vector2.Zero;
+            inView = inView && pos.X >= 0f && pos.Y >= 0f
+                && pos.X + width <= viewport.X && pos.Y + height <= viewport.Y;
 
             if (!inView || shown >= capacity) { ReleaseBar(entry); continue; }
             if (entry.Bar == null)

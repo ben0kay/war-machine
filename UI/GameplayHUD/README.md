@@ -1,3 +1,5 @@
+> **Current implementation (2026-10-28):** PH0/PH1 now implemented in source: one read-only BodyConditionWidget beside the NPC overlay and backpack, above the hotbar. Hidden vitality has no generic player HP bar. World/FPS share this composition. Local build/visual acceptance pending; older planned status below is superseded.
+
 # Gameplay HUD
 
 > **Authoritative planned player-status revision (2026-10-28):** PH0 will add hidden Vitality plus individual conditions for Head/Torso/LeftArm/RightArm/LeftLeg/RightLeg. PH1 adds a **compact six-section body silhouette** near the hotbar, not a player 100 HP bar. The current generic `HealthBarOverlay` is already mounted once by WorldController and supports injured NPCs; it currently contains a prospective player numeric bar path which **PH0 must exclude**. No actual player vitals or body HUD have yet been implemented. See [player plan](../../PLAYER/IMPLEMENTATION_PLAN.md) and [body design](../../PLAYER/Stats/BODY_CONDITION_DESIGN.md).

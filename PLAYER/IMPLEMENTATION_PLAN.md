@@ -1,8 +1,8 @@
 # PLAYER — Health, Body Condition, Vitals and Survival Implementation Plan
 
-> **Authoritative PH0/PH1 revision (2026-10-28): PLAN ONLY, NO CODE AUTHORIZED.** The player is not a traditional on-screen 100 HP bar. PH0 will establish hidden overall **Vitality** (generic life/death) plus independent **six-region BodyCondition** (head, torso, both arms, both legs). PH1 will display a compact body silhouette/condition readout, not the generic player HP bar. Damageable regions are foundation now; actual limping, impaired aiming, bleeding, fractures and medical treatment are later, individually authorized features. This decision supersedes all older HP-bar/temporary-debug-label PH0/PH1 prose anywhere in this repo.
+> **PH0/PH1 implemented in source (2026-10-28), awaiting local build/runtime/visual validation.** The player is not a traditional on-screen 100 HP bar. PH0 will establish hidden overall **Vitality** (generic life/death) plus independent **six-region BodyCondition** (head, torso, both arms, both legs). PH1 will display a compact body silhouette/condition readout, not the generic player HP bar. Damageable regions are foundation now; actual limping, impaired aiming, bleeding, fractures and medical treatment are later, individually authorized features. This decision supersedes all older HP-bar/temporary-debug-label PH0/PH1 prose anywhere in this repo.
 >
-> **Current source reality:** No player vitality, BodyCondition, region hitboxes, status HUD, healing or death logic has been implemented. `ENTITIES/Shared/Combat/HealthComponent.cs` already supports `HealthChanged(HealthComponent)`, `Configure`, `ApplyDamage`, `Damaged` and `Died`; it does **not** yet expose healing. A generic `HealthBarOverlay` already displays bars for NPCs with shared `HealthComponent` and has a special player bottom-left bar branch. **PH0 must suppress the player from that generic overlay without breaking NPC bars**. PH1 owns the dedicated silhouette. Generic bar/overlay existence is not PH0/PH1 completion.
+> **Current source reality:** PlayerVitals, BodyCondition and the event-driven six-region BodyConditionWidget now exist. Shared HealthComponent supplies validated healing and a resolved-damage entry point; NPC ApplyDamage still uses the same resolver. The generic overlay excludes player ownership. See the implementation handoff below. The numbered phase contracts remain design/acceptance criteria; future phases are not authorized.
 >
 > Work only on `implement-td0-td1`. Follow `CodePreferences.md`, read the current actual code, and implement only the specifically requested phase. Keep code modular and dormant at idle. `PLAYER/Stats/BODY_CONDITION_DESIGN.md` is the detailed anatomy/damage contract.
 
@@ -10,8 +10,8 @@
 
 | Phase | Goal | Suggested executor | State |
 | --- | --- | --- | --- |
-| **PH0** | Hidden vitality + six body-region condition values, shared damage/healing, death, events; compatible player receiver; no normal player HP bar | Codex / Work | **Planned** |
-| **PH1** | Compact six-region body silhouette and injury-state feedback in shared GameplayHUD; no new health calculations | UI design + Codex / Work | **Planned** |
+| **PH0** | Hidden vitality + six body-region condition values, shared damage/healing, death, events; compatible player receiver; no normal player HP bar | Codex / Work | **Implemented; Awaiting Validation** |
+| **PH1** | Compact six-region body silhouette and injury-state feedback in shared GameplayHUD; no new health calculations | UI design + Codex / Work | **Implemented; Awaiting Validation** |
 | **PH-HIT** | Accurate optional anatomy hurtboxes and region mapping for bullets/melee, collision-safe, separately approved | Codex / Work | **Future / not authorized** |
 | **PH2** | Stamina/exertion; future body-condition modifiers may consume this API | Codex / Work | **Planned** |
 | **PH3** | Hunger, thirst and slow survival consequences | Codex / Work | **Planned** |
@@ -189,3 +189,13 @@ This is a **design**, not a claim that the scene nodes or code exist. Group the 
 ## Combat / melee dependency (separate plan)
 
 [COMBAT/IMPLEMENTATION_PLAN.md](../COMBAT/IMPLEMENTATION_PLAN.md) defines CM0–CM5 for generic impact delivery, bullet stagger, gun shove, bat, knife and eventual zombie melee. **PH0 is required before CM5 zombies can damage the player.** CM0–CM4 can be planned or implemented independently of PH0, since the current zombies already have health. PH2 stamina is an optional later melee cost, not a dependency for the first prototype. No combat action is authorized or implemented by adding this reference.
+
+## PH0–PH1 implementation handoff — 2026-10-28
+
+Implemented the authorized model and silhouette together. Player master embeds hidden 100 vitality and six 100-condition maxima. Player root forwards compatible packets; unknown damage resolves Torso. PlayerVitals resolves mitigation exactly once, commits body state, applies critical vitality loss through HealthComponent.ApplyResolvedDamage, then publishes region changes. Life and body callbacks see committed values; reentrant damage/healing is guarded. NPC raw-damage semantics are preserved; shared Heal is finite-positive, clamped and cannot resurrect.
+
+Death keeps the actor/camera in scene and uses existing input-block subscriptions in overhead/FPS to cancel attacks and aim. The block cannot be cleared after death by closing inventory; inventory close also cannot recapture the cursor after death. The existing NPC overlay rejects player-owned HealthComponents. World initializes one silhouette before the backpack, on the existing shared CanvasLayer. The silhouette has no normal vitality readout, supports six anatomical sections and textual severity, and updates only on events. FeedbackMaster owns presentation thresholds/colours; PlayerMaster owns runtime defaults. No per-limb nodes, stats timers or HUD polling.
+
+PH-HIT, limb penalties, medical items, detailed injuries, stamina, needs, respawn, save and enemy attacks remain unimplemented. Current gameplay capsule hits always map Torso; use the explicit development region route to verify other sections. No UI pulse is added (optional polish). Layout anchors above the hotbar at bottom-left; local visual acceptance is pending.
+
+Source/resource wiring and whitespace checks performed. Neither Godot nor dotnet is available here: **compilation, the new actual-code smoke test and World/FPS visual/input tests are not verified**. Run `dotnet build war-machine.csproj`, then `godot --headless --path . res://DEBUG/TEST/PlayerVitals/PlayerVitalsTest.tscn`, then the brief F6 checks in [test README](../DEBUG/TEST/PlayerVitals/README.md). Delivery commit SHA is reported in the job response; this record is included in that commit. Do not mark Accepted until local checks pass.

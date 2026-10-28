@@ -1,5 +1,7 @@
 # FB — Status and combat feedback implementation plan
 
+> **PH0/PH1 handoff (2026-10-28):** Player body state and PH1/FB1 BodyConditionWidget are now implemented in source. The numeric overlay excludes player HealthComponents and preserves NPC bars. FeedbackMaster supplies six-region severity styling. No idle widget polling. Build and Godot visual acceptance pending; earlier source snapshots below are historical. See PLAYER/IMPLEMENTATION_PLAN.md and Bars/PlayerStatus/README.md.
+
 > **Current status (2026-10-28):** Reusable numeric HealthBar and shared NPC overlay already exist in source (local runtime validation pending); PH0 player vitality/body-region state is still planned. **New owner decision:** PH1/FB1 player UI will be a six-region body silhouette, NOT a player HP bar. When PH0 arrives, exclude player HealthComponent from the current overlay's bottom-left numeric bar branch, leaving NPC bars as-is. FB3 defence and FB4 effects remain separately planned.
 
 ### Implemented generic health bar — integration and validation
@@ -17,8 +19,8 @@ The shared presenter processes only while at least one actor is injured, at an I
 | Phase | Objective | Suggested assistant | Status |
 | --- | --- | --- | --- |
 | **FB0** | Create reusable FEEDBACK folders, owning READMEs, phase plan and cross-links | Regular Chat | **Implemented — docs only** |
-| **FB1** | Six-region player BodyCondition silhouette; reuse existing NPC bar separately | UI design + Codex/Work | **Planned — requires PH0** |
-| **FB2** | Damage-triggered enemy bars for zombies and future entities | Codex/Work integration; Regular Chat tuning | **Planned — health events already available for zombies** |
+| **FB1** | Six-region player BodyCondition silhouette; reuse existing NPC bar separately | UI design + Codex/Work | **Implemented; awaiting local validation** |
+| **FB2** | Damage-triggered enemy bars for zombies and future entities | Codex/Work integration; Regular Chat tuning | **Implemented; awaiting local validation** |
 | **FB3** | Optional defence/shield bar for actors with **actual depletable shield state** | Codex/Work | **Planned — dependent on a future shield resource** |
 | **FB4** | Damage numbers, hit indicators and later status icons | Regular Chat visual plan; Codex/Work for integration | **Planned** |
 

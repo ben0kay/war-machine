@@ -1,5 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource type="Script" path="res://PLAYER/PlayerController.cs" id="1"]
+[ext_resource type="Script" path="res://PLAYER/Stats/PlayerVitals.cs" id="vitals"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthComponent.cs" id="health"]
+[ext_resource type="Script" path="res://PLAYER/Stats/BodyCondition.cs" id="body"]
 [sub_resource type="CapsuleShape3D" id="PlayerCapsule"]
 radius = 0.3
 height = 1.8
@@ -11,3 +14,10 @@ script = ExtResource("1")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.9, 0)
 shape = SubResource("PlayerCapsule")
+
+[node name="Vitals" type="Node" parent="."]
+script = ExtResource("vitals")
+[node name="Health" type="Node" parent="Vitals"]
+script = ExtResource("health")
+[node name="BodyCondition" type="Node" parent="Vitals"]
+script = ExtResource("body")

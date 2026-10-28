@@ -61,7 +61,7 @@ public partial class InventoryPanel : Control
         if (!IsOpen) return;
         Hide(); GetViewport().GuiReleaseFocus();
         if (IsInstanceValid(_player)) _player.SetGameplayInputBlocked(_previousBlock);
-        Input.MouseMode = restore && _restoreCapture && GetWindow().HasFocus()
+        Input.MouseMode = restore && _restoreCapture && !_player.IsDead && GetWindow().HasFocus()
             ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
         _restoreCapture = false;
     }

@@ -1,3 +1,5 @@
+> **Current implementation (2026-10-28):** PH1/FB1 player silhouette is now implemented in source; PH0 supplies real body/vitality state. NPC health bars remain independent and exclude the player. No numeric player HP bar. Local build/visual acceptance pending; older planned status below is superseded.
+
 > **Player HUD design update (2026-10-28):** PH0 is now planned as hidden Vitality plus six BodyCondition regions; PH1/FB1 will show a small anatomy silhouette rather than a player 100 HP bar. `HealthBar.tscn` and the generic `HealthBarOverlay` remain for NPCs. The overlay currently has a player bar branch; PH0 will exclude player health from that path without affecting NPC registration. [Player plan](../PLAYER/IMPLEMENTATION_PLAN.md) and [anatomy design](../PLAYER/Stats/BODY_CONDITION_DESIGN.md). No UI/gameplay code has been changed by this planning revision.
 
 # FEEDBACK — visual combat and status feedback
