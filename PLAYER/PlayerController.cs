@@ -142,13 +142,12 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             _reportMovementCollision = true; SetPhysicsProcess(true);
             GetViewport().SetInputAsHandled(); return;
         }
-        if (key.PhysicalKeycode == Key.Ctrl && key.Location == KeyLocation.Right && key.Pressed)
+        if (key.PhysicalKeycode == Key.Slash && key.Pressed)
         {
             _toggleProne = true; _toggleCrouch = false;
             SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); return;
         }
-        if ((key.PhysicalKeycode == Key.C ||
-             key.PhysicalKeycode == Key.Ctrl && key.Location == KeyLocation.Left) && key.Pressed)
+        if ((key.PhysicalKeycode == Key.Ctrl && key.Location == KeyLocation.Right) && key.Pressed)
         {
             _toggleCrouch = true; _toggleProne = false;
             SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); return;
