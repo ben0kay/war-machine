@@ -7,6 +7,7 @@ public partial class GameEnvironment : Node3D
     public SkyController SkyController { get; private set; } = null!;
     public WeatherBridge Weather { get; private set; } = null!;
     public GroundHaze Haze { get; private set; } = null!;
+    public StreetLampSchedule LampSchedule { get; private set; } = null!;
     private Camera? _camera;
     private bool _viewInitialized;
 
@@ -22,6 +23,11 @@ public partial class GameEnvironment : Node3D
         sky.GetNode("SkyDome").Set("moon_light_energy", Mathf.Max(0, Settings.MoonlightEnergy));
         SkyController = new SkyController { Name = "Environment", Sky = sky, Settings = Settings };
         AddChild(SkyController); SkyController.SetProcessUnhandledInput(false);
+        // One world-wide time policy; new/reused fixture scenes register without per-lamp clocks.
+        LampSchedule = new StreetLampSchedule { Name = "StreetLampSchedule" };
+        AddChild(LampSchedule);
+        LampSchedule.Initialize(SkyController,
+            GD.Load<StreetLampScheduleSettings>("res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/StreetLampScheduleMaster.tres"));
         Weather = GetNode<WeatherBridge>("Weather"); Haze = GetNode<GroundHaze>("GroundHaze");
         SetProcess(false); SetPhysicsProcess(false);
     }

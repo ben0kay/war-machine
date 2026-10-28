@@ -21,6 +21,12 @@ public partial class StreetLampLightingSettings : Resource
     [Export(PropertyHint.Range, "3,13,0.5")] public float FillRange { get; set; } = 12f;
     [Export(PropertyHint.Range, "0.2,3,0.1")] public float FillFalloff { get; set; } = 1.0f;
 
+    [ExportGroup("Soft visible light cone")]
+    [Export] public bool VisibleConeEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,0.12,0.005")] public float VisibleConeOpacity { get; set; } = 0.035f;
+    [Export(PropertyHint.Range, "1,10,0.1,suffix:m")] public float VisibleConeLength { get; set; } = 5.8f;
+    [Export(PropertyHint.Range, "0.5,7,0.1,suffix:m")] public float VisibleConeBaseRadius { get; set; } = 3.0f;
+
     [ExportGroup("Fog")]
     [Export(PropertyHint.Range, "0,1,0.05")] public float SpotFogEnergy { get; set; } = 0.25f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float FillFogEnergy { get; set; } = 0.05f;

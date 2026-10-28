@@ -40,3 +40,7 @@ The top-down world now reuses Weather/GroundHaze with an explicit player/terrain
 ## Planned reusable local lighting
 
 `[Lighting/README.md](Lighting/README.md)` introduces a scaffold for local point lights separate from Sky3D's sun/moon, environment fog and audio. `Lighting/Configuration/LightingMaster.tres` holds authored **future** muzzle-light defaults; `Lighting/IMPLEMENTATION_PLAN.md` specifies LI0 (brief, shadowless rifle muzzle illumination using existing FirearmShotEffects), with persistent campfire flicker deliberately deferred as LI1. **No local lights or gameplay hooks are implemented by the scaffold.**
+
+## Scheduled streetlamps (2026-10-28)
+
+`GameEnvironment` now owns one `StreetLampSchedule` attached to the authoritative `SkyController`; no second clock, per-lamp polling or scene scans per time tick. Change **global on/off hours** in `Lighting/Fixtures/StreetLamp/Configuration/StreetLampScheduleMaster.tres` (18:30 ON / 06:30 OFF by default). Visual shafts are controlled independently by `StreetLampLightingMaster.tres` under the same folder; no changes to Sky3D's actual sun/moon timing. Default gameplay time is paused at 09:00, so lamps should start off until time is advanced or adjusted. Source implemented; local tests pending.

@@ -1,30 +1,42 @@
-// Self-contained streetlamp illumination: downward spotlight, subtle omni spill and LED emission.
-// The physical fixture only supplies head position and a material. No timers, polling or frame callbacks.
+// Shared streetlamp lighting, night glow cone and LED. Registration is event-driven; no lamp tick.
 using Godot;
 
 [Tool]
 public partial class StreetLampLighting : Node3D
 {
+    // Only registered runtime lamps are scheduled; disabled editor preview remains unaffected.
+    public static event System.Action<StreetLampLighting>? Available;
+    public static event System.Action<StreetLampLighting>? Removed;
+
     [Export] public StreetLampLightingSettings Settings { get; set; } = null!;
 
     private SpotLight3D _downlight = null!;
     private OmniLight3D _fill = null!;
+    private MeshInstance3D? _visibleCone;
     private StandardMaterial3D? _ledMaterial;
     private bool _enabled;
+    private bool _registered;
+
+    // Cone geometry and shader are shared across all instances; scale the mesh to the authored preset.
+    private static readonly CylinderMesh ConeMesh = new()
+    {
+        TopRadius = 0.025f, BottomRadius = 0.5f, Height = 1f,
+        RadialSegments = 24, Rings = 1, CapTop = false, CapBottom = false
+    };
 
     // =========================================================
-    // A scene may instance this at any luminaire head: no knowledge of pole height or world sites.
+    // A scene may instance this at any luminaire head; setup and registration are one-time.
     public override void _Ready()
     {
         _downlight = GetNode<SpotLight3D>("Downlight");
         _fill = GetNode<OmniLight3D>("AmbientFill");
         ConfigureLights();
         SetProcess(false); SetPhysicsProcess(false);
+        if (!Engine.IsEditorHint()) { AddToGroup("streetlamp_scheduled"); _registered = true; Available?.Invoke(this); }
     }
 
     // =========================================================
-    // The fixture passes in its unique LED material after the lighting subscene is ready.
-    // No material resource is mutated if the fixture has no physical LED panel.
+    // The fixture supplies its unique LED material when the physical pole finishes _Ready.
     public void BindLedPanel(StandardMaterial3D material)
     {
         _ledMaterial = material;
@@ -32,8 +44,7 @@ public partial class StreetLampLighting : Node3D
     }
 
     // =========================================================
-    // Future site/night controls can directly switch native lights and LED emission.
-    // OFF disables both GPU lights; no light is left invisibly processing.
+    // OFF genuinely disables all native lights, LED glow and the transparent visual cone.
     public void SetEnabled(bool enabled)
     {
         _enabled = enabled;
@@ -44,15 +55,17 @@ public partial class StreetLampLighting : Node3D
             var s = Settings ?? new StreetLampLightingSettings();
             _fill.Visible = enabled && s.FillEnabled && _fill.LightEnergy > 0f;
         }
+        if (GodotObject.IsInstanceValid(_visibleCone))
+            _visibleCone!.Visible = enabled && (Settings?.VisibleConeEnabled ?? true)
+                && (Settings?.VisibleConeOpacity ?? 0) > 0;
         UpdateLedAppearance();
     }
 
     // =========================================================
-    // Bright and wide downward illumination plus low-energy, shadowless omni spill.
+    // Native spotlight/fill remain as authored; a single unlit transparent cone is optional.
     private void ConfigureLights()
     {
         var s = Settings ?? new StreetLampLightingSettings();
-        // Native SpotLight3D beams along -Z. Rotate -90° around X to aim at local -Y.
         _downlight.Position = Vector3.Zero;
         _downlight.RotationDegrees = new Vector3(-90f, 0, 0);
         _downlight.LightColor = s.LightColor;
@@ -72,11 +85,35 @@ public partial class StreetLampLighting : Node3D
         _fill.LightVolumetricFogEnergy = Mathf.Clamp(s.FillFogEnergy, 0f, 1f);
         _fill.ShadowEnabled = false;
 
+        CreateVisibleCone(s);
         SetEnabled(s.LightsEnabled);
     }
 
     // =========================================================
-    // Only a per-instance panel is supplied, so changing the glow cannot change other lamps.
+    // No per-lamp shader compilation, extra light, collision, shadow or _Process callback.
+    private void CreateVisibleCone(StreetLampLightingSettings s)
+    {
+        if (!s.VisibleConeEnabled || s.VisibleConeOpacity <= 0f) return;
+        float length = Mathf.Clamp(s.VisibleConeLength, 1f, 10f);
+        float radius = Mathf.Clamp(s.VisibleConeBaseRadius, 0.5f, 7f);
+        var shader = GD.Load<Shader>("res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/VisibleCone.gdshader");
+        if (shader == null) { GD.PushWarning("StreetLampLighting: missing visible-cone shader."); return; }
+        var material = new ShaderMaterial { Shader = shader };
+        material.SetShaderParameter("beam_color", s.LightColor);
+        material.SetShaderParameter("beam_opacity", Mathf.Clamp(s.VisibleConeOpacity, 0f, 0.12f));
+        _visibleCone = new MeshInstance3D
+        {
+            Name = "VisibleLightCone", Mesh = ConeMesh, MaterialOverride = material,
+            Position = new Vector3(0, -length * 0.5f, 0),
+            Scale = new Vector3(radius * 2f, length, radius * 2f),
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Visible = false
+        };
+        AddChild(_visibleCone);
+    }
+
+    // =========================================================
+    // One per-instance LED material avoids mutating other lamps on enable/disable.
     private void UpdateLedAppearance()
     {
         if (_ledMaterial == null) return;
@@ -85,5 +122,11 @@ public partial class StreetLampLighting : Node3D
         _ledMaterial.Emission = s.LightColor;
         _ledMaterial.EmissionEnabled = _enabled;
         _ledMaterial.EmissionEnergyMultiplier = 1.2f;
+    }
+
+    // =========================================================
+    public override void _ExitTree()
+    {
+        if (_registered) { _registered = false; Removed?.Invoke(this); }
     }
 }

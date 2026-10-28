@@ -20,3 +20,21 @@ For the four lamps at ConvenienceStoreSite001, the shared default spotlight is b
 ### Additional spotlight spread — 2026-10-28
 
 The shared spotlight half-angle is now **75.6°**, exactly **20% wider in angle** than the previous 63° default. The Godot Inspector range and fixture-side clamp have both been raised to **85°** to avoid silently clipping this preset to the former 75° maximum. The existing 20m spotlight range and 4.5 energy, 7.0m pole and 0.75/12m ambient fill are unchanged; shadows remain disabled. The 20m light range still limits the extreme cone's actual floor reach, so cone-angle growth does not imply a 20% increase in ground radius. All convenience-store lamps inherit this master after reload. No extra light nodes or processing callbacks.
+
+### Soft visible beam + scheduled streetlamps — 2026-10-28
+
+**Source implemented, local Godot/.NET and visual/performance validation pending.**
+
+`StreetLampLighting` now creates one optional `MeshInstance3D` named `VisibleLightCone` beneath the existing fixture head. It uses a shared, very small open `CylinderMesh` tapered into a cone, and `VisibleCone.gdshader` for a subtle unshaded warm-yellow translucent shaft, fading gradually at both ends and softening silhouettes. The beam is a visual approximation only: it does not cast light, shadow or collision and is not a new Sky3D fog volume. Existing `SpotLight3D`, `OmniLight3D`, fog energy and LED panel stay untouched. `SetEnabled(false)` immediately hides the beam as well as both native lights and LED emission. No per-lamp timers, _Process or _PhysicsProcess calls.
+
+Edit `Configuration/StreetLampLightingMaster.tres` globally for all lamps using this shared preset:
+- `VisibleConeEnabled=true`, `VisibleConeOpacity=0.035` (very faint), `VisibleConeLength=5.8` m, `VisibleConeBaseRadius=3.0` m.
+- `LightColor=Color(1, 0.82, 0.61)` tints both the existing spotlight and the visual shaft.
+- These values are independent of the existing real spotlight's much wider 75.6° half-angle; the visible cone is deliberately shorter/narrower to avoid a huge transparent surface.
+- Shader is shared across lamps; mesh shape is shared and each fixture scales one instance. One additional transparent mesh per active lamp is still potential GPU overdraw. Test FPS when many beams overlap and lower opacity/radius or disable the effect if costly.
+
+**All-lamp time schedule** belongs to `Configuration/StreetLampScheduleMaster.tres`, with `AutomaticTimeSwitching=true`, `TurnOnHour=18.5` (**18:30**), `TurnOffHour=6.5` (**06:30**). These are **in-game Sky3D clock hours**, not system wall-clock time. Set ON and OFF to the same time for all-day operation, or disable automatic switching to leave the per-fixture `LightsEnabled` setting in control. Active lamps switch OFF during the day, and ON at night; lights do not emit or draw beam when OFF.
+
+One `StreetLampSchedule` instance is created by `GameEnvironment`. It listens to `SkyController.TimeChanged` (bridged from Sky3D's own `TimeOfDay.time_changed`) and the existing/recently spawned `StreetLampLighting` fixtures. Lamp nodes register/unregister via events and one fallback group scan at manager initialization. Every clock update is a small boolean comparison: GPU light/cone toggles occur **only** when ON/OFF changes, not 10 times a second. New prefab instances immediately inherit the current schedule. No global scene traversal on each time update, no per-lamp polling and no extra clock.
+
+**Testing:** F6 `WORLD/World.tscn` and F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`; at default 09:00 (game's `GameplayEnvironmentMaster.tres` starts paused), all four convenience-store lamps should be off. Change the Sky3D time with existing debug controls to 19:00 and verify real spot/fill, LED and faint beam are on. Set 12:00: all off. Test 06:29→06:30 and 18:29→18:30, accelerated time (F8 if enabled by debug sky controller or existing UI time controls), spawned lamps during day/night, manual `SetLampEnabled` override expectations and shutdown. Note `StartPaused=true` means schedule won't transition automatically until the game clock is resumed or a manual time change occurs. `dotnet build war-machine.csproj`; inspect shader import for supported render modes; visually tune opacity and radius before acceptance.

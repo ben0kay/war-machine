@@ -17,3 +17,7 @@ FillRange = 12.0
 FillFalloff = 1.0
 SpotFogEnergy = 0.25
 FillFogEnergy = 0.05
+VisibleConeEnabled = true
+VisibleConeOpacity = 0.035
+VisibleConeLength = 5.8
+VisibleConeBaseRadius = 3.0

@@ -27,3 +27,7 @@ See [PL site implementation plan](../../../../Sites/ConvenienceStoreSite001/IMPL
 ### Height and coverage adjustment — 2026-10-28
 
 The shared physical fixture default is now **7.0m high** (previously 5.8m). All four convenience-store site lamps inherit that default automatically. The real light settings remain in `ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/StreetLampLightingMaster.tres`, not inside this physical geometry prefab. Spotlight intensity/range/cone are now 4.5 / 20m / 63° half-angle; dispersed ambient fill is 0.75 / 12m. This produces a noticeably broader, brighter lit area with shadows still OFF. Head position uses pole height directly, so light and pole move together. Reopen/reinstance the prefab in Godot after pulling and rebuilding to refresh `[Tool]` art and lighting.
+
+## Nighttime light shafts and global switching (2026-10-28)
+
+The existing `Lighting` subscene now adds an optional subtle translucent warm cone beneath the head while the real lights are active. It shares `LightColor` and is configured through `ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/StreetLampLightingMaster.tres`. The *global* Sky3D-based ON/OFF schedule is independently configured in `StreetLampScheduleMaster.tres`: default 18:30–06:30. Faint cone, real lights and LED panel are disabled during the day; existing `SetLampEnabled(bool)` delegates unchanged to the lighting component. No geometry changes to the lamp pole, physics, layout or collisions. Godot import/visual testing pending.

@@ -11,6 +11,9 @@ public partial class SkyController : Node
     private DirectionalLight3D _sun = null!;
     private Callable _timeChanged, _refreshAtmosphere;
     public event System.Action? AtmosphereSettingsApplied;
+    // One event bridge for shared consumers of the authoritative Sky3D in-game clock.
+    public event System.Action<float>? TimeChanged;
+    public float CurrentHour => Sky.Get("current_time").AsSingle();
 
     // =========================================================
     // Apply configuration once after Sky3D and its timer have entered the tree.
@@ -23,7 +26,7 @@ public partial class SkyController : Node
         _clock = Sky.GetNode("TimeOfDay"); _sun = Sky.GetNode<DirectionalLight3D>("SunLight");
         _refreshAtmosphere = Callable.From(UpdateAtmosphere);
         // Sky3D emits time_changed before updating celestial transforms; defer until that setter finishes.
-        _timeChanged = Callable.From<float>(_ => _refreshAtmosphere.CallDeferred());
+        _timeChanged = Callable.From<float>(hour => { _refreshAtmosphere.CallDeferred(); TimeChanged?.Invoke(hour); });
         _clock.Connect("time_changed", _timeChanged);
         ApplyMist(); ApplyAtmosphere();
         SetPaused(Settings.StartPaused);

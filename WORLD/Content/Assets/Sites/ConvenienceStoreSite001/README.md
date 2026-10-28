@@ -86,3 +86,7 @@ The site retains its original world origin and **56×36m lot**; the independentl
 The new full-footprint bounds are still surveyed, graded and excluded from foliage by `VillageLayout`; no saved terrain file changes and no physical ramp/stair/lip was introduced. The two previously near-rear slow-zombie offsets and one runner offset have been moved outside the enlarged building in `WORLD/Configuration/WorldMaster.tres` and `WORLD/WorldSettings.cs`. All car, hedge, lamp and asphalt transforms remain unchanged.
 
 **Acceptance:** see [store CS2 test list](../../Structures/ConvenienceStore001/README.md). In particular check the new front strip is flush with the graded ground, the entrance is now visible behind hedges and the two rear rooms/corridor are navigable. The larger footprint may survey a slightly different terrain elevation; startup grade/overlap checks remain authoritative. No runtime Godot test has been performed remotely.
+
+## Shared automatic night lighting (2026-10-28)
+
+Four site StreetLamp001 instances now inherit the new **global** environment schedule (Sky3D time 18:30 ON / 06:30 OFF), switching off during the day without site-local polling or script. Each has one faint soft shader cone (default 3m radius, 5.8m length, opacity 0.035) in addition to the existing real spot/omni illumination; the effect disables with the native lights. Masters live under `ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/`; the authored site scene, transforms and lamp count are untouched. Source implemented, local validation pending.
