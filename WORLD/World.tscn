@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 [ext_resource type="Script" path="res://WORLD/WorldController.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -19,6 +19,8 @@
 [ext_resource type="PackedScene" path="res://DEBUG/Overlay/DebugOverlay.tscn" id="debug_overlay"]
 
 [ext_resource type="PackedScene" path="res://AUDIO/WorldAudio.tscn" id="audio_service"]
+
+[ext_resource type="PackedScene" path="res://WORLD/Content/Sites/ConvenienceStoreSite001/ConvenienceStoreSite001.tscn" id="village_site"]
 
 [sub_resource type="Resource" id="RobotStartup"]
 script = ExtResource("9")
@@ -49,16 +51,16 @@ visible = false
 script = ExtResource("7")
 Robot = NodePath("Robot_001")
 RouteMarkers = NodePath("Route")
-SpawnOffset = Vector2(-24, 8)
+SpawnOffset = Vector2(-115, -50)
 [node name="Route" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol"]
 [node name="NorthWest" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
-position = Vector3(-6, 0, -6)
+position = Vector3(-20, 0, -45)
 [node name="NorthEast" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
-position = Vector3(6, 0, -6)
+position = Vector3(20, 0, -45)
 [node name="SouthEast" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
-position = Vector3(6, 0, 6)
+position = Vector3(20, 0, 45)
 [node name="SouthWest" type="Marker3D" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol/Route"]
-position = Vector3(-6, 0, 6)
+position = Vector3(-20, 0, 45)
 [node name="Robot_001" parent="WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol" instance=ExtResource("8")]
 Settings = SubResource("RobotStartup")
 
@@ -81,6 +83,8 @@ mouse_filter = 2
 
 [node name="PersistentPropsRoot" type="Node3D" parent="WorldActorsRoot"]
 [node name="Structures" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
+[node name="ConvenienceStoreSite001" parent="WorldActorsRoot/PersistentPropsRoot/Structures" instance=ExtResource("village_site")]
+position = Vector3(512, 4, 512)
 [node name="Objects" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
 [node name="Cars" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot/Objects"]
 [node name="Zombies" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot"]

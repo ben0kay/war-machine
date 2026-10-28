@@ -20,6 +20,11 @@ public partial class WorldController : Node3D
     protected GameEnvironment _environmentScene = null!;
     private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
+    private VillageLayout? _village;
+    private Node3D _startupTerrain = null!;
+    private GodotObject _startupData = null!;
+    private Godot.Collections.Array<Rect2> _startupMountain = new();
+    private int _startupTicks;
 
     // =========================================================
     // Shared by the overhead panel and inherited FPS crosshair; resolved only during startup.
@@ -52,7 +57,23 @@ public partial class WorldController : Node3D
         if (!BindTerrainAppearance(terrain, out string appearanceError))
         { status.Text = appearanceError; GD.PushError(appearanceError); return; }
         var data = terrain.Get("data").AsGodotObject();
-        var mountainPath = GameplayMountain.Apply(terrain, data, Settings);
+        var mountainPath = new Godot.Collections.Array<Rect2>();
+        if (Settings.VillageEnabled)
+        {
+            _village = new VillageLayout();
+            var structures = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures");
+            if (!_village.Prepare(structures, GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol"), data, Settings)
+                || !VillageTerrain.Apply(terrain, data, Settings, _village))
+            { status.Text = "Village placement failed; actors remain dormant. See Output for terrain/layout errors."; return; }
+            var props = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot");
+            VillageRoadMesh.Build(props, _village.Roads, _village.Level);
+            VillageRoadMesh.BuildSiteAccess(props, _village.Site, _village.Level);
+        }
+        else
+        {
+            GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures/ConvenienceStoreSite001").QueueFree();
+            mountainPath = GameplayMountain.Apply(terrain, data, Settings);
+        }
         Vector3 spawn = new(Settings.SpawnXZ.X, 0, Settings.SpawnXZ.Y);
         float height = data.Call("get_height", spawn).AsSingle();
         if (!float.IsFinite(height)) { status.Text = "Saved preview terrain has no ground at spawn; inspect the preview bake/settings."; GD.PushError(status.Text); return; }
@@ -66,6 +87,43 @@ public partial class WorldController : Node3D
         collision.Call("set_mode", 3); // FULL_GAME, including distant horde spawns.
         collision.Call("build");
         // Full/Game collision for this one test region avoids dependence on the offset camera's dynamic patch.
+        _startupTerrain = terrain; _startupData = data; _startupMountain = mountainPath;
+        _startupTicks = 2; SetPhysicsProcess(true);
+    }
+
+    // =========================================================
+    // Let native static bodies and rebuilt terrain enter the physics space before any spawn queries/AI.
+    public override void _PhysicsProcess(double delta)
+    {
+        if (_startupTicks <= 0) { SetPhysicsProcess(false); return; }
+        if (--_startupTicks > 0) return;
+        SetPhysicsProcess(false); InitializeActors();
+    }
+
+    // =========================================================
+    // Startup-only physics-safe phase; the world itself has no processing after actors initialize.
+    private void InitializeActors()
+    {
+        var terrain = _startupTerrain; var data = _startupData; var mountainPath = _startupMountain;
+        var player = GetNode<PlayerController>("WorldActorsRoot/PersistentEntitiesRoot/Player");
+        var camera = GetNode<Camera>("Camera");
+        var status = DebugControls.GetNode<Label>("Status");
+        if (_village != null)
+        {
+            var space = player.GetWorld3D().DirectSpaceState;
+            var ray = new PhysicsRayQueryParameters3D { CollisionMask = 1,
+                From = player.GlobalPosition + Vector3.Up, To = player.GlobalPosition - Vector3.Up };
+            var support = space.IntersectRay(ray);
+            if (support.Count == 0 || support["normal"].AsVector3().Y < Mathf.Cos(player.FloorMaxAngle))
+            { status.Text = "Village arrival has no safe walkable support; actors remain dormant."; return; }
+            player.GlobalPosition = support["position"].AsVector3() + Vector3.Up * 0.06f;
+            var shape = player.GetNode<CollisionShape3D>("CollisionShape3D");
+            var clearance = new PhysicsShapeQueryParameters3D { Shape = shape.Shape,
+                Transform = shape.GlobalTransform, CollisionMask = player.CollisionMask,
+                Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
+            if (space.IntersectShape(clearance, 1).Count != 0)
+            { status.Text = "Village arrival capsule is blocked; actors remain dormant."; return; }
+        }
         player.Initialize(PlayerSettings, camera);
         _audio.BindListener(player, camera);
         InitializeEquipment(player, camera);
@@ -77,7 +135,9 @@ public partial class WorldController : Node3D
         // Build one deterministic horde layout for both placement and its tree/rock clearings.
         // The inherited first-person debug scene explicitly opts out.
         var horde = EnableHorde ? BuildHordeOffsets() : (Slow: System.Array.Empty<Vector2>(), Fast: System.Array.Empty<Vector2>());
-        var sceneryClearings = PlaceScenery(data, out var grassClearings);
+        var grassClearings = new Godot.Collections.Array<Rect2>();
+        var sceneryClearings = _village != null ? _village.Clearings : PlaceScenery(data, out grassClearings);
+        if (_village != null) grassClearings = _village.GrassClearings;
         foreach (Rect2 cliffClearing in mountainPath)
         { sceneryClearings.Add(cliffClearing); grassClearings.Add(cliffClearing); }
         _grass = new TerrainGrass { Name = "Grass",
@@ -106,7 +166,8 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Fast);
         // Keep the giant's route and foot corridor free of new solid boulders.
-        _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
+        if (_village == null)
+            _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
         GetNode("WorldActorsRoot/PersistentPropsRoot").AddChild(_rocks);
         _rocks.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _rocks.UpdateAnchor;
@@ -121,10 +182,12 @@ public partial class WorldController : Node3D
         GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
         SpawnZombies(data, player, horde.Slow, horde.Fast);
-        bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings);
+        bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings, _village?.Structures);
         status.Text = ControlsHelp
-            + (patrolReady ? $" · 1 rifle / 2 machine gun · {Settings.RunnerSpawnOffsets.Length} scattered runners · Robot patrol west/southwest of spawn · Depot north · Lodge northwest · Fuel station and car southeast · Terrain mountain path south" : "\nRobot placement failed; see Output. Player preview remains available.")
-            + (horde.Slow.Length + horde.Fast.Length > 0 ? $"\nTest horde: {horde.Slow.Length} slow + {horde.Fast.Length} fast zombies around offset {Settings.HordeCenterOffset}" : "");
+            + (_village != null ? "\nVillage · Store ahead · Road east then north to depot/lodge/office · Fuel station northeast · Robot on western perimeter"
+                : "\nShowcase layout · Existing scenery/robot inspection")
+            + (patrolReady ? "" : "\nRobot placement failed; see Output.")
+            + (horde.Slow.Length + horde.Fast.Length > 0 ? $"\nDebug horde: {horde.Slow.Length} slow + {horde.Fast.Length} fast" : "");
     }
 
     // =========================================================
@@ -269,7 +332,7 @@ public partial class WorldController : Node3D
     private void AddZombieSpawnClearings(Godot.Collections.Array<Rect2> exclusions, Vector2[] offsets)
     {
         foreach (Vector2 offset in offsets)
-            exclusions.Add(new Rect2(Settings.SpawnXZ + offset - Vector2.One * 2, Vector2.One * 4));
+            exclusions.Add(new Rect2((Settings.VillageEnabled ? Settings.VillageOriginXZ : Settings.SpawnXZ) + offset - Vector2.One * 2, Vector2.One * 4));
     }
 
     // =========================================================
@@ -290,14 +353,42 @@ public partial class WorldController : Node3D
     {
         if (offsets.Length == 0) return;
         var scene = GD.Load<PackedScene>(scenePath);
+        var origin = Settings.VillageEnabled ? Settings.VillageOriginXZ : Settings.SpawnXZ;
+        var space = player.GetWorld3D().DirectSpaceState;
+        var support = new PhysicsRayQueryParameters3D { CollisionMask = 1, CollideWithAreas = false };
+        var accepted = new System.Collections.Generic.List<Vector3>();
         for (int i = 0; i < offsets.Length; i++)
         {
             Vector2 offset = offsets[i];
-            Vector3 position = new(Settings.SpawnXZ.X + offset.X, 0, Settings.SpawnXZ.Y + offset.Y);
+            Vector3 position = new(origin.X + offset.X, 0, origin.Y + offset.Y);
             float height = terrainData.Call("get_height", position).AsSingle();
             if (!float.IsFinite(height)) { GD.PushWarning("Skipped zombie spawn outside preview terrain."); continue; }
             var zombie = scene.Instantiate<ZombieController>();
-            group.AddChild(zombie); zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
+            group.AddChild(zombie);
+            if (_village != null)
+            {
+                support.From = new Vector3(position.X, height + 1, position.Z);
+                support.To = new Vector3(position.X, height - 0.5f, position.Z);
+                var hit = space.IntersectRay(support);
+                if (hit.Count == 0 || hit["normal"].AsVector3().Y < Mathf.Cos(zombie.FloorMaxAngle))
+                { GD.PushWarning($"Skipped unsupported village zombie at {offset}."); zombie.QueueFree(); continue; }
+                position = hit["position"].AsVector3() + Vector3.Up * 0.06f;
+                Vector3 fromPlayer = position - player.GlobalPosition; fromPlayer.Y = 0;
+                bool safe = fromPlayer.LengthSquared() >= 20 * 20;
+                foreach (Vector3 other in accepted) if (position.DistanceSquaredTo(other) < 4) safe = false;
+                foreach (Rect2 corridor in _village.Patrol)
+                    if (corridor.HasPoint(new Vector2(position.X, position.Z))) safe = false;
+                zombie.GlobalPosition = position;
+                var shape = zombie.GetNode<CollisionShape3D>("CollisionShape3D");
+                var clearance = new PhysicsShapeQueryParameters3D { Shape = shape.Shape,
+                    Transform = shape.GlobalTransform, CollisionMask = zombie.CollisionMask,
+                    Exclude = new Godot.Collections.Array<Rid> { zombie.GetRid() } };
+                if (!safe || space.IntersectShape(clearance, 1).Count != 0)
+                { GD.PushWarning($"Skipped blocked/unsafe village zombie at {offset}."); zombie.QueueFree(); continue; }
+                ((ZombieSettings)zombie.RuntimeSettings).WanderRadius = Mathf.Clamp(Settings.VillageZombieWanderRadius, 4, 12);
+                accepted.Add(position);
+            }
+            else zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
             zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + seedOffset + i * 7919)),
                 point => terrainData.Call("get_height", point).AsSingle());
             visionDebug.Register(zombie);

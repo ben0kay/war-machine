@@ -3,20 +3,20 @@
 [resource]
 script = ExtResource("1")
 Seed = 48193
-SpawnXZ = Vector2(512, 512)
+SpawnXZ = Vector2(512, 550)
 GroundHeight = 4.0
 Relief = 0.15
 HillOffset = Vector2(30, -10)
 HillHeight = 5.0
 HillRadius = 24.0
 
-Building001Offset = Vector2(4, -32)
-Building002Offset = Vector2(-34, -42)
-Building003Offset = Vector2(42, 32)
-Building004Offset = Vector2(-34, -70)
+Building001Offset = Vector2(-35, -90)
+Building002Offset = Vector2(-35, -145)
+Building003Offset = Vector2(80, -75)
+Building004Offset = Vector2(45, -190)
 Car001Offset = Vector2(24, 42)
 
-CliffEnabled = true
+CliffEnabled = false
 CliffOffset = Vector2(-6, 76)
 CliffHeight = 12.0
 CliffWidth = 44.0
@@ -24,9 +24,18 @@ CliffDepth = 36.0
 CliffRampLength = 38.0
 CliffPathWidth = 10.0
 
-RunnerSpawnOffsets = PackedVector2Array(18, 22, -15, 30, 32, -18)
+RunnerSpawnOffsets = PackedVector2Array(19, -30)
 
-HordeCount = 20
-HordeRunnerCount = 6
+HordeCount = 0
+HordeRunnerCount = 0
 HordeCenterOffset = Vector2(-38, -16)
 HordeSpacing = 2.5
+
+VillageEnabled = true
+VillageOriginXZ = Vector2(512, 512)
+VillageMaxCutFill = 8.0
+VillageBlendWidth = 18.0
+VillageRoadWidth = 6.0
+VillageHillScale = 1.0
+VillageZombieWanderRadius = 8.0
+ZombieSpawnOffsets = PackedVector2Array(-17, -4, 17, -4, -10, 3, 10, 3, -15, 10, 15, 10, -11, -29, 11, -29, 0, 0)

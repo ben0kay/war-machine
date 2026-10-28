@@ -34,7 +34,7 @@ The site owns **relative transforms, car/lamp selection, layout and site-wide wo
 | --- | --- | --- |
 | **PL0A — reusable parking foundation** | Independent asphalt/car-park scene; lane, 6–8 marked bays, sidewalk, curb/entrance gap, short driveway, static colliders, `Marker3D` bay/connection positions, typed Inspector master and docs. No cars/store/lamps/site assembly/world placement. | **Implemented; awaiting Godot validation** |
 | **PL0B — reusable prefabs and site composition** | Site scene now instances the parking lot, convenience store, three existing Car001 hatchbacks and four StreetLamp001 fixtures with editable transforms and site markers. | **Implemented; awaiting Godot validation** |
-| **PL1 — world integration** | Place assembled site on suitable saved Terrain3D near an accessible approach; validate height variation, foundations, total-site foliage/grass/rock clearings and building visibility registration. No terrain rebake. | Planned |
+| **PL1 — world integration** | Place assembled site on suitable saved Terrain3D near an accessible approach; validate height variation, foundations, total-site foliage/grass/rock clearings and building visibility registration. No terrain rebake. | Implemented; awaiting Godot validation |
 | **PL2 — nighttime atmosphere** | StreetLamp001 already supports static spot/fill lighting with night-friendly defaults; **site/Sky3D time-of-day control, store glow, limited active shadowed lamps and one optional flicker remain pending**. | Planned (fixture lighting ready) |
 | **PL3 — optional view comparison** | Compare the **same site** in top-down and existing FPS debug camera with no new player/controller rewrite. Add fixed view markers only if requested. | Planned |
 | **PL4 — polish** | Refine visual wear, sign, props, oil marks, roadside edge transitions, rain response and atmosphere based on in-game screenshots; don't build extra systems by default. | Planned |
@@ -90,3 +90,7 @@ The standalone `WORLD/Content/Placeables/Objects/Lighting/StreetLamp001/` prefab
 ## Village integration direction (current plan)
 
 Owner now wants this site as the centre of a small village, replacing the old mixed showcase layout. [WORLD/VILLAGE_IMPLEMENTATION_PLAN.md](../../../VILLAGE_IMPLEMENTATION_PLAN.md) owns VG0–VG3: full-footprint survey, bounded runtime platform grading and surrounding hills, complete existing exclusions, nested store-only fade, distant existing buildings, clear robot route and local zombies on actual site collision surfaces. VG1 covers PL1, with terrain adaptation explicitly scoped beyond its older no-edit assumption; PL2 nighttime/flicker remains separate. All new village phases are Planned; no placement/terrain/population implementation occurred with this document.
+
+## PL1 delivered through VG0–VG3
+
+Owner authorized the full village implementation after planning. Site is now authored once in World, surveyed/graded over its full measured footprint, excluded from existing scatter systems and nested-store visibility registered without fading the lot. The bounded terrain adaptation supersedes the earlier no-terrain-edit assumption; saved region files remain untouched. See WORLD/VILLAGE_IMPLEMENTATION_PLAN.md current handoff for changed owners, coordinates, startup/performance contract and deferred local checks. PL2/PL4 remain separate; inherited FPS shares this layout.

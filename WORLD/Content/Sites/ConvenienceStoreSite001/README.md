@@ -1,6 +1,7 @@
 # ConvenienceStoreSite001 — assembled reusable roadside location
 
-**Status:** PL0B assembled, Godot build/visual validation pending. **Not placed in the active world**; PL1 is the next phase. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+**Status:** PL0B and PL1 world integration implemented, awaiting Godot build/visual acceptance. Authored once in WORLD/World.tscn, with village-origin placement, full-footprint runtime terrain grading/exclusions, driveway/rear ramps and independent store fade. See ../../../VILLAGE_IMPLEMENTATION_PLAN.md current handoff. Older unplaced descriptions below are historical.
+
 
 This is a **native Godot PackedScene composition**: all existing models stay independent, with editable local child transforms and no new site C# controller or per-frame logic.
 
@@ -39,3 +40,5 @@ Children are genuine **scene instances**, not copied geometry. Their local trans
 **PL1 terrain:** full footprint approximately X ±20, Z -26..20, plus rear-door access and clearing margin. Find sufficiently level Terrain3D and reserve trees/grass/rocks across store, lot, cars, lamps and approach; **no rebake or world placement happened in PL0B**.
 
 **Local checks:** after pulling and building C#, open `ConvenienceStoreSite001.tscn` in the 3D editor. Confirm all **9 child scene instances** resolve and show mesh art; cars sit in painted bays with open doors, store front meets sidewalk, lamp bases are not floating, interior/rear exit stay navigable. The scene doesn't include a camera or sky; test nighttime illumination in a temporary dark test environment. **Godot runtime, visual and collision validation remain outstanding.**
+
+Current village ownership: World/VillageLayout surveys generated bounds, grounds the whole site at one level and reserves access; VillageTerrain grades native runtime maps, and VillageRoadMesh adds two edge ramps outside the prefab. Store visibility is discovered below Structures; parking/lamps keep independent presentation. Nine slow zombies + one runner use validated surface spawns nearby, with PER2 behavior unchanged. Four lamps still use steady-on preview settings; PL2 flicker/day-night/store glow remains future. No saved terrain rebake required.
