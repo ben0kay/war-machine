@@ -94,3 +94,9 @@ Owner now wants this site as the centre of a small village, replacing the old mi
 ## PL1 delivered through VG0–VG3
 
 Owner authorized the full village implementation after planning. Site is now authored once in World, surveyed/graded over its full measured footprint, excluded from existing scatter systems and nested-store visibility registered without fading the lot. The bounded terrain adaptation supersedes the earlier no-terrain-edit assumption; saved region files remain untouched. See WORLD/VILLAGE_IMPLEMENTATION_PLAN.md current handoff for changed owners, coordinates, startup/performance contract and deferred local checks. PL2/PL4 remain separate; inherited FPS shares this layout.
+
+## Enlarged convenience-store site (current)
+
+Main asphalt 56x36m, 14 bays and seven existing Car001 instances (bays 01/03/05/08/10/12/14); two backed in for variation. Store moves from Z=-19.75 to -23.75; cars align at Z=-12.03, lamps spread toward the wider lot edges, front/rear/road markers follow the new dimensions. Four lamps retained; no new lighting work. Sloped perimeter access remains. VillageLayout now derives road start and extra platform access from site markers; transformed mesh bounds continue to drive full-footprint surveys, grading and grass/tree/rock exclusions. Rear-exit ramp is marker-relative, and rear zombie spawns move 4m north. North road X=35 stays clear of the +/-28.8m expanded apron shoulders; other buildings/patrol/player start stay unchanged. No saved terrain rebake or extra runtime polling.
+
+Source/scene and numeric bay/car envelope, road separation and arrival-buffer checks passed. No Godot/.NET: compilation, actual terrain support and appearance/traversal need local F6 World/FPS checks. Reopen the scene after build to regenerate tool geometry. See site README for exact current coordinates; earlier dimensions above are historical.

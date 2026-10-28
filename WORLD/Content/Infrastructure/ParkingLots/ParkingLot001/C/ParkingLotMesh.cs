@@ -36,7 +36,7 @@ public partial class ParkingLotMesh : Node3D
         float driveLength = Mathf.Clamp(s.DrivewayLength, 3f, 12f);
 
         // Reserve a 2m side margin and keep the complete stall row on the main asphalt.
-        int requestedBays = Mathf.Clamp(s.BayCount, 1, 10);
+        int requestedBays = Mathf.Clamp(s.BayCount, 1, 16);
         int bayCount = Mathf.Min(requestedBays, Mathf.FloorToInt((width - 4f) / bayWidth));
         if (bayCount < requestedBays)
             GD.PushWarning($"ParkingLot001: {requestedBays} bays do not fit; showing {bayCount}.");

@@ -12,47 +12,61 @@
 [node name="Structures" type="Node3D" parent="."]
 
 [node name="Store" parent="Structures" instance=ExtResource("2")]
-position = Vector3(0, 0, -19.75)
+position = Vector3(0, 0, -23.75)
 
 [node name="ParkedCars" type="Node3D" parent="."]
 
-[node name="Car_Bay02" parent="ParkedCars" instance=ExtResource("3")]
-position = Vector3(-7.75, 0.12, -8.03)
+[node name="Car_Bay01" parent="ParkedCars" instance=ExtResource("3")]
+position = Vector3(-20.15, 0.12, -12.03)
+
+[node name="Car_Bay03" parent="ParkedCars" instance=ExtResource("3")]
+position = Vector3(-13.95, 0.12, -12.03)
+rotation = Vector3(0, 3.141593, 0)
 
 [node name="Car_Bay05" parent="ParkedCars" instance=ExtResource("3")]
-position = Vector3(1.55, 0.12, -8.03)
+position = Vector3(-7.75, 0.12, -12.03)
 
 [node name="Car_Bay08" parent="ParkedCars" instance=ExtResource("3")]
-position = Vector3(10.85, 0.12, -8.03)
+position = Vector3(1.55, 0.12, -12.03)
+
+[node name="Car_Bay10" parent="ParkedCars" instance=ExtResource("3")]
+position = Vector3(7.75, 0.12, -12.03)
+
+[node name="Car_Bay12" parent="ParkedCars" instance=ExtResource("3")]
+position = Vector3(13.95, 0.12, -12.03)
+rotation = Vector3(0, 3.141593, 0)
+
+[node name="Car_Bay14" parent="ParkedCars" instance=ExtResource("3")]
+position = Vector3(20.15, 0.12, -12.03)
 
 [node name="StreetLighting" type="Node3D" parent="."]
 
 [node name="Lamp_WestStore" parent="StreetLighting" instance=ExtResource("4")]
-position = Vector3(-14, 0.12, -8.2)
+position = Vector3(-25, 0.12, -12.2)
 rotation = Vector3(0, 1.570796, 0)
 
 [node name="Lamp_EastStore" parent="StreetLighting" instance=ExtResource("4")]
-position = Vector3(14, 0.12, -8.2)
+position = Vector3(25, 0.12, -12.2)
 rotation = Vector3(0, -1.570796, 0)
 
 [node name="Lamp_WestApproach" parent="StreetLighting" instance=ExtResource("4")]
-position = Vector3(-14.5, 0.12, 8.5)
+position = Vector3(-24, 0.12, 12.5)
 rotation = Vector3(0, 1.570796, 0)
 
 [node name="Lamp_EastApproach" parent="StreetLighting" instance=ExtResource("4")]
-position = Vector3(14.5, 0.12, 8.5)
+position = Vector3(24, 0.12, 12.5)
 rotation = Vector3(0, -1.570796, 0)
 
 [node name="SiteMarkers" type="Node3D" parent="."]
 
 [node name="FrontEntrance" type="Marker3D" parent="SiteMarkers"]
-position = Vector3(0, 0.12, -13.4)
+position = Vector3(0, 0.12, -17.4)
 
 [node name="RearServiceExit" type="Marker3D" parent="SiteMarkers"]
-position = Vector3(5.7, 0.12, -26.2)
+position = Vector3(5.7, 0.12, -30.2)
 
 [node name="RoadConnection" type="Marker3D" parent="SiteMarkers"]
-position = Vector3(0, 0.12, 20)
+position = Vector3(0, 0.12, 24)
 
 [node name="PlayerTestSpawn" type="Marker3D" parent="SiteMarkers"]
 position = Vector3(0, 0.16, 4)

@@ -3,10 +3,10 @@
 
 [resource]
 script = ExtResource("1")
-Width = 40.0
-Depth = 28.0
+Width = 56.0
+Depth = 36.0
 AsphaltThickness = 0.12
-BayCount = 8
+BayCount = 14
 BayWidth = 3.1
 BayDepth = 5.6
 LineWidth = 0.08

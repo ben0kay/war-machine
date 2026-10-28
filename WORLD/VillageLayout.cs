@@ -38,8 +38,12 @@ public sealed class VillageLayout
             Structures.Add(footprint); Platforms.Add(footprint.Grow(2));
         }
         // Rear service access and lot driveway remain part of the protected full-site platform.
-        Platforms[0] = Platforms[0].Merge(new Rect2(settings.VillageOriginXZ + new Vector2(-23, -31), new Vector2(46, 55)));
-        AddRoad(settings.VillageOriginXZ, new(0, 20), new(0, 38), settings.VillageRoadWidth);
+        Vector3 roadPoint = Site.GetNode<Node3D>("SiteMarkers/RoadConnection").GlobalPosition;
+        Vector3 rearPoint = Site.GetNode<Node3D>("SiteMarkers/RearServiceExit").GlobalPosition;
+        Vector2 roadXZ = new(roadPoint.X, roadPoint.Z), rearXZ = new(rearPoint.X, rearPoint.Z);
+        Platforms[0] = Platforms[0].Merge(new Rect2(roadXZ - new Vector2(6, 2), new Vector2(12, 6)))
+            .Merge(new Rect2(rearXZ - Vector2.One * 3, Vector2.One * 6));
+        AddRoad(settings.VillageOriginXZ, roadXZ - settings.VillageOriginXZ, new(0, 38), settings.VillageRoadWidth);
         AddRoad(settings.VillageOriginXZ, new(0, 35), new(35, 35), settings.VillageRoadWidth);
         AddRoad(settings.VillageOriginXZ, new(35, 35), new(35, -165), settings.VillageRoadWidth);
         for (int i = 1; i < _buildings.Count; i++)

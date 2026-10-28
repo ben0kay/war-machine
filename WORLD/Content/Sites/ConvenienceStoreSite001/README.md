@@ -1,50 +1,32 @@
-# ConvenienceStoreSite001 — assembled reusable roadside location
+# ConvenienceStoreSite001 — village-centre roadside location
 
-**Status:** PL0B and PL1 world integration implemented, awaiting Godot build/visual acceptance. Authored once in WORLD/World.tscn, with village-origin placement, full-footprint runtime terrain grading/exclusions, driveway/rear ramps and independent store fade. See ../../../VILLAGE_IMPLEMENTATION_PLAN.md current handoff. Older unplaced descriptions below are historical.
+**Current:** integrated in WORLD/World.tscn, enlarged to **56 x 36m asphalt, 14 bays and 7 parked cars**. Local build/visual acceptance pending. See IMPLEMENTATION_PLAN.md and ../../../VILLAGE_IMPLEMENTATION_PLAN.md for phase history; older 40x28m / 8-bay / 3-car descriptions are superseded.
 
+The site is a native PackedScene composition: ParkingLot001, one ConvenienceStore001 beneath Structures/Store, seven existing Car001 instances under ParkedCars, and four StreetLamp001 instances under StreetLighting. All 13 child prefab instances stay independently reusable; no copied car/store meshes or site processing loop. World owns placement/terrain/actors; the site owns relative child transforms.
 
-This is a **native Godot PackedScene composition**: all existing models stay independent, with editable local child transforms and no new site C# controller or per-frame logic.
+## Current authored positions (site-local metres)
 
-```text
-ConvenienceStoreSite001
-├── ParkingLot                  ParkingLot001.tscn
-├── Structures
-│   └── Store                   ConvenienceStore001.tscn
-├── ParkedCars
-│   ├── Car_Bay02               Car001.tscn
-│   ├── Car_Bay05               Car001.tscn
-│   └── Car_Bay08               Car001.tscn
-├── StreetLighting
-│   ├── Lamp_WestStore          StreetLamp001.tscn
-│   ├── Lamp_EastStore          StreetLamp001.tscn
-│   ├── Lamp_WestApproach       StreetLamp001.tscn
-│   └── Lamp_EastApproach       StreetLamp001.tscn
-└── SiteMarkers                 FrontEntrance, RearServiceExit,
-                                RoadConnection, PlayerTestSpawn
-```
+| Element | Position/details |
+| --- | --- |
+| Parking lot | Origin; main asphalt 56 x 36, +Z driveway ends at Z=24 |
+| Store | (0,0,-23.75); front at Z=-17.75 aligns with the new sidewalk/central gap |
+| Parked cars | Bays 01/03/05/08/10/12/14; X=-20.15/-13.95/-7.75/1.55/7.75/13.95/20.15, Y=0.12, Z=-12.03 |
+| Car orientation | Bays 03 and 12 backed in; others face -Z. Doors closed by default |
+| Store lamps | X=-25/+25, Y=0.12, Z=-12.2; heads face inward |
+| Approach lamps | X=-24/+24, Y=0.12, Z=12.5; heads face inward |
+| FrontEntrance marker | (0,0.12,-17.4) |
+| RearServiceExit marker | (5.7,0.12,-30.2) |
+| RoadConnection marker | (0,0.12,24) |
+| PlayerTestSpawn marker | (0,0.16,4); passive only, not the world's arrival spawn |
 
-## Authored layout (metres; root space)
+The lot preserves 0.8m perimeter collision shoulders. Seven empty bays and the broad circulation aisle remain free. Lamp count stays four (existing spot/fill lighting, shadows off by default), so adding cars does not add local lights. PL2 flicker/day-night/store-glow remains separate. Lighting ownership remains ENVIRONMENT/Lighting/Fixtures/StreetLamp; geometry remains in Placeables/Objects/Lighting/StreetLamp001.
 
-- Main ParkingLot001 at origin, 40 × 28m main asphalt with 8 bays, +Z road and -Z store. Top of asphalt Y=0.12m.
-- Store root at **(0,0,-19.75)**, with front (+Z) at Z=-13.75: its central entrance aligns with the parking lot's lowered sidewalk access. Rear service exit faces further -Z. Store uses the existing StructureVisibility directly.
-- Existing **Car001** hatchbacks placed in bay **02** (-7.75,0.12,-8.03), **05** (1.55,0.12,-8.03), **08** (10.85,0.12,-8.03). Cars face -Z toward the store; their **driver doors now default CLOSED**, with the original static collision and camera occluder. Each car can independently set `DriverDoorAngleOverride=58` to restore the old open-door pose without a duplicate prefab.
-- Four **StreetLamp001** at X=-14/+14, Z=-8.2 and X=-14.5/+14.5, Z=8.5; all Y=0.12. West lamps yaw +90°, east lamps yaw -90° so the light-head arms point inwards over the pavement. Real light behaviour and masters stay under `ENVIRONMENT/Lighting/Fixtures/StreetLamp/`.
-- Passive site markers: front entry at (0,0.12,-13.4), rear service exit (5.7,0.12,-26.2), road connection (0,0.12,20), test spawn (0,0.16,4). **No character is spawned.**
+## World fit
 
-Children are genuine **scene instances**, not copied geometry. Their local transforms can be edited manually in Godot. If the parking lot's dimensions or bay count change, realign the cars/store/lamps manually: the site does not poll markers or automatically rearrange itself. `SiteMaster.tres` and the still-blank site-settings C# file remain future PL1 world-placement placeholders, not active duplicate transform settings.
+The authored site is beneath WorldActorsRoot/PersistentPropsRoot/Structures. The nested store alone registers shared StructureVisibility; asphalt/lamps never inherit whole-store fading. Cars retain their own existing independent camera occluders.
 
-**Structure visibility:** when PL1 places the *entire site* under `WorldActorsRoot/PersistentPropsRoot/Structures`, nested store visibility can register through the existing recursive discovery, while the lot/lamps/cars remain independently owned. Don't tag the entire site with building fade.
+The expanded mesh envelope includes X +/-28.8m shoulders and Z approximately -30.2..24.8, plus reserved rear/driveway access. VillageLayout measures generated bounds, surveys the entire expanded footprint and grades/clears it via existing systems. Road start and extra access reservations now follow the actual RoadConnection/RearServiceExit markers instead of the previous fixed coordinates. The rear-exit ramp follows its moved marker. The northbound village road stays at X=35 (nearest edge X=32), outside the wider paving. Other buildings/robot remain in their existing safe village locations; player arrival remains Z=38. Two rear slow-zombie markers move to Z=-33, runner to Z=-34; actual collision support/clearance and player buffer still gate spawning. Saved terrain is not rebaked.
 
-**Lighting:** four lamps default to steady ON for preview (up to eight actual local lights, shadows off); automatic day/night switching, one flickering lamp, range relevance and Sky3D coordination remain PL2. No new site lighting components were introduced.
+## Brief checks
 
-**PL1 terrain:** full footprint approximately X ±20, Z -26..20, plus rear-door access and clearing margin. Find sufficiently level Terrain3D and reserve trees/grass/rocks across store, lot, cars, lamps and approach; **no rebake or world placement happened in PL0B**.
-
-**Local checks:** after pulling and building C#, open `ConvenienceStoreSite001.tscn` in the 3D editor. Confirm all **9 child scene instances** resolve and show mesh art; cars sit in painted bays with open doors, store front meets sidewalk, lamp bases are not floating, interior/rear exit stay navigable. The scene doesn't include a camera or sky; test nighttime illumination in a temporary dark test environment. **Godot runtime, visual and collision validation remain outstanding.**
-
-Current village ownership: World/VillageLayout surveys generated bounds, grounds the whole site at one level and reserves access; VillageTerrain grades native runtime maps, and VillageRoadMesh adds two edge ramps outside the prefab. Store visibility is discovered below Structures; parking/lamps keep independent presentation. Nine slow zombies + one runner use validated surface spawns nearby, with PER2 behavior unchanged. Four lamps still use steady-on preview settings; PL2 flicker/day-night/store glow remains future. No saved terrain rebake required.
-
-## Asphalt access correction
-
-The 12cm solid apron/driveway had vertical side faces. Godot CharacterBody3D does not provide general automatic stair stepping, so entering from a side could catch the capsule even though a village-only ramp existed at the driveway end. ParkingLotMesh now generates one continuous sloped asphalt shoulder along the full apron+driveway outline (including both concave joins), with matching upward-facing collision triangles. EdgeRampWidth is 0.8m by default (about 8.5 degrees at 12cm thickness); native top slab and bay markers remain unchanged. Generated bounds automatically include shoulders for village grading and scatter exclusions. The central entrance access strip now has a 2mm visual lip rather than a 52mm step; raised sidewalk curbs remain intentional. The redundant village-only driveway ramp is removed, while the store rear-exit ramp remains.
-
-Built once with the prefab; no player-controller step logic, extra timer or per-frame query. Numeric outline/concave-join/slope checks and diff review passed; Godot/.NET unavailable, so compilation and physical traversal remain unverified. After pull/rebuild, reload the scene and F6 WORLD/World.tscn. Walk from dirt/grass onto both driveway sides, its end, both lot sides and front edges; test back off, corners, central store entrance, zombies and FPS. Saved terrain need not be rebaked.
+Source/numeric checks cover 14-bay width, exact car-to-bay placement, seven separate car envelopes, new lot/road separation, arrival buffer and scene resource references. Godot/.NET unavailable: compilation and runtime appearance/collision are not verified. Pull/build/reopen and F6 WORLD/World.tscn. Inspect all seven cars inside marked bays, lamp bases, open circulation/doors, store/sidewalk alignment, slope access from every edge, complete graded support and no grass/rocks through asphalt. Walk rear service ramp and dirt road join; check store-only fades, local zombies/PER2 and FPS. World startup logs should report the larger footprint survey without layout errors.

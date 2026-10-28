@@ -6,14 +6,14 @@ using Godot;
 public partial class ParkingLotSettings : Resource
 {
     [ExportGroup("Asphalt foundation")]
-    [Export(PropertyHint.Range, "34,60,0.5")] public float Width { get; set; } = 40f;
-    [Export(PropertyHint.Range, "24,42,0.5")] public float Depth { get; set; } = 28f;
+    [Export(PropertyHint.Range, "34,60,0.5")] public float Width { get; set; } = 56f;
+    [Export(PropertyHint.Range, "24,42,0.5")] public float Depth { get; set; } = 36f;
     [Export(PropertyHint.Range, "0.06,0.25,0.01")] public float AsphaltThickness { get; set; } = 0.12f;
 
     [Export(PropertyHint.Range, "0.25,2,0.05")] public float EdgeRampWidth { get; set; } = 0.8f;
 
     [ExportGroup("Parking bays")]
-    [Export(PropertyHint.Range, "1,10,1")] public int BayCount { get; set; } = 8;
+    [Export(PropertyHint.Range, "1,16,1")] public int BayCount { get; set; } = 14;
     [Export(PropertyHint.Range, "2.6,3.6,0.1")] public float BayWidth { get; set; } = 3.1f;
     [Export(PropertyHint.Range, "4.8,6.5,0.1")] public float BayDepth { get; set; } = 5.6f;
     [Export(PropertyHint.Range, "0.04,0.15,0.01")] public float LineWidth { get; set; } = 0.08f;

@@ -43,12 +43,12 @@ public partial class WorldSettings : Resource
     [Export(PropertyHint.Range, "1.8,4,0.1")] public float HordeSpacing { get; set; } = 2.5f;
     [ExportGroup("Runner placement")]
     [Export] public Vector2[] RunnerSpawnOffsets { get; set; } = new Vector2[]
-    { new(19, -30) };
+    { new(19, -34) };
     [ExportGroup("Zombie placement")]
     // Village-relative safe candidates; actual solid surface and body clearance are checked before activation.
     [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[]
     {
         new(-17, -4), new(17, -4), new(-10, 3), new(10, 3), new(-15, 10),
-        new(15, 10), new(-11, -29), new(11, -29), new(0, 0)
+        new(15, 10), new(-11, -33), new(11, -33), new(0, 0)
     };
 }
