@@ -9,6 +9,8 @@ public partial class WorldController : Node3D
     [Export] public CameraSettings CameraSettings { get; set; } = null!;
     public EnvironmentConfig EnvironmentSettings { get; private set; } = null!;
     [Export] public VegetationConfig GrassSettings { get; set; } = null!;
+    [ExportGroup("Debug")]
+    [Export] public bool ShowZombieSightConesOnStart { get; set; } = false;
     protected PinePlacement _pines = null!;
     protected TerrainGrass _grass = null!;
     private PlayerController _player = null!;
@@ -179,6 +181,9 @@ public partial class WorldController : Node3D
         UpdateWeatherCoverage();
         InitializeDistanceFog(camera, player);
         _visionDebug = new ZombieVisionDebug { Name = "ZombieVisionDebug" };
+        // =========================================================
+        // Scene-owned startup default affects only debug visuals; F7/checkbox can toggle them afterward.
+        _visionDebug.SetConesVisible(ShowZombieSightConesOnStart);
         GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
         SpawnZombies(data, player, horde.Slow, horde.Fast);

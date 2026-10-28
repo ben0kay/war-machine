@@ -32,6 +32,7 @@ script = ExtResource("1")
 Settings = ExtResource("2")
 PlayerSettings = ExtResource("11")
 CameraSettings = ExtResource("12")
+ShowZombieSightConesOnStart = false
 
 [node name="TerrainRoot" type="Node3D" parent="."]
 [node name="Terrain3D" type="Terrain3D" parent="TerrainRoot"]
