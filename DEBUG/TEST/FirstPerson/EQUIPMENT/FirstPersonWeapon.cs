@@ -10,6 +10,7 @@ public partial class FirstPersonWeapon : Node
     private PhysicsRayQueryParameters3D _query = null!;
     private bool _held, _requested;
     private PlayerQuickMelee? _shove;
+    private FirearmVisualRecoil? _visualRecoil;
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -33,14 +34,17 @@ public partial class FirstPersonWeapon : Node
     {
         var previous = _weapon;
         if (!_slots.Select(slot)) return;
-        _shove?.Cancel(); CancelTrigger();
-        if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
-        _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
+        _shove?.Cancel(); CancelTrigger(); CancelVisualRecoil();
+        if (IsInstanceValid(previous))
+        { previous!.ReadyToFire -= OnReadyToFire; previous.ShotAccepted -= OnShotAccepted; }
+        _weapon = _slots.Current!;
+        _weapon.ReadyToFire += OnReadyToFire; _weapon.ShotAccepted += OnShotAccepted;
         // =========================================================
         // Each gun may override its FPS view-model fit; root scaling also moves the real muzzle
         // marker consistently, while the shared top-down mount remains unaffected.
         _weapon.Position = _camera.TestSettings.WeaponOffset + _weapon.RuntimeSettings.FirstPersonOffset;
         _weapon.Scale = Vector3.One * Mathf.Clamp(_weapon.RuntimeSettings.FirstPersonScale, 0.4f, 1.5f);
+        _visualRecoil = new FirearmVisualRecoil(_weapon);
         _query.CollisionMask = _weapon.RuntimeSettings.HitMask;
     }
 
@@ -50,7 +54,7 @@ public partial class FirstPersonWeapon : Node
     {
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && !mouse.Pressed) _held = false;
         if (input is InputEventKey key && key.Pressed && key.PhysicalKeycode == Key.Escape)
-        { CancelTrigger(); _shove?.Cancel(); }
+        { CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); }
     }
 
     // =========================================================
@@ -63,12 +67,36 @@ public partial class FirstPersonWeapon : Node
         if (PlayerQuickMelee.Requested(input))
         {
             if (GetViewport().GuiGetFocusOwner() == null)
-            { _shove?.TryStart(_weapon!, true); SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
+            {
+                if (_shove?.TryStart(_weapon!, true) == true) CancelVisualRecoil();
+                SetPhysicsProcess(true); GetViewport().SetInputAsHandled();
+            }
             return;
         }
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
         { _held = true; RequestShot(); GetViewport().SetInputAsHandled(); }
     }
+
+    // =========================================================
+    // A real accepted shot starts one additive model pulse, without changing camera look.
+    private void OnShotAccepted()
+    {
+        _visualRecoil?.Kick();
+        if (_visualRecoil?.IsActive == true) SetProcess(true);
+    }
+
+    // =========================================================
+    // Cosmetic recovery is active-only. The shared firearm independently recovers its ballistic state.
+    public override void _Process(double delta)
+    {
+        if (_visualRecoil?.IsActive != true) { SetProcess(false); return; }
+        _visualRecoil.Advance((float)delta);
+        if (!_visualRecoil.IsActive) SetProcess(false);
+    }
+
+    // =========================================================
+    private void CancelVisualRecoil()
+    { _visualRecoil?.Cancel(); SetProcess(false); }
 
     // =========================================================
     private void RequestShot() { _requested = true; SetPhysicsProcess(true); }
@@ -82,7 +110,7 @@ public partial class FirstPersonWeapon : Node
         SetPhysicsProcess(false);
         if (!IsInstanceValid(_weapon) || _player.GameplayInputBlocked || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured
             || GetViewport().GuiGetFocusOwner() != null)
-        { CancelTrigger(); _shove?.Cancel(); return; }
+        { CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); return; }
         Vector2 centre = _camera.GetViewport().GetVisibleRect().Size * 0.5f;
         Vector3 origin = _camera.ProjectRayOrigin(centre), direction = _camera.ProjectRayNormal(centre);
         if (_requested && _shove?.IsActive != true)
@@ -91,7 +119,9 @@ public partial class FirstPersonWeapon : Node
             _query.From = origin; _query.To = origin + direction * _weapon!.RuntimeSettings.Range;
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_query);
             Vector3 aim = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
-            _weapon!.TryFire(aim, origin);
+            // RC2: camera's up axis rotates the *real 3D shot ray* before random spread.
+            // Keep the crosshair and mouse-look unchanged; don't add extra camera recoil.
+            _weapon!.TryFire(aim, origin, _camera.GlobalBasis.Y);
         }
         if (_shove?.IsActive == true)
         {
@@ -105,17 +135,20 @@ public partial class FirstPersonWeapon : Node
 
     // =========================================================
     private void OnInputBlocked(bool blocked)
-    { if (blocked) { CancelTrigger(); _shove?.Cancel(); _weapon?.CancelFeedback(); } }
+    { if (blocked) { CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); } }
 
     // =========================================================
     public override void _Notification(int what)
-    { if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); if (IsInstanceValid(_weapon)) _weapon!.CancelFeedback(); } }
+    {
+        if (what == NotificationApplicationFocusOut)
+        { CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); if (IsInstanceValid(_weapon)) _weapon!.CancelFeedback(); }
+    }
 
     // =========================================================
     public override void _ExitTree()
     {
-        CancelTrigger(); _shove?.Cancel();
+        CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil();
         if (IsInstanceValid(_player)) _player.GameplayInputBlockChanged -= OnInputBlocked;
-        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
+        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
     }
 }

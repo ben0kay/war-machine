@@ -4,7 +4,7 @@ using Godot;
 public partial class FirearmController : Node3D
 {
     public event System.Action? ReadyToFire;
-    // RC1/RC2 may subscribe for view-only weapon kick after an accepted shot.
+    // RC1/RC2 view adapters subscribe for the same accepted-shot visual recoil event.
     public event System.Action? ShotAccepted;
     [Export] public FirearmSettings Settings { get; set; } = null!;
     [Export] public Marker3D Muzzle { get; set; } = null!;
@@ -50,7 +50,7 @@ public partial class FirearmController : Node3D
     { return TryFire(aimPoint, probeOrigin, Vector3.Zero); }
 
     // =========================================================
-    // Third argument is view-space up for future RC1/RC2; legacy calls retain their original shot ray.
+    // Third argument is camera-space up for RC1/RC2 real 3D shot climb; legacy calls remain unchanged.
     public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp)
     {
         if (!_equipped || !IsInstanceValid(_holder) || Muzzle == null || !_cooldown.IsStopped()) return false;
@@ -58,8 +58,8 @@ public partial class FirearmController : Node3D
         if (!float.IsFinite(direction.X) || !float.IsFinite(direction.Y) || !float.IsFinite(direction.Z)
             || direction.LengthSquared() < 0.0001f) return false;
         // =========================================================
-        // Previous accepted shots' recoil precedes ACC0 random spread. RC1/RC2 enable
-        // actual aim climb by passing a camera-relative up axis into this overload.
+        // Previous accepted shots' accumulated 3D recoil precedes ACC0 random spread.
+        // Both top-down and FPS supply view-up to preserve true world-space bullet intersection.
         direction = _recoil.Apply(direction, recoilScreenUp);
         direction = ShotSpread.Apply(direction, RuntimeSettings.BaseSpreadDegrees, _shotRandom);
         _query.CollisionMask = RuntimeSettings.HitMask;

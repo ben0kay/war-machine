@@ -1,5 +1,7 @@
 # Current FPS testing controls
 
+> **FPS recoil RC2 (2026-10-28):** Real accumulated 3D aim climb and gun-model kick are implemented in source, with view camera rotation left unchanged to avoid double recoil. [RC2 plan and validation handoff](../../../EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Build and visual tests pending locally.
+
 **Environment is now shared with top-down**, including ground haze, via the EnvironmentRoot inherited from World.tscn. One left-hand expandable panel replaces F8/F9 windows. Escape releases mouse for controls; click the world to resume. See [current environment controls](ENVIRONMENT/README.md) and [shared scene guide](../../../ENVIRONMENT/SHARED_ENVIRONMENT_README.md). Older F8/F9 panel descriptions below are historical. Compilation/visual acceptance pending locally.
 
 # First-person world test
@@ -27,7 +29,7 @@ Three shared files expose small reusable extension hooks: WORLD/WorldController,
 
 Camera rotation updates on mouse input; translation renders between completed physics poses while moving/crouching, then sleeps. Player physics wakes on movement/capture/stance/focus events and sleeps after grounded settling. Gun queries run only on requested shots; its existing one-shot cooldown wakes held automatic fire. The camera render callback runs only while translation is settling; no idle aim ray, scene scan or obstruction-fading manager. GPU grass/wind and active enemies/weather keep their existing intentional simulation. Grass remains bounded by its 120k budget; the same batched pines stream around the player.
 
-The top-down tuning panel is omitted. Building camera-occluder proxies may still exist, but no FPS fading manager queries them. This first pass has no visible hands, reload, recoil, ADS, weapon collision animation or full-body first-person rendering. Rifle uses the real world depth buffer and can visually enter nearby scenery, while its obstruction ray prevents shooting through that cover. Zombies retain simple direct pursuit rather than navigation around obstacles.
+The top-down tuning panel is omitted. Building camera-occluder proxies may still exist, but no FPS fading manager queries them. The original FPS foundation had no visible hands, reload, recoil, ADS, weapon collision animation or full-body first-person rendering; **RC2 now adds weapon-only visual kick and real cumulative 3D shot recoil** (no camera shake or procedural FPS hands). Rifle uses the real world depth buffer and can visually enter nearby scenery, while its obstruction ray prevents shooting through that cover. Zombies retain simple direct pursuit rather than navigation around obstacles.
 
 Validation: resource paths, inherited scene node overrides, input/capture and lifecycle source review, preserved top-down defaults and `git diff --check`. Godot/.NET are unavailable in this environment, so compilation, inherited scene loading, mouse capture, crouch, aiming/cover hits, grass appearance and performance await local validation. Also rerun WORLD/World.tscn briefly to check the shared extension hooks.
 

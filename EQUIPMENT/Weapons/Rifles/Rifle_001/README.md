@@ -80,3 +80,7 @@ RifleMaster now uses `TracerSpeed=300` m/s, `TracerLength=1.7`m, `TracerWidth=0.
 ## RC0 cumulative recoil configuration (2026-10-28)
 
 The master now authors 2.0° pitch per accepted shot, 3.0° maximum, no horizontal step, 12°/s gameplay recovery after 0.10s. Visual parameters 0.09m backward kick, 5° pitch and 0.22s recovery are **not rendered yet**. The shared `FirearmRecoil` state is ready, but real aim climb/weapon animation is deferred to RC1/RC2; existing shot behavior, 95 damage and 0.30° base random spread are unchanged.
+
+## RC2 FPS recoil (2026-10-28)
+
+The original RC0 master values now drive real ballistic recoil in both top-down (RC1) and FPS (RC2) modes, including the 2.0° accepted-shot climb and 0.09m/5°/0.22s visual rifle kick. One shared `FirearmVisualRecoil` animates only the Visual child, leaving the physical muzzle/cover/hit pipeline unchanged. FPS does not force the camera pitch. Build/visual checks outstanding; older RC0-only notes above are historical.

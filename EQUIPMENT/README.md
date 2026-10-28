@@ -47,7 +47,7 @@ RC1 now adds top-down aim climb and weapon/arm animation in source; RC2 will reu
 in the FPS debug view. This is **not existing random spread** (ACC0) and not
 enemy stagger. Machine-gun bursts are intended to stay more controlled than
 continuous fire; a fully stationary cursor need not mean stationary bullet aim.
-**RC0 shared recoil state and firing-event plumbing now exist in source (awaiting local build tests).** The top-down adapter now enables real camera-relative bullet climb and a temporary visual gun/arm kick. FPS remains unchanged until RC2. Local Godot acceptance is pending.
+**RC0 shared recoil state and firing-event plumbing now exist in source (awaiting local build tests).** Both top-down and FPS adapters now enable recoil-aware **real 3D bullet climb** and share the same temporary Visual-only gun kick. Top-down additionally animates arms; FPS deliberately skips camera shake. RC0–RC2 local Godot acceptance is pending.
 
 ## Planned melee equipment and hit reactions
 

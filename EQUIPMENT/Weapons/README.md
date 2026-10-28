@@ -14,7 +14,7 @@ foundation (ACC0) and proposed player-specific stance/movement accuracy (ACC1).
 recoil, RC1 top-down aim climb + animation, RC2 FPS recoil**, with deterministic
 shot-to-shot displacement and burst/recovery. **Recoil is not random spread**;
 RC0's shared state and settings are implemented in source, awaiting local validation;
-RC1 top-down aim climb and model/shoulder recoil are implemented in source (awaiting local validation); RC2 FPS remains planned.
+RC1 top-down and RC2 first-person actual 3D aim climb and model kick are implemented in source (awaiting local validation).
 Projectile weapons, melee, ammo/reload and inventory remain future tasks.
 
 ## Moving bullet-tracer visuals — Godot validation pending

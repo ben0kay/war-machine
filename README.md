@@ -1,6 +1,6 @@
 # WAR MACHINE
 
-> **Weapons update 2026-10-28:** RC0 shared per-weapon accumulated recoil and recovery are implemented in source (awaiting local validation); **RC1 top-down ballistic aim climb and weapon/arm recoil implemented in source (awaiting validation); RC2 FPS still planned**. [RC plan](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Existing shot spread and damage are unchanged.
+> **Weapons update 2026-10-28:** RC0 shared per-weapon accumulated recoil and recovery are implemented in source (awaiting local validation); **RC1 top-down and RC2 FPS 3D ballistic aim climb and visual gun recoil implemented in source (awaiting local validation)**. [RC plan](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Existing shot spread and damage are unchanged.
 
 > **UI implementation update (2026-10-28):** `FEEDBACK/` now contains a generic source-implemented HealthBar and HUD overlay showing a bar only for living entities with shared `HealthComponent` and HP below maximum. Automatic registration supports current zombies and future player health, but **PH0 player health is still planned**. These bars await local build/visual validation; no damage calculations or health values were changed. See [FEEDBACK/IMPLEMENTATION_PLAN.md](FEEDBACK/IMPLEMENTATION_PLAN.md).
 
@@ -123,7 +123,7 @@ Start with this README for intent, then read the owning README, relevant plan an
 - [ENTITIES/TYPES/Zombies/README.md](ENTITIES/TYPES/Zombies/README.md) — current zombies and explicit limitations
 - [ENTITIES/Shared/Sensing/README.md](ENTITIES/Shared/Sensing/README.md) — shared visibility, hearing proposal and perception phases
 - [EQUIPMENT/Weapons/README.md](EQUIPMENT/Weapons/README.md) — shared gun systems and accuracy work
-- [EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) — **RC0–RC2 planned only**: shared gameplay recoil, top-down aim climb and FPS presentation; separate from random spread
+- [EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) — RC0–RC2 source implemented (local testing pending): cumulative recoil, top-down aim climb and FPS presentation; separate from random spread
 - [COMBAT/IMPLEMENTATION_PLAN.md](COMBAT/IMPLEMENTATION_PLAN.md) — impact and stagger foundation implemented/awaiting validation; remaining quick melee, bat, knife and zombie outgoing attacks tracked there
 - [INTERACTION/IMPLEMENTATION_PLAN.md](INTERACTION/IMPLEMENTATION_PLAN.md) — **new master plan (IX0–IX8; nothing implemented):** physical props and carrying/throwing, cupboards, destructible planks, item identity, rifle placement and scavenging; see [INTERACTION overview](INTERACTION/README.md)
 - [WORLD/Content/Placeables/README.md](WORLD/Content/Placeables/README.md) — **new model library:** fixed Objects versus pickup-able Props, Bookcase001 and Book001 original GLBs, future furnishing catalogue

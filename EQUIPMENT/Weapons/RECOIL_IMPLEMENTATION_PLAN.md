@@ -1,6 +1,6 @@
 # Weapon recoil — RC0/RC1/RC2 implementation plan
 
-> **Status (2026-10-28): RC0 implemented in source, awaiting local build/runtime validation. RC1 implemented in source, awaiting local build/visual validation; RC2 remains NOT implemented.** This document records approved design direction, **not permission to implement all stages automatically**. Each stage needs explicit authorization, one focused commit and a separate validation handoff. Repository: `ben0kay/war-machine`, branch **`implement-td0-td1`**; never target `main` without the owner's explicit instruction.
+> **Status (2026-10-28): RC0 implemented in source, awaiting local build/runtime validation. RC1 and RC2 implemented in source, awaiting local Godot/.NET build and visual/gameplay validation.** This document records approved design direction, **not permission to implement all stages automatically**. Each stage needs explicit authorization, one focused commit and a separate validation handoff. Repository: `ben0kay/war-machine`, branch **`implement-td0-td1`**; never target `main` without the owner's explicit instruction.
 
 ## Design goal
 
@@ -102,9 +102,26 @@ Animate firearm backward kick / upward muzzle pitch plus small shoulder/elbow re
 
 ## RC2 — FPS gameplay + view-model recoil
 
-**Status: Planned. Depends on RC0; ideally RC1 validated first.** Adapt `DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs` and its camera/view-model pose using the **same** accumulated recoil state and shot ordering as RC1. While firing, real bullets climb relative to the centre-screen desired aim; restore after a break; mouse-look down can counter. Model slides back and lifts; optional very small camera kick, with a single authoritative recoil source and no second offset. Keep the physical world-space muzzle, shoulder ray and nearby wall blocking intact.
+**Status: Implemented in source, awaiting local build/runtime acceptance (2026-10-28).** Adapted `DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs` and its camera/view-model pose using the **same** accumulated recoil state and shot ordering as RC1. While firing, real bullets climb relative to the centre-screen desired aim; restore after a break; mouse-look down can counter. Model slides back and lifts; optional very small camera kick, with a single authoritative recoil source and no second offset. Keep the physical world-space muzzle, shoulder ray and nearby wall blocking intact.
 
 **Pass:** single rifle shot kicks once, MG 600-RPM builds predictable capped climb, burst firing resets grouping after recovery, moving the mouse down counters, spread still applies around final direction. Test near/far obstacles, centre-screen aiming, pause/switch/uncapture/Escape/focus loss, Q shove cancellation and no leftover pitch/camera offsets. The FPS mode remains a debug comparison: share underlying mechanics but avoid excessive FPS-only polish.
+
+## RC2 implementation handoff (2026-10-28)
+
+**Implemented:** `DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs` now feeds the current camera's `GlobalBasis.Y` to the already-existing three-argument `FirearmController.TryFire(aim, origin, recoilScreenUp)`. This makes RC0 accumulated pitch/yaw alter the **actual 3D hit ray** (and resulting damage, cover stops, and tracer direction), not a flat 2D screen-space impact. The centre crosshair stays at the intended aim, the camera's user-controlled mouse-look orientation is unchanged, and looking down compensates for the accumulated climb. Shot order remains unchanged: previously accumulated recoil -> existing ACC0 independent random spread -> actual hitscan/impact/tracer -> exactly one new recoil impulse on an accepted shot. A rifle starts almost at original aim; sustained MG shots climb, then recover after the configured delay. No extra ray, projectile, camera polling or new random spread.
+
+**Shared visual recoil refactor:** A new, plain `EQUIPMENT/Weapons/Shared/FirearmVisualRecoil.cs` contains the same existing RC1 bounded visual animation (kick impulse, max 1.5x stacked pulse, temporary recovery, exact rest transform restoration). It modifies **only the firearm's Visual child**, applying local +X muzzle-up pitch and local +Z shoulder-back slide with existing `FirearmSettings.VisualRecoil* ` values. The real sibling `Muzzle` marker never moves; therefore model animation cannot double-deviate the ballistic ray or change shoulder-to-muzzle checks. `TopDownWeaponRecoil.cs` now wraps this helper and retains its existing `PlayerController.SetWeaponRecoilPose` shoulder/arm response. FPS uses the shared helper directly, without visible third-person arms.
+
+**FPS event lifecycle:** `FirstPersonWeapon` subscribes to the current gun's `ShotAccepted` after selecting slot 1/2, creates the lightweight visual presenter once per selection, and runs its `_Process` **only while the visual kick is recovering**, then disables it. It cancels the exact authored pose on successful Q shove, slot swap, Escape/mouse release, lost focus, backpack input block and exit, and unsubscribes old/current shot events to avoid duplicate impulses. RC0 gameplay recoil is reset by the existing `PlayerQuickMelee.TryStart`, `Unequip/Equip`, and `CancelFeedback` paths. FPS `FirstPersonCamera.cs` was **not modified**: no separate camera shake/kick has been added, intentionally avoiding aim double-counting and mouse-look interference.
+
+**Tuning (existing masters, unchanged):**
+- Rifle: 95 damage, 0.30° spread, +2.0° game recoil per shot, max 3.0°, 12°/s recovery after 0.10s; 0.09m / 5° / 0.22s visual recoil.
+- Machine gun: 25 damage, 0.75° spread, +0.55° recoil per shot, max 4.5°, alternating ±0.08° yaw, 7°/s recovery after 0.12s; 0.035m / 2° / 0.12s visual recoil.
+- Enemy stagger is not recoil and remains unchanged.
+
+**Local validation still required:** `dotnet build war-machine.csproj`; F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Aim at a fixed distant landmark, fire MG continuously: centre crosshair remains fixed but actual hits and tracer tips rise physically in 3D. Hold/short-burst/release/recover; aim downward to compensate. Shoot close zombies and distant targets, walls and hills, watch valid cover block and recoil-adjusted ray collision, verify first rifle shot and MG 600-RPM visual model movement. Test slot 1/2, Q shove repeatedly, backpack, Escape release/recapture, unfocused tab, stop while recoil active, scene unload. Then brief F6 `WORLD/World.tscn` RC1 regression (aim rise, visual kick, shoulder/arm tracking, shove, switching). Confirm no permanent model pose, camera tilt or extra idle callbacks. **Static source/repo checks only here; Godot/.NET runtime/build not available.**
+
+**Status:** RC0–RC2 source integrated, **awaiting local acceptance**, not marked Accepted. Future FPS camera shake, crosshair bloom, recoil attachments or procedural FPS hands require separate authorization.
 
 ## Integration and test handoff for Codex
 
@@ -116,4 +133,4 @@ Read root `README.md`, `CodePreferences.md`, this plan, `Weapons/ACCURACY_IMPLEM
 - Verify held automatic fire, one-click short bursts, recovery during quiet periods, selected weapon switching and false triggers; no accumulated state leaking into unrelated weapons.
 - **No extra projectile simulation, camera aim ray per idle frame, per-bullet scene creation, new input keys, ammo/reload, new projectile physics, change to damage/stagger, ACC1/ACC2 or Q shove redesign.** Clearly say if any local build/gameplay checks were unavailable.
 
-**Next suggested implementation:** RC0 only, then RC1, then RC2 after explicit approval. This entire document is **a plan only**; it makes no gameplay changes by itself.
+**Implementation status:** RC0–RC2 are now integrated in source. Current work is local compile/visual tuning and acceptance, not another automatically authorized phase. Extra presentation polish is separate.

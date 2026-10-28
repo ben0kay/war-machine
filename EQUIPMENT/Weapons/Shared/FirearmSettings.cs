@@ -23,7 +23,7 @@ public partial class FirearmSettings : Resource
     [Export(PropertyHint.Range, "0,15,0.05")] public float RecoilMaxYawDegrees { get; set; }
     [Export(PropertyHint.Range, "0,180,0.5")] public float RecoilRecoveryDegreesPerSecond { get; set; } = 12f;
     [Export(PropertyHint.Range, "0,2,0.01")] public float RecoilRecoveryDelaySeconds { get; set; } = 0.1f;
-    [ExportGroup("Visual recoil (RC1/RC2, not yet animated)")]
+    [ExportGroup("Visual recoil (RC1/RC2)")]
     [Export(PropertyHint.Range, "0,0.2,0.005")] public float VisualRecoilKickMeters { get; set; }
     [Export(PropertyHint.Range, "0,20,0.1")] public float VisualRecoilPitchDegrees { get; set; }
     [Export(PropertyHint.Range, "0.01,1,0.01")] public float VisualRecoilRecoverySeconds { get; set; } = 0.2f;

@@ -57,3 +57,7 @@ MachineGunMaster now uses `TracerSpeed=360` m/s, `TracerLength=1.4`m, `TracerWid
 ## RC0 cumulative recoil configuration (2026-10-28)
 
 The master now authors `RecoilPitchPerShotDegrees=0.55`, `RecoilMaxPitchDegrees=4.5`, `RecoilYawStepDegrees=0.08`, `RecoilMaxYawDegrees=0.6`, `RecoilRecoveryDegreesPerSecond=7`, `RecoilRecoveryDelaySeconds=0.12`. Future RC1/RC2 view-model settings: 0.035m backward, 2° muzzle pitch, 0.12s visual recovery. The shared `FirearmRecoil` state is implemented and accumulates per accepted shot. **No current bullet trajectory, camera or model displacement yet**: the view adapters must opt into the recoil-up overload in RC1/RC2. Keep 25 damage and 0.75° intrinsic spread unchanged.
+
+## RC2 FPS recoil (2026-10-28)
+
+The existing +0.55°/shot capped 4.5° recoil now climbs in **real FPS 3D shot direction**, independently of random spread; it is not just a flat crosshair effect. A shared Visual-only helper animates 0.035m backward and 2° up per accepted shot with 0.12s recovery, pooling/capping overlapping 600-RPM impulses. The actual muzzle remains stationary relative to the firearm root. Both top-down and FPS use the same core and per-gun master. No additional FPS camera kick was added. Build and playtest still required; RC0-only notes above are historical.
