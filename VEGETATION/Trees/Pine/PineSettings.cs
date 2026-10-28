@@ -59,6 +59,15 @@ public partial class PineSettings : Resource
     [Export(PropertyHint.Range, "0,6,0.1")] public float LeafWindSpeed { get; set; } = 1.8f;
     [Export(PropertyHint.Range, "0,2,0.05")] public float LeafFlutter { get; set; } = 0f;
 
-    [ExportGroup("Future Model Replacement")]
+    [ExportGroup("Imported GLB forest comparison")]
+    // ON: extract the actual GLB mesh ONCE and use existing seeded MultiMesh forest placement.
+    // OFF: restore the procedural pines (or the pre-existing explicit ImportedMeshes override).
+    [Export] public bool UsePineGlb { get; set; } = true;
+    [Export] public PackedScene? PineGlbScene { get; set; }
+    [Export(PropertyHint.Range, "0.2,3,0.05")] public float PineGlbBaseScale { get; set; } = 1f;
+    // Measured base radius of PineTree001.glb; chunk trunk colliders still use the same layer.
+    [Export(PropertyHint.Range, "0.1,1.5,0.05")] public float PineGlbTrunkRadius { get; set; } = 0.45f;
+
+    [ExportGroup("Future Mesh Replacement (legacy)")]
     [Export] public Godot.Collections.Array<Mesh> ImportedMeshes { get; set; } = new();
 }

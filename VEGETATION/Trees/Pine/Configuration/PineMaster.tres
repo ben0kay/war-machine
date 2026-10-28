@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="PineSettings" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PineSettings" load_steps=3 format=3]
 [ext_resource type="Script" path="res://VEGETATION/Trees/Pine/PineSettings.cs" id="1"]
+[ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Vegetation/Trees/PineTree001/Artwork/PineTree001.glb" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -23,6 +24,10 @@ MaximumScale = 1.25
 LeafWindStrength = 0.15
 LeafWindSpeed = 1.8
 LeafFlutter = 0
+UsePineGlb = true
+PineGlbScene = ExtResource("2")
+PineGlbBaseScale = 1.0
+PineGlbTrunkRadius = 0.45
 ImportedMeshes = Array[Mesh]([])
 LeafBudget = 320
 UseGeneratedLod = true

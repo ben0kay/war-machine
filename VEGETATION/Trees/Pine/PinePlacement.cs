@@ -11,6 +11,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
 
     private ShaderMaterial? _foliage;
+    private ShaderMaterial[] _glbFoliage = System.Array.Empty<ShaderMaterial>();
+    private bool _usingPineGlb;
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
     private Node3D _anchor = null!;
@@ -62,17 +64,22 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         foreach (var chunk in _active.Values) ReleaseChunk(chunk);
         OcclusionChanged?.Invoke();
         _active.Clear(); _center = new Vector2I(int.MinValue, int.MinValue); ActiveTrees = 0;
-        _meshes = _farMeshes = System.Array.Empty<Mesh>(); _foliage = null;
+        _meshes = _farMeshes = System.Array.Empty<Mesh>();
+        _foliage = null; _glbFoliage = System.Array.Empty<ShaderMaterial>(); _usingPineGlb = false;
         if (!_initialized || Settings == null || !Settings.Enabled || Settings.Density <= 0) return;
 
         _chunkSize = Mathf.Clamp(Settings.ChunkSize, 32, 192);
         _chunkCount = Mathf.CeilToInt((float)_worldSize / _chunkSize);
         _forest?.Dispose();
         _forest = new FastNoiseLite { Seed = Settings.Seed + 17, Frequency = Mathf.Max(0.0001f, Settings.ForestNoiseFrequency) };
+        // The GLB is read once when changing modes/building the forest, never once per tree.
+        // The seed/terrain/exclusion/streaming path below stays identical for both sources.
+        Mesh? glbMesh = Settings.UsePineGlb ? LoadPineGlbMesh() : null;
         var imported = new List<Mesh>();
         foreach (Mesh candidate in Settings.ImportedMeshes)
             if (candidate != null) imported.Add(candidate);
-        if (imported.Count > 0) _meshes = imported.ToArray();
+        if (glbMesh != null) { _meshes = new Mesh[] { glbMesh }; _usingPineGlb = true; }
+        else if (imported.Count > 0) _meshes = imported.ToArray();
         else
         {
             var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
@@ -101,15 +108,66 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
+    // Extract one combined mesh from PineTree001.glb, then discard its temporary scene tree.
+    // Duplicate the ArrayMesh once before overriding foliage materials: F1/catalogue art is untouched.
+    // The three foliage surfaces retain their original PBR colours, but now support camera fade and wind.
+    private Mesh? LoadPineGlbMesh()
+    {
+        if (Settings.PineGlbScene == null)
+        { GD.PushWarning("Pine forest GLB enabled but PineGlbScene is missing; using legacy pine source."); return null; }
+        Node root = Settings.PineGlbScene.Instantiate();
+        try
+        {
+            MeshInstance3D? visual = root as MeshInstance3D;
+            if (visual == null)
+                foreach (Node child in root.FindChildren("*", "MeshInstance3D", true, false))
+                    if (child is MeshInstance3D mesh) { visual = mesh; break; }
+            if (visual?.Mesh is not ArrayMesh source || source.GetSurfaceCount() != 5)
+            {
+                GD.PushWarning("PineTree001 GLB needs one ArrayMesh with 5 material surfaces; using legacy pine source.");
+                return null;
+            }
+
+            var copy = (ArrayMesh)source.Duplicate();
+            var shader = GD.Load<Shader>("res://VEGETATION/Trees/Pine/Shaders/ImportedPineFoliage.gdshader");
+            var foliage = new ShaderMaterial[3];
+            for (int i = 2; i < 5; i++)
+            {
+                Material? original = visual.GetActiveMaterial(i) ?? source.SurfaceGetMaterial(i);
+                Color tint = original is BaseMaterial3D pbr ? pbr.AlbedoColor : new Color(0.10f, 0.24f, 0.13f);
+                var material = new ShaderMaterial { Shader = shader };
+                material.SetShaderParameter("foliage_tint", tint);
+                material.SetShaderParameter("use_camera_occlusion", true);
+                copy.SurfaceSetMaterial(i, material);
+                foliage[i - 2] = material;
+            }
+            _glbFoliage = foliage;
+            return copy;
+        }
+        finally { root.Free(); }
+    }
+
+    // =========================================================
     // Update the shared GPU material directly; wind sliders never regenerate geometry.
     public void ApplyWind()
     {
-        if (_foliage == null) return;
+        if (_foliage == null && _glbFoliage.Length == 0) return;
         Vector2 direction = EnvironmentSettings.WindDirection.Normalized();
         if (direction.LengthSquared() < 0.0001f) direction = Vector2.Right;
-        _foliage.SetShaderParameter("wind_direction", direction);
-        _foliage.SetShaderParameter("wind_strength", Settings.LeafWindStrength * EnvironmentSettings.GrassWindStrength);
-        _foliage.SetShaderParameter("wind_speed", Settings.LeafWindSpeed * EnvironmentSettings.GrassWindSpeed / 0.025f);
+        float strength = Settings.LeafWindStrength * EnvironmentSettings.GrassWindStrength;
+        float speed = Settings.LeafWindSpeed * EnvironmentSettings.GrassWindSpeed / 0.025f;
+        if (_foliage != null)
+        {
+            _foliage.SetShaderParameter("wind_direction", direction);
+            _foliage.SetShaderParameter("wind_strength", strength);
+            _foliage.SetShaderParameter("wind_speed", speed);
+        }
+        foreach (ShaderMaterial material in _glbFoliage)
+        {
+            material.SetShaderParameter("wind_direction", direction);
+            material.SetShaderParameter("wind_strength", strength);
+            material.SetShaderParameter("wind_speed", speed);
+        }
     }
 
     // =========================================================
@@ -200,8 +258,15 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 float slope = new Vector2(dx - height, dz - height).Length() / 2f;
                 if (slope > Settings.MaximumSlope) continue;
                 float scale = random.RandfRange(minScale, maxScale);
-                int variant = random.RandiRange(0, _meshes.Length - 1);
-                var basis = new Basis(Vector3.Up, random.RandfRange(0, Mathf.Tau)).Scaled(Vector3.One * scale);
+                // Consume the same variant roll as the original 3-variant forest. This keeps
+                // positions, rotations and size RNG identical when switching GLB/mesh art.
+                int variantRoll = random.RandiRange(0, _usingPineGlb
+                    ? Mathf.Clamp(Settings.Variants, 1, 12) - 1 : _meshes.Length - 1);
+                int variant = _usingPineGlb ? 0 : variantRoll;
+                float modelScale = _usingPineGlb
+                    ? Mathf.Max(0.1f, Settings.PineGlbBaseScale * Settings.HeightMultiplier) : 1f;
+                var basis = new Basis(Vector3.Up, random.RandfRange(0, Mathf.Tau))
+                    .Scaled(Vector3.One * scale * modelScale);
                 bins[variant].Add(new Transform3D(basis, new Vector3(x, height - 0.1f, z)));
             }
 
@@ -227,8 +292,9 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                     Settings.CastShadows && Settings.FarCastShadows);
                 chunk.Nodes.Add(far);
             }
-            // Procedural foliage implements the fade shader; arbitrary imported shaders need their own adapter.
-            if (_foliage != null)
+            // Both generated foliage and our imported GLB adapter share per-instance canopy fade data.
+            // Generic ImportedMeshes without the adapter retain their existing non-fading behaviour.
+            if (_foliage != null || _glbFoliage.Length > 0)
             {
                 Aabb localCanopy = _meshes[i].GetAabb();
                 if (hasLod) localCanopy = localCanopy.Merge(_farMeshes[i].GetAabb());
@@ -245,7 +311,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 foreach (var transform in bins[i])
                 {
                     float scale = transform.Basis.X.Length();
-                    float radius = PineMeshBuilder.GetTrunkRadius(Settings, i) * scale;
+                    float radius = (_usingPineGlb ? Mathf.Clamp(Settings.PineGlbTrunkRadius, 0.1f, 1.5f)
+                        : PineMeshBuilder.GetTrunkRadius(Settings, i)) * scale;
                     float height = Mathf.Max(radius * 2, Settings.TrunkCollisionHeight * scale);
                     chunk.Trunks.AddChild(new CollisionShape3D { Position = transform.Origin + Vector3.Up * (height * 0.5f),
                         Shape = new CapsuleShape3D { Radius = radius, Height = height } });
