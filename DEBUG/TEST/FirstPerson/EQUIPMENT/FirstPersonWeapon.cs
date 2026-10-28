@@ -66,6 +66,13 @@ public partial class FirstPersonWeapon : Node
         if (_weapon == null || _player.GameplayInputBlocked || Input.MouseMode != Input.MouseModeEnum.Captured) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
+        // Manual R reload is handled by the currently selected shared firearm.
+        if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.R)
+        {
+            if (GetViewport().GuiGetFocusOwner() == null)
+            { _weapon.TryReload(); GetViewport().SetInputAsHandled(); }
+            return;
+        }
         if (PlayerQuickMelee.Requested(input))
         {
             if (GetViewport().GuiGetFocusOwner() == null)

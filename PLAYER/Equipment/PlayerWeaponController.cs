@@ -64,6 +64,13 @@ public partial class PlayerWeaponController : Node
         if (!_initialized || _player.GameplayInputBlocked) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
+        // Manual R reload uses the same shared firearm API as the FPS view.
+        if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.R)
+        {
+            if (GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
+            { _weapon?.TryReload(); GetViewport().SetInputAsHandled(); }
+            return;
+        }
         if (PlayerQuickMelee.Requested(input))
         {
             // UI has first refusal on keys, as it already does for gunfire.

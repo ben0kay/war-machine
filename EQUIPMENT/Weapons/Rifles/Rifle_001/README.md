@@ -92,3 +92,7 @@ RifleMaster now has `FpsCameraRecoilFollowDegreesPerSecond=30.0` and `FpsVisualC
 ## FPS one-way rifle pitch (2026-10-28)
 
 The rifle also kicks the actual FPS camera upward **2° for every accepted shot**; there is no downward camera recovery after releasing. `FpsMaxCameraRecoilBurstDegrees=3.0`, reset after a 0.45-second gap without accepted shots, so even held automatic rifle fire at 0.65-second intervals adds another 2° each time. Follow speed 30°/s; shared top-down RC1 limit remains 3°. Re-aim manually between shots. The short visual rifle kick still returns cosmetically. Test locally.
+
+## AM0 magazine & reload (2026-10-28)
+
+`RifleMaster.tres`: `MagazineCapacity=30`, `ReloadSeconds=2.2`, `AutoReloadWhenEmpty=true`, `DebugUnlimitedReserveAmmo=true`, `InitialReserveRounds=0`. Magazine is always finite; the debug flag makes only the reserve unlimited. R starts a manual reload if partly empty. Empty magazine starts auto reload and cannot fire until completion. Existing spread/recoil/hitscan/damage unchanged. No ammo HUD or animation yet; local build/shot tests pending.

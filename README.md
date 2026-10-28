@@ -10,6 +10,8 @@
 > **Primary game:** an angled overhead / isometric-style view of a fully 3D world. **First-person is a side debug prototype**, not a second production direction.  
 > **Development status:** early, evolving gameplay prototype on `implement-td0-td1`. This README describes the **game vision, current implementation and system ownership**; feature plans and validation details live in their owning folders.
 
+> **Weapons ammunition update (2026-10-28):** AM0 finite 30-round rifle / 100-round machine-gun magazines, timed reloading, R input, automatic reload on empty and debug unlimited **reserve** ammo are now integrated in shared C# source (pending local build/acceptance). AM1 HUD and AM2 physical ammo/animations are only planned. [AM0–AM2 plan](EQUIPMENT/Weapons/AMMO_IMPLEMENTATION_PLAN.md).
+
 ## Game vision
 
 **War Machine** is a sci-fi survival game about staying alive in a dangerous version of Earth. The landscape can feel recognizably earthly—forests, hills, roads, abandoned buildings, caves and changing weather—but the world is strange, unsettling and inhabited by threats the player cannot simply overpower.

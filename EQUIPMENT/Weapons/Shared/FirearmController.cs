@@ -6,10 +6,19 @@ public partial class FirearmController : Node3D
     public event System.Action? ReadyToFire;
     // RC1/RC2 view adapters subscribe for the same accepted-shot visual recoil event.
     public event System.Action? ShotAccepted;
+    // AM0 hooks for later HUD, sounds and animations; no player-input dependency.
+    public event System.Action? AmmoChanged, ReloadStarted, ReloadCompleted, ReloadCancelled;
     [Export] public FirearmSettings Settings { get; set; } = null!;
     [Export] public Marker3D Muzzle { get; set; } = null!;
     public FirearmSettings RuntimeSettings { get; private set; } = null!;
-    private Timer _cooldown = null!;
+    private Timer _cooldown = null!, _reloadTimer = null!;
+    private FirearmAmmo _ammo = null!;
+    public int MagazineRounds => _ammo.MagazineRounds;
+    public int MagazineCapacity => _ammo.MagazineCapacity;
+    public int ReserveRounds => _ammo.ReserveRounds;
+    public bool HasUnlimitedReserveAmmo => _ammo.HasUnlimitedReserveAmmo;
+    public bool IsReloading => _ammo.IsReloading;
+    public bool CanFire => _equipped && _ammo.CanShoot && _cooldown.IsStopped();
     private FirearmShotEffects _effects = null!;
     private AudioStreamPlayer3D? _legacyAudio;
     private WorldAudio? _audioService;
@@ -26,9 +35,12 @@ public partial class FirearmController : Node3D
     {
         SetProcess(false); SetPhysicsProcess(false);
         RuntimeSettings = Settings != null ? (FirearmSettings)Settings.Duplicate(true) : new FirearmSettings();
+        _ammo = new FirearmAmmo(RuntimeSettings);
         _shotRandom.Randomize();
         _cooldown = new Timer { Name = "Cooldown", OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
         AddChild(_cooldown); _cooldown.Timeout += OnCooldown;
+        _reloadTimer = new Timer { Name = "Reload", OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
+        AddChild(_reloadTimer); _reloadTimer.Timeout += OnReloadFinished;
         _effects = new FirearmShotEffects { Name = "ShotEffects" }; AddChild(_effects); _effects.Initialize(RuntimeSettings, Muzzle);
         if (RuntimeSettings.ShotCue == null && RuntimeSettings.ShotSound != null)
         {
@@ -54,6 +66,11 @@ public partial class FirearmController : Node3D
     public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp)
     {
         if (!_equipped || !IsInstanceValid(_holder) || Muzzle == null || !_cooldown.IsStopped()) return false;
+        if (!_ammo.CanShoot)
+        {
+            if (_ammo.IsEmpty && RuntimeSettings.AutoReloadWhenEmpty) TryReload();
+            return false;
+        }
         Vector3 shotPosition = Muzzle.GlobalPosition, start = shotPosition, direction = aimPoint - start;
         if (!float.IsFinite(direction.X) || !float.IsFinite(direction.Y) || !float.IsFinite(direction.Z)
             || direction.LengthSquared() < 0.0001f) return false;
@@ -84,6 +101,8 @@ public partial class FirearmController : Node3D
         _effects.ShowShot(start, end);
         // Close the acceptance gate before notifying sound/recoil observers; recursive requests cannot double-fire.
         _cooldown.Start(Mathf.Max(RuntimeSettings.ShotInterval, 0.03f));
+        _ammo.TryConsumeShot(); // Acceptance is already decided; rejected attempts consume nothing.
+        AmmoChanged?.Invoke();
         if (RuntimeSettings.ShotEmission != null && IsInstanceValid(_audioService))
         {
             _audioService!.SoundEvents.Emit(RuntimeSettings.ShotEmission, SoundKind.Gunshot, shotPosition,
@@ -105,6 +124,8 @@ public partial class FirearmController : Node3D
         _recoil.OnAcceptedShot(RuntimeSettings);
         if (_recoil.IsActive) SetProcess(true);
         ShotAccepted?.Invoke();
+        // The final accepted round starts a timed reload; no empty-magazine shot can sneak through.
+        if (_equipped && _ammo.IsEmpty && RuntimeSettings.AutoReloadWhenEmpty) TryReload();
         return true;
     }
 
@@ -122,8 +143,31 @@ public partial class FirearmController : Node3D
     public void ResetRecoil() { _recoil.Reset(); SetProcess(false); }
 
     // =========================================================
-    // A held-trigger adapter may request its next shot; no weapon-side target/input polling.
-    private void OnCooldown() { if (_equipped) ReadyToFire?.Invoke(); }
+    // R, or an empty accepted shot, invokes the one-shot reload timer. No per-frame polling.
+    public bool TryReload()
+    {
+        if (!_equipped || !_ammo.TryBeginReload()) return false;
+        float seconds = float.IsFinite(RuntimeSettings.ReloadSeconds)
+            ? Mathf.Clamp(RuntimeSettings.ReloadSeconds, 0.1f, 20f) : 2.2f;
+        _reloadTimer.Start(seconds);
+        ReloadStarted?.Invoke();
+        return true;
+    }
+
+    // =========================================================
+    // The finished reload unlocks fire; held full-auto can resume through ReadyToFire.
+    private void OnReloadFinished()
+    {
+        if (!_equipped || !_ammo.IsReloading) return;
+        _ammo.FinishReload();
+        AmmoChanged?.Invoke();
+        ReloadCompleted?.Invoke();
+        if (CanFire) ReadyToFire?.Invoke();
+    }
+
+    // =========================================================
+    // Only wake held trigger when the gun can actually fire, including after reload.
+    private void OnCooldown() { if (CanFire) ReadyToFire?.Invoke(); }
 
     // =========================================================
     // Unequip, focus cancellation and scene teardown cannot leave feedback/audio ticking.
@@ -131,5 +175,11 @@ public partial class FirearmController : Node3D
     { ResetRecoil(); _effects.Stop(); _legacyAudio?.Stop(); if (IsInstanceValid(_audioService)) _audioService!.StopEmitter(GetInstanceId()); }
 
     // =========================================================
-    public void Unequip() { _equipped = false; _cooldown.Stop(); CancelFeedback(); _holder = null; }
+    public void Unequip()
+    {
+        _equipped = false;
+        _cooldown.Stop(); _reloadTimer.Stop();
+        if (_ammo.CancelReload()) ReloadCancelled?.Invoke();
+        CancelFeedback(); _holder = null;
+    }
 }

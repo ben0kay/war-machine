@@ -12,6 +12,13 @@ public partial class FirearmSettings : Resource
     [Export] public float Damage { get; set; } = 95;
     [Export] public DamageType DamageKind { get; set; } = DamageType.Physical;
     [Export] public float Range { get; set; } = 90;
+    [ExportGroup("Ammunition & reload (AM0)")]
+    [Export(PropertyHint.Range, "1,1000,1")] public int MagazineCapacity { get; set; } = 30;
+    [Export(PropertyHint.Range, "0.1,20,0.1,suffix:s")] public float ReloadSeconds { get; set; } = 2.2f;
+    [Export] public bool AutoReloadWhenEmpty { get; set; } = true;
+    // Debug means unlimited RESERVE, not unlimited magazine: reload timing still applies.
+    [Export] public bool DebugUnlimitedReserveAmmo { get; set; } = true;
+    [Export(PropertyHint.Range, "0,1000000,1")] public int InitialReserveRounds { get; set; }
     [ExportGroup("Accuracy")]
     // Maximum half-angle in degrees. Zero means perfect accuracy; shot-only deviation.
     [Export(PropertyHint.Range, "0,10,0.05")] public float BaseSpreadDegrees { get; set; } = 0f;

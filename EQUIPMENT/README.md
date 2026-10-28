@@ -52,3 +52,7 @@ continuous fire; a fully stationary cursor need not mean stationary bullet aim.
 ## Planned melee equipment and hit reactions
 
 The [CM implementation plan](../COMBAT/IMPLEMENTATION_PLAN.md) documents shared bullet flinch, firearm-butt shove, a bat that can strike up to three zombies per swing, a one-target knife, and later zombie attacks. None are implemented yet. Current `WeaponSlots` remain two firearm-only test slots; an item capability extension is **proposed only for CM3**, not part of the current hotbar. Cross-actor impact and stagger ownership is planned under `COMBAT/`; the working damage pipeline stays under `ENTITIES/Shared/Combat/` until any separately authorized move.
+
+## AM0 ammunition (2026-10-28)
+
+The shared `Weapons/AMMO_IMPLEMENTATION_PLAN.md` documents implemented finite magazine/reload state and future HUD/physical-magazine stages. Both top-down and FPS adapters use R for manual reload; infinite debug reserve still refills only after the configured delay. Each cached weapon holds its own ammo counts; no new inventory or reload animation yet. Local build and live tests required.

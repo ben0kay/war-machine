@@ -69,3 +69,7 @@ MachineGunMaster now has `FpsCameraRecoilFollowDegreesPerSecond=10.0` and `FpsVi
 ## FPS one-way 25° burst climb (2026-10-28)
 
 The MG now has `FpsMaxCameraRecoilBurstDegrees=25.0` and `FpsRecoilBurstResetSeconds=0.35` (independent of unchanged top-down max 4.5°). Each accepted 600-RPM shot adds 0.55° to a **positive-only** camera-rise queue, delivered up to 10°/s. A continuous burst can accumulate about 25° after ~46 shots (~4.6 seconds), without automatically lowering the camera afterward. Moving the mouse is the only normal way to correct the settled view angle; releasing resets the burst budget only after the idle gap, never camera pitch. Existing independent random spread/25 damage/stagger are untouched. Test locally.
+
+## AM0 magazine & reload (2026-10-28)
+
+`MachineGunMaster.tres`: `MagazineCapacity=100`, `ReloadSeconds=4.5`, `AutoReloadWhenEmpty=true`, `DebugUnlimitedReserveAmmo=true`, `InitialReserveRounds=0`. Magazine empties after 100 accepted shots (including misses), then the timer blocks further fire until reloaded. R manually tops off. Debug only makes reserve infinite, not firing instantaneous; 600-RPM/recoil/spread/impact values remain unchanged. No HUD/animation yet; local validation pending.

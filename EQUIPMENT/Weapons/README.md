@@ -15,7 +15,8 @@ recoil, RC1 top-down aim climb + animation, RC2 FPS recoil**, with deterministic
 shot-to-shot displacement and burst/recovery. **Recoil is not random spread**;
 RC0's shared state and settings are implemented in source, awaiting local validation;
 RC1 top-down and RC2 first-person actual 3D aim climb and model kick are implemented in source (awaiting local validation).
-Projectile weapons, melee, ammo/reload and inventory remain future tasks.
+[AMMO_IMPLEMENTATION_PLAN.md](AMMO_IMPLEMENTATION_PLAN.md) describes **AM0 shared finite magazines and timed reloading (implemented in source; local validation pending)**, AM1 ammo HUD (planned), and AM2 physical ammo/magazines/animations (planned). Manual reload is R; debug unlimited reserve still requires actual magazine reloads.
+Projectile weapons, physical ammo inventory and reload animation remain future tasks.
 
 ## Moving bullet-tracer visuals — Godot validation pending
 
