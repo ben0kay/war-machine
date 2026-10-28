@@ -25,10 +25,14 @@ public sealed class FirstPersonHeadBob
         float running = crouching ? 0f : Mathf.Clamp((speed - walkingSpeed) / (runningSpeed - walkingSpeed), 0f, 1f);
         float intensity = Mathf.Clamp(speed / walkingSpeed, 0f, 1f) * (crouching ? 0.5f : 1f);
         float stride = Mathf.Lerp(Stride(settings.WalkStrideLength), Stride(settings.RunStrideLength), running);
-        _phase = Mathf.PosMod(_phase + Mathf.Min(distance, runningSpeed * dt + 0.15f) / stride * Mathf.Tau, Mathf.Tau);
+        // Repeat over two vertical cycles so the lateral sway completes once per two footstep bounces.
+        // This is travel-paced presentation, not an exact foot-bone/animation sync.
+        _phase = Mathf.PosMod(_phase + Mathf.Min(distance, runningSpeed * dt + 0.15f) / stride * Mathf.Tau, Mathf.Tau * 2f);
         float x = Mathf.Lerp(Amplitude(settings.WalkHorizontalAmplitude), Amplitude(settings.RunHorizontalAmplitude), running) * intensity;
         float y = Mathf.Lerp(Amplitude(settings.WalkVerticalAmplitude), Amplitude(settings.RunVerticalAmplitude), running) * intensity;
-        _target = new Vector2(Mathf.Sin(_phase) * x, Mathf.Sin(2f * _phase) * y);
+        // Old Y at 2× phase gave 6.25 Hz walk / 8 Hz run with the original short cycle.
+        // One vertical bounce per phase revolution is gentler, with slower alternating lateral sway.
+        _target = new Vector2(Mathf.Sin(_phase * 0.5f) * x, Mathf.Sin(_phase) * y);
     }
 
     // =========================================================
@@ -53,5 +57,5 @@ public sealed class FirstPersonHeadBob
     private static float Amplitude(float value) => float.IsFinite(value) ? Mathf.Clamp(value, 0f, 0.08f) : 0f;
 
     // =========================================================
-    private static float Stride(float value) => float.IsFinite(value) ? Mathf.Clamp(value, 0.5f, 5f) : 1.6f;
+    private static float Stride(float value) => float.IsFinite(value) ? Mathf.Clamp(value, 0.5f, 6f) : 2.8f;
 }

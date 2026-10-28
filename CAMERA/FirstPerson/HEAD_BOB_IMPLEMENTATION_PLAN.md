@@ -9,17 +9,16 @@
 ## Confirmed implementation and ownership
 
 ```text
-WORLD/FirstPerson/
-  CAMERA/
-    FirstPersonCamera.cs              existing FPS camera, composes bob with interpolated eye
-    FirstPersonHeadBob.cs             NEW plain C# state helper, not a Godot scene node
-    HEAD_BOB_IMPLEMENTATION_PLAN.md   this status and validation handoff
-    README.md
-  PLAYER/
-    FirstPersonPlayer.cs              samples real horizontal displacement after shared MoveAndSlide
-  CONFIGURATION/
-    FirstPersonSettings.cs            grouped Head bob (FPS only) exports
-    FirstPersonMaster.tres            initial tuning, master defaults
+CAMERA/FirstPerson/
+  FirstPersonCamera.cs                existing FPS camera, composes bob with interpolated eye
+  FirstPersonHeadBob.cs               plain C# state helper, not a scene node
+  HEAD_BOB_IMPLEMENTATION_PLAN.md     this status and validation handoff
+  README.md
+PLAYER/FirstPerson/
+  FirstPersonPlayer.cs                measures actual post-MoveAndSlide travel
+WORLD/FirstPerson/Configuration/
+  FirstPersonSettings.cs              grouped FPS-only bob tuning exports
+  FirstPersonMaster.tres              authored settings master
 ```
 
 - `FirstPersonPlayer._PhysicsProcess()` records its world position before and after the single existing shared movement step. It passes **post-collision horizontal displacement**, grounded state, input intent, stance and delta to `FirstPersonCamera.RecordPhysicsPose`. There is no new movement, collision or physics callback.
@@ -33,12 +32,12 @@ WORLD/FirstPerson/
 | Setting | Value |
 | --- | ---: |
 | `HeadBobEnabled` | true |
-| `WalkVerticalAmplitude` / `WalkHorizontalAmplitude` | 0.025m / 0.012m |
-| `RunVerticalAmplitude` / `RunHorizontalAmplitude` | 0.04m / 0.02m |
-| `WalkStrideLength` / `RunStrideLength` | 1.6m / 2.0m |
+| `WalkVerticalAmplitude` / `WalkHorizontalAmplitude` | 0.012m / 0.006m |
+| `RunVerticalAmplitude` / `RunHorizontalAmplitude` | 0.018m / 0.010m |
+| `WalkStrideLength` / `RunStrideLength` | 2.8m / 3.3m |
 | `HeadBobReturnSeconds` | 0.18s |
 
-Settings are authored only in existing FPS configuration; enable=false is an easy comparison baseline. The helper bounds unreasonable amplitude/stride values. Values are a **first pass** and may need subjective tuning for comfort.
+This tuning adjusts both cadence and distance, not player locomotion. At 5m/s walking and 8m/s running, the previous `sin(phase*2)` generated ~6.25/8 vertical oscillations per second; the new one-wave-per-cycle cadence gives ~1.8/2.4. The lateral sine runs at half the vertical cadence and wraps cleanly over 4π. The animation is still procedural and distance-paced, not synchronized to actual foot-bone contacts. Settings are authored only in existing FPS configuration; enable=false is an easy comparison baseline. The helper bounds unreasonable amplitude/stride values. Values are a **first pass** and may need subjective tuning for comfort.
 
 ## Acceptance checklist and open limitations
 

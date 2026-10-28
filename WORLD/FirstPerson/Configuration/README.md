@@ -11,3 +11,8 @@ Fog/render group: DistanceFogEnabled, FogStartDistance, FogEndDistance, FogCullB
 ## FPS mouse-look sensitivity — 2026-10-28
 
 Default `MouseSensitivity` lowered from **0.12 to 0.10** (~16.7% less rotation per mouse pixel). `FirstPersonCamera.cs` still reads this single setting for both horizontal and vertical mouse look; inversion, recoil, FOV and top-down camera settings are unchanged. Tune `FirstPersonMaster.tres` to taste. No code-path or input behaviour changes were needed.
+
+
+## Gentler walking head bob (2026-10-28)
+
+FPS bob remains linked to **actual post-collision ground distance**, not a footstep animation. To reduce overly rapid and strong bouncing, current `FirstPersonMaster.tres` defaults are walk **0.012m vertical / 0.006m sideways**, run **0.018m vertical / 0.010m sideways**, and bob-cycle travel **2.8m walk / 3.3m run**. A matching waveform change in `CAMERA/FirstPerson/FirstPersonHeadBob.cs` reduces the vertical oscillation count from two to one per phase revolution and lateral sway to half that rate. Roughly 1.8Hz walking and 2.4Hz running at the authored movement speeds. `HeadBobReturnSeconds=0.18` and `HeadBobEnabled` are unchanged. No player speed, mouse look, recoil or top-down settings were altered.

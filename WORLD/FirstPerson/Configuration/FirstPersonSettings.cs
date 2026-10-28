@@ -14,12 +14,14 @@ public partial class FirstPersonSettings : Resource
     [Export] public float TeleportResetDistance { get; set; } = 8;
     [ExportGroup("Head bob (FPS only)")]
     [Export] public bool HeadBobEnabled { get; set; } = true;
-    [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkVerticalAmplitude { get; set; } = 0.025f;
-    [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkHorizontalAmplitude { get; set; } = 0.012f;
-    [Export(PropertyHint.Range, "0,0.08,0.001")] public float RunVerticalAmplitude { get; set; } = 0.04f;
-    [Export(PropertyHint.Range, "0,0.08,0.001")] public float RunHorizontalAmplitude { get; set; } = 0.02f;
-    [Export(PropertyHint.Range, "0.5,5,0.1")] public float WalkStrideLength { get; set; } = 1.6f;
-    [Export(PropertyHint.Range, "0.5,5,0.1")] public float RunStrideLength { get; set; } = 2f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkVerticalAmplitude { get; set; } = 0.012f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkHorizontalAmplitude { get; set; } = 0.006f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float RunVerticalAmplitude { get; set; } = 0.018f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float RunHorizontalAmplitude { get; set; } = 0.010f;
+    // Bob cycle travel is intentionally longer than an anatomical stride because game walking is 5m/s.
+    // It tunes visual cadence; no actual footstep or shared PlayerAnimation phase is changed.
+    [Export(PropertyHint.Range, "0.5,6,0.1")] public float WalkStrideLength { get; set; } = 2.8f;
+    [Export(PropertyHint.Range, "0.5,6,0.1")] public float RunStrideLength { get; set; } = 3.3f;
     [Export(PropertyHint.Range, "0.05,0.8,0.01")] public float HeadBobReturnSeconds { get; set; } = 0.18f;
     [ExportGroup("Fog and render distance")]
     [Export] public bool DistanceFogEnabled { get; set; } = true;
