@@ -10,6 +10,7 @@
 
 | Phase | Goal | Suggested executor | State |
 | --- | --- | --- | --- |
+| **PSR0** | Behaviour-preserving player script ownership split | Codex / Work | **Implemented; Awaiting Validation** |
 | **PH0** | Hidden vitality + six body-region condition values, shared damage/healing, death, events; compatible player receiver; no normal player HP bar | Codex / Work | **Implemented; Awaiting Validation** |
 | **PH1** | Compact six-region body silhouette and injury-state feedback in shared GameplayHUD; no new health calculations | UI design + Codex / Work | **Implemented; Awaiting Validation** |
 | **PH-HIT** | Accurate optional anatomy hurtboxes and region mapping for bullets/melee, collision-safe, separately approved | Codex / Work | **Future / not authorized** |
@@ -18,20 +19,28 @@
 | **PH4** | Fatigue, sleep and recovery | Codex / Work | **Planned** |
 | **PH5** | Later individual injuries, bleeding, fractures, environmental exposure and treatment hooks | Codex / Work | **Planned, subfeatures separately gated** |
 
-## PSR0 — Small player-script structure refactor (proposed only)
+## PSR0 — Player-script structure refactor
 
-**Status: Planned; not authorized for implementation.** Independent of PH0–PH5. The active `PLAYER/PlayerController.cs` is ~454 lines and mixes input, movement physics, stance/capsule transitions, animation and weapon posing. Refactor ownership for readability **without adding mechanics or changing behaviour**:
+**Status: Implemented; Awaiting Validation (2026-10-28).** Owner explicitly authorized the code refactor. Independent of PH0–PH5. PlayerController shrank from 476 lines (including the latest door-contact hook) to approximately 120 lines. No new gameplay, input mapping, tuning, scene nodes or public APIs were introduced.
 
-- Keep `PlayerController.cs` as the thin `CharacterBody3D` coordinator: initialization, physics/input callback dispatch, player identity, vitals/death gate, existing public methods/events and cleanup.
-- `Input/PlayerInput.cs`: keyboard/mouse bindings, input-blocking, movement reads and one-shot requests. Preserve **/ prone, Right Ctrl crouch, right-mouse jump**, current movement keys, menus and FPS mouse-capture rules.
-- `Movement/PlayerMovement.cs`: camera-relative movement, acceleration/braking, sprint, gravity, jump impulse, `MoveAndSlide()`, ground/idle wake-sleep and collision diagnostics.
-- `Movement/PlayerStance.cs`: standing/crouching/prone state, clearance queries, capsule resizing, stance transitions and notifications.
-- `Visuals/PlayerAnimation.cs`: existing walk/crawl gait and rig posing, with no independent idle animation loop.
-- `Visuals/PlayerWeaponPose.cs`: aim/weapon socket, recoil arm response, shove grips and arm solving. Keep actual firing/reload/melee ownership in existing `Equipment/` scripts; `C/` remains procedural mesh generation only.
+| Owner | Responsibility |
+| --- | --- |
+| `PlayerController.cs` | CharacterBody3D identity, initialization, vitals/death/menu gate, public properties/events, engine callback dispatch, existing virtual FPS hooks and cleanup |
+| `Input/PlayerInput.cs` | Physical bindings, movement reads, queued stance/jump requests, GUI/focus guards and wake-up |
+| `Movement/PlayerMovement.cs` | Camera axes/subscription, acceleration/sprint/gravity/jump, MoveAndSlide, existing contact-driven door push/F10, movement notifications and idle sleep |
+| `Movement/PlayerStance.cs` | Three stance states, capsule/clearance caches, one-time transitions and height interpolation |
+| `Visuals/PlayerAnimation.cs` | One-time rig cache, gait/facing and unchanged walk/crouch/crawl posing |
+| `Visuals/PlayerWeaponPose.cs` | Aim/socket, recoil arm deltas, shove grips and original two-bone arm solve |
 
-**Implementation guardrails:** Prefer small plain C# collaborators, cached references and a single player physics callback rather than extra scene nodes or ticking components. Preserve public APIs/signals consumed by HUD, enemies and equipment, the `DEBUG/TEST/FirstPerson/PLAYER/FirstPersonPlayer.cs` inheritance/virtual hooks, camera rotation refresh, headroom checks, and the no-work-while-idle policy. Keep `PlayerSettings.cs`/`Configuration/PlayerMaster.tres` authoritative for current tuning; add no duplicate configuration. Add short README ownership notes for new folders.
+**Implementation choice:** helpers are private sealed plain C# classes nested in the existing partial PlayerController, split across the planned folders. Partial declarations let them call the existing protected FPS hooks without widening the public/internal actor API. They own their respective state and have no Godot node inheritance, independent callbacks or timers. PlayerSettings/Configuration/PlayerMaster remain authoritative; Equipment still owns firing/reload/melee, C/ still owns mesh generation. No scene/script/UID path changes or legacy-player edits.
 
-**Acceptance when separately approved:** `dotnet build war-machine.csproj` plus brief top-down/FPS smoke tests covering movement/camera rotation, sprint/brake, crouch/prone and ceiling clearance, RMB jump, idle sleep, weapon aim/recoil/shove, health/death and input-blocked menus. One commit to `implement-td0-td1`. **This section is documentation only; no refactor has been performed.**
+**Preserved order:** stance requests/clearance and capsule interpolation → one-shot jump/input → virtual movement/acceleration → MoveAndSlide → existing door push and F10 → actual-travel gait → socket/position events → grounded idle sleep. Pose still reapplies shove grips before recoil. Reinitialize replaces the same camera subscription, resets requests/stance without duplicate rig generation, and exit detaches callbacks. Existing PlayerVitals ownership and latched death gate remain.
+
+**Bindings from current source:** arrows move, Shift sprints, Right Ctrl crouches, slash `/` goes prone, RMB jumps and F10 diagnoses contact. FPS still gates movement/jump through mouse capture. Historical Left Ctrl/C or Right Ctrl prone descriptions elsewhere are not new bindings introduced by PSR0.
+
+**Verification performed:** source comparison normalized helper qualification and confirmed 15 extracted method bodies plus the reconstructed full physics sequence match the pre-refactor baseline. Existing seven virtual hooks and public gameplay/event surface retained; source/whitespace/resource and loop review completed. No Godot/.NET executable is available here: compilation and runtime are **unverified**.
+
+**Local acceptance:** build `dotnet build war-machine.csproj`; run the existing `DEBUG/TEST/PlayerVitals/PlayerVitalsTest.tscn` headlessly, then briefly F6 World and FPS. Check arrows while rotating the camera, sprint/brake/reverse, all stance transitions/headroom, RMB press/hold/landing, contact-driven doors, idle sleep/focus wake, aiming/recoil/Q shove/reload, inventory blocking and latched death. Reinitialize/reload and verify one rig/one camera subscription. No terrain rebake. One commit to `implement-td0-td1`; delivery SHA is in the job response. Mark Accepted only after local checks.
 
 ## Verified starting point and ownership
 

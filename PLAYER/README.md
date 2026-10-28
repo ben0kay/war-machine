@@ -1,3 +1,5 @@
+> **PSR0 implemented in source (2026-10-28), awaiting local validation:** PlayerController is now a small lifecycle/API coordinator with private plain helpers under [Input](Input/README.md), [Movement](Movement/README.md) and [Visuals](Visuals/README.md). Existing movement/stance/pose maths, door contact, FPS hooks, events, settings and idle sleep are preserved. Current source bindings: arrows, Shift, Right Ctrl crouch, `/` prone, RMB jump. No scene or terrain changes. [Refactor plan and checks](IMPLEMENTATION_PLAN.md#psr0--player-script-structure-refactor).
+
 > **Current implementation (2026-10-28):** PH0/PH1 now have source implementations: hidden vitality, six independent regions, one-time death/control blocking and an event-driven silhouette. No precision hitboxes, injury consequences or enemy attacks yet. Build/runtime/visual acceptance pending. See IMPLEMENTATION_PLAN.md and Stats/README.md; earlier planned-only descriptions below are historical.
 
 # PLAYER
