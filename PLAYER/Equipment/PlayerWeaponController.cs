@@ -64,7 +64,7 @@ public partial class PlayerWeaponController : Node
         {
             // UI has first refusal on keys, as it already does for gunfire.
             if (GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
-            { _shove?.TryStart(); RequestAim(); GetViewport().SetInputAsHandled(); }
+            { _shove?.TryStart(_weapon!); RequestAim(); GetViewport().SetInputAsHandled(); }
             return;
         }
         if (input is InputEventMouseMotion) RequestAim();
@@ -109,13 +109,13 @@ public partial class PlayerWeaponController : Node
             }
             _player.SetWeaponAim(_aimPoint);
         }
-        if (_shotRequested) { _shotRequested = false; _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin); }
+        if (_shotRequested && _shove?.IsActive != true) { _shotRequested = false; _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin); }
         if (_shove?.IsActive == true)
         {
             // Use world-space horizontal aim; overhead camera height never affects contact.
             Vector3 forward = _aimPoint - _player.GlobalPosition; forward.Y = 0;
             _shove.Advance((float)delta, _player.WeaponProbeOrigin, forward, MeleeAimMode.Horizontal);
-            if (_shove.IsActive) SetPhysicsProcess(true);
+            if (_shove.IsActive || _shotRequested) SetPhysicsProcess(true);
         }
     }
 

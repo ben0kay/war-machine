@@ -18,6 +18,8 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     public Vector3 WeaponProbeOrigin => _upperBody.GlobalPosition + _settings.WeaponProbeOffset;
     public event System.Action? WeaponPoseChanged;
     private bool _weaponPose;
+    private Node3D? _shoveWeapon;
+    private float _shoveGrip;
     private float _crouch;
     private bool _toggleCrouch;
     private Vector3 _screenRight, _screenForward;
@@ -173,6 +175,57 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     }
 
     // =========================================================
+    // The shove owns only its temporary grip targets; locomotion keeps owning the normal rig pose.
+    public void SetShoveGrip(Node3D? weapon, float weight)
+    {
+        _shoveWeapon = weapon; _shoveGrip = Mathf.Clamp(weight, 0, 1);
+        if (!_initialized) return;
+        _leftArm.RotationDegrees = _settings.LeftWeaponArmDegrees;
+        _rightArm.RotationDegrees = _settings.RightWeaponArmDegrees;
+        _leftElbow.Rotation = _rightElbow.Rotation = Vector3.Zero;
+        ApplyShoveGrips();
+    }
+
+    // =========================================================
+    // Two-bone arm solve keeps both gloves on the side-on gun without moving the character collider.
+    private void ApplyShoveGrips()
+    {
+        if (_shoveGrip <= 0 || !IsInstanceValid(_shoveWeapon)) return;
+        ReachGrip(_rightArm, _rightElbow, _shoveWeapon!.ToGlobal(new Vector3(0, -0.10f, 0.02f)), 1);
+        ReachGrip(_leftArm, _leftElbow, _shoveWeapon.ToGlobal(new Vector3(0, -0.10f, -0.40f)), -1);
+    }
+
+    // =========================================================
+    // Fixed rig lengths match PlayerMeshBuilder; clamp unreachable targets rather than stretching limbs.
+    private void ReachGrip(Node3D arm, Node3D elbow, Vector3 target, float side)
+    {
+        const float upper = 0.32f, lower = 0.166f;
+        Vector3 shoulder = arm.GlobalPosition, delta = target - shoulder;
+        float distance = Mathf.Clamp(delta.Length(), 0.16f, upper + lower - 0.001f);
+        Vector3 direction = delta.Normalized();
+        if (direction.LengthSquared() < 0.001f) return;
+        Vector3 pole = _art.GlobalBasis * new Vector3(side, -0.4f, 0.3f);
+        Vector3 bend = pole - direction * pole.Dot(direction);
+        if (bend.LengthSquared() < 0.001f) bend = Vector3.Up.Cross(direction);
+        bend = bend.Normalized();
+        float along = (upper * upper - lower * lower + distance * distance) / (2 * distance);
+        Vector3 joint = shoulder + direction * along + bend * Mathf.Sqrt(Mathf.Max(0, upper * upper - along * along));
+        Basis desired = ArmBasis(joint - shoulder, bend);
+        arm.GlobalBasis = arm.GlobalBasis.Slerp(desired, _shoveGrip);
+        desired = ArmBasis(shoulder + direction * distance - elbow.GlobalPosition, bend);
+        elbow.GlobalBasis = elbow.GlobalBasis.Slerp(desired, _shoveGrip);
+    }
+
+    // =========================================================
+    // Generated sleeves extend along local -Y, with a stable perpendicular bend axis.
+    private static Basis ArmBasis(Vector3 direction, Vector3 bend)
+    {
+        Vector3 y = -direction.Normalized(), x = bend.Cross(y).Normalized();
+        if (x.LengthSquared() < 0.001f) x = Vector3.Right;
+        return new Basis(x, y, x.Cross(y).Normalized()).Orthonormalized();
+    }
+
+    // =========================================================
     // The same stride clock drives subtle trunk counter-rotation, shoulder movement and natural elbow flex.
     // Aiming heavily damps these motions to keep the rifle and cursor aligned.
     private void Pose(float angle, float bob, float leftLift = 0, float rightLift = 0, float gaitStrength = 0)
@@ -206,6 +259,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         float footRoll = Mathf.DegToRad(Mathf.Clamp(_settings.FootRollDegrees, 0, 20)) * (1f - _crouch) * Mathf.Sin(_phase);
         _leftFoot.Rotation = new Vector3(-_leftLeg.Rotation.X - _leftKnee.Rotation.X + footRoll * leftLift, 0, 0);
         _rightFoot.Rotation = new Vector3(-_rightLeg.Rotation.X - _rightKnee.Rotation.X - footRoll * rightLift, 0, 0);
+        ApplyShoveGrips();
     }
 
     // =========================================================

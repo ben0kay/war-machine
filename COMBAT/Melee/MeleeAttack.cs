@@ -28,6 +28,7 @@ public sealed class MeleeAttack
     private bool _contactUsed;
 
     public bool IsActive => _profile != null;
+    public float ElapsedSeconds => _elapsed;
 
     // =========================================================
     // Cache physics query objects for reuse across swings. No persistent Area3D or timer.

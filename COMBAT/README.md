@@ -1,6 +1,6 @@
 # COMBAT — cross-actor impacts and reactions
 
-**CM0/CM1 and CM2-A/B1/B2/C implemented in source, awaiting local validation. CM2-D and CM3–CM5 remain planned.** Q shove is wired in both camera modes; attack animations, bat, knife, zombie attacks and player health remain future work.
+**CM0/CM1 and CM2-A/B1/B2/C Accepted following owner confirmation of local validation. CM2-D implemented, awaiting local compilation/animation acceptance. CM3–CM5 Planned.** Q shove has a side-on two-handed gun pose in both views; bat/knife and zombie attacks remain future work. Earlier validation/animation statements below are historical phase snapshots.
 
 ## One contact, separate damage and impact
 
@@ -78,3 +78,13 @@ Editable `COMBAT/Configuration/QuickShoveMaster.tres` fields: `StationaryStrengt
 **Activation / cost:** Work still begins only on Q. One constant-time horizontal speed sample and interpolation per accepted shove, no new timers, collision queries, per-frame loops or allocations. Same cancellation/shutdown and collision-aware `MoveAndSlide()` behaviour as CM2-C/B2.
 
 **Focused acceptance:** Build `dotnet build war-machine.csproj`, then in World and FPS tests press Q while stationary, walking, and genuinely moving at run speed into a nearby zombie. Stationary should barely shift it; walking clearly moves it; running is strongest. Check that Q still works while moving, stronger knocks stop at walls, runner resistance holds, impact leaves HP unchanged and rifle/MG flinch/fire is untouched. Verify moving slowly due to a wall gives proportionately weaker shove despite holding Shift, and timing/cooldown still work. Build/runtime not run in this environment.
+
+## CM2-D — two-handed side-on gun shove
+
+Implemented in source; awaiting local compilation and visual acceptance. Owner confirmed prior stagger/Q-shove local validation is okay. Q now turns the held rifle or machine gun sideways across the chest (default 90 degrees), extends it at the existing contact window and returns during recovery. Both hands support the gun; this is a broadside push, not a muzzle thrust or stock strike. Overhead uses the existing arm/elbow rig with bounded two-bone grip solving. FPS keeps its body hidden and shows two cached supporting gloves during the shove.
+
+PlayerShovePose is a plain helper advanced only by the existing active melee physics callback. ShoveHandsBuilder creates FPS geometry once per used weapon. No idle pose loop, extra timer, physics query or animation framework. QuickShoveMaster exposes ShoveSidewaysDegrees and ShoveExtension; existing windup/active/recovery timings drive both contact and pose. Damage, reach, momentum, cooldown and recipient knockback are unchanged. Pending firearm input waits until recovery rather than shooting from a sideways muzzle; the existing single pending-shot flag is reused, not an added multi-action queue.
+
+Completion/cancel restores the selected gun's exact pre-shove transform and normal arms, hides FPS hands and sleeps. Weapon switch, focus loss, menus/capture release and unload use existing cancellation. Walking/crouching keep their normal lower-body animation. No CM3+ work.
+
+Checks here: source/lifecycle review, changed C# loop syntax, timing-envelope endpoints and git diff --check. Godot/.NET unavailable: compilation not verified. Locally run `dotnet build war-machine.csproj`, then F6 WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Check both weapons, idle/walk/run/crouch, Q hit/miss, the sideways silhouette and two hand contacts, high/low FPS aim, return to accurate firing, click/held automatic fire during recovery, switch 1/2 mid-shove, UI/Escape/alt-tab and unload. Confirm no drifting transform, stuck arms or idle pose processing. Visual hand fit, physics-tick smoothness and timing feel remain owner checks; no measured performance claim.

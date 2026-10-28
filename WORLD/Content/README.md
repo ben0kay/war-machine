@@ -11,6 +11,9 @@
 - `Structures/Building002`: new procedural timber ranger lodge with covered porch, walk-in door, actual window apertures and divided interior; placed in both active views.
 - `Structures/Building003`: new procedural roadside fuel station with walk-in shop, closed garage shutter, rear exit, pump canopy and colliding fuel pumps; placed in both active views.
 - `Shared/C`: reusable scatter settings, mesh-building helpers and Terrain3D placement.
+- `Sites/ConvenienceStoreSite001`: empty composition scene reserved for a modular roadside store + lot.
+- `Infrastructure/ParkingLots/ParkingLot001`: empty reusable asphalt/parking foundation, next PL0A.
+- `Structures/ConvenienceStore001` and `Placeables/Objects/Lighting/StreetLamp001`: empty future store/lamp prefabs. These are NOT placed or operational.
 
 Each new category owns its `C`, `Configuration` and `Artwork` folders. Its master resource controls density, spacing, patch noise, size, colour, variation, slope, range and shadows. `ImportedMeshes` replaces generated artwork without replacing placement. Flower/bush wind uses the shared tree foliage shader and EnvironmentMaster wind. GPU grass remains separately owned by `VEGETATION/`; it was not part of the old `WORLD/Vegetation` folder.
 

@@ -110,3 +110,7 @@ Press Q while mouse is captured to attempt the same shared melee shove as overhe
 ## F1 placeable artwork preview
 
 The shared F1 [placeable spawner](../../PlaceableSpawner/README.md) now works in FPS and overhead tests. F1 releases mouse capture for its debug menu; closing with F1/Close restores it, while Esc leaves cursor visible. The previews have no physics and are not saved to the level.
+
+## CM2-D — side-on shove
+
+Implemented: two-handed sideways gun push in overhead/FPS, driven by existing attack timing. Focus/menu/switch/unload cancels and restores the gun; pending fire waits for recovery. No idle pose processing. See COMBAT/README.md CM2-D handoff for tuning and deferred local build/visual checks. Prior no-animation statements are historical.

@@ -1,3 +1,14 @@
+## Required working branch — all AI assistants
+
+**The current development branch is `implement-td0-td1` in `ben0kay/war-machine`. Use this branch for all repository reads, planning, code/documentation changes, commits and pushes unless Ben explicitly instructs otherwise. Do not write, push or merge to `main` without his explicit authorization.** This applies to Regular Chat, Codex / ChatGPT Work, Copilot, Claude and any other AI assistant.
+
+- Start by reading the root README and this file from `implement-td0-td1`, not the repository's default branch. The default branch may be behind current development.
+- Verify the checked-out branch before editing and the push destination before pushing. Preserve unrelated local changes; do not force checkout/reset to switch branches.
+- For GitHub tools/API calls, explicitly set `ref: "implement-td0-td1"` on reads and `branch: "implement-td0-td1"` on writes (or the equivalent supported parameter). Never omit the branch/ref and rely on the default.
+- Base any explicitly authorized task branch on `implement-td0-td1` and target its pull request back to `implement-td0-td1`, not `main`.
+- If this branch is unavailable, report the issue rather than silently falling back to `main`. Only a later explicit instruction from Ben changes this branch policy.
+- Continue to make one commit per authorized job. This policy specifies the destination; it does not authorize unrelated work.
+
 Read the main README.md in the project root for an overall flavour of the game/coding structure. This is C#.
 I prefer comments above functions/methods. along with a commented line of ========================================================= so i can easily see when editing code in godot
 I prefer some comment at top of each script to explain what the script is doing.

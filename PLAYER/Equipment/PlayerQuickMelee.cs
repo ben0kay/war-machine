@@ -7,6 +7,7 @@ public sealed class PlayerQuickMelee
     private readonly PlayerController _owner;
     private readonly MeleeAttack _attack;
     private readonly MeleeSettings _settings;
+    private PlayerShovePose? _pose;
     private float _impactMomentumMultiplier = 1f;
     public bool IsActive => _attack.IsActive;
 
@@ -27,9 +28,11 @@ public sealed class PlayerQuickMelee
     // =========================================================
     // Capture real horizontal momentum when Q is pressed. The player can shove while idle,
     // walking or sprinting; later braking during windup cannot silently reduce its force.
-    public bool TryStart()
+    public bool TryStart(FirearmController weapon, bool firstPerson = false)
     {
         if (!_attack.TryStart(_settings)) return false;
+        _pose ??= new PlayerShovePose(_owner);
+        _pose.Start(weapon, firstPerson);
         Vector3 velocity = _owner.Velocity;
         float speed = Mathf.Sqrt(velocity.X * velocity.X + velocity.Z * velocity.Z);
         float fullSpeed = Safe(_settings.FullMomentumSpeed, 0.1f, 20f);
@@ -46,14 +49,17 @@ public sealed class PlayerQuickMelee
 
     // =========================================================
     // Cancel the active window while preserving its existing cooldown.
-    public void Cancel() => _attack.Cancel();
+    public void Cancel() { _attack.Cancel(); _pose?.Cancel(); }
 
     // =========================================================
     // Convert a confirmed contact into shared CM0 damage/impact once per attack.
     // The authored quick-shove master defaults to zero damage; no ammo or firearm timer.
     public void Advance(float delta, Vector3 origin, Vector3 aim, MeleeAimMode mode)
     {
-        if (!_attack.Advance(delta, origin, aim, mode, out MeleeContact contact)) return;
+        bool hit = _attack.Advance(delta, origin, aim, mode, out MeleeContact contact);
+        if (_attack.IsActive) _pose?.Apply(_attack.ElapsedSeconds, _settings);
+        else _pose?.Cancel();
+        if (!hit) return;
         DamagePacket? damage = _settings.Damage > 0
             ? new DamagePacket(_settings.Damage, _settings.DamageKind, _owner, contact.Position, contact.Direction)
             : null;

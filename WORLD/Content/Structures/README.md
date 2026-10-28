@@ -6,6 +6,8 @@ World-local **stationary** structures are owned here, independently of entities/
 - [Building003/](Building003/README.md): rural fuel/service station with a shop interior, garage passage, rear exit, fuel pumps and flat canopy.
 - [Building004/](Building004/README.md): two-storey field office with flat parapet roof, balcony, crosswise internal stair and true upper-floor opening; uses the same authoring contract as Building002.
 
+**Independent reusable prefab:** [ConvenienceStore001/](ConvenienceStore001/README.md) is now a complete store-only procedural shell with big unglazed windows, shelving, till counter, stockroom and back door. Shared structure visibility is wired, but the prefab is **not placed** or composed into the parking-lot site yet.
+
 All four buildings are now placed once by WorldController for both WORLD/World.tscn and the inherited DEBUG/TEST/FirstPerson test. Offsets live in WorldMaster; generated bounds reserve tree clearings and approaches. See WORLD/README.md for the layout.
 
 The new [Shared/C/StructureGeometry.cs](Shared/C/StructureGeometry.cs) holds only simple reusable box, roof, gable and collider-building methods for Building002/003; Building001 remains unchanged.

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="StreetLampSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Placeables/Objects/Lighting/StreetLamp001/Configuration/StreetLampSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+PoleHeight = 5.8
+ArmReach = 1.1
+MetalColor = Color(0.17, 0.21, 0.23, 1)
+HousingColor = Color(0.25, 0.28, 0.29, 1)
+LightsEnabled = true
+LightColor = Color(1, 0.82, 0.61, 1)
+SpotEnergy = 2.5
+SpotRange = 13.0
+SpotHalfAngle = 51.0
+SpotFalloff = 0.85
+ConeEdgeSoftness = 1.45
+SpotShadows = false
+FillEnabled = true
+FillEnergy = 0.35
+FillRange = 8.0
+FillFalloff = 1.0
+SpotFogEnergy = 0.25
+FillFogEnergy = 0.05

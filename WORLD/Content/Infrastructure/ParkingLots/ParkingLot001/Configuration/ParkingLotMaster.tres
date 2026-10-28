@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ParkingLotSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Infrastructure/ParkingLots/ParkingLot001/Configuration/ParkingLotSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Width = 40.0
+Depth = 28.0
+AsphaltThickness = 0.12
+BayCount = 8
+BayWidth = 3.1
+BayDepth = 5.6
+LineWidth = 0.08
+SidewalkDepth = 2.4
+SidewalkHeight = 0.15
+EntranceGapWidth = 3.2
+DrivewayWidth = 8.0
+DrivewayLength = 6.0
+AsphaltColor = Color(0.17, 0.19, 0.20, 1)
+AsphaltWearColor = Color(0.21, 0.22, 0.22, 1)
+ConcreteColor = Color(0.52, 0.52, 0.48, 1)
+CurbColor = Color(0.36, 0.38, 0.36, 1)
+LineColor = Color(0.72, 0.70, 0.55, 1)
