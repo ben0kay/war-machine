@@ -9,6 +9,7 @@ public partial class FirstPersonCamera : Camera
     private Vector3 _previousEye, _currentEye;
     private ulong _sampleTick;
     private float _lookPitchDegrees;
+    private readonly FirstPersonHeadBob _headBob = new();
 
     // =========================================================
     // The shared world calls this before the capsule is initialized; use standing height for the first placement.
@@ -21,6 +22,7 @@ public partial class FirstPersonCamera : Camera
         GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - TestSettings.EyeInset);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // We interpolate translation only, never mouse rotation.
         _previousEye = _currentEye = GlobalPosition;
+        _headBob.Reset();
         _sampleTick = Engine.GetPhysicsFrames();
         _ready = true; Input.MouseMode = Input.MouseModeEnum.Captured;
         SetProcess(false); SetPhysicsProcess(false);
@@ -70,17 +72,31 @@ public partial class FirstPersonCamera : Camera
     }
 
     // =========================================================
-    // Called after player physics, not from two separate movement/stance signals. No exponential follow lag.
-    public void RecordPhysicsPose(float capsuleHeight)
+    // Physics supplies one completed eye pose and actual travel distance; no second movement driver.
+    public void RecordPhysicsPose(float capsuleHeight, float horizontalDistance, bool grounded, bool movingInput,
+        PlayerController.MovementStance stance, float physicsDelta)
     {
+        if (!_ready) return;
         Vector3 eye = _actor.GlobalPosition + Vector3.Up * Mathf.Max(0.5f, capsuleHeight - TestSettings.EyeInset);
         _previousEye = _currentEye; _currentEye = eye; _sampleTick = Engine.GetPhysicsFrames();
-        float resetDistance = Mathf.Max(1, TestSettings.TeleportResetDistance);
-        if (!TestSettings.InterpolateTranslation || _previousEye.DistanceSquaredTo(eye) > resetDistance * resetDistance)
-        { _previousEye = eye; SetEye(eye); SetProcess(false); return; }
-        if (_previousEye == _currentEye) { SetEye(eye); SetProcess(false); }
-        else SetProcess(true);
+        float reset = Mathf.Max(1f, TestSettings.TeleportResetDistance);
+        if (_previousEye.DistanceSquaredTo(eye) > reset * reset)
+        { _previousEye = eye; _headBob.Reset(); SetEye(eye); SetProcess(false); return; }
+        bool gameplay = Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus()
+            && !_actor.GameplayInputBlocked && !_actor.IsDead;
+        _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay,
+            movingInput && gameplay, stance, TestSettings);
+        if (!TestSettings.InterpolateTranslation || _previousEye == _currentEye)
+        {
+            SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate); return;
+        }
+        SetProcess(true);
     }
+
+    // =========================================================
+    // Camera-right sway plus world-up bounce; no mouse-look, recoil or physics-body rotation.
+    private Vector3 BobbedEye(Vector3 baseEye)
+        => baseEye + GlobalBasis.X * _headBob.Offset.X + Vector3.Up * _headBob.Offset.Y;
 
     // =========================================================
     private void SetEye(Vector3 eye)
@@ -88,7 +104,11 @@ public partial class FirstPersonCamera : Camera
 
     // =========================================================
     private void ReleaseMouse()
-    { Input.MouseMode = Input.MouseModeEnum.Visible; _actor.SetPhysicsProcess(true); }
+    {
+        Input.MouseMode = Input.MouseModeEnum.Visible;
+        _headBob.Stop(); if (_headBob.NeedsUpdate) SetProcess(true);
+        _actor.SetPhysicsProcess(true);
+    }
 
     // =========================================================
     // Focus loss never captures the pointer automatically when returning to the editor.
@@ -96,13 +116,17 @@ public partial class FirstPersonCamera : Camera
     { if (_ready && what == NotificationApplicationFocusOut) ReleaseMouse(); }
 
     // =========================================================
-    // Render between fixed-tick eye positions. Finish the final tick exactly, then become dormant.
+    // Reuse the existing render callback for eye interpolation and smooth bob; sleep when both settle.
     public override void _Process(double delta)
     {
         if (!_ready) { SetProcess(false); return; }
-        if (!TestSettings.InterpolateTranslation || Engine.GetPhysicsFrames() > _sampleTick)
-        { SetEye(_currentEye); SetProcess(false); return; }
-        SetEye(_previousEye.Lerp(_currentEye, (float)Engine.GetPhysicsInterpolationFraction()));
+        bool interpolating = TestSettings.InterpolateTranslation && Engine.GetPhysicsFrames() <= _sampleTick
+            && _previousEye != _currentEye;
+        Vector3 baseEye = interpolating ? _previousEye.Lerp(_currentEye, (float)Engine.GetPhysicsInterpolationFraction())
+            : _currentEye;
+        bool bobbing = _headBob.Advance((float)delta, TestSettings);
+        SetEye(BobbedEye(baseEye));
+        if (!interpolating && !bobbing) SetProcess(false);
     }
     // FPS follows at eye level, with a small allowance for translation interpolation; it has no overhead orbit.
     public override float MaximumRenderOffset => 4;
@@ -111,6 +135,6 @@ public partial class FirstPersonCamera : Camera
     // =========================================================
     public override void _ExitTree()
     {
-        Input.MouseMode = Input.MouseModeEnum.Visible; _ready = false;
+        _headBob.Reset(); Input.MouseMode = Input.MouseModeEnum.Visible; _ready = false;
     }
 }

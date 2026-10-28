@@ -23,9 +23,16 @@ public partial class FirstPersonPlayer : PlayerController
     }
 
     // =========================================================
-    // Publish one completed physics pose, including the last braking/crouch tick before the shared driver sleeps.
+    // Measure post-collision horizontal travel once, after the shared player physics driver completes.
     public override void _PhysicsProcess(double delta)
-    { base._PhysicsProcess(delta); _view.RecordPhysicsPose(CapsuleHeight); }
+    {
+        Vector3 before = GlobalPosition;
+        base._PhysicsProcess(delta);
+        Vector3 travel = GlobalPosition - before; travel.Y = 0;
+        bool movingInput = ReadMovementInput().LengthSquared() > 0.01f;
+        _view.RecordPhysicsPose(CapsuleHeight, travel.Length(), IsOnFloor(),
+            movingInput, CurrentStance, (float)delta);
+    }
 
     // =========================================================
     // Fast braking and reversal avoid floatiness; shared overhead movement retains its original formula.

@@ -12,6 +12,15 @@ public partial class FirstPersonSettings : Resource
     [Export] public float EyeInset { get; set; } = 0.15f;
     [Export] public bool InterpolateTranslation { get; set; } = true;
     [Export] public float TeleportResetDistance { get; set; } = 8;
+    [ExportGroup("Head bob (FPS only)")]
+    [Export] public bool HeadBobEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkVerticalAmplitude { get; set; } = 0.025f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkHorizontalAmplitude { get; set; } = 0.012f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float RunVerticalAmplitude { get; set; } = 0.04f;
+    [Export(PropertyHint.Range, "0,0.08,0.001")] public float RunHorizontalAmplitude { get; set; } = 0.02f;
+    [Export(PropertyHint.Range, "0.5,5,0.1")] public float WalkStrideLength { get; set; } = 1.6f;
+    [Export(PropertyHint.Range, "0.5,5,0.1")] public float RunStrideLength { get; set; } = 2f;
+    [Export(PropertyHint.Range, "0.05,0.8,0.01")] public float HeadBobReturnSeconds { get; set; } = 0.18f;
     [ExportGroup("Fog and render distance")]
     [Export] public bool DistanceFogEnabled { get; set; } = true;
     [Export] public float FogStartDistance { get; set; } = 1;
