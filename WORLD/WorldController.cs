@@ -375,8 +375,8 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
-    // One world-owned stationary deer preview. Sample actual Terrain3D collision at startup;
-    // no wildlife AI, ongoing terrain sampling or per-frame world search.
+    // Place one real AI deer using startup terrain/collision checks, then inject its player target.
+    // DeerController owns subsequent wandering, flight and moving-only terrain sampling.
     private void SpawnDeerPreview(GodotObject terrainData, PlayerController player)
     {
         if (!Settings.DeerPreviewEnabled) return;

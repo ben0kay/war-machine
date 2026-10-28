@@ -16,7 +16,7 @@ Building003Offset = Vector2(80, -75)
 Building004Offset = Vector2(45, -190)
 Car001Offset = Vector2(24, 42)
 DeerPreviewEnabled = true
-DeerPreviewOffset = Vector2(-14, 12)
+DeerPreviewOffset = Vector2(-18, 50)
 
 CliffEnabled = false
 CliffOffset = Vector2(-6, 76)
