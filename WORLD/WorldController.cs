@@ -204,7 +204,7 @@ public partial class WorldController : Node3D
 
     // =========================================================
     // View-specific adapters are replaceable; terrain, scenery and entity composition remain shared.
-    protected virtual string ControlsHelp => "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · Right click jump · Mouse aim · Left click/hold fire · Q shove · Wheel zoom\nF6 in editor: Run Current Scene";
+    protected virtual string ControlsHelp => "World · Arrows screen-relative walk · Shift run · Left Ctrl/C crouch · Right Ctrl prone · Right click jump · Mouse aim · Left click/hold fire · Q shove · Wheel zoom\nF6 in editor: Run Current Scene";
     protected virtual bool EnableHorde => true;
     protected virtual void InitializeEquipment(PlayerController player, Camera camera)
     {

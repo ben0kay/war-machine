@@ -9,6 +9,8 @@ public partial class PlayerSettings : Resource
     [ExportGroup("Movement")]
     [Export] public float WalkSpeed { get; set; } = 5;
     [Export] public float CrouchSpeedMultiplier { get; set; } = 0.45f;
+    [Export(PropertyHint.Range, "0.05,0.4,0.01")] public float ProneSpeedMultiplier { get; set; } = 0.17f;
+    [Export(PropertyHint.Range, "0.65,1.15,0.05")] public float ProneCollisionHeight { get; set; } = 0.75f;
     [Export] public float RunMultiplier { get; set; } = 1.6f;
     [Export] public float Acceleration { get; set; } = 24;
     [Export] public float Gravity { get; set; } = 20;

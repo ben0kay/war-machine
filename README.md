@@ -1,3 +1,5 @@
+> **Shared prone locomotion (2026-10-28):** Right Ctrl toggles a first-pass prone/crawl stance in top-down and FPS using the same PlayerController; Left Ctrl/C now controls crouch. Slow prone speed (0.17×, 0.85m/s at base walk), a 0.75m low capsule, active-only crawl pose, overhead clearance tests and FPS eye height follow. This is an upright **low collision proxy**, not a full-length horizontal prone collider. Source implemented, local .NET/Godot acceptance pending. [PLAYER README](PLAYER/README.md).
+
 > **Player PH0/PH1 implemented in source (2026-10-28), awaiting local validation:** hidden vitality, six independent body-condition regions, death/control gates and a compact event-driven silhouette. No generic player HP bar; NPC bars remain. Precision hurtboxes, limb penalties, bleeding, medical items and survival stats are later phases. [Player plan](PLAYER/IMPLEMENTATION_PLAN.md) · [body design](PLAYER/Stats/BODY_CONDITION_DESIGN.md).
 
 # WAR MACHINE

@@ -8,7 +8,7 @@ Active player: `Player.tscn`, `PlayerController.cs`, `PlayerSettings.cs` and `Co
 
 `LegacyFirstPerson/` contains the parked explorer, flight/FPS settings, camera mode button and scene. The original WORLD/testworld.tscn still instances that scene. Its resources are separate from the active player.
 
-WorldController supplies a runtime PlayerSettings copy after safe terrain placement. Controls now include **Q quick shove** in addition to arrows, Shift run, Right Ctrl crouch and mouse aim/left click fire. Shared `Equipment/PlayerQuickMelee.cs` dispatches the COMBAT/Melee contact; pose/animation work is deferred. No new polling loops or behaviour changes are intended by this relocation. Local compilation and gameplay checks remain pending.
+WorldController supplies a runtime PlayerSettings copy after safe terrain placement. Controls now include **Q quick shove** in addition to arrows, Shift run, Left Ctrl/C crouch, Right Ctrl prone and mouse aim/left click fire. Shared `Equipment/PlayerQuickMelee.cs` dispatches the COMBAT/Melee contact; pose/animation work is deferred. No new polling loops or behaviour changes are intended by this relocation. Local compilation and gameplay checks remain pending.
 
 The isolated FPS experiment subclasses this controller under DEBUG/TEST/FirstPerson/PLAYER. Virtual input/direction hooks reuse this same physical movement and crouch implementation. The normal player still uses arrows and cached overhead axes.
 
@@ -45,3 +45,19 @@ The authoritative [implementation plan](IMPLEMENTATION_PLAN.md) now rejects a co
 ## RMB grounded jump (2026-10-28)
 
 The **shared** PlayerController now accepts **right mouse press** to jump once, only when on the floor, standing, alive, focused and not in an input-blocking menu or over a GUI control. The press is consumed by the next physics tick, then cleared; holding RMB cannot auto-repeat when landing. The new exported `JumpVelocity=6.0`m/s in `PlayerMaster.tres`, combined with existing `Gravity=20`m/s², gives roughly 0.9m ideal ballistic height on level ground before collision. Normal native `MoveAndSlide` handles ceilings, falling and landing. No special jump animation, stamina cost, double-jump, new InputMap action or new always-running callback was added. The existing rest-state physics sleep is preserved once grounded. FPS debug reuses the same impulse but rejects RMB if its mouse is uncaptured. This is implemented in source; local Godot/.NET compilation and actual in-game movement require testing.
+
+## Prone/crawling — shared overhead and FPS stance (2026-10-28)
+
+**Implemented in source; local Godot/.NET build and visual acceptance pending.** The same `PlayerController` implements three mutually exclusive stances, preserving the existing movement/aim/equipment flow. **Right Ctrl toggles prone**, **Left Ctrl or C toggles crouch**, and RMB still performs a grounded standing-only jump. Keypresses are handled in `_UnhandledInput`, respect gameplay/menu/death blocking, ignore key auto-repeat and wake the existing sleeping player physics callback; no new permanent polling loops.
+
+Default tuning comes from `Configuration/PlayerMaster.tres` and `PlayerSettings`:
+- Standing: 1.8m vertical capsule, 5m/s walk; Shift sprint retains 1.6×.
+- Crouching: 1.4m capsule, 0.45× walk = 2.25m/s.
+- **Prone: 0.75m short capsule, 0.17× walk = 0.85m/s** (much slower). Shift cannot sprint; RMB cannot jump until standing.
+- `ProneSpeedMultiplier` and `ProneCollisionHeight` are independently adjustable in the player master. The FPS test copies the shared prone defaults alongside its existing FPS walk/run/crouch overrides.
+
+When prone, the existing upper-body, leg/arm and weapon rig pivots take a **simple forward-leaning crawl pose** with alternating small arm/leg motion only during actual travel. No separate animation tree or 3D asset. The short upright capsule is deliberately a **first-pass low-clearance proxy**, *not* a full-length horizontal prone collider or precise limb hitbox; proximity to walls/long torso clipping may still need later geometry work. WeaponAim, recoil and existing body-condition health stay in the shared actor; the FPS camera continues reading the now-shorter `CapsuleHeight` via `RecordPhysicsPose` (approximately 0.60m eye height).
+
+**Stance transitions / clearance:** Right Ctrl returns to the stance that was active before prone, when there is headroom; a blocked return to standing tries crouch instead. Crouch requests while prone also check 1.4m headroom. Standing checks 1.8m headroom. These are cached one-time capsule overlap checks in the physics callback; don't repeatedly poll when refused. `IsCrouching` retains its crouch-only meaning for old observers; `IsProne`, `CurrentStance` and `MovementStanceChanged` make stance visible to later sound/stamina/AI systems.
+
+**Test locally:** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn` and F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Right Ctrl while grounded: avatar folds forward/crawls, capsule and FPS eye lower, slow movement in all directions. Shift gives no speedup, RMB no jump. Right Ctrl again returns to previous stance; Left Ctrl/C crouches independently. Under a low ceiling, release toward full height must be refused; crouch fallback works if space allows. Check aiming, rifle/quick shove, animation/feet on slopes, inventory blocking, F10 collisions, idle physics sleep and reload/reinitialize. **No compiled or rendered checks were run via GitHub tools.**

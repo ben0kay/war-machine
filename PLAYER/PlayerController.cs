@@ -14,7 +14,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     {
         blocked |= IsDead; // Closing a backpack cannot release the permanent death gate.
         if (GameplayInputBlocked == blocked) return;
-        GameplayInputBlocked = blocked; _toggleCrouch = false;
+        GameplayInputBlocked = blocked; _toggleCrouch = _toggleProne = false;
         if (blocked) _jumpRequested = false;
         if (blocked) Velocity = new Vector3(0, Velocity.Y, 0);
         SetPhysicsProcess(true); GameplayInputBlockChanged?.Invoke(blocked);
@@ -28,18 +28,26 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     private Node3D _shoulderGirdle = null!, _leftElbow = null!, _rightElbow = null!;
     private CollisionShape3D _collider = null!;
     private CapsuleShape3D _capsule = null!;
-    private PhysicsShapeQueryParameters3D _standingQuery = null!;
-    public bool IsCrouching { get; private set; }
-    public event System.Action<bool>? StanceChanged;
+    private PhysicsShapeQueryParameters3D _standingQuery = null!, _crouchingQuery = null!;
+    public enum MovementStance { Standing, Crouching, Prone }
+    public MovementStance CurrentStance { get; private set; } = MovementStance.Standing;
+    public bool IsCrouching => CurrentStance == MovementStance.Crouching;
+    public bool IsProne => CurrentStance == MovementStance.Prone;
+    public event System.Action<bool>? StanceChanged; // Historical crouch-only observer.
+    public event System.Action<MovementStance>? MovementStanceChanged;
     public Marker3D WeaponMount { get; private set; } = null!;
-    public Vector3 WeaponProbeOrigin => _upperBody.GlobalPosition + _settings.WeaponProbeOffset;
+    public Vector3 WeaponProbeOrigin => _upperBody.GlobalPosition + new Vector3(
+        _settings.WeaponProbeOffset.X,
+        Mathf.Lerp(_settings.WeaponProbeOffset.Y, 0.10f, _prone),
+        _settings.WeaponProbeOffset.Z);
     public event System.Action? WeaponPoseChanged;
     private bool _weaponPose;
     private Node3D? _shoveWeapon;
     private float _shoveGrip;
     private float _recoilArmAngle, _recoilArmApplied;
-    private float _crouch;
-    private bool _toggleCrouch, _jumpRequested;
+    private float _crouch, _prone;
+    private bool _toggleCrouch, _toggleProne, _jumpRequested;
+    private MovementStance _stanceBeforeProne = MovementStance.Standing;
     private Vector3 _screenRight, _screenForward;
     private Camera3D? _movementCamera;
     private float _phase;
@@ -71,8 +79,12 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             _collider = GetNode<CollisionShape3D>("CollisionShape3D");
             _capsule = (CapsuleShape3D)_collider.Shape.Duplicate(); _collider.Shape = _capsule;
             var standing = (CapsuleShape3D)_capsule.Duplicate(); standing.Height = 1.8f;
+            var crouching = (CapsuleShape3D)_capsule.Duplicate(); crouching.Height = 1.4f;
+            var exclusion = new Godot.Collections.Array<Rid> { GetRid() };
             _standingQuery = new PhysicsShapeQueryParameters3D { Shape = standing, CollisionMask = CollisionMask,
-                Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
+                Exclude = exclusion };
+            _crouchingQuery = new PhysicsShapeQueryParameters3D { Shape = crouching, CollisionMask = CollisionMask,
+                Exclude = exclusion };
         }
         ResetPhysicsInterpolation(); // Do not blend spawn placement/generated rig from the authored origin.
         if (Vitals == null)
@@ -80,7 +92,9 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             Vitals = GetNode<PlayerVitals>("Vitals"); Vitals.Initialize(_settings.Vitals);
             Vitals.Died += OnDied;
         }
-        _initialized = true; _jumpRequested = false;
+        _initialized = true; _jumpRequested = _toggleCrouch = _toggleProne = false;
+        CurrentStance = MovementStance.Standing; _stanceBeforeProne = MovementStance.Standing;
+        _crouch = _prone = 0f; _capsule.Height = 1.8f; _collider.Position = Vector3.Up * 0.9f;
         Velocity = Vector3.Zero; SetPhysicsProcess(true);
     }
 
@@ -114,7 +128,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         if (!_initialized || GameplayInputBlocked) return;
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
         {
-            if (CanAcceptJumpInput() && GetWindow().HasFocus() && IsOnFloor() && !IsCrouching
+            if (CanAcceptJumpInput() && GetWindow().HasFocus() && IsOnFloor() && CurrentStance == MovementStance.Standing
                 && GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
             {
                 _jumpRequested = true; SetPhysicsProcess(true);
@@ -130,7 +144,13 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         }
         if (key.PhysicalKeycode == Key.Ctrl && key.Location == KeyLocation.Right && key.Pressed)
         {
-            _toggleCrouch = !_toggleCrouch;
+            _toggleProne = true; _toggleCrouch = false;
+            SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); return;
+        }
+        if ((key.PhysicalKeycode == Key.C ||
+             key.PhysicalKeycode == Key.Ctrl && key.Location == KeyLocation.Left) && key.Pressed)
+        {
+            _toggleCrouch = true; _toggleProne = false;
             SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); return;
         }
         if (IsMovementKey(key.PhysicalKeycode))
@@ -148,32 +168,54 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     }
 
     // =========================================================
-    // Physics root owns movement. Art joints animate from actual horizontal travel and settle immediately at rest.
+    // Physics root owns movement. Stance requests and one-time clearance tests run only on input.
     public override void _PhysicsProcess(double delta)
     {
         float dt = (float)delta;
+        if (_toggleProne)
+        {
+            _toggleProne = false;
+            if (IsProne)
+            {
+                // Return to the original stance if there is headroom; in low spaces try crouch.
+                if (!TrySetStance(_stanceBeforeProne) && _stanceBeforeProne == MovementStance.Standing)
+                    TrySetStance(MovementStance.Crouching);
+            }
+            else if (IsOnFloor())
+            {
+                _stanceBeforeProne = CurrentStance;
+                TrySetStance(MovementStance.Prone);
+            }
+        }
         if (_toggleCrouch)
         {
             _toggleCrouch = false;
-            // Query only in physics, once per attempt to stand; exclude our own capsule.
-            _standingQuery.Transform = GlobalTransform * new Transform3D(Basis.Identity, Vector3.Up * 0.93f);
-            if (!IsCrouching || GetWorld3D().DirectSpaceState.IntersectShape(_standingQuery, 1).Count == 0)
-            { IsCrouching = !IsCrouching; StanceChanged?.Invoke(IsCrouching); }
+            if (IsProne) TrySetStance(MovementStance.Crouching);
+            else TrySetStance(IsCrouching ? MovementStance.Standing : MovementStance.Crouching);
         }
-        float previousCrouch = _crouch;
-        _crouch = Mathf.MoveToward(_crouch, IsCrouching ? 1 : 0, dt * 6);
-        if (_crouch != previousCrouch)
+        float previousCrouch = _crouch, previousProne = _prone;
+        _crouch = Mathf.MoveToward(_crouch, IsCrouching ? 1f : 0f, dt * 6f);
+        _prone = Mathf.MoveToward(_prone, IsProne ? 1f : 0f, dt * 5f);
+        bool stanceAnimating = _crouch != previousCrouch || _prone != previousProne;
+        if (stanceAnimating)
         {
-            _capsule.Height = Mathf.Lerp(1.8f, 1.4f, _crouch);
+            // A short upright capsule is an initial prone collision proxy; detailed lying
+            // hull/hurtboxes belong to a later physical-pose pass.
+            _capsule.Height = Mathf.Max(0.65f, 1.8f - 0.4f * _crouch
+                - (1.8f - Mathf.Clamp(_settings.ProneCollisionHeight, 0.65f, 1.15f)) * _prone);
             _collider.Position = Vector3.Up * (_capsule.Height * 0.5f);
         }
         // Consume the press once. Upward velocity naturally disables floor snapping; gravity
         // continues while airborne until MoveAndSlide reports landing, then idle physics can sleep.
-        bool jumping = _jumpRequested && IsOnFloor() && !GameplayInputBlocked && !IsCrouching && GetWindow().HasFocus();
+        bool jumping = _jumpRequested && IsOnFloor() && !GameplayInputBlocked
+            && CurrentStance == MovementStance.Standing && GetWindow().HasFocus();
         _jumpRequested = false;
         Vector2 keys = !GameplayInputBlocked && GetWindow().HasFocus() ? ReadMovementInput().Normalized() : Vector2.Zero;
         Vector3 direction = GetMovementDirection(keys);
-        float speed = Mathf.Max(0.1f, _settings.WalkSpeed) * (IsCrouching ? Mathf.Clamp(_settings.CrouchSpeedMultiplier, 0.1f, 1) : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1, _settings.RunMultiplier) : 1);
+        float speed = Mathf.Max(0.1f, _settings.WalkSpeed) *
+            (IsProne ? Mathf.Clamp(_settings.ProneSpeedMultiplier, 0.05f, 0.4f)
+            : IsCrouching ? Mathf.Clamp(_settings.CrouchSpeedMultiplier, 0.1f, 1f)
+            : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1f, _settings.RunMultiplier) : 1f);
         Vector3 horizontal = new(Velocity.X, 0, Velocity.Z);
         horizontal = UpdateHorizontalVelocity(horizontal, direction * speed, dt);
         Vector3 before = GlobalPosition;
@@ -188,18 +230,42 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         {
             float yaw = Mathf.Atan2(-travel.X, -travel.Z);
             if (!_weaponPose) _art.Rotation = new Vector3(0, Mathf.LerpAngle(_art.Rotation.Y, yaw, 1 - Mathf.Exp(-14 * dt)), 0);
-            _phase += dt * Mathf.Tau * Mathf.Max(0.1f, _settings.GaitRate) * actualSpeed / Mathf.Max(0.1f, _settings.WalkSpeed);
-            // Lift each knee only while that foot swings forward; the other leg stays planted.
+            float gaitReference = IsProne ? 2f : Mathf.Max(0.1f, _settings.WalkSpeed);
+            _phase += dt * Mathf.Tau * Mathf.Max(0.1f, _settings.GaitRate) * actualSpeed / gaitReference;
+            // Crawl uses a short, alternating elbow/leg movement instead of a walking stride.
             float liftPhase = Mathf.Cos(_phase);
-            float gaitStrength = Mathf.Clamp(actualSpeed / Mathf.Max(0.1f, _settings.WalkSpeed), 0f, 1f);
-            Pose(Mathf.Sin(_phase) * 0.5f, Mathf.Abs(Mathf.Sin(_phase * 2)) * 0.025f,
+            float gaitStrength = Mathf.Clamp(actualSpeed / gaitReference, 0f, 1f);
+            Pose(Mathf.Sin(_phase) * (IsProne ? 0.13f : 0.5f),
+                Mathf.Abs(Mathf.Sin(_phase * 2)) * (IsProne ? 0.008f : 0.025f),
                 Mathf.Max(0, liftPhase) * gaitStrength, Mathf.Max(0, -liftPhase) * gaitStrength, gaitStrength);
         }
         else Pose(0, 0);
-        if (_crouch != previousCrouch) WeaponPoseChanged?.Invoke();
+        if (stanceAnimating) WeaponPoseChanged?.Invoke();
         if (before.DistanceSquaredTo(GlobalPosition) > 0.0000001f) PositionChanged?.Invoke(GlobalPosition);
-        if (IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _crouch == (IsCrouching ? 1 : 0))
+        if (IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _crouch == (IsCrouching ? 1f : 0f) && _prone == (IsProne ? 1f : 0f))
         { Velocity = Vector3.Zero; _phase = 0; Pose(0, 0); SetPhysicsProcess(false); }
+    }
+
+    // =========================================================
+    // A short stature is always allowed. Getting taller is gated by a one-time physics
+    // clearance query for the destination body height; the actor never stands through ceilings.
+    private bool TrySetStance(MovementStance next)
+    {
+        if (next == CurrentStance) return true;
+        if (next == MovementStance.Standing && !HasStanceClearance(_standingQuery, 1.8f)) return false;
+        if (next == MovementStance.Crouching && IsProne && !HasStanceClearance(_crouchingQuery, 1.4f)) return false;
+        CurrentStance = next;
+        StanceChanged?.Invoke(IsCrouching);
+        MovementStanceChanged?.Invoke(next);
+        return true;
+    }
+
+    // =========================================================
+    private bool HasStanceClearance(PhysicsShapeQueryParameters3D query, float height)
+    {
+        query.Transform = GlobalTransform * new Transform3D(Basis.Identity,
+            Vector3.Up * (height * 0.5f + 0.03f));
+        return GetWorld3D().DirectSpaceState.IntersectShape(query, 1).Count == 0;
     }
 
     // =========================================================
@@ -334,31 +400,39 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     // Aiming heavily damps these motions to keep the rifle and cursor aligned.
     private void Pose(float angle, float bob, float leftLift = 0, float rightLift = 0, float gaitStrength = 0)
     {
-        float stride = angle * Mathf.Lerp(1, 0.4f, _crouch);
-        float motion = gaitStrength * Mathf.Lerp(1f, 0.35f, _crouch);
+        float stride = angle * Mathf.Lerp(1, 0.4f, _crouch) * (1f - 0.4f * _prone);
+        float motion = gaitStrength * Mathf.Lerp(1f, 0.35f, _crouch) * (1f - 0.4f * _prone);
         float aimDamping = _weaponPose ? 0.25f : 1f;
         float swing = Mathf.Sin(_phase), across = Mathf.Cos(_phase);
         float torsoTwist = Mathf.DegToRad(Mathf.Clamp(_settings.TorsoTwistDegrees, 0, 8)) * motion * aimDamping;
         float torsoRoll = Mathf.DegToRad(Mathf.Clamp(_settings.TorsoRollDegrees, 0, 5)) * motion * aimDamping;
         float shoulderSway = Mathf.DegToRad(Mathf.Clamp(_settings.ShoulderSwayDegrees, 0, 6)) * motion;
-        _art.Position = Vector3.Up * (bob * Mathf.Lerp(1, 0.35f, _crouch) - 0.72f * (1 - Mathf.Cos(1.15f * _crouch)));
-        _upperBody.Rotation = new Vector3(0.18f * _crouch, -swing * torsoTwist, across * torsoRoll);
+        _art.Position = Vector3.Up * (bob * Mathf.Lerp(1, 0.35f, _crouch)
+            - 0.72f * (1 - Mathf.Cos(1.15f * _crouch)) - 0.30f * _prone);
+        // Lean upper body forward to the ground: the head/arms lead the crawl along local -Z.
+        _upperBody.Rotation = new Vector3(0.18f * _crouch - 1.26f * _prone,
+            -swing * torsoTwist, across * torsoRoll);
         _shoulderGirdle.Rotation = new Vector3(0, -swing * shoulderSway * 0.3f * aimDamping,
             Mathf.Sin(_phase * 2f) * shoulderSway * 0.5f * (_weaponPose ? 0.45f : 1f));
-        _leftArm.Rotation = new Vector3(-stride - 0.4f * _crouch, 0, 0);
-        _rightArm.Rotation = new Vector3(stride - 0.4f * _crouch, 0, 0);
-        if (_weaponPose) { _leftArm.RotationDegrees = _settings.LeftWeaponArmDegrees; _rightArm.RotationDegrees = _settings.RightWeaponArmDegrees; }
+        _leftArm.Rotation = new Vector3(-stride - 0.4f * _crouch + 1.8f * _prone, 0, 0);
+        _rightArm.Rotation = new Vector3(stride - 0.4f * _crouch + 1.8f * _prone, 0, 0);
+        if (_weaponPose)
+        {
+            // Keep hands and equipped rifle forward when the parent torso lies horizontal.
+            _leftArm.RotationDegrees = _settings.LeftWeaponArmDegrees + new Vector3(55f * _prone, 0, 0);
+            _rightArm.RotationDegrees = _settings.RightWeaponArmDegrees + new Vector3(55f * _prone, 0, 0);
+        }
         // Slight forearm lag follows the opposite leg; keep near zero when hands support the rifle.
         float elbowFlex = Mathf.DegToRad(Mathf.Clamp(_settings.ElbowFlexDegrees, 0, 35)) * motion;
         float armFreedom = _weaponPose ? 0.07f : 1f;
         _leftElbow.Rotation = new Vector3(elbowFlex * (0.55f + 0.45f * Mathf.Max(0, -swing)) * armFreedom, 0, 0);
         _rightElbow.Rotation = new Vector3(elbowFlex * (0.55f + 0.45f * Mathf.Max(0, swing)) * armFreedom, 0, 0);
-        _leftLeg.Rotation = new Vector3(stride + 1.15f * _crouch, 0, 0);
-        _rightLeg.Rotation = new Vector3(-stride + 1.15f * _crouch, 0, 0);
+        _leftLeg.Rotation = new Vector3(stride + 1.15f * _crouch - 1.08f * _prone, 0, 0);
+        _rightLeg.Rotation = new Vector3(-stride + 1.15f * _crouch - 1.08f * _prone, 0, 0);
         // Crouch retains its existing deep knee bend; walking adds up to ~35 degrees on the airborne leg.
-        float kneeBend = Mathf.DegToRad(Mathf.Clamp(_settings.KneeBendDegrees, 0, 60)) * (1f - _crouch);
-        _leftKnee.Rotation = new Vector3(-2.3f * _crouch - kneeBend * leftLift, 0, 0);
-        _rightKnee.Rotation = new Vector3(-2.3f * _crouch - kneeBend * rightLift, 0, 0);
+        float kneeBend = Mathf.DegToRad(Mathf.Clamp(_settings.KneeBendDegrees, 0, 60)) * (1f - _crouch) * (1f - _prone);
+        _leftKnee.Rotation = new Vector3(-2.3f * _crouch + 0.70f * _prone - kneeBend * leftLift, 0, 0);
+        _rightKnee.Rotation = new Vector3(-2.3f * _crouch + 0.70f * _prone - kneeBend * rightLift, 0, 0);
         // Small toe/heel movement while swinging; feet return to their original planted pose at rest.
         float footRoll = Mathf.DegToRad(Mathf.Clamp(_settings.FootRollDegrees, 0, 20)) * (1f - _crouch) * Mathf.Sin(_phase);
         _leftFoot.Rotation = new Vector3(-_leftLeg.Rotation.X - _leftKnee.Rotation.X + footRoll * leftLift, 0, 0);
