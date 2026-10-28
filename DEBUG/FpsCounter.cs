@@ -1,4 +1,4 @@
-// Displays FPS at a throttled cadence. Hiding/disabling the label stops its timer; no frame polling.
+// Always-on debug FPS label: half-second sampling, smooth green-yellow-orange-red feedback; no frame polling.
 using Godot;
 
 public partial class FpsCounter : Label
@@ -40,6 +40,22 @@ public partial class FpsCounter : Label
     {
         int fps = (int)Engine.GetFramesPerSecond();
         if (fps == _lastFps) return;
-        _lastFps = fps; Text = $"FPS: {fps}";
+        _lastFps = fps;
+        Text = $"FPS: {fps}";
+        AddThemeColorOverride("font_color", GetFpsColor(fps));
+    }
+
+    // =========================================================
+    // Continuous colour transition: green at >=60, yellow at 40, orange at 30, red at <=20.
+    // Theme font colour changes only when the sampled FPS integer changes.
+    private static Color GetFpsColor(int fps)
+    {
+        Color red = new(0.98f, 0.21f, 0.18f);
+        Color yellow = new(1.00f, 0.91f, 0.20f);
+        Color green = new(0.25f, 0.98f, 0.35f);
+        if (fps <= 20) return red;
+        if (fps >= 60) return green;
+        return fps < 40 ? red.Lerp(yellow, (fps - 20f) / 20f)
+            : yellow.Lerp(green, (fps - 40f) / 20f);
     }
 }

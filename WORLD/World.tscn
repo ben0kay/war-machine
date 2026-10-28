@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=20 format=3]
 [ext_resource type="Script" path="res://WORLD/WorldController.cs" id="1"]
 [ext_resource type="Resource" path="res://WORLD/Configuration/WorldMaster.tres" id="2"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="3"]
@@ -17,6 +17,8 @@
 [ext_resource type="PackedScene" path="res://UI/GameplayHUD/Hotbar/Hotbar.tscn" id="13"]
 
 [ext_resource type="PackedScene" path="res://DEBUG/Overlay/DebugOverlay.tscn" id="debug_overlay"]
+[ext_resource type="Script" path="res://DEBUG/FpsCounter.cs" id="fps_counter"]
+[ext_resource type="Resource" path="res://DEBUG/Configuration/DebugMaster.tres" id="debug_master"]
 
 [ext_resource type="PackedScene" path="res://AUDIO/WorldAudio.tscn" id="audio_service"]
 
@@ -72,6 +74,20 @@ Settings = SubResource("RobotStartup")
 [node name="DebugUIRoot" type="Node" parent="."]
 [node name="Controls" type="CanvasLayer" parent="DebugUIRoot"]
 [node name="DebugOverlay" parent="DebugUIRoot/Controls" instance=ExtResource("debug_overlay")]
+
+[node name="FPS" type="Label" parent="DebugUIRoot/Controls"]
+offset_left = 18.0
+offset_top = 112.0
+offset_right = 158.0
+offset_bottom = 137.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+text = "FPS: —"
+script = ExtResource("fps_counter")
+Settings = ExtResource("debug_master")
 
 [node name="Status" type="Label" parent="DebugUIRoot/Controls"]
 offset_left = 16.0
