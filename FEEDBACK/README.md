@@ -1,5 +1,11 @@
 # FEEDBACK — visual combat and status feedback
 
+> **Current implementation update (2026-10-28, supersedes earlier foundation-only notes):** Generic health-bar widget and one shared automatic entity presenter have now been implemented in source, awaiting local validation. **Visibility rule: an alive entity shows a bar only when `CurrentHealth < MaxHealth`; full-health bars are hidden, with no timeout for injured actors.** Player health PH0 is still planned. The existing shield/defence and effect folders remain proposals.
+
+See `FEEDBACK/Bars/Health/HealthBar.tscn`, `FEEDBACK/Bars/EnemyBars/HealthBarOverlay.cs` and `FEEDBACK/Configuration/FeedbackMaster.tres`. The overlay registers any actor using the shared `HealthComponent`, including future player health, rather than checking entity classes. The active WorldController mounts it once inside `GameplayHUD/Screen`, inherited by FPS. No actor HP rules are duplicated here.
+
+**Known limit:** the first pass checks on-screen position and behind-camera visibility, but no physical occlusion ray yet; injured enemies behind walls may expose a bar until this is added in a focused follow-up. Healthy entities impose no projection tick. Controls are pooled/capped; see the new FB plan handoff below.
+
 **Status: FB0 folder/documentation foundation implemented; FB1–FB4 planned only.** No health bars, defence bars, damage numbers, indicators, effects or feedback C# are installed by FB0. Do not mistake a directory for a working feature.
 
 This top-level folder owns **reusable presentation** of gameplay state in the active top-down world and (where appropriate) the inherited FPS debug scene. It **does not** own current HP, damage maths, health rules, player survival state or a new combat pipeline.

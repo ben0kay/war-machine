@@ -1,5 +1,15 @@
 # FB — Status and combat feedback implementation plan
 
+> **Current status (2026-10-28; overrides older phase-table text below):** FB0 complete. **FB1 reusable HealthBar core implemented; future player HP connection pending PH0. FB2 generic actor health overlay implemented in source, awaiting local build/visual acceptance.** FB3 defence/shield and FB4 effect systems remain planned. Explicit owner requirement overrides the older 2.5-second damage bar timeout: bars remain visible whenever the actor is alive and below full HP. No gameplay health has been added to the player.
+
+### Implemented generic health bar — integration and validation
+
+A reusable `Bars/Health/HealthBar.tscn`/`.cs` draws current/max HP. `HealthComponent` now emits `HealthChanged(HealthComponent)` after successful damage and configuration and registers in the `health_components` group. `Bars/EnemyBars/HealthBarOverlay.cs` observes this group and SceneTree additions/removals, handles any shared-health actor, and projects its bar only while `CurrentHealth < MaxHealth`; dead/unloaded/fully healed actors lose their bar. Future player health is automatically presented at lower-left in the existing GameplayHUD while injured (there is still no actual player HP). One controller initializes it once for overhead and inherited FPS; no per-zombie UI nodes.
+
+The shared presenter processes only while at least one actor is injured, at an Inspector-tunable max 30Hz with 48 pooled visible bar controls by default. Offscreen bars hide and return on screen reentry; wounded actors offscreen still incur the throttled shared projection check. **No occlusion ray:** visibility through world walls/roofs is a known limitation for later tuning. Bar settings in `Configuration/FeedbackMaster.tres`, visual colours/style in `HealthBar.tscn`.
+
+**Run locally:** `dotnet build war-machine.csproj`. F6 `WORLD/World.tscn` and the FPS test. Confirm fresh zombies (100/100) have no bars; first rifle hit (5/100 remaining) shows a thin red bar; lethal second shot removes it. Confirm runner, 48+ wounded, camera panning/zoom, offscreen return, full-health configure/reset, scene unload and mouse/UI input. Once PH0 is authorized later, verify player full health hides HUD bar, damage shows and healing to full hides it. This change was only statically reviewed; build/Godot visuals remain **awaiting validation**.
+
 > **Status:** **FB0 Implemented (directory + docs only)**; **FB1–FB4 Planned**. No HUD bars or effects are currently functional as a result of this scaffold. Implement only a phase explicitly authorized by the owner. Work on `implement-td0-td1`.
 
 ## Phase overview

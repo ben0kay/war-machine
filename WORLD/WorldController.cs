@@ -130,6 +130,7 @@ public partial class WorldController : Node3D
         _audio.BindListener(player, camera);
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
+        InitializeHealthFeedback(player, camera);
         // The shared F1 model spawner is debug-only, with no real prop physics or world placement.
         var spawnMenu = GD.Load<PackedScene>("res://DEBUG/PlaceableSpawner/PlaceableSpawnMenu.tscn").Instantiate<PlaceableSpawnMenu>();
         GetNode("DebugUIRoot").AddChild(spawnMenu);
@@ -230,6 +231,15 @@ public partial class WorldController : Node3D
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
         panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView);
+    }
+
+    // =========================================================
+    // Shared HUD discovers current/future health components automatically; nothing ticks at full HP.
+    protected virtual void InitializeHealthFeedback(PlayerController player, Camera camera)
+    {
+        var hud = GetNode<Control>("GameplayHUD/Screen");
+        var overlay = new HealthBarOverlay { Name = "HealthBars" };
+        hud.AddChild(overlay); overlay.Initialize(player, camera);
     }
 
     // =========================================================

@@ -1,5 +1,7 @@
 # WAR MACHINE
 
+> **UI implementation update (2026-10-28):** `FEEDBACK/` now contains a generic source-implemented HealthBar and HUD overlay showing a bar only for living entities with shared `HealthComponent` and HP below maximum. Automatic registration supports current zombies and future player health, but **PH0 player health is still planned**. These bars await local build/visual validation; no damage calculations or health values were changed. See [FEEDBACK/IMPLEMENTATION_PLAN.md](FEEDBACK/IMPLEMENTATION_PLAN.md).
+
 > **Working title — atmospheric, top-down 3D survival on a strange, inhabited Earth.**  
 > **Primary game:** an angled overhead / isometric-style view of a fully 3D world. **First-person is a side debug prototype**, not a second production direction.  
 > **Development status:** early, evolving gameplay prototype on `implement-td0-td1`. This README describes the **game vision, current implementation and system ownership**; feature plans and validation details live in their owning folders.

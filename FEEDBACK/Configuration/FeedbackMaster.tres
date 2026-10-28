@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FeedbackSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://FEEDBACK/Configuration/FeedbackSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+WorldBarWidth = 86.0
+WorldBarHeight = 9.0
+WorldAnchorHeight = 2.1
+PlayerBarWidth = 190.0
+PlayerBarHeight = 14.0
+PlayerMargin = 22.0
+MaxVisibleBars = 48
+ProjectionUpdatesPerSecond = 30.0

@@ -1,5 +1,7 @@
 # PLAYER — Health, Vitals and Survival Implementation Plan
 
+> **PH0–PH5 remain planned. New dependency note (2026-10-28):** A working generic health-bar UI and `HealthComponent.HealthChanged(HealthComponent)` notification already exist under FEEDBACK. **PH0 Codex must reuse those, not build a second diagnostic label, health bar or changed-event API.** Once PH0 configures the player's HealthComponent, the shared GameplayHUD overlay will display the player's bar at bottom-left only while HP is below max; full health intentionally shows no bar. Current PH0 sections describing a temporary label or missing HP-changed event are superseded by this note. There is still **no player health gameplay implementation**.
+
 > **Plan only — PH0–PH5 are Planned.** No player-health, survival or HUD mechanics are implemented by this document. A separate [FEEDBACK foundation](../FEEDBACK/README.md) now exists as **folders and documentation only**; its bars are not functional. Implement only the phase expressly authorized by the owner, on `implement-td0-td1`.
 >
 > **Baseline reviewed:** 2026-10-27 against root `README.md`, `CodePreferences.md`, player scene/controller/settings, `WORLD/WorldController.cs` and shared damage pipeline. Updated 2026-10-28 for the new FEEDBACK folder plan; FPS inherits the active world and should remain compatible, while the parked `WORLD/testworld.tscn` remains unchanged.

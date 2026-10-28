@@ -1,5 +1,7 @@
 # Shared damage pipeline
 
+> **Feedback API addition (2026-10-28):** The existing `HealthComponent` now joins the `health_components` group on Ready and emits `HealthChanged(HealthComponent)` on Configure and successful HP loss for read-only UI consumers. `Damaged`, `Died`, damage formulas and zombie health behavior are unchanged. The feedback manager uses this event for bars **only below full health**. PH0 may reuse the event for future heal updates rather than creating a second incompatible signal.
+
 **Implemented; awaiting local .NET/Godot validation.** This code has no dependency
 on the rifle, zombies, EntityCore, terrain or a particular hit-detection technique.
 
