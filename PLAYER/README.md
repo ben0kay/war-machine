@@ -31,3 +31,7 @@ CM2-D now adds a two-handed side-on gun shove using the existing arm/elbow rig, 
 [FEEDBACK/](../FEEDBACK/README.md) is a **documentation/folder scaffold** for reusable health/defence bars and visual hit feedback; its [FB roadmap](../FEEDBACK/IMPLEMENTATION_PLAN.md) is separate from player-health implementation. PH0 first adds actual HP, healing and death plus a tiny diagnostic readout. A later approved FB1 (coordinated with PH1) creates the styled HUD bar under FEEDBACK, composed by UI/GameplayHUD. Enemy bars (FB2) and an actual shield resource/bar (FB3) remain independent.
 
 F10 is an on-demand movement collision probe for both shared-player views: hold movement against a blocker and press it to print existing MoveAndSlide collider paths/normals/contact points once. No additional physics queries or background logging; normal movement and idle sleep are unchanged.
+
+## RC1 top-down recoil (2026-10-28)
+
+`Equipment/TopDownWeaponRecoil.cs` adds recoil animation to **Visual** only; `Equipment/PlayerWeaponController.cs` supplies the top-down camera's up axis to shared accepted-shot recoil and handles `ShotAccepted`. `PlayerController.SetWeaponRecoilPose` adds a small shoulder/arm response to the rig without changing `WeaponMount` or capsule. Both views still share actual firearm mechanics but FPS integration is RC2. The visual pose cancels on Q shove, swap, backpack and focus loss. No constantly running player animation callback; actual build/visual QA is pending.

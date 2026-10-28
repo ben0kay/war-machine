@@ -11,6 +11,7 @@ public partial class PlayerWeaponController : Node
     private bool _held, _shotRequested, _aimDirty, _initialized;
     private Vector3 _aimPoint;
     private PlayerQuickMelee? _shove;
+    private TopDownWeaponRecoil? _visualRecoil;
 
     // =========================================================
     // No idle frame callbacks. The world supplies ready actor/camera and a shared equipment definition.
@@ -41,9 +42,12 @@ public partial class PlayerWeaponController : Node
     {
         var previous = _weapon;
         if (!_slots.Select(slot)) return;
-        _shove?.Cancel(); CancelTrigger();
-        if (IsInstanceValid(previous)) previous!.ReadyToFire -= OnReadyToFire;
-        _weapon = _slots.Current!; _weapon.ReadyToFire += OnReadyToFire;
+        _shove?.Cancel(); CancelTrigger(); CancelVisualRecoil();
+        if (IsInstanceValid(previous))
+        { previous!.ReadyToFire -= OnReadyToFire; previous.ShotAccepted -= OnShotAccepted; }
+        _weapon = _slots.Current!;
+        _visualRecoil = new TopDownWeaponRecoil(_player, _weapon);
+        _weapon.ReadyToFire += OnReadyToFire; _weapon.ShotAccepted += OnShotAccepted;
         _aimQuery.CollisionMask = _weapon.RuntimeSettings.HitMask;
         RequestAim();
     }
@@ -64,13 +68,39 @@ public partial class PlayerWeaponController : Node
         {
             // UI has first refusal on keys, as it already does for gunfire.
             if (GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
-            { _shove?.TryStart(_weapon!); RequestAim(); GetViewport().SetInputAsHandled(); }
+            {
+                if (_shove?.TryStart(_weapon!) == true) CancelVisualRecoil();
+                RequestAim(); GetViewport().SetInputAsHandled();
+            }
             return;
         }
         if (input is InputEventMouseMotion) RequestAim();
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
         { _held = true; _shotRequested = true; RequestAim(); GetViewport().SetInputAsHandled(); }
     }
+
+    // =========================================================
+    // An accepted shot drives temporary gun/arm animation without modifying the muzzle or real ray.
+    private void OnShotAccepted()
+    {
+        _visualRecoil?.Kick();
+        if (_visualRecoil?.IsActive == true) SetProcess(true);
+    }
+
+    // =========================================================
+    // Recoil drawing updates only during its recovery; the existing aim physics scheduler is unaffected.
+    public override void _Process(double delta)
+    {
+        if (_visualRecoil == null || !_visualRecoil.IsActive)
+        { SetProcess(false); return; }
+        _visualRecoil.Advance((float)delta);
+        if (!_visualRecoil.IsActive) SetProcess(false);
+    }
+
+    // =========================================================
+    // Clear the additive animation before a shove takes priority or equipment is interrupted.
+    private void CancelVisualRecoil()
+    { _visualRecoil?.Cancel(); SetProcess(false); }
 
     // =========================================================
     // Only the currently held trigger requests another shot when its firearm's own timer allows it.
@@ -109,7 +139,13 @@ public partial class PlayerWeaponController : Node
             }
             _player.SetWeaponAim(_aimPoint);
         }
-        if (_shotRequested && _shove?.IsActive != true) { _shotRequested = false; _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin); }
+        if (_shotRequested && _shove?.IsActive != true)
+        {
+            _shotRequested = false;
+            // Camera-up is the screen-up recoil reference: the crosshair stays fixed and
+            // actual bullet/tracer direction climbs independently from ACC0 random spread.
+            _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin, _camera.GlobalBasis.Y);
+        }
         if (_shove?.IsActive == true)
         {
             // Use world-space horizontal aim; overhead camera height never affects contact.
@@ -124,7 +160,7 @@ public partial class PlayerWeaponController : Node
     private void OnInputBlocked(bool blocked)
     {
         if (!blocked) { RequestAim(); return; }
-        CancelTrigger(); _shove?.Cancel(); _weapon?.CancelFeedback(); SetPhysicsProcess(false);
+        CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); SetPhysicsProcess(false);
     }
 
     // =========================================================
@@ -135,7 +171,7 @@ public partial class PlayerWeaponController : Node
     public override void _Notification(int what)
     {
         if (!_initialized) return;
-        if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); _weapon?.CancelFeedback(); SetPhysicsProcess(false); }
+        if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); SetPhysicsProcess(false); }
         else if (what == NotificationApplicationFocusIn) RequestAim();
     }
 
@@ -143,11 +179,11 @@ public partial class PlayerWeaponController : Node
     // Explicitly release cross-node subscriptions before world unload or replacing this adapter.
     public override void _ExitTree()
     {
-        CancelTrigger(); _shove?.Cancel();
+        CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil();
         if (!_initialized) return;
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;
-        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
+        if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
         _initialized = false;
     }
 }

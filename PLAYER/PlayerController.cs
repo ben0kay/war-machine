@@ -33,6 +33,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     private bool _weaponPose;
     private Node3D? _shoveWeapon;
     private float _shoveGrip;
+    private float _recoilArmAngle, _recoilArmApplied;
     private float _crouch;
     private bool _toggleCrouch;
     private Vector3 _screenRight, _screenForward;
@@ -209,6 +210,30 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     }
 
     // =========================================================
+    // RC1: react with shoulders/arms, never with the weapon mount or player collider.
+    // Updating the delta avoids accumulating rotation when the player is motionless.
+    public void SetWeaponRecoilPose(float normalizedKick)
+    {
+        if (!_initialized) return;
+        float amount = float.IsFinite(normalizedKick) ? Mathf.Clamp(normalizedKick, 0f, 1.5f) : 0f;
+        _recoilArmAngle = Mathf.DegToRad(1.8f * amount);
+        ApplyWeaponRecoilPose();
+    }
+
+    // =========================================================
+    // Pose() resets animated joints during movement; it reapplies the most recent recoil once.
+    private void ApplyWeaponRecoilPose()
+    {
+        float current = _weaponPose && _shoveGrip <= 0f ? _recoilArmAngle : 0f;
+        float change = current - _recoilArmApplied;
+        if (Mathf.Abs(change) < 0.000001f) return;
+        _shoulderGirdle.Rotation += new Vector3(change, 0f, 0f);
+        _leftArm.Rotation += new Vector3(change * 0.5f, 0f, 0f);
+        _rightArm.Rotation += new Vector3(change * 0.5f, 0f, 0f);
+        _recoilArmApplied = current;
+    }
+
+    // =========================================================
     // The shove owns only its temporary grip targets; locomotion keeps owning the normal rig pose.
     public void SetShoveGrip(Node3D? weapon, float weight)
     {
@@ -294,6 +319,8 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         _leftFoot.Rotation = new Vector3(-_leftLeg.Rotation.X - _leftKnee.Rotation.X + footRoll * leftLift, 0, 0);
         _rightFoot.Rotation = new Vector3(-_rightLeg.Rotation.X - _rightKnee.Rotation.X - footRoll * rightLift, 0, 0);
         ApplyShoveGrips();
+        _recoilArmApplied = 0f; // Locomotion pose rewrote joint rotations above.
+        ApplyWeaponRecoilPose();
     }
 
     // =========================================================

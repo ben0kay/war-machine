@@ -43,11 +43,11 @@ Local validation pending: Godot/.NET unavailable here. Build, F6 World/FPS, 1/2 
 The [weapon recoil implementation plan](Weapons/RECOIL_IMPLEMENTATION_PLAN.md)
 defines a separate **accepted-shot recoil state** that makes the real bullet ray
 climb over sustained automatic fire. RC0 covers shared maths and per-gun settings;
-RC1 adds top-down aim climb and weapon/arm animation; RC2 reuses that mechanic
+RC1 now adds top-down aim climb and weapon/arm animation in source; RC2 will reuse that mechanic
 in the FPS debug view. This is **not existing random spread** (ACC0) and not
 enemy stagger. Machine-gun bursts are intended to stay more controlled than
 continuous fire; a fully stationary cursor need not mean stationary bullet aim.
-**RC0 shared recoil state and firing-event plumbing now exist in source (awaiting local build tests).** The current camera adapters have not enabled actual upward aim drift or visual kick; RC1/RC2 remain planned.
+**RC0 shared recoil state and firing-event plumbing now exist in source (awaiting local build tests).** The top-down adapter now enables real camera-relative bullet climb and a temporary visual gun/arm kick. FPS remains unchanged until RC2. Local Godot acceptance is pending.
 
 ## Planned melee equipment and hit reactions
 
