@@ -1,5 +1,7 @@
 # WORLD
 
+**Finite world / town / streaming roadmap:** [WORLD_STREAMING_IMPLEMENTATION_PLAN.md](WORLD_STREAMING_IMPLEMENTATION_PLAN.md) — WS0–WS7 planned. Start with stable section ownership and placement IDs; then fog-aware rendering, a small streaming proof, persistence, encounter activation and saved roaming authoring before expanding a dense town. No streamer is implemented by this note.
+
 **Current village layout:** [VILLAGE_IMPLEMENTATION_PLAN.md](VILLAGE_IMPLEMENTATION_PLAN.md) — VG0–VG3 implemented, awaiting local validation. ConvenienceStoreSite001 is the centre; terrain is graded across measured footprints, four buildings sit farther north, robot patrols the western perimeter, and 9 slow + 1 runner replace the default horde. Earlier showcase locations below are historical. See current handoff for coordinates/checks.
 
 
