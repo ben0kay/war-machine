@@ -44,4 +44,4 @@ Geometry shares `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs` with the rifl
 
 ## Moving tracer pass
 
-MachineGunMaster now uses `TracerSpeed=360` m/s, `TracerLength=1.0`m, `TracerWidth=0.012`m, `TracerEveryNShots=2`, `EffectDuration=0.30`s max and `TracerPoolSize=4`. Setting `TracerEveryNShots=1` shows every shot again. These values affect appearance only; hitscan, impact strength/stagger, muzzle flash, lighting, sounds and cadence remain unchanged. Check fast turning, MG burst overlap and FPS/top-down visibility after compiling Godot C#.
+MachineGunMaster now uses `TracerSpeed=360` m/s, `TracerLength=1.4`m, `TracerWidth=0.012`m, `TracerEveryNShots=2`, `EffectDuration=0.30`s max and `TracerPoolSize=4`. Setting `TracerEveryNShots=1` shows every shot again. These values affect appearance only; hitscan, impact strength/stagger, muzzle flash, lighting, sounds and cadence remain unchanged. Check fast turning, MG burst overlap and FPS/top-down visibility after compiling Godot C#.

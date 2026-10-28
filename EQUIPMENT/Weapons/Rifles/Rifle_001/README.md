@@ -18,7 +18,7 @@ preview, selected by `EQUIPMENT/Configuration/EquipmentMaster.tres`.
 | ACC0 base spread | 0.30° maximum shot deviation (half-angle); 0° restores perfect accuracy |
 | Trigger | Click once or hold left mouse for slow repeating fire |
 | Hit mask | 5: world layer 1 + zombie layer 3; player layer 2 excluded |
-| Feedback | Thin moving tracer (300m/s, 1.2m, 0.014m core), single pooled slot; 0.07s flash and optional sound |
+| Feedback | Thin moving tracer (300m/s, 1.7m, 0.014m core), single pooled slot; 0.07s flash and optional sound |
 
 Mouse aims toward a physics surface using the active camera in either projection.
 Empty space falls back to a hand-height plane. The player faces the cursor while
@@ -75,4 +75,4 @@ Primitive geometry is shared through `EQUIPMENT/Weapons/Shared/WeaponVisualGeome
 
 ## Moving tracer pass
 
-RifleMaster now uses `TracerSpeed=300` m/s, `TracerLength=1.2`m, `TracerWidth=0.014`m, `TracerEveryNShots=1`, `EffectDuration=0.35`s max and one pooled slot. A short unshaded bright streak plus subtle amber halo travels down the original hitscan path and clips at the hit point. No ballistic simulation or damage delay, and cooldown, spread, audio, lights, muzzle flash and hit detection remain unchanged. Build and visually test in Godot (not verified here).
+RifleMaster now uses `TracerSpeed=300` m/s, `TracerLength=1.7`m, `TracerWidth=0.014`m, `TracerEveryNShots=1`, `EffectDuration=0.35`s max and one pooled slot. A short unshaded bright streak plus subtle amber halo travels down the original hitscan path and clips at the hit point. No ballistic simulation or damage delay, and cooldown, spread, audio, lights, muzzle flash and hit detection remain unchanged. Build and visually test in Godot (not verified here).
