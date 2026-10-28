@@ -412,8 +412,11 @@ public partial class WorldController : Node3D
         if (space.IntersectShape(clearance, 1).Count > 0)
         {
             GD.PushWarning("Deer preview skipped: spawn blocked by scenery or other actors.");
-            deer.QueueFree();
+            deer.QueueFree(); return;
         }
+        // Same explicit player target and terrain-sampler injection as zombie placement.
+        deer.InitializeTarget(player, unchecked((uint)(Settings.Seed + 17011)),
+            point => terrainData.Call("get_height", point).AsSingle());
     }
 
     // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.

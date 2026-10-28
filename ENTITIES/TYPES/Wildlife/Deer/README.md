@@ -1,23 +1,30 @@
-# Deer — first passive wildlife entity
+# Deer — D-AI1 wandering and fleeing
 
-**Implemented in source; Godot C# compilation and visual/physics checks pending.** `Deer.tscn` inherits the **same** shared `ENTITIES/Shared/Entity.tscn` used by zombies. It is a real `CharacterBody3D` with collision on physics layer 3, shared identity/lifecycle, a **120 HP** `HealthComponent` and `IDamageReceiver`. Rifles and machine guns can hit it using their existing rays and damage pipeline; full-HP health bars stay hidden, and an injured deer uses the generic FEEDBACK overlay automatically. Lethal hits simply deactivate, clear collision, hide and free the actor, as zombies do today.
+**Implemented in source; local Godot build and behaviour verification pending.** Deer still inherits `ENTITIES/Shared/Entity.tscn` and uses the same 120-HP `HealthComponent`, `IDamageReceiver`, collision and injured-only health bar as before. The world still spawns **one deer** near player spawn when `WorldMaster.DeerPreviewEnabled=true`.
 
-## Contents
+## Basic behaviour
 
-- `Deer.tscn`: inherited `Entity` scene, deer-specific capsule (radius 0.42m, 1.65m tall, centre Y=0.825), `DeerController` and a Health child; the shared `VisualRoot` uses `C/DeerMeshBuilder.cs`.
-- `DeerController.cs`: health initialization, attack hit forwarding, event-driven death and cleanup only. It has **no** wander timer, perception/targeting, animation, gravity polling, pathfinding or AI.
-- `DeerSettings.cs` / `Configuration/DeerMaster.tres`: typed species master with 120 HP (zero armour/resistances), coat/underside/hoof/antler colours, and a `HasAntlers` toggle.
-- `C/DeerMeshBuilder.cs`: `[Tool]` lightweight original low-poly mesh, built once under `VisualRoot/Generated`; dark-brown coat, cream belly/muzzle, four legs and hooves, long neck, two ears, eyes, short white tail and two small branched antlers. Uses a few shared primitives and basic materials. No imported textures, new shaders or limb colliders.
-- `Artwork/`: reserved for a future imported realistic deer model or texture set.
+The world calls `deer.InitializeTarget(player, seed, terrainHeight)` after ground/clearance checks. The deer starts dormant until that explicit injection.
 
-## In-world test
+- **Wander** around an anchor in a 9m radius, walking at 1.2m/s and resting randomly 1.5–3.5s.
+- **Detect** one registered player at up to 13m using a wide 300° cone, the existing shared `VisibilityResolver` for cover and player head/torso, and an unconditional close-range (4m) proximity alert. Decisions use one low-rate 0.4s one-shot timer.
+- **Flee** away from the threat for approximately 18m at 7.5m/s. Up to 12 bounded candidate directions/shorter distances use the shared native-ground + capsule-clearance + direct-sweep validator to reject obstacles. This is straight-line movement, not navigation around buildings.
+- **Re-anchor** at the deer's **actual stopping position**, not its old spawn/home or unreachable target point. After a rest, wander around the new anchor. If the player remains close, flee again at the next decision.
+- **Shot response:** any nonlethal damage also causes flight, even if the attacker was outside its normal sight range. Lethal shots still deactivate and remove the deer.
 
-`WORLD/WorldController` now has a **single opt-in preview placement enabled by default**. `WORLD/Configuration/WorldMaster.tres`: `DeerPreviewEnabled=true`, `DeerPreviewOffset=(-14,12)` relative to the player's `SpawnXZ`. The active scene has `WorldActorsRoot/PersistentEntitiesRoot/Wildlife`; the world samples Terrain3D native collision and checks capsule clearance once after terrain collision startup. If the site is blocked/unsuitable it **skips with an Output warning** rather than floating the deer or moving terrain. A small vegetation/rock/grass clearing is reserved around that position. Turn `DeerPreviewEnabled=false` to remove the test spawn without deleting the prefab.
+Four lightweight hip pivots now swing during active movement for a visible walk/gallop; there is no idle animation or hearing. Physics runs **only while traveling**, with a terrain height sampler used during motion because camera-centred Terrain3D physics coverage can be limited. No new AI manager or raycasts every render frame.
 
-The deer stands still at its sampled ground position until killed. This is intentional for a first health and artwork check; it does **not** flee, react visibly to being shot, graze, move, attack, or behave as ambient wildlife yet. The single test spawn is not a population manager, persistent wildlife, loot or crafting feature. For future AI, keep this scene and add its own species-specific behaviour without borrowing zombie pursuit.
+## Reused mechanics
 
-## Local acceptance
+- `EntityCore` activation/deactivation; `HealthComponent` and `IDamageReceiver` for combat.
+- `VisibilityResolver` and `IPerceptionTarget` from zombie/player perception (no robot beam).
+- New shared `ENTITIES/Shared/Movement/GroundGoalSampler.cs` extracted from zombie wandering: walkable ground, destination capsule clearance, straight sweep and four bounded random choices. Zombie-specific chasing/investigation stays unchanged.
+- Deer implements its **own** wander/flee behaviour and `MoveAndSlide`; the robot's waypoint patrol and zombie chasing are not appropriate for a fleeing animal.
 
-Pull branch `implement-td0-td1`, run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` (also inspect the inherited FPS debug scene if useful). Look roughly 14m west and 12m south of player spawn; confirm a deer appears on the ground with no large overlaps. Shoot once with the 95-damage rifle: health goes 120 → 25 and the shared health bar should show. A second rifle hit removes the deer. Check a machine gun burst, disabled preview flag, clean scene unload and no idle deer processing. You can open `Deer.tscn` in Godot editor to preview its basic mesh; its builder runs once and does not require imported artwork.
+## Config and tests
 
-**Unverified here:** compiling the C# scripts, inherited Godot scene loading, mesh appearance, native clearance and health-bar rendering. No new zombie/robot AI, damage maths, terrain rebake or player-health code was changed.
+Edit `Configuration/DeerMaster.tres` for `WanderRadius`, `WanderSpeed`, idle waits, `DetectionRange`, `FleeDistance`, `FleeSpeed`, `VisionAngleDegrees`, `DecisionIntervalSeconds`, `SightBlockerMask`, movement acceleration and turning rate. `StartActive=false` prevents uninitialized AI. Existing coat colours/antlers and 120 HP remain.
+
+After pulling, build C# and run `WORLD/World.tscn` (F6). Find the preview deer near spawn; watch wandering, approach it, chase it to a new spot, then watch wandering relocate. Shoot at range and watch it flee and show an injured health bar; a second default rifle hit kills it. Check terrain slopes, obstacles/doorways, FPS, deactivation and scene unload. **No Godot runtime or physics build has been run here.**
+
+[AI_IMPLEMENTATION_PLAN.md](AI_IMPLEMENTATION_PLAN.md) records the later hunting/navigation phases.

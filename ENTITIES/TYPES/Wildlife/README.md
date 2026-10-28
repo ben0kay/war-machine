@@ -1,7 +1,8 @@
-# Wildlife — passive animal entities
+# Wildlife — reusable species
 
-Wildlife species live under `ENTITIES/TYPES/Wildlife/` and reuse `ENTITIES/Shared/Entity.tscn`, `EntityCore` and optionally `Shared/Combat/HealthComponent`, without zombie chasing/roaming or robot scanning logic.
+Wildlife uses shared `EntityCore`, `HealthComponent` and optional `VisibilityResolver`, but its decisions remain species-specific. No zombie chases or robot scanning beams.
 
-- [Deer](Deer/README.md): first passive wildlife prefab, original lightweight procedural deer mesh, shared health and one configurable world test spawn.
+- [Deer](Deer/README.md): D-AI1 wander, notice a nearby player, flee a bounded distance and wander around the final stopping position; shots trigger flight.
+- [Future hunting phases](Deer/AI_IMPLEMENTATION_PLAN.md): navigation polish, hearing, population and food harvesting not yet implemented.
 
-**No wildlife AI is implemented yet.** Future wandering/fleeing/hearing and herd spawns should be opt-in components, using event-driven relevance rather than idle frame polling. The species owns its visual/health; the world owns terrain grounding and placement.
+Current active world still has one configurable deer preview. No wildlife population manager is introduced.

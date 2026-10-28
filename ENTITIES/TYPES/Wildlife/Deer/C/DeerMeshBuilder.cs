@@ -43,13 +43,16 @@ public partial class DeerMeshBuilder : Node3D
             foreach (float z in new[] { -0.56f, 0.65f })
             {
                 string name = (side < 0 ? "L" : "R") + (z < 0 ? "Front" : "Rear");
-                Part(art, name + "UpperLeg", new(x, 0.73f, z),
+                // Pivot at the hip so deer motion can swing these four legs without a second animator.
+                var pivot = new Node3D { Name = name + "LegPivot", Position = new Vector3(x, 1.02f, z) };
+                art.AddChild(pivot);
+                Part(pivot, name + "UpperLeg", new(0f, -0.29f, 0f),
                     new(0.19f, 0.59f, 0.20f), Rounded, coat);
-                Part(art, name + "Knee", new(x, 0.50f, z - 0.025f),
+                Part(pivot, name + "Knee", new(0f, -0.52f, -0.025f),
                     new(0.16f, 0.15f, 0.17f), Rounded, coat);
-                Rod(art, name + "LowerLeg", new(x, 0.51f, z - 0.02f),
-                    new(x, 0.15f, z + (z > 0 ? 0.045f : -0.06f)), 0.07f, coat);
-                Part(art, name + "Hoof", new(x, 0.092f, z - 0.085f),
+                Rod(pivot, name + "LowerLeg", new(0f, -0.51f, -0.02f),
+                    new(0f, -0.87f, z > 0 ? 0.045f : -0.06f), 0.07f, coat);
+                Part(pivot, name + "Hoof", new(0f, -0.928f, -0.085f),
                     new(0.18f, 0.17f, 0.29f), Box, hoof);
             }
         }

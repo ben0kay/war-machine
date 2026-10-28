@@ -97,33 +97,11 @@ public partial class ZombieController
     // Four attempts maximum per wander selection; failed selection rests instead of walking into a trunk.
     private bool TryChooseWanderGoal()
     {
-        var space = GetWorld3D().DirectSpaceState;
-        for (int attempt = 0; attempt < 4; attempt++)
-        {
-            float angle = _random.RandfRange(0, Mathf.Tau);
-            float radius = Mathf.Sqrt(_random.Randf()) * SafePolicy(_config.WanderRadius, 0, 100);
-            Vector3 candidate = _home + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
-            _groundRay.From = new Vector3(candidate.X, GlobalPosition.Y + 0.8f, candidate.Z);
-            _groundRay.To = new Vector3(candidate.X, GlobalPosition.Y - 1.2f, candidate.Z);
-            var ground = space.IntersectRay(_groundRay);
-            if (ground.Count == 0 || ground["normal"].AsVector3().Y < Mathf.Cos(FloorMaxAngle)) continue;
-            candidate = ground["position"].AsVector3() + Vector3.Up * 0.06f;
-            if (Mathf.Abs(candidate.Y - GlobalPosition.Y) > 0.75f) continue;
-            Transform3D destination = _bodyShape.GlobalTransform;
-            destination.Origin += candidate - GlobalPosition;
-            _wanderQuery.Transform = destination; _wanderQuery.Motion = Vector3.Zero;
-            if (space.IntersectShape(_wanderQuery, 1).Count != 0) continue;
-            // Raise slightly above support to avoid rejecting every grounded sweep as initial overlap.
-            Transform3D start = _bodyShape.GlobalTransform; start.Origin += Vector3.Up * 0.08f;
-            _wanderQuery.Transform = start; _wanderQuery.Motion = Vector3.Zero;
-            if (space.IntersectShape(_wanderQuery, 1).Count != 0) continue;
-            _wanderQuery.Motion = candidate - GlobalPosition;
-            var fraction = space.CastMotion(_wanderQuery);
-            _wanderQuery.Motion = Vector3.Zero;
-            if (fraction.Length < 2 || fraction[0] < 0.999f) continue;
-            _goal = candidate; _hasGoal = true; return true;
-        }
-        return false;
+        bool found = GroundGoalSampler.TryWander(this, GetWorld3D().DirectSpaceState,
+            _groundRay, _wanderQuery, _bodyShape, _random, _home,
+            SafePolicy(_config.WanderRadius, 0, 100), out Vector3 destination);
+        if (found) { _goal = destination; _hasGoal = true; }
+        return found;
     }
 
     // =========================================================
