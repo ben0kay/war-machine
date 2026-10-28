@@ -1,12 +1,12 @@
 # AM0 — One-pass WORLD/Content/Assets migration (Codex handoff)
 
-> **Status: PLANNED — NOT IMPLEMENTED.** User approved creating this one-pass implementation plan; actual file relocation, code edits and commits are reserved for a later explicit Codex execution request.
+> **Status: IMPLEMENTED — AWAITING LOCAL VALIDATION (2026-10-28).** AM0 was explicitly requested and executed as one migration. `Assets/` is now canonical. Old paths below are historical mapping/checklist references, not current authoring instructions.
 >
 > **Target repository / branch:** `ben0kay/war-machine` / **`implement-td0-td1`**, never `main`. Read the latest root `README.md`, `CodePreferences.md`, `WORLD/Content/README.md`, relevant category READMEs and the *live* files before touching anything. As of the 2026-10-28 audit, the five source directories held **113 tracked files**; this count is informational, not a freeze. Concurrent changes must be preserved.
 
 | Phase | Goal | Assistant | Status |
 | --- | --- | --- | --- |
-| **AM0 — single atomic migration** | Restructure five existing reusable-asset folders under `WORLD/Content/Assets/`, fix all references/docs, verify both views, make **one commit** | **Codex** | **Planned / awaiting explicit execution** |
+| **AM0 — single atomic migration** | Restructure five existing reusable-asset folders under `WORLD/Content/Assets/`, fix all references/docs, verify both views, make **one commit** | **Codex** | **Implemented / awaiting local validation** |
 
 ## Purpose and definition
 
@@ -114,3 +114,11 @@ This list is **not exhaustive**; Codex must perform a repository-wide search on 
 This is a **filesystem/reference-only refactor**: no runtime system is activated by moving assets, and no extra per-frame cost is intended. Preserve the current distinction between dormant visual-only placeables and future IX physics. Migration must not accidentally instantiate duplicate assets or rebuild geometry. Avoid rewriting mesh logic or optimizing materials during this pass. Other phases (procedural sites, cave expansion, interaction IX0–IX8, roads or inventory) remain strictly out of scope.
 
 **Suggested assistant:** Codex. The task spans approximately 113 moved files, numerous cross-file C#/Godot references, imported GLB source and several documentation owners. A single repo-aware change/validation pass is more reliable than piecemeal Regular Chat moves.
+
+## Execution record — 2026-10-28
+
+Migrated 114 tracked source files from the five approved folders; merged the obsolete legacy Objects README into the canonical Objects/Static documentation. Kept GLBs, script UID sidecars and configurations with their prefabs. Updated scene/resource references, dynamic building loads, debug catalogue paths and documentation links. No classes, runtime nodes, geometry, placement values, terrain data or processing behavior were intentionally changed.
+
+Source validation checks resource targets and dynamic building scenes, absence of old active prefixes, unchanged asset bytes after normalizing only approved path substitutions, unchanged GLB/UID bytes and Markdown links affected by the moves. `git diff --check` is included. No Godot or dotnet executable is installed here: C# compilation, import/UID diagnostics, F6 overhead/FPS and F1 furniture/bed-palette visual checks are deferred. Code completion is not runtime acceptance.
+
+Local handoff: run `dotnet build war-machine.csproj`, open/import in the compatible Godot .NET editor, then follow checklist step 7 above. Confirm cars/doors/collision, lamp lighting, parking/store access, terrain clearance, building fades and furniture scale/variants match their prior behavior. No terrain bake is needed. Delivery SHA is recorded in the job response (the delivery commit contains this record).

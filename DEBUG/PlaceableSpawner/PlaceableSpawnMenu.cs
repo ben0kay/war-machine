@@ -3,9 +3,9 @@ using Godot;
 
 public partial class PlaceableSpawnMenu : CanvasLayer
 {
-    private const string BookcasePath = "res://WORLD/Content/Placeables/Objects/Furniture/Bookcases/Bookcase001/Bookcase001.tscn";
-    private const string BookPath = "res://WORLD/Content/Placeables/Props/Books/Book001/Book001.tscn";
-    private const string BedPath = "res://WORLD/Content/Placeables/Objects/Furniture/Beds/Bed001/Bed001.tscn";
+    private const string BookcasePath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Bookcases/Bookcase001/Bookcase001.tscn";
+    private const string BookPath = "res://WORLD/Content/Assets/Objects/Props/Books/Book001/Book001.tscn";
+    private const string BedPath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Beds/Bed001/Bed001.tscn";
     private const int MaxInstances = 24;
     private PlayerController? _player;
     private Camera3D? _camera;

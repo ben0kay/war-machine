@@ -41,7 +41,7 @@ The owner is **intentionally retaining both viewpoints** until side-by-side play
 ## 2. Verified current implementation and gaps (2026-10-27 snapshot)
 
 - `project.godot` selects **Jolt Physics** for 3D, with Godot 4.7 C# project features. Godot's `RigidBody3D` and physics sleep are enough for light props, and `CharacterBody3D`/player collisions already exist. **No new physics engine required**. Mass, collision layer/mask, friction, damping and impulses need actual Godot tuning.
-- `WORLD/World.tscn` is the active F6 top-down prototype. `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` **inherits the same world** with a distinct player/eye-camera and weapon-input adapter. `WORLD/WorldController.cs` initializes terrain, props, enemies, equipment, sky/weather and scene roots. `WORLD/Content/Objects/` remains the legacy Car001 location. `WORLD/Content/Placeables/Objects/` and `Props/` now include mesh-only Bookcase001 and Book001 GLB designs; no rigid-body prefab exists yet. Current procedural `C/` contents build meshes; `Artwork/` is for replacements.
+- `WORLD/World.tscn` is the active F6 top-down prototype. `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` **inherits the same world** with a distinct player/eye-camera and weapon-input adapter. `WORLD/WorldController.cs` initializes terrain, props, enemies, equipment, sky/weather and scene roots. `WORLD/Content/Assets/Objects/Static/` remains the legacy Car001 location. `WORLD/Content/Assets/Objects/Static/` and `Props/` now include mesh-only Bookcase001 and Book001 GLB designs; no rigid-body prefab exists yet. Current procedural `C/` contents build meshes; `Artwork/` is for replacements.
 - `PLAYER/PlayerController.cs` owns `CharacterBody3D` motion, stance, procedural rig and weapon mount; `PLAYER/Equipment/PlayerWeaponController.cs` consumes mouse aim/fire. FPS uses `DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs`, with mouse capture and centre-screen ray. Left mouse **already fires**, so interaction input **must arbitrate and consume events** rather than double-activating gunfire. Debug panels/GUI retain first refusal. The top-down roof/wall **visibility fade must not bypass reach or solid-world occlusion**.
 - `EQUIPMENT/Shared/WeaponSlots.cs` is currently a **two-firearm test switching mechanism** with lazy per-slot `FirearmController` scene instances (keys 1/2). It is **not an inventory**, does not support a rifle physically dropped/removed from its owner, and does not represent unique magazines, ammunition, condition, ownership or a nine-slot item model. The nine-slot `UI/GameplayHUD/Hotbar` is **visual only**; don't assume keys 3–9 are item slots.
 - `ENTITIES/Shared/Combat/` already owns `DamagePacket`, `IDamageReceiver`, `HealthComponent` and damage resolution. `COMBAT/` has **CM0/CM1 impact and bullet reaction implementations** and **CM2-B zombie shove-response code awaiting validation**, while universal quick melee contact/input (the other CM2 stages), bat/knife and zombie outgoing melee remain separate roadmap work. Reuse this; don't create a second impact/damage resolver for breakable boards. See `COMBAT/IMPLEMENTATION_PLAN.md` and re-check current status before IX4/IX6.
@@ -83,13 +83,13 @@ EQUIPMENT/                                  # EXISTING, adapt with IX5/IX6
   Weapons/Shared/FirearmController.cs       # existing firearm behaviour
 PLAYER/Equipment/PlayerWeaponController.cs  # EXISTING overhead input adapter
 DEBUG/TEST/FirstPerson/EQUIPMENT/           # EXISTING FPS input adapter
-WORLD/Content/Placeables/
+WORLD/Content/Assets/Objects/
   Objects/                                  # fixed model-only Bookcase001 exists
   Props/                                    # Book001 GLB exists; IX1/IX2 still planned
     Shared/                                 # future PhysicsProp.cs / config
     Books/                                  # Book001 model only, no physics yet
     Boxes/ Household/                       # create only with real prefabs
-WORLD/Content/Structures/                   # existing building owners
+WORLD/Content/Assets/Structures/                   # existing building owners
   ...                                       # optional scene-owned cabinets/doorways
 COMBAT/                                     # EXISTING impacts + planned melee; do not duplicate
 UI/GameplayHUD/Hotbar/                      # EXISTING visual-only scene, later event-bound
@@ -148,7 +148,7 @@ A state transition must be **atomic/rollback-safe**: validate eligibility and de
 
 **Dependencies:** current Jolt 3D, existing terrain/floors/collision; IX0 only for user-driven debug affordances.
 
-**Scope/files:** `WORLD/Content/Placeables/Props/Shared/` generic `RigidBody3D` scene with simple collider and authored `PhysicsPropSettings` (mass, friction via physics material, bounce, damping, sleep, permitted grabbing); small sample prefabs and `Props/README.md`, local master. Preserve scene-owned placement. Do **not** make world scenery generic rigid bodies; no page-level/book-page simulation. If current player slide collision does not naturally yield satisfying pushes, add only a narrowly guarded contact impulse when colliding with eligible light bodies.
+**Scope/files:** `WORLD/Content/Assets/Objects/Props/Shared/` generic `RigidBody3D` scene with simple collider and authored `PhysicsPropSettings` (mass, friction via physics material, bounce, damping, sleep, permitted grabbing); small sample prefabs and `Props/README.md`, local master. Preserve scene-owned placement. Do **not** make world scenery generic rigid bodies; no page-level/book-page simulation. If current player slide collision does not naturally yield satisfying pushes, add only a narrowly guarded contact impulse when colliding with eligible light bodies.
 
 **Out of scope:** persistent inventory, item ownership, throw, interactive containers, food/loot, physics stacks across entire world.
 

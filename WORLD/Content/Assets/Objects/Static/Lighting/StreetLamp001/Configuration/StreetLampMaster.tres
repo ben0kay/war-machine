@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="StreetLampSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Objects/Static/Lighting/StreetLamp001/Configuration/StreetLampSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+PoleHeight = 5.8
+ArmReach = 1.1
+MetalColor = Color(0.17, 0.21, 0.23, 1)
+HousingColor = Color(0.25, 0.28, 0.29, 1)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Building001Settings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Structures/Building001/Configuration/Building001Settings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Width = 20.0
+Depth = 14.0
+WallHeight = 5.2
+RoofRise = 2.6
+Siding = Color(0.33, 0.4, 0.39, 1)
+Roof = Color(0.36, 0.29, 0.28, 1)
+Trim = Color(0.18, 0.23, 0.24, 1)
+Concrete = Color(0.52, 0.51, 0.46, 1)
+Window = Color(0.14, 0.28, 0.34, 1)
+Accent = Color(0.82, 0.63, 0.27, 1)
+OutsideBuildingOpacity = 0.15
+OutsideObstructionRadius = 0.18

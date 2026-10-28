@@ -21,7 +21,7 @@ public sealed class VillageLayout
         foreach (var pair in new[] { ("Building001", settings.Building001Offset), ("Building002", settings.Building002Offset),
             ("Building003", settings.Building003Offset), ("Building004", settings.Building004Offset) })
         {
-            var scene = GD.Load<PackedScene>($"res://WORLD/Content/Structures/{pair.Item1}/{pair.Item1}.tscn");
+            var scene = GD.Load<PackedScene>($"res://WORLD/Content/Assets/Structures/{pair.Item1}/{pair.Item1}.tscn");
             var building = scene.Instantiate<Node3D>(); building.Name = pair.Item1;
             Vector2 point = settings.VillageOriginXZ + pair.Item2;
             building.Position = new Vector3(point.X, 0, point.Y); root.AddChild(building); _buildings.Add(building);

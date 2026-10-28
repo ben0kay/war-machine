@@ -20,7 +20,7 @@ This workflow is potentially useful for rural cabins, houses, ranger lodges, far
 
 ## Important distinction: procedural modelling vs procedural layout
 
-`WORLD/Content/Structures/Building002/` already makes provisional low-poly meshes and collision using C#; the current two-storey layout is **mostly fixed**. A reusable procedural house generator would go further:
+`WORLD/Content/Assets/Structures/Building002/` already makes provisional low-poly meshes and collision using C#; the current two-storey layout is **mostly fixed**. A reusable procedural house generator would go further:
 
 - Choose an architectural family and footprint (rectangle, L-shaped, narrow/wide).
 - Select a valid room plan, then guarantee door/hall connectivity and useful access.
@@ -36,7 +36,7 @@ This workflow is potentially useful for rural cabins, houses, ranger lodges, far
 ## Conceptual Godot code and folders (illustrative, not approved file creations)
 
 ```text
-WORLD/Content/Structures/
+WORLD/Content/Assets/Structures/
   Shared/C/                 # reusable wall, room, floor, roof, stair geometry helpers
   Building002/              # existing ranger-lodge reference/future source of reusable pieces
   ProceduralHouse/
@@ -131,4 +131,4 @@ This architectural system could later be reused for a fantasy project with new r
 
 ## Reusable visibility foundation now available
 
-Future procedural generators should follow WORLD/Content/Structures/BUILDING_AUTHORING_README.md: prefab StructureVisibility, StructureSettings master, local occupied bounds, floor levels/elevations, and disjoint walls/roof/deck/contents/stairs roles. Metadata changes with the generated layout; visibility has an explicit Rebuild callback and auto-registration for later spawns. This implements visibility reuse only, not this idea's procedural house generator, terrain snapping, editor seed previews or world streaming.
+Future procedural generators should follow WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md: prefab StructureVisibility, StructureSettings master, local occupied bounds, floor levels/elevations, and disjoint walls/roof/deck/contents/stairs roles. Metadata changes with the generated layout; visibility has an explicit Rebuild callback and auto-registration for later spawns. This implements visibility reuse only, not this idea's procedural house generator, terrain snapping, editor seed previews or world streaming.

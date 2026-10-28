@@ -1,0 +1,112 @@
+# PL — Modular convenience-store and parking-lot location
+
+**Canonical plan for current development:** `implement-td0-td1`. **No writes to `main`.** Read root `README.md`, `CodePreferences.md`, this plan and the child-prefab READMEs before any phase. Work only on explicitly requested phases, make one commit per job, validate briefly and report what Godot still needs checking.
+
+## Game direction and ownership
+
+War Machine's **main game is 3D angled top-down survival**. The FPS scene is a secondary test. Compose a familiar roadside convenience store location with a believable asphalt car park, concrete walkway and curbs, 6–8 marked spaces, 2–4 parked cars, a short driveway/road stub and several streetlights (one can flicker later). The outdoor approach should be atmospheric at night, with warm lamps against cool fog. Use native reusable prefabs rather than one giant all-in-one mesh; avoid imported art/expensive shaders for the first pass.
+
+This plan supersedes the **legacy**, default-branch `WORLD/PARKING_LOT_IMPLEMENTATION_PLAN.md`, which targets an older `TestWorld` and assumes building/visibility systems do not yet exist. Do not follow that plan's old `TestWorld` integration instructions. Treat the local files and current source as authoritative.
+
+```text
+WORLD/Content/Assets/
+  Sites/ConvenienceStoreSite001/
+    ConvenienceStoreSite001.tscn      composition of the children below (not yet assembled)
+    Configuration/SiteMaster.tres
+    IMPLEMENTATION_PLAN.md           this file
+  Infrastructure/ParkingLots/ParkingLot001/
+    ParkingLot001.tscn               reusable independently; no built-in store/lamps/cars
+    C/ParkingLotMesh.cs
+    Configuration/ParkingLotSettings.cs
+    Configuration/ParkingLotMaster.tres
+  Structures/ConvenienceStore001/
+    ConvenienceStore001.tscn         existing shared StructureVisibility contract when implemented
+  Objects/Static/Lighting/StreetLamp001/
+    StreetLamp001.tscn               reusable lamp model; lighting behaviour separate
+  Objects/Static/Cars/Car001/       canonical stationary car; reference its scene
+```
+
+The site owns **relative transforms, car/lamp selection, layout and site-wide world footprint**, not the children's geometry, building visibility, sounds, lighting behaviour or interactions. A parking lot is a fixed piece of **Infrastructure**, not a building; do **not** tag its entire surface with `StructureVisibility`. The store shell follows `Structures/BUILDING_AUTHORING_README.md`, including a single `StructureVisibility` child with `floor_level`, `structure_occupied_bounds` and disjoint visual roles. The store's top-down fading must not fade the asphalt or lamps.
+
+## Status and phases
+
+| Phase | Deliverable | State |
+| --- | --- | --- |
+| **PL0A — reusable parking foundation** | Independent asphalt/car-park scene; lane, 6–8 marked bays, sidewalk, curb/entrance gap, short driveway, static colliders, `Marker3D` bay/connection positions, typed Inspector master and docs. No cars/store/lamps/site assembly/world placement. | **Implemented; awaiting Godot validation** |
+| **PL0B — reusable prefabs and site composition** | Site scene now instances the parking lot, convenience store, three existing Car001 hatchbacks and four StreetLamp001 fixtures with editable transforms and site markers. | **Implemented; awaiting Godot validation** |
+| **PL1 — world integration** | Place assembled site on suitable saved Terrain3D near an accessible approach; validate height variation, foundations, total-site foliage/grass/rock clearings and building visibility registration. No terrain rebake. | Implemented; awaiting Godot validation |
+| **PL2 — nighttime atmosphere** | StreetLamp001 already supports static spot/fill lighting with night-friendly defaults; **site/Sky3D time-of-day control, store glow, limited active shadowed lamps and one optional flicker remain pending**. | Planned (fixture lighting ready) |
+| **PL3 — optional view comparison** | Compare the **same site** in top-down and existing FPS debug camera with no new player/controller rewrite. Add fixed view markers only if requested. | Planned |
+| **PL4 — polish** | Refine visual wear, sign, props, oil marks, roadside edge transitions, rain response and atmosphere based on in-game screenshots; don't build extra systems by default. | Planned |
+
+### PL0A detailed contract — implemented (awaiting Godot validation)
+
+- **Only change** the independent `Infrastructure/ParkingLots/ParkingLot001/` scene, mesh/settings/master/docs, plus documentation links/status. Leave `ConvenienceStoreSite001.tscn`, store and lamp placeholders untouched.
+- Base grid: local Y up; **-Z is towards the future store**, **+Z faces the road/approach**. Center origin is the paving's centre. Suggested 40m × 28m main apron, 8 bays approximately 3.1 × 5.6m along the north storefront edge, central ~9m circulation aisle and ~8m-wide southward driveway stub.
+- Sidewalk: north/back edge, slightly raised (roughly 0.14–0.18m) from the asphalt, with a small unobstructed central curb-access gap for future store entrance. Painted stall markings must be distinguishable from unmarked driving aisle; leave car placement to separate `Marker3D` children; never spawn a car from the lot generator.
+- **Surface:** modestly elevated, thin, low-poly dark asphalt and a simple concrete sidewalk/curb; use shared static meshes and basic rough StandardMaterial3D with a few simple painted markings, no textures/normal maps/expensive decals. Collision should match solids only: walkable asphalt if intended, sidewalk and solid curb; paint should never block feet. Avoid Z-fighting with Terrain3D.
+- **Settings:** typed `ParkingLotSettings : Resource` and `ParkingLotMaster.tres`; expose width/depth, stall count/width/length, sidewalk/curb parameters, driveway width/length, marking thickness and simple material colours. Bound and validate the footprint (don't allow bays/sidewalk to overrun paving); no mutable settings or rebuilding on every frame.
+- **Markers:** `ParkingSpots/Bay_01..Bay_08` and named `Entrance`, `RoadConnection`, `Storefront` nodes use stable transforms and no gameplay. Keep them inside the reusable lot and independent of any car or lamp art.
+- **Performance/lifecycle:** procedural generation **once at Ready**, no `_Process` or `_PhysicsProcess` while idle. Reuse basic box mesh/material resources. No terrain/vegetation searches or scene-tree queries on repeated frames. The scene is authored with no per-instance random variations to keep identical placement predictable.
+- **Terrain limitation:** a flat single-root lot can't conform automatically to uneven Terrain3D. Later PL1 must sample multiple terrain heights/slope across the *entire site*, choose a reasonably flat spot, place surfaces just above ground, and reserve scatter/grass clearings. Do not add terrain editing/voxel cutting, automatic snap-to-slope per bay or world integration to PL0A.
+- **Accept:** the *standalone* `ParkingLot001.tscn` loads, surfaces have no obvious visual holes, bays/curbs/markers fit at human scale, collider walkability works when tested with a player, settings are Inspector editable, and existing world remains unchanged.
+
+### PL0B — assembly with real independent children
+
+Use `ConvenienceStore001` (~12–16m width) as a small store with an actual front-door opening, physical walls and window panes (not painted-on rectangles), with inherited `StructureVisibility` / `StructureSettings`, like Building002/004. Use `StreetLamp001` as a reusable pole and luminaire, **lighting behaviour off until PL2**. Compose `ConvenienceStoreSite001` with one lot, one building, 2–4 instances of existing Car001, a few lamps and markers. Position children relative to the lot's painted-bay markers; do not duplicate meshes, instantiate cars into the lot class, or change existing Car001 paths.
+
+### PL1 — placement and world ownership
+
+`WORLD/WorldController.cs` and `WORLD/WorldSettings.cs` currently place four buildings and Car001 via a terrain-height-once `PlaceObject` helper. Adapt that existing composition logic, not historical `WORLD/TestWorld.cs`. Check slope at multiple corners: if the selected terrain is unsuitable, choose a different site or propose bounded terrain modification separately. Reserve foliage/rock/grass clearings from the *whole assembled site* (including driveway and streetlamps) to avoid vegetation through pavement. Store under a stable Structures subtree when required for its visibility component, or explicitly register its nested store if ownership requires a Sites parent. No camera/player/terrain bake changes.
+
+### PL2 — nighttime light
+
+Reuse `ENVIRONMENT/Lighting/` authored system and its existing muzzle-flash foundation, but campfire-style persistent life-cycle rather than muzzle-shot duration. Light only relevant nearby lamps; support one irregularly flickering fixture with no permanent per-lamp C# loop while off. Do not add another `WorldEnvironment` or change the Sky3D clock. Put physical lamp art under Placeables; its light logic under shared lighting. Test with low ground fog, balance shadows and check FPS.
+
+## Handoff and regression list
+
+Read current branch, inspect modified sources, perform a brief C# build if tools exist, otherwise say compile is **unverified**. For PL0A open `ParkingLot001.tscn` in Godot; check asphalt from above/ground level, 8 slots, clearance from markings, raised footpath and central curb gap, face direction and named marker transforms. Check source master values are actually read by the scene, `SetProcess(false)`, collision layers, and no accidental world placement. Other prefabs stay empty. Check changes against root CodePreferences. Record exact commit, files and deferred in-game/visual testing; user acceptance is separate from source review.
+
+### PL0A delivery note
+
+PL0A is now implemented in `Infrastructure/ParkingLots/ParkingLot001`, with typed `ParkingLotSettings.cs`, an authored master, a standalone `[Tool]` scene, one-time generated collidable asphalt/sidewalk/curb, non-colliding painted bays/road dashes, and stable slot/site markers. It deliberately does **not** instantiate anything in `ConvenienceStoreSite001`, modify WorldController, alter Terrain3D, or add store/lamp/car models. **PL0B is next** once the user approves the standalone scale. Local C# compile, Godot preview and physical walk testing remain pending.
+
+### PL0B store-only checkpoint
+
+`WORLD/Content/Assets/Structures/ConvenienceStore001/` now has typed configuration, its own flat-roof retail structure, large open side/front window gaps, an accessible till, four low display rows, and a separated stockroom with an inner walk-through and exterior service exit. It reuses the `StructureVisibility` contract. **Not assembled, not placed, no lamps, no car instances or glass.** Continue PL0B by building a separate lamp and composing the parent scene when explicitly requested. C# compile/render and physical walk validation pending.
+
+### PL0B lamp-only checkpoint
+
+`WORLD/Content/Assets/Objects/Static/Lighting/StreetLamp001/` is now a reusable standalone 5.8m lamp post with a warm directional downward `SpotLight3D`, weaker omnidirectional fill, small emissive LED panel and basic static collision. Typed `StreetLampSettings`/`StreetLampMaster.tres` expose the geometry, spot cone/range/energy, fill and fog. Native shadows are off by default. `SetLampEnabled(bool)` is an event-driven future day/night integration hook; there is no per-frame C# light logic and no flicker yet. The complete site scene is **still empty**; cars, store and lamps are not assembled or placed in the world. PL0B assembly, PL1 placement and PL2 site-level day/night/flicker remain future separately requested work. Godot compile/nighttime appearance/FPS checks pending.
+
+### Streetlamp lighting ownership refactor (current)
+
+The standalone `WORLD/Content/Assets/Objects/Static/Lighting/StreetLamp001/` prefab now owns **geometry/collision and a stable external `SetLampEnabled(bool)` API only**. Its `Lighting` child is an instance of `ENVIRONMENT/Lighting/Fixtures/StreetLamp/StreetLampLighting.tscn`, where both native `SpotLight3D` and `OmniLight3D`, their `StreetLampLightingSettings`/master and LED-emission/on-off logic now reside. The previous `WORLD/Content/Assets/Objects/Static/Lighting/StreetLamp001/Configuration/StreetLampMaster.tres` retains only physical dimensions and metal palette. Avoid reintroducing lighting code/settings in the physical mesh builder. Spot/fill defaults have not changed and no global Sky3D or `ENVIRONMENT/Lighting/Configuration/LightingMaster.tres` values were altered. The streetlamp and store prefabs are finished but PL0B **site assembly remains pending**, and PL2 flicker/day-night integration remains pending. Godot build/scene/render validation deferred to the user.
+
+### PL0B scene composition delivered
+
+`ConvenienceStoreSite001.tscn` now uses native instances of ParkingLot001 (origin), ConvenienceStore001 at Z=-19.75, Car001 in bays 02/05/08, four inward-facing StreetLamp001 fixtures and site/road/exit markers. Prefabs remain independently reusable and their materials, geometry, collisions, existing car camera occlusion and lamp light-system folder ownership are unchanged. The store is nested under `Structures/Store` for future discoverability when the entire site is placed beneath the active world `Structures` subtree. Relative transforms are editable directly in Godot; `SiteMaster.tres` is still an inactive placement placeholder. **PL0B complete as a scene composition, pending local validation. PL1 world placement/terrain exclusions and PL2 daytime controls/flicker are still outstanding.** See [README.md](README.md) for actual coordinates and local validation.
+
+## Village integration direction (current plan)
+
+Owner now wants this site as the centre of a small village, replacing the old mixed showcase layout. [WORLD/VILLAGE_IMPLEMENTATION_PLAN.md](../../../../VILLAGE_IMPLEMENTATION_PLAN.md) owns VG0–VG3: full-footprint survey, bounded runtime platform grading and surrounding hills, complete existing exclusions, nested store-only fade, distant existing buildings, clear robot route and local zombies on actual site collision surfaces. VG1 covers PL1, with terrain adaptation explicitly scoped beyond its older no-edit assumption; PL2 nighttime/flicker remains separate. All new village phases are Planned; no placement/terrain/population implementation occurred with this document.
+
+## PL1 delivered through VG0–VG3
+
+Owner authorized the full village implementation after planning. Site is now authored once in World, surveyed/graded over its full measured footprint, excluded from existing scatter systems and nested-store visibility registered without fading the lot. The bounded terrain adaptation supersedes the earlier no-terrain-edit assumption; saved region files remain untouched. See WORLD/VILLAGE_IMPLEMENTATION_PLAN.md current handoff for changed owners, coordinates, startup/performance contract and deferred local checks. PL2/PL4 remain separate; inherited FPS shares this layout.
+
+## Enlarged convenience-store site (current)
+
+Main asphalt 56x36m, 14 bays and seven existing Car001 instances (bays 01/03/05/08/10/12/14); two backed in for variation. Store moves from Z=-19.75 to -23.75; cars align at Z=-12.03, lamps spread toward the wider lot edges, front/rear/road markers follow the new dimensions. Four lamps retained; no new lighting work. Sloped perimeter access remains. VillageLayout now derives road start and extra platform access from site markers; transformed mesh bounds continue to drive full-footprint surveys, grading and grass/tree/rock exclusions. Rear-exit ramp is marker-relative, and rear zombie spawns move 4m north. North road X=35 stays clear of the +/-28.8m expanded apron shoulders; other buildings/patrol/player start stay unchanged. No saved terrain rebake or extra runtime polling.
+
+Source/scene and numeric bay/car envelope, road separation and arrival-buffer checks passed. No Godot/.NET: compilation, actual terrain support and appearance/traversal need local F6 World/FPS checks. Reopen the scene after build to regenerate tool geometry. See site README for exact current coordinates; earlier dimensions above are historical.
+
+## Flush ground-alignment correction (current; supersedes ramp fixes)
+
+Owner requested the simpler flat-ground solution. Site groups ParkingLot/Structures/ParkedCars/StreetLighting/SiteMarkers now sit at local Y=-0.12m, embedding the 12cm foundations so pavement, store floor, car/lamp bases and entry markers share the site's root walking elevation. World still grounds the root at VillageLayout.Level; all protected platform terrain is surveyed/graded to that same elevation, with post-check tolerance tightened from 3.5cm to 2mm. Roads still connect via markers.
+
+The site explicitly enables UseTerrainSupport on ParkingLot and Store: native Terrain3D provides the actual walking floor throughout the lot/driveway/interior. Duplicate pavement/store-floor collision boxes are omitted for those instances; standalone prefab defaults retain optional floor support. Building walls/roof, cars, poles and intentionally raised sidewalk curbs remain collidable. The central entrance strip is visual only. Asphalt/store-floor art renders 1cm above the plane to avoid terrain z-fighting; road art is 6mm above it. This visual clearance adds no physical step. No new player step/teleport code or collision-mask workaround.
+
+All asphalt shoulder meshes/wedge colliders, rear-door access wedge, EdgeRampWidth and the world BuildSiteAccess call are removed. This supersedes all previous ramp/wedge instructions above. The same 56x36m, 14-bay, seven-car layout, spawn safety checks, full-footprint vegetation exclusions, store-only visibility and PER2 behavior are preserved. Environment interior exclusion remains a separate plan; no haze/rain changes here.
+
+No new per-frame work: art generation, bounds, terrain survey/grading and support verification remain startup-only. No saved region rebake/write. Numeric/source checks verify common walking heights, the two site terrain-support overrides, retained seven cars, valid resource paths and absence of wedge/trimesh floor code; diff/loop review passed. Godot/.NET unavailable: compilation, Jolt contacts and traversal remain unverified. Locally pull/build/reload, F6 World/FPS, walk directly onto every open pavement edge and into front/rear openings, then check cars/curbs/walls still block normally. No terrain rebake needed. For any remaining obstruction, hold movement and F10 to report the actual collider instead of changing ground height blindly.

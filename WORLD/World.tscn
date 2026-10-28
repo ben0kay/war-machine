@@ -20,7 +20,7 @@
 
 [ext_resource type="PackedScene" path="res://AUDIO/WorldAudio.tscn" id="audio_service"]
 
-[ext_resource type="PackedScene" path="res://WORLD/Content/Sites/ConvenienceStoreSite001/ConvenienceStoreSite001.tscn" id="village_site"]
+[ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Sites/ConvenienceStoreSite001/ConvenienceStoreSite001.tscn" id="village_site"]
 
 [sub_resource type="Resource" id="RobotStartup"]
 script = ExtResource("9")

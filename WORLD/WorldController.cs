@@ -288,11 +288,11 @@ public partial class WorldController : Node3D
         grassClearings = new Godot.Collections.Array<Rect2>();
         var structures = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures");
         var objects = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Objects/Cars");
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings, grassClearings);
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings, grassClearings);
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings, grassClearings);
-        PlaceObject(terrainData, structures, "res://WORLD/Content/Structures/Building004/Building004.tscn", Settings.Building004Offset, 3, 4, clearings, grassClearings);
-        PlaceObject(terrainData, objects, "res://WORLD/Content/Objects/Cars/Car001/Car001.tscn", Settings.Car001Offset, 2, 0, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Assets/Structures/Building001/Building001.tscn", Settings.Building001Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Assets/Structures/Building002/Building002.tscn", Settings.Building002Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Assets/Structures/Building003/Building003.tscn", Settings.Building003Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, structures, "res://WORLD/Content/Assets/Structures/Building004/Building004.tscn", Settings.Building004Offset, 3, 4, clearings, grassClearings);
+        PlaceObject(terrainData, objects, "res://WORLD/Content/Assets/Objects/Static/Cars/Car001/Car001.tscn", Settings.Car001Offset, 2, 0, clearings, grassClearings);
         return clearings;
     }
 

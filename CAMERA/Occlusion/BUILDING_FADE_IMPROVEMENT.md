@@ -1,9 +1,9 @@
 # OV1 — Correct exterior building fade false positives (Codex implementation plan)
 
 **Status:** OV1-A source audit complete; OV1-B implemented — **Awaiting local build/visual validation**. See current handoff below.
-**Owner:** CAMERA/Occlusion and WORLD/Content/Structures/Shared.  
-**Target:** `implement-td0-td1` development branch. Do not commit to `main`.  
-**Read first:** root `README.md`, `CodePreferences.md`, `CAMERA/Occlusion/README.md`, `WORLD/Content/Structures/Shared/README.md`, and `WORLD/Content/Structures/BUILDING_AUTHORING_README.md`.
+**Owner:** CAMERA/Occlusion and WORLD/Content/Assets/Structures/Shared.
+**Target:** `implement-td0-td1` development branch. Do not commit to `main`.
+**Read first:** root `README.md`, `CodePreferences.md`, `CAMERA/Occlusion/README.md`, `WORLD/Content/Assets/Structures/Shared/README.md`, and `WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md`.
 
 > The current implementation handoff below supersedes planning assumptions. The source at implementation base 212dbeb already contained bounds-only samples; these were replaced, not assumed correct.
 >
@@ -28,10 +28,10 @@ The player approaches a house from the exterior in the angled top-down 3D view. 
 ## 2. Confirmed code and root-cause hypothesis
 
 - `CAMERA/Occlusion/CameraOcclusion.cs` owns the event-invalidated player/camera sight corridor and **one-shot checks (nominally 8/s)**, target fades and transition-only processing. The capsule/physics query there is for other opt-in scenery proxies; the whole-house logic comes from its registered provider.
-- `WORLD/Content/Structures/Shared/BuildingObstructionVisibility.cs` implements exterior whole-building reveal. It checks a merged local AABB first, then the local AABB of each cached visible mesh; **one intersection** of the camera-to-upper-body corridor adds the whole building as an obstruction. Its `OutsideObstructionRadius` is capped at 0.18 m by the current common defaults/masters.
+- `WORLD/Content/Assets/Structures/Shared/BuildingObstructionVisibility.cs` implements exterior whole-building reveal. It checks a merged local AABB first, then the local AABB of each cached visible mesh; **one intersection** of the camera-to-upper-body corridor adds the whole building as an obstruction. Its `OutsideObstructionRadius` is capped at 0.18 m by the current common defaults/masters.
 - `CAMERA/Occlusion/CameraOcclusionMath.cs` provides expanded-box segment intersection and transformed bounds. Bounds are conservative; they may include space around rotated, hollow, nonconvex or decorative meshes, and do not represent actual coverage of the player.
-- `WORLD/Content/Structures/Shared/StructureVisibility.cs` connects a prefab's shared floor and outside providers to the overhead camera. `BuildingFloorVisibility.cs` determines inside/level/stair state separately, and `CameraOccluder.cs` composes section/camera/building opacity without modifying physical colliders.
-- `WORLD/Content/Structures/Shared/StructureSettings.cs` / each `Building00xMaster.tres` currently provide `OutsideBuildingOpacity=0.15` and `OutsideObstructionRadius=0.18`. The camera master uses `ObstructionRadius=0.45`, `ObstructedOpacity=0.5`, `ObstructionFadeSeconds=0.2`; the global opacity is not the same as the outside-building override.
+- `WORLD/Content/Assets/Structures/Shared/StructureVisibility.cs` connects a prefab's shared floor and outside providers to the overhead camera. `BuildingFloorVisibility.cs` determines inside/level/stair state separately, and `CameraOccluder.cs` composes section/camera/building opacity without modifying physical colliders.
+- `WORLD/Content/Assets/Structures/Shared/StructureSettings.cs` / each `Building00xMaster.tres` currently provide `OutsideBuildingOpacity=0.15` and `OutsideObstructionRadius=0.18`. The camera master uses `ObstructionRadius=0.45`, `ObstructedOpacity=0.5`, `ObstructionFadeSeconds=0.2`; the global opacity is not the same as the outside-building override.
 - Existing structures have authored/generated wall/roof collision geometry, but its **coverage, physics layers, ownership and alignment with visible art must be audited before trusting it as the source of camera-occlusion truth**. Do not assume every window pane, trim piece, canopy or roof collider exactly matches the rendered shape.
 - In the attempted/reverted OV1-A, five silhouette samples were checked **against the same mesh bounding boxes**. The owner correctly observed that all five samples could still intersect overly large/conservative boxes even when the character is visible. **Do not reintroduce multi-sample AABB-only checks as the solution.**
 
@@ -72,7 +72,7 @@ The player approaches a house from the exterior in the angled top-down 3D view. 
 5. **Stable edges.** Add minimal enter/exit hysteresis (e.g. consecutive valid observations, distinct enter/exit coverage, or a small bounded delay) *only if needed* to avoid rapid opacity switching around corners. Must recover from camera/player movement and use no permanent polling. Existing fade interpolation and per-structure outside-opacity override remain single owners.
 6. **Preserve sections and lifecycle.** Exterior decision applies only when outside. Indoors keep current roof/wall/floor/landing behaviour; don't cross-wire `SetWholeBuildingMode`, `SetBuildingOpacity` or section camera factors. Cache/cancel/refresh ownership on structure spawn, unload and explicit `Rebuild/Refresh`. FPS debug scene should remain opaque without registering top-down occlusion.
 
-**Owning files likely involved:** `CAMERA/Occlusion/CameraOcclusion.cs` and/or a small shared geometry-visibility helper, `CAMERA/Occlusion/CameraOcclusionMath.cs` where actually helpful, `WORLD/Content/Structures/Shared/BuildingObstructionVisibility.cs`, `StructureVisibility.cs`, `StructureSettings.cs` only if real tunables are needed, and owning README/authoring docs. Keep the mesh generator and WorldController free of building-name special cases.
+**Owning files likely involved:** `CAMERA/Occlusion/CameraOcclusion.cs` and/or a small shared geometry-visibility helper, `CAMERA/Occlusion/CameraOcclusionMath.cs` where actually helpful, `WORLD/Content/Assets/Structures/Shared/BuildingObstructionVisibility.cs`, `StructureVisibility.cs`, `StructureSettings.cs` only if real tunables are needed, and owning README/authoring docs. Keep the mesh generator and WorldController free of building-name special cases.
 
 **Existing behaviour to preserve:** current 0.15 outside target, global 0.5 foliage/ordinary scenery target, existing 0.2s fade smoothing, collision and weapon/AI physics masks, indoor floor and roof composition, window/door openings, ground-floor furniture visibility, stairs, FPS debug experiment and automatic future prefabs.
 

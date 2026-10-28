@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Structures/Building001/C/Building001Mesh.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/Content/Assets/Structures/Building001/Configuration/Building001Master.tres" id="2"]
+
+
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Structures/Shared/StructureVisibility.cs" id="visibility"]
+
+[node name="Building001" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+ShowRoof = true
+
+[node name="StructureVisibility" type="Node" parent="."]
+script = ExtResource("visibility")
+Settings = ExtResource("2")

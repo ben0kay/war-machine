@@ -57,7 +57,7 @@ Audit enclosed shop/stockroom, depot/lodge/office interiors, floors/stairs and o
 
 **Objective:** Register reusable environmental volumes once per world, not separately for each effect.
 
-Proposed ownership: ENVIRONMENT/Interiors/ for a small data/registry consumer API and README; ENVIRONMENT/GameEnvironment owns the world-local registry. Buildings own authored local volumes or a small prefab component/metadata adapter under WORLD/Content/Structures/Shared. Create only files needed by the implementation.
+Proposed ownership: ENVIRONMENT/Interiors/ for a small data/registry consumer API and README; ENVIRONMENT/GameEnvironment owns the world-local registry. Buildings own authored local volumes or a small prefab component/metadata adapter under WORLD/Content/Assets/Structures/Shared. Create only files needed by the implementation.
 
 Declare **enclosed interior volumes** and **overhead shelter volumes** separately. Use a few local boxes / inverse transforms for rotated structures, with real vertical extents and floor-specific boxes. Irregular footprints use a union of small boxes, not one giant world AABB; do not mask open yards, porches, parking areas or under-floor exterior air by accident. Start with enclosed rooms at the convenience store plus existing village buildings, and roof-only shelter at the petrol canopy. Do not automatically classify occupied_bounds as sealed interior; use it only as an authoring hint where verified.
 
