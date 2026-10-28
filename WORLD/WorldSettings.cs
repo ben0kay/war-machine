@@ -55,6 +55,25 @@ public partial class WorldSettings : Resource
     [Export] public bool DeerPreviewEnabled { get; set; } = true;
     // One AI deer south of the village approach; offset is in world X/Z metres from player spawn.
     [Export] public Vector2 DeerPreviewOffset { get; set; } = new(-18f, 50f);
+    [ExportGroup("Store population stress test — 20 additional zombies")]
+    // Opt-in to the authored extra population independently of the top-down-only horde preview.
+    // All coordinates are relative to VillageOriginXZ and shared by top-down and FPS.
+    [Export] public bool StoreStressZombiesEnabled { get; set; } = true;
+    [Export] public Vector2[] StoreStressSlowOffsets { get; set; } = new Vector2[]
+    {
+        // Open cross-aisles between the three parking rows, clear of parked cars and central lamp pads.
+        new(-19, -6), new(-11, -6.5f), new(11, -6), new(19, -6),
+        new(-17, 5.3f), new(-9, 5.3f), new(9, 5.3f), new(17, 5.3f),
+        // Open central corridor, store flanks and service/rear approach.
+        new(0, -3), new(0, 11), new(-29, -25), new(29, -25),
+        new(-10, -44), new(0, -46), new(10, -46), new(-4, -54)
+    };
+    [Export] public Vector2[] StoreStressRunnerOffsets { get; set; } = new Vector2[]
+    {
+        // Two lateral approaches, two behind the store.
+        new(-25, -20), new(25, -22), new(-13, -52), new(14, -55)
+    };
+
     [ExportGroup("Zombie placement")]
     // Village-relative safe candidates; actual solid surface and body clearance are checked before activation.
     [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[]

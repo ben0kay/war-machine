@@ -143,6 +143,10 @@ public partial class WorldController : Node3D
         // Build one deterministic horde layout for both placement and its tree/rock clearings.
         // The inherited first-person debug scene explicitly opts out.
         var horde = EnableHorde ? BuildHordeOffsets() : (Slow: System.Array.Empty<Vector2>(), Fast: System.Array.Empty<Vector2>());
+        // One separate, reversible population test using the same world spawn path in both views.
+        bool storeStressEnabled = Settings.VillageEnabled && Settings.StoreStressZombiesEnabled;
+        Vector2[] storeStressSlow = storeStressEnabled ? Settings.StoreStressSlowOffsets : System.Array.Empty<Vector2>();
+        Vector2[] storeStressFast = storeStressEnabled ? Settings.StoreStressRunnerOffsets : System.Array.Empty<Vector2>();
         var grassClearings = new Godot.Collections.Array<Rect2>();
         var sceneryClearings = _village != null ? _village.Clearings : PlaceScenery(data, out grassClearings);
         if (_village != null) grassClearings = _village.GrassClearings;
@@ -162,6 +166,8 @@ public partial class WorldController : Node3D
         // No trunks inside either existing spawns or the extra 20-zombie test cluster.
         AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.RunnerSpawnOffsets);
         AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.ZombieSpawnOffsets);
+        AddZombieSpawnClearings(_pines.ExclusionAreas, storeStressSlow);
+        AddZombieSpawnClearings(_pines.ExclusionAreas, storeStressFast);
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Fast);
         AddDeerPreviewClearing(_pines.ExclusionAreas);
@@ -173,6 +179,8 @@ public partial class WorldController : Node3D
         foreach (Rect2 clearing in sceneryClearings) _rocks.ExclusionAreas.Add(clearing);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.ZombieSpawnOffsets);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.RunnerSpawnOffsets);
+        AddZombieSpawnClearings(_rocks.ExclusionAreas, storeStressSlow);
+        AddZombieSpawnClearings(_rocks.ExclusionAreas, storeStressFast);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Fast);
         AddDeerPreviewClearing(_rocks.ExclusionAreas);
@@ -197,7 +205,7 @@ public partial class WorldController : Node3D
         InitializeControls(camera);
         InitializeSectionDiagnostics(player);
         InitializeCorpses();
-        SpawnZombies(data, player, horde.Slow, horde.Fast);
+        SpawnZombies(data, player, horde.Slow, horde.Fast, storeStressSlow, storeStressFast);
         SpawnDeerPreview(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings, _village?.Structures);
         status.Text = ControlsHelp
@@ -519,26 +527,34 @@ public partial class WorldController : Node3D
     }
 
     // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.
-    private void SpawnZombies(GodotObject terrainData, PlayerController player, Vector2[] hordeSlow, Vector2[] hordeFast)
+    private void SpawnZombies(GodotObject terrainData, PlayerController player, Vector2[] hordeSlow, Vector2[] hordeFast,
+        Vector2[] storeStressSlow, Vector2[] storeStressFast)
     {
         var group = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies");
         SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", Settings.ZombieSpawnOffsets, 0);
         SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", Settings.RunnerSpawnOffsets, 104729);
         SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie.tscn", hordeSlow, 209759);
         SpawnZombieSet(terrainData, player, group, _visionDebug, "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", hordeFast, 314573);
+        int slow = SpawnZombieSet(terrainData, player, group, _visionDebug,
+            "res://ENTITIES/TYPES/Zombies/Zombie.tscn", storeStressSlow, 419431);
+        int fast = SpawnZombieSet(terrainData, player, group, _visionDebug,
+            "res://ENTITIES/TYPES/Zombies/Zombie_002/Zombie_002.tscn", storeStressFast, 524287);
+        if (storeStressSlow.Length + storeStressFast.Length > 0)
+            GD.Print($"Store stress zombies: {slow} slow + {fast} fast spawned / {storeStressSlow.Length + storeStressFast.Length} requested.");
     }
 
     // =========================================================
     // Both views use this bounded startup placement, ground sampler and vision debug wiring for either species.
-    private void SpawnZombieSet(GodotObject terrainData, PlayerController player, Node3D group,
+    private int SpawnZombieSet(GodotObject terrainData, PlayerController player, Node3D group,
         ZombieVisionDebug visionDebug, string scenePath, Vector2[] offsets, int seedOffset)
     {
-        if (offsets.Length == 0) return;
+        if (offsets.Length == 0) return 0;
         var scene = GD.Load<PackedScene>(scenePath);
         var origin = Settings.VillageEnabled ? Settings.VillageOriginXZ : Settings.SpawnXZ;
         var space = player.GetWorld3D().DirectSpaceState;
         var support = new PhysicsRayQueryParameters3D { CollisionMask = 1, CollideWithAreas = false };
         var accepted = new System.Collections.Generic.List<Vector3>();
+        int spawned = 0;
         for (int i = 0; i < offsets.Length; i++)
         {
             Vector2 offset = offsets[i];
@@ -575,7 +591,9 @@ public partial class WorldController : Node3D
             zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + seedOffset + i * 7919)),
                 point => terrainData.Call("get_height", point).AsSingle());
             visionDebug.Register(zombie);
+            spawned++;
         }
+        return spawned;
     }
 
     // =========================================================
