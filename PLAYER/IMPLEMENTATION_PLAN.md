@@ -18,6 +18,21 @@
 | **PH4** | Fatigue, sleep and recovery | Codex / Work | **Planned** |
 | **PH5** | Later individual injuries, bleeding, fractures, environmental exposure and treatment hooks | Codex / Work | **Planned, subfeatures separately gated** |
 
+## PSR0 — Small player-script structure refactor (proposed only)
+
+**Status: Planned; not authorized for implementation.** Independent of PH0–PH5. The active `PLAYER/PlayerController.cs` is ~454 lines and mixes input, movement physics, stance/capsule transitions, animation and weapon posing. Refactor ownership for readability **without adding mechanics or changing behaviour**:
+
+- Keep `PlayerController.cs` as the thin `CharacterBody3D` coordinator: initialization, physics/input callback dispatch, player identity, vitals/death gate, existing public methods/events and cleanup.
+- `Input/PlayerInput.cs`: keyboard/mouse bindings, input-blocking, movement reads and one-shot requests. Preserve **/ prone, Right Ctrl crouch, right-mouse jump**, current movement keys, menus and FPS mouse-capture rules.
+- `Movement/PlayerMovement.cs`: camera-relative movement, acceleration/braking, sprint, gravity, jump impulse, `MoveAndSlide()`, ground/idle wake-sleep and collision diagnostics.
+- `Movement/PlayerStance.cs`: standing/crouching/prone state, clearance queries, capsule resizing, stance transitions and notifications.
+- `Visuals/PlayerAnimation.cs`: existing walk/crawl gait and rig posing, with no independent idle animation loop.
+- `Visuals/PlayerWeaponPose.cs`: aim/weapon socket, recoil arm response, shove grips and arm solving. Keep actual firing/reload/melee ownership in existing `Equipment/` scripts; `C/` remains procedural mesh generation only.
+
+**Implementation guardrails:** Prefer small plain C# collaborators, cached references and a single player physics callback rather than extra scene nodes or ticking components. Preserve public APIs/signals consumed by HUD, enemies and equipment, the `DEBUG/TEST/FirstPerson/PLAYER/FirstPersonPlayer.cs` inheritance/virtual hooks, camera rotation refresh, headroom checks, and the no-work-while-idle policy. Keep `PlayerSettings.cs`/`Configuration/PlayerMaster.tres` authoritative for current tuning; add no duplicate configuration. Add short README ownership notes for new folders.
+
+**Acceptance when separately approved:** `dotnet build war-machine.csproj` plus brief top-down/FPS smoke tests covering movement/camera rotation, sprint/brake, crouch/prone and ceiling clearance, RMB jump, idle sleep, weapon aim/recoil/shove, health/death and input-blocked menus. One commit to `implement-td0-td1`. **This section is documentation only; no refactor has been performed.**
+
 ## Verified starting point and ownership
 
 - The active game is `WORLD/World.tscn`; the FPS debug test inherits shared world/player plumbing. `PLAYER/Player.tscn` and `PlayerController.cs` currently handle movement, stance and equipment, **not health**. `PLAYER/PlayerSettings.cs` and `Configuration/PlayerMaster.tres` own exported defaults. The old LegacyFirstPerson player is parked.
