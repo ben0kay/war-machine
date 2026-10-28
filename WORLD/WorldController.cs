@@ -193,6 +193,9 @@ public partial class WorldController : Node3D
         InitializeOcclusion(camera, player);
         _environmentScene.InitializeView(terrain, player, camera);
         _weather = _environmentScene.Weather; _groundHaze = _environmentScene.Haze;
+        // GH1: explicit building/canopy occupancy, never the store site's broad parking footprint.
+        // Capture once while all five village prefabs are resident; immutable zones survive WS2 unloads.
+        _groundHaze.SetBuildingExclusions(GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures"));
         camera.SettingsChanged += UpdateWeatherCoverage;
         GetViewport().SizeChanged += UpdateWeatherCoverage;
         UpdateWeatherCoverage();

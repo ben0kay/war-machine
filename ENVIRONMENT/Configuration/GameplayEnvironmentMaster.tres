@@ -14,6 +14,7 @@ GroundHazeDriftSpeed = 1.5
 GroundHazeContrast = 0.85
 GroundHazeTurbulence = 0.15
 GroundHazeCoverageRadius = 30.0
+GroundHazeExclusionFadeMeters = 1.25
 GroundHazeColor = Color(0.64, 0.71, 0.73, 1)
 RainIntensity = 0.0
 SnowIntensity = 0.0

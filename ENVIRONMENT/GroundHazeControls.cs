@@ -23,6 +23,8 @@ public static class GroundHazeControls
         Slider(rows, "Drift (m/s)", 0, 2, 0.01f, settings.GroundHazeDriftSpeed, value => settings.GroundHazeDriftSpeed = value, haze, changed);
         Slider(rows, "Wisp definition", 0, 1, 0.01f, settings.GroundHazeContrast, value => settings.GroundHazeContrast = value, haze, changed);
         Slider(rows, "Turbulence", 0, 1, 0.01f, settings.GroundHazeTurbulence, value => settings.GroundHazeTurbulence = value, haze, changed);
+        Slider(rows, "Building edge fade (m) · release to apply", 0.1f, 5, 0.05f, settings.GroundHazeExclusionFadeMeters,
+            value => settings.GroundHazeExclusionFadeMeters = value, haze, changed, deferred: true);
         Slider(rows, "Coverage (m) · release to apply", 6, 48, 1, settings.GroundHazeCoverageRadius,
             value => settings.GroundHazeCoverageRadius = value, haze, changed, deferred: true);
         var color = new ColorPickerButton { Text = "Haze colour", Color = settings.GroundHazeColor, EditAlpha = false,

@@ -17,6 +17,10 @@ public partial class GroundHaze : Node3D
     private ShaderMaterial _material = null!;
     private Image? _heights;
     private ImageTexture? _heightTexture;
+    private Image? _buildingMask;
+    private ImageTexture? _buildingMaskTexture;
+    private HazeExclusions _buildingZones = new();
+    private const float BuildingMaskSpacing = 1f;
     private Dictionary<Vector2I, float> _cache = new(), _nextCache = new();
     private Vector2I _tile = new(int.MinValue, int.MinValue);
     private Vector3 _lastPosition = new(float.PositiveInfinity, 0, 0);
@@ -56,6 +60,19 @@ public partial class GroundHaze : Node3D
     }
 
     // =========================================================
+    // Snapshot explicit structure occupied zones after world placement/terrain grading.
+    // Value-only footprints intentionally persist through distant static-building streaming.
+    public void SetBuildingExclusions(Node3D structures)
+    {
+        _buildingZones = HazeExclusions.Capture(structures);
+        if (_initialized && _active && _tile.X != int.MinValue)
+        {
+            Vector2I origin = _tile * 2 - new Vector2I(_halfSamples, _halfSamples);
+            UpdateBuildingMask(origin * (int)SampleSpacing);
+        }
+    }
+
+    // =========================================================
     // Explicit UI/config changes only. OFF retains cached resources but hides all rendering and releases the fog pass.
     public void ApplySettings()
     {
@@ -78,6 +95,12 @@ public partial class GroundHaze : Node3D
             _heights = Image.CreateEmpty(size, size, false, Image.Format.Rgf);
             _heightTexture = ImageTexture.CreateFromImage(_heights);
             _material.SetShaderParameter("terrain_heights", _heightTexture);
+            int maskSide = (size - 1) * (int)(SampleSpacing / BuildingMaskSpacing) + 1;
+            _buildingMask = Image.CreateEmpty(maskSide, maskSide, false, Image.Format.R8);
+            _buildingMask.Fill(Colors.White);
+            _buildingMaskTexture = ImageTexture.CreateFromImage(_buildingMask);
+            _material.SetShaderParameter("building_exclusion_mask", _buildingMaskTexture);
+            _material.SetShaderParameter("building_mask_texels", (float)maskSide);
             _cache.Clear(); _nextCache.Clear();
         }
         _material.SetShaderParameter("density", Mathf.Clamp(_settings.GroundHazeDensity, 0, 0.5f));
@@ -151,11 +174,22 @@ public partial class GroundHaze : Node3D
         _material.SetShaderParameter("terrain_origin", new Vector2(origin.X * SampleSpacing, origin.Y * SampleSpacing));
         _material.SetShaderParameter("terrain_span", (size - 1) * SampleSpacing);
         _material.SetShaderParameter("terrain_texels", (float)size);
+        UpdateBuildingMask(origin * (int)SampleSpacing);
         if (!float.IsFinite(low)) { _volume!.Hide(); _cache.Clear(); return; }
         float top = high + Mathf.Clamp(_settings.GroundHazeHeight, 0.25f, 8) * 1.5f;
         float span = (size - 1) * SampleSpacing;
         _volume!.Size = new Vector3(span, top - low + 0.4f, span);
         _volume.GlobalPosition = new Vector3(center.X * SampleSpacing, (low - 0.2f + top + 0.2f) * 0.5f, center.Y * SampleSpacing);
+    }
+
+    // =========================================================
+    // Reuse the current terrain tile's exact origin/span, with 1m alpha samples for soft building edges.
+    private void UpdateBuildingMask(Vector2I terrainOrigin)
+    {
+        if (_buildingMask == null || _buildingMaskTexture == null) return;
+        _buildingZones.Paint(_buildingMask, new Vector2(terrainOrigin.X, terrainOrigin.Y),
+            BuildingMaskSpacing, _settings.GroundHazeExclusionFadeMeters);
+        _buildingMaskTexture.Update(_buildingMask);
     }
 
     // =========================================================
@@ -201,7 +235,8 @@ public partial class GroundHaze : Node3D
         if (IsInstanceValid(_explorer)) { _explorer!.ViewPositionChanged -= OnMoved; _explorer.CameraModeChanged -= OnCameraMode; }
         if (IsInstanceValid(_player)) _player!.PositionChanged -= OnMoved;
         RestoreFog(); _active = false; _initialized = false; _explorer = null; _player = null; _cave = null;
-        _cache.Clear(); _nextCache.Clear(); _tile = new Vector2I(int.MinValue, int.MinValue);
+        _cache.Clear(); _nextCache.Clear(); _buildingZones = new HazeExclusions();
+        _tile = new Vector2I(int.MinValue, int.MinValue);
     }
 
     // =========================================================
