@@ -25,3 +25,9 @@ Hedge001 belongs in `WORLD/Content/Assets/Objects/Static/Landscaping/Hedges`, **
 Pull `implement-td0-td1` and let Godot import `Artwork/Hedge001.glb`. Open `Hedge001.tscn` directly in the editor and inspect from overhead and FPS angles; check flat top, muted multi-green leaves, grounding and absence of pink/missing materials. Adjust the `SizeMultiplier` and reload/reinstance. `dotnet build war-machine.csproj` can confirm shared C# helpers if installed. **No runtime Godot import, render, physics or perf profiling was performed remotely.**
 
 **The F1 spawner is an explicit list; Hedge001 is not in it** because this request was to author a reusable asset, not to add a debug menu entry or place it into the current convenience-store scene.
+
+## White-hedge screenshot fix (2026-10-28)
+
+The GLB previously stored green leaf colours entirely in glTF `COLOR_0`, but the sole PBR material had a white base. The convenience-store screenshot showed white hedges, consistent with imported vertex colours not being multiplied into the displayed material. The **GLB itself** now provides an explicit evergreen `baseColorFactor` plus neutral per-vertex brightness variation. This works for all future Hedge001 instances, not only the convenience-store site, with no material override script or extra surfaces. One original imported mesh, **2,540 triangles**, one opaque matte PBR material, no bitmap textures or runtime generation.
+
+The site height was also raised from the first-pass **~0.96m to ~2.41m**, exactly **2.5× taller**, through the site-only HedgeRowMaster `SizeMultiplier.Y=1.125` (previously 0.45). The canonical hedge-size master remains `Vector3(1,1,1)`. Location, length, depth, entrance opening and collision-free status are unchanged. Verify green/height after reimport and scene restart; remote Godot render validation pending.
