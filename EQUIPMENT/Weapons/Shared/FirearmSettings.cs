@@ -15,6 +15,18 @@ public partial class FirearmSettings : Resource
     [ExportGroup("Accuracy")]
     // Maximum half-angle in degrees. Zero means perfect accuracy; shot-only deviation.
     [Export(PropertyHint.Range, "0,10,0.05")] public float BaseSpreadDegrees { get; set; } = 0f;
+    [ExportGroup("Gameplay recoil (RC0)")]
+    // These values are independent of per-shot random BaseSpreadDegrees.
+    [Export(PropertyHint.Range, "0,15,0.05")] public float RecoilPitchPerShotDegrees { get; set; }
+    [Export(PropertyHint.Range, "0,30,0.1")] public float RecoilMaxPitchDegrees { get; set; }
+    [Export(PropertyHint.Range, "0,5,0.01")] public float RecoilYawStepDegrees { get; set; }
+    [Export(PropertyHint.Range, "0,15,0.05")] public float RecoilMaxYawDegrees { get; set; }
+    [Export(PropertyHint.Range, "0,180,0.5")] public float RecoilRecoveryDegreesPerSecond { get; set; } = 12f;
+    [Export(PropertyHint.Range, "0,2,0.01")] public float RecoilRecoveryDelaySeconds { get; set; } = 0.1f;
+    [ExportGroup("Visual recoil (RC1/RC2, not yet animated)")]
+    [Export(PropertyHint.Range, "0,0.2,0.005")] public float VisualRecoilKickMeters { get; set; }
+    [Export(PropertyHint.Range, "0,20,0.1")] public float VisualRecoilPitchDegrees { get; set; }
+    [Export(PropertyHint.Range, "0.01,1,0.01")] public float VisualRecoilRecoverySeconds { get; set; } = 0.2f;
     [ExportGroup("Firing collision")]
     [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 21;
     [ExportGroup("Bullet impact")]

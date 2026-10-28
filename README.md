@@ -1,5 +1,7 @@
 # WAR MACHINE
 
+> **Weapons update 2026-10-28:** RC0 shared per-weapon accumulated recoil and recovery are implemented in source (awaiting local validation); **RC1 top-down and RC2 FPS actual aim climb/visual animation remain planned**. [RC plan](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Existing shot spread and damage are unchanged.
+
 > **UI implementation update (2026-10-28):** `FEEDBACK/` now contains a generic source-implemented HealthBar and HUD overlay showing a bar only for living entities with shared `HealthComponent` and HP below maximum. Automatic registration supports current zombies and future player health, but **PH0 player health is still planned**. These bars await local build/visual validation; no damage calculations or health values were changed. See [FEEDBACK/IMPLEMENTATION_PLAN.md](FEEDBACK/IMPLEMENTATION_PLAN.md).
 
 > **Working title — atmospheric, top-down 3D survival on a strange, inhabited Earth.**  

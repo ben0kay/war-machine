@@ -47,7 +47,7 @@ RC1 adds top-down aim climb and weapon/arm animation; RC2 reuses that mechanic
 in the FPS debug view. This is **not existing random spread** (ACC0) and not
 enemy stagger. Machine-gun bursts are intended to stay more controlled than
 continuous fire; a fully stationary cursor need not mean stationary bullet aim.
-**Planning only — no recoil runtime functionality has been introduced.**
+**RC0 shared recoil state and firing-event plumbing now exist in source (awaiting local build tests).** The current camera adapters have not enabled actual upward aim drift or visual kick; RC1/RC2 remain planned.
 
 ## Planned melee equipment and hit reactions
 

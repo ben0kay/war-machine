@@ -27,3 +27,13 @@ ShotCue = ExtResource("shot_cue")
 
 BulletImpactStrength = 1
 BulletStaggerSeconds = 0.2
+
+RecoilPitchPerShotDegrees = 2.0
+RecoilMaxPitchDegrees = 3.0
+RecoilYawStepDegrees = 0.0
+RecoilMaxYawDegrees = 0.0
+RecoilRecoveryDegreesPerSecond = 12.0
+RecoilRecoveryDelaySeconds = 0.10
+VisualRecoilKickMeters = 0.09
+VisualRecoilPitchDegrees = 5.0
+VisualRecoilRecoverySeconds = 0.22

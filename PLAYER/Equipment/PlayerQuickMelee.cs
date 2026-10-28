@@ -31,6 +31,7 @@ public sealed class PlayerQuickMelee
     public bool TryStart(FirearmController weapon, bool firstPerson = false)
     {
         if (!_attack.TryStart(_settings)) return false;
+        weapon.ResetRecoil(); // Q shove takes control of the weapon pose; discard stored gun recoil.
         _pose ??= new PlayerShovePose(_owner);
         _pose.Start(weapon, firstPerson);
         Vector3 velocity = _owner.Velocity;

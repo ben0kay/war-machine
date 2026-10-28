@@ -13,7 +13,8 @@ foundation (ACC0) and proposed player-specific stance/movement accuracy (ACC1).
 [RECOIL_IMPLEMENTATION_PLAN.md](RECOIL_IMPLEMENTATION_PLAN.md) separately plans **RC0 shared
 recoil, RC1 top-down aim climb + animation, RC2 FPS recoil**, with deterministic
 shot-to-shot displacement and burst/recovery. **Recoil is not random spread**;
-RC0–RC2 remain plans only, with no current recoil mechanics.
+RC0's shared state and settings are implemented in source, awaiting local validation;
+RC1/RC2 camera-relative aim drift and visual recoil are still planned.
 Projectile weapons, melee, ammo/reload and inventory remain future tasks.
 
 ## Moving bullet-tracer visuals — Godot validation pending

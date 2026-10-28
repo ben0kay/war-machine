@@ -76,3 +76,7 @@ Primitive geometry is shared through `EQUIPMENT/Weapons/Shared/WeaponVisualGeome
 ## Moving tracer pass
 
 RifleMaster now uses `TracerSpeed=300` m/s, `TracerLength=1.7`m, `TracerWidth=0.014`m, `TracerEveryNShots=1`, `EffectDuration=0.35`s max and one pooled slot. A short unshaded bright streak plus subtle amber halo travels down the original hitscan path and clips at the hit point. No ballistic simulation or damage delay, and cooldown, spread, audio, lights, muzzle flash and hit detection remain unchanged. Build and visually test in Godot (not verified here).
+
+## RC0 cumulative recoil configuration (2026-10-28)
+
+The master now authors 2.0° pitch per accepted shot, 3.0° maximum, no horizontal step, 12°/s gameplay recovery after 0.10s. Visual parameters 0.09m backward kick, 5° pitch and 0.22s recovery are **not rendered yet**. The shared `FirearmRecoil` state is ready, but real aim climb/weapon animation is deferred to RC1/RC2; existing shot behavior, 95 damage and 0.30° base random spread are unchanged.

@@ -53,3 +53,7 @@ Geometry shares `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs` with the rifl
 ## Moving tracer pass
 
 MachineGunMaster now uses `TracerSpeed=360` m/s, `TracerLength=1.4`m, `TracerWidth=0.012`m, `TracerEveryNShots=2`, `EffectDuration=0.30`s max and `TracerPoolSize=4`. Setting `TracerEveryNShots=1` shows every shot again. These values affect appearance only; hitscan, impact strength/stagger, muzzle flash, lighting, sounds and cadence remain unchanged. Check fast turning, MG burst overlap and FPS/top-down visibility after compiling Godot C#.
+
+## RC0 cumulative recoil configuration (2026-10-28)
+
+The master now authors `RecoilPitchPerShotDegrees=0.55`, `RecoilMaxPitchDegrees=4.5`, `RecoilYawStepDegrees=0.08`, `RecoilMaxYawDegrees=0.6`, `RecoilRecoveryDegreesPerSecond=7`, `RecoilRecoveryDelaySeconds=0.12`. Future RC1/RC2 view-model settings: 0.035m backward, 2° muzzle pitch, 0.12s visual recovery. The shared `FirearmRecoil` state is implemented and accumulates per accepted shot. **No current bullet trajectory, camera or model displacement yet**: the view adapters must opt into the recoil-up overload in RC1/RC2. Keep 25 damage and 0.75° intrinsic spread unchanged.

@@ -4,6 +4,8 @@ using Godot;
 public partial class FirearmController : Node3D
 {
     public event System.Action? ReadyToFire;
+    // RC1/RC2 may subscribe for view-only weapon kick after an accepted shot.
+    public event System.Action? ShotAccepted;
     [Export] public FirearmSettings Settings { get; set; } = null!;
     [Export] public Marker3D Muzzle { get; set; } = null!;
     public FirearmSettings RuntimeSettings { get; private set; } = null!;
@@ -15,6 +17,8 @@ public partial class FirearmController : Node3D
     private CollisionObject3D? _holder;
     private readonly RandomNumberGenerator _shotRandom = new();
     private bool _equipped;
+    private FirearmRecoil _recoil;
+    public Vector2 RecoilOffsetDegrees => _recoil.OffsetDegrees;
 
     // =========================================================
     // Instantiate shared components once; idle guns never run physics/process callbacks.
@@ -38,18 +42,25 @@ public partial class FirearmController : Node3D
     // =========================================================
     // Any actor can equip this scene; its own collider is excluded from the cached query.
     public void Equip(CollisionObject3D holder, WorldAudio? audio = null)
-    { _audioService = audio; _holder = holder; _query.Exclude = new Godot.Collections.Array<Rid> { holder.GetRid() }; _equipped = true; }
+    { ResetRecoil(); _audioService = audio; _holder = holder; _query.Exclude = new Godot.Collections.Array<Rid> { holder.GetRid() }; _equipped = true; }
 
     // =========================================================
     // Caller supplies aim and shoulder/probe origin during physics, independent of movement/input implementation.
     public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin)
+    { return TryFire(aimPoint, probeOrigin, Vector3.Zero); }
+
+    // =========================================================
+    // Third argument is view-space up for future RC1/RC2; legacy calls retain their original shot ray.
+    public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp)
     {
         if (!_equipped || !IsInstanceValid(_holder) || Muzzle == null || !_cooldown.IsStopped()) return false;
         Vector3 start = Muzzle.GlobalPosition, direction = aimPoint - start;
-        if (direction.LengthSquared() < 0.0001f) return false;
+        if (!float.IsFinite(direction.X) || !float.IsFinite(direction.Y) || !float.IsFinite(direction.Z)
+            || direction.LengthSquared() < 0.0001f) return false;
         // =========================================================
-        // ACC0: sample slight muzzle-angle inaccuracy once per accepted shot, never on idle aim.
-        // All existing cover, hit, damage, tracer and cooldown logic uses this same direction.
+        // Previous accepted shots' recoil precedes ACC0 random spread. RC1/RC2 enable
+        // actual aim climb by passing a camera-relative up axis into this overload.
+        direction = _recoil.Apply(direction, recoilScreenUp);
         direction = ShotSpread.Apply(direction, RuntimeSettings.BaseSpreadDegrees, _shotRandom);
         _query.CollisionMask = RuntimeSettings.HitMask;
         // Prevent a barrel sticking through cover from firing out of the other side.
@@ -77,8 +88,25 @@ public partial class FirearmController : Node3D
         }
         else _legacyAudio?.Play();
         _cooldown.Start(Mathf.Max(RuntimeSettings.ShotInterval, 0.03f));
+        // Current shot is already resolved; this impulse affects subsequent accepted shots.
+        _recoil.OnAcceptedShot(RuntimeSettings);
+        if (_recoil.IsActive) SetProcess(true);
+        ShotAccepted?.Invoke();
         return true;
     }
+
+    // =========================================================
+    // Only wake for accumulated recoil/recovery; the firearm still has no idle frame loop.
+    public override void _Process(double delta)
+    {
+        if (!_equipped) { ResetRecoil(); return; }
+        _recoil.Advance((float)delta, RuntimeSettings);
+        if (!_recoil.IsActive) SetProcess(false);
+    }
+
+    // =========================================================
+    // RC0 recoil state is a separate gameplay accumulator, not a visual muzzle transform.
+    public void ResetRecoil() { _recoil.Reset(); SetProcess(false); }
 
     // =========================================================
     // A held-trigger adapter may request its next shot; no weapon-side target/input polling.
@@ -87,7 +115,7 @@ public partial class FirearmController : Node3D
     // =========================================================
     // Unequip, focus cancellation and scene teardown cannot leave feedback/audio ticking.
     public void CancelFeedback()
-    { _effects.Stop(); _legacyAudio?.Stop(); if (IsInstanceValid(_audioService)) _audioService!.StopEmitter(GetInstanceId()); }
+    { ResetRecoil(); _effects.Stop(); _legacyAudio?.Stop(); if (IsInstanceValid(_audioService)) _audioService!.StopEmitter(GetInstanceId()); }
 
     // =========================================================
     public void Unequip() { _equipped = false; _cooldown.Stop(); CancelFeedback(); _holder = null; }

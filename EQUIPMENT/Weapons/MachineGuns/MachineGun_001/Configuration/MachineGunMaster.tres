@@ -29,3 +29,13 @@ EmitMuzzleLight = true
 
 BulletImpactStrength = 0.35
 BulletStaggerSeconds = 0.08
+
+RecoilPitchPerShotDegrees = 0.55
+RecoilMaxPitchDegrees = 4.5
+RecoilYawStepDegrees = 0.08
+RecoilMaxYawDegrees = 0.6
+RecoilRecoveryDegreesPerSecond = 7.0
+RecoilRecoveryDelaySeconds = 0.12
+VisualRecoilKickMeters = 0.035
+VisualRecoilPitchDegrees = 2.0
+VisualRecoilRecoverySeconds = 0.12

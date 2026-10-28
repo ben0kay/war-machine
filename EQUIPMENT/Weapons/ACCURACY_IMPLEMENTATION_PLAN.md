@@ -83,3 +83,7 @@ Only if requested: transient recoil-induced bloom for sustained automatic fire, 
 6. After ACC1 only: crouch still improves; crouch moving is worse than crouch still; walking and sprinting are worse than standing.
 
 **Do not modify player movement, camera, zombie AI or terrain during ACC0.** Update feature README and report only checks actually performed; prefer a brief review/build, leaving extensive playtesting to the owner. One commit per job; push to `implement-td0-td1`, not main.
+
+## Relation to RC0 (2026-10-28)
+
+The separate [RC0 recoil state](RECOIL_IMPLEMENTATION_PLAN.md) is now implemented in source, awaiting local build validation. Its accumulated angles and accepted-shot impulse are **not** ACC0 randomized dispersion, and RC0 intentionally has no camera adapter opt-in yet. `ShotSpread.Apply` remains unchanged and will run once **after** the recoil-adjusted direction when RC1/RC2 become active. ACC1 movement/crouch and ACC2 optional bloom remain planned independently.

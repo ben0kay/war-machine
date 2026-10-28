@@ -39,8 +39,8 @@ adapters automatically share this firearm logic.
 See [../ACCURACY_IMPLEMENTATION_PLAN.md](../ACCURACY_IMPLEMENTATION_PLAN.md)
 for planned ACC1 player crouch/movement multipliers and optional ACC2 polish.
 See [../RECOIL_IMPLEMENTATION_PLAN.md](../RECOIL_IMPLEMENTATION_PLAN.md)
-for the **separate, not-yet-implemented** RC0/RC1/RC2 cumulative gameplay recoil
-and visual weapon kick. The existing `ShotSpread.Apply` continues to supply only
+for **RC0 shared recoil state now implemented (awaiting local build validation)**;
+RC1 top-down and RC2 FPS view-specific aim/visual kick are still planned. The existing `ShotSpread.Apply` continues to supply only
 random dispersion, not accumulated aim climb.
 
 ## Ownership cleanup
@@ -56,3 +56,7 @@ FirearmController.cs, FirearmSettings.cs and FirearmShotEffects.cs live directly
 The rifle and machine gun both use `WeaponVisualGeometry.Profile` for the receiver, stock and other chamfered/tapered parts. Their triangles were originally submitted in a winding order that Godot backface-culls from **outside**, exposing the inner faces as if the gun were cut open in first-person view. The shared `Face` helper now emits vertices in **Godot's clockwise front-face order** while preserving its analytically correct outward-facing normals. This fixes both guns without touching their separate mesh builders, sizes, authored flat colours, scene mount transforms, Muzzle markers, collision or firing systems. Keep default backface culling; do not hide reversed winding with a two-sided material.
 
 Minimal check: triangle orientation of the 48 side and 16 cap faces was verified by a numeric cross-product test; source patches were reviewed. **Godot render/compilation not tested locally.** Pull the branch and inspect rifle (1) / machine gun (2) from FPS beside nearby geometry and then in top-down; their outer upper receiver and stock panels should be solid, with no cutaway void.
+
+## RC0 recoil integration (2026-10-28)
+
+`FirearmRecoil.cs` stores cumulative pitch/yaw independently for each equipped firearm; `FirearmController` applies one accepted-shot impulse after firing, then sleeps its temporary recovery callback when settled. A `ShotAccepted` event and `RecoilOffsetDegrees` snapshot are available for later animation adapters. `TryFire(aimPoint, shoulderProbeOrigin, recoilScreenUp)` can use the camera's up axis to adjust the actual ballistic direction **before** ACC0 random spread, with the same obstruction/hitscan and tracer ray. The current two-argument call still keeps legacy aim, so RC0 itself does not cause visible recoil or gameplay aim climb; those arrive in RC1/RC2. `CancelFeedback`, swapping, unequipping and Q shove clear recoil; no stale state on re-equip. Values are per-gun `.tres` fields, not part of spread or impact stagger.

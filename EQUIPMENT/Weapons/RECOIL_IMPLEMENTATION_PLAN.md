@@ -1,6 +1,6 @@
 # Weapon recoil — RC0/RC1/RC2 implementation plan
 
-> **Status (2026-10-28): Planning only. RC0, RC1 and RC2 are NOT implemented.** This document records approved design direction, **not permission to implement all stages automatically**. Each stage needs explicit authorization, one focused commit and a separate validation handoff. Repository: `ben0kay/war-machine`, branch **`implement-td0-td1`**; never target `main` without the owner's explicit instruction.
+> **Status (2026-10-28): RC0 implemented in source, awaiting local build/runtime validation. RC1 and RC2 remain NOT implemented.** This document records approved design direction, **not permission to implement all stages automatically**. Each stage needs explicit authorization, one focused commit and a separate validation handoff. Repository: `ben0kay/war-machine`, branch **`implement-td0-td1`**; never target `main` without the owner's explicit instruction.
 
 ## Design goal
 
@@ -21,9 +21,9 @@ This is **not** optional accuracy bloom from ACC2, not random shot spread, and n
 - `PLAYER/Equipment/PlayerWeaponController.cs` obtains mouse cursor -> world-space aim using a camera ray on relevant events. It also supplies the `WeaponMount` and `WeaponProbeOrigin`; `PlayerController` owns the hand/arm/upper-body procedural rig.
 - `DEBUG/TEST/FirstPerson/EQUIPMENT/FirstPersonWeapon.cs` obtains a centre-screen ray and world-space aim **when a shot is requested**, independent of top-down camera ray logic. Both adapters fire through the same `FirearmController.TryFire`.
 - `EQUIPMENT/Shared/WeaponSlots.cs` selects test slot 1/2, unequips/hides the previous gun and reuses its scene. `PlayerQuickMelee` handles Q-shove with its own cancel/pose lifecycle; recoil must not fight that pose.
-- `ShotSpread.cs` already samples RNG on accepted shots only. **No recoil state, aim-climb system, camera kick or recoil tuning currently exists.**
+- `ShotSpread.cs` still owns random spread only. **RC0 now adds a per-weapon `FirearmRecoil` state, accepted-shot accumulator/recovery, Inspector values and optional recoil-up firing overload.** The current two-argument top-down/FPS adapters intentionally retain their original aim; RC1/RC2 must supply camera-relative up axes to activate directional climb.
 
-## Starting tuning for discussion (not yet in resources)
+## Starting tuning (RC0 settings authored in both weapon masters; visual fields unused until RC1/RC2)
 
 | Setting | Rifle 001 | Machine Gun 001 |
 | --- | ---: | ---: |
@@ -51,13 +51,31 @@ Keep **gameplay recoil** (aim climb) and **visual recoil** (model kick) separate
 
 ## RC0 — Shared recoil state and shot integration
 
-**Status: Planned.** Add a small reusable `EQUIPMENT/Weapons/Shared/FirearmRecoil.cs` (or similar plainly named helper), plus grouped `FirearmSettings` exports and per-weapon master values. No new parent folder required. Use a compact value state with bounded pitch/yaw accumulation, post-shot impulse, active recovery, `Cancel/Reset` and a settled flag. No Godot Node or timer if a lightweight helper and the existing active-only update owner suffice.
+**Status: Implemented in source, awaiting local validation (2026-10-28).** Added a small reusable `EQUIPMENT/Weapons/Shared/FirearmRecoil.cs` (or similar plainly named helper), plus grouped `FirearmSettings` exports and per-weapon master values. No new parent folder required. Use a compact value state with bounded pitch/yaw accumulation, post-shot impulse, active recovery, `Cancel/Reset` and a settled flag. No Godot Node or timer if a lightweight helper and the existing active-only update owner suffice.
 
 Keep `FirearmController` as the sole accepted-shot authority: recoil must **not** increment on rejected TryFire attempts, focus loss, cooldown or an unaccepted held-fire request. Preserve the current damage/cover/tracer pipeline, the current `ReadyToFire` scheduler and `ShotSpread` randomness. Add only a narrow, backward-compatible aim-offset API/callback needed by view adapters; do not copy FirearmController into player or FPS code. First shot uses pre-impulse recoil; subsequent shots use accumulated state. Prefer a predictable shot pattern so burst handling is learnable.
 
-**RC0 scope boundary:** data/state/accepted-shot plumbing only. Do **not** add player camera shake, actual top-down visual recoil, FPS visual recoil, ACC1 movement accuracy or input changes until RC1/RC2 are approved.
+**RC0 scope boundary, preserved:** data/state/accepted-shot plumbing only. **No player camera shake, top-down weapon recoil pose, FPS view-model kick, ACC1 movement accuracy or new player input.** `TryFire(aimPoint, probeOrigin)` is backward compatible and keeps the current ray. `TryFire(aimPoint, probeOrigin, recoilScreenUp)` applies the prior stored angle to the genuine ballistic direction, before `ShotSpread.Apply`; camera adapters do not use it until RC1/RC2.
 
 **Pass:** new state/setting maths clamps finite values, recovers predictably, zero-recoil matches previous ray, only successful shots add an impulse, cooldown doesn't generate recoil, separate weapon instances reset cleanly; rifle/machine-gun stats and `ShotSpread.Apply` continue unchanged. Build `dotnet build war-machine.csproj`; basic top-down/FPS firearm regression.
+
+## RC0 implementation handoff (2026-10-28)
+
+**Implemented:**
+- `FirearmRecoil.cs` is a small value-state helper with bounded yaw/pitch, deterministic alternating horizontal step, delay, recovery, reset and `OffsetDegrees` snapshot; it does not allocate nodes or use random spread.
+- `FirearmSettings` has grouped, Inspector-editable gameplay fields: `RecoilPitchPerShotDegrees`, `RecoilMaxPitchDegrees`, `RecoilYawStepDegrees`, `RecoilMaxYawDegrees`, `RecoilRecoveryDegreesPerSecond`, `RecoilRecoveryDelaySeconds`. Visual placeholders for future RC1/RC2: `VisualRecoilKickMeters`, `VisualRecoilPitchDegrees`, `VisualRecoilRecoverySeconds`. Existing `BaseSpreadDegrees` values remain unchanged.
+- `RifleMaster.tres`: +2.0° per shot, max 3.0° pitch, no horizontal step, recovery 12°/s after 0.10s. Visual settings authored 0.09m/5°/0.22s but not yet rendered.
+- `MachineGunMaster.tres`: +0.55° per shot, max 4.5° pitch, alternating ±0.08° horizontal step capped at ±0.6°, recovery 7°/s after 0.12s. Visual settings authored 0.035m/2°/0.12s but not yet rendered.
+- `FirearmController` accumulates recoil **after** accepted hit/feedback/cooldown, exposes `RecoilOffsetDegrees` and `ShotAccepted`, updates only while the state is active via its existing Node `_Process` hook, and goes completely dormant once settled. `CancelFeedback`, `Unequip`, `Equip` and a successful Q quick shove clear recoil.
+- Explicit opt-in `TryFire(..., Vector3 recoilScreenUp)` provides the final 3D recoil-adjusted ballistic ray, then applies the existing random `ShotSpread.Apply` exactly once. No extra cast. **Current top-down and FPS callers still call the original two-argument overload**, so bullets do NOT yet climb in either view; that is RC1/RC2, not a regression.
+
+**Expected numeric progression:** Machine gun with no recovery between shots has 0° on first shot, then 0.55°, 1.10°, 1.65° of accumulated pitch on subsequent shots (up to 4.5°); at 600 RPM, its 0.12s recovery delay restarts after every shot. When released, the stored pitch begins decaying after 0.12s and then at 7°/s, until zero. Rifle with 0.65s between shots normally recovers fully before its next bullet. Neither recoil setting changes 25/95 damage, stagger, shot cadence, cover checks, tracer spread or the hit logic.
+
+**Performance:** A shot with nonzero recoil wakes exactly one weapon `_Process`; recoil delay+recovery use cached floats, no timers, raycasts, allocations or per-shot node instancing, and stop when settled. A weapon with zero recoil leaves processing asleep. Disabling/focus-loss/swap/Q clears state synchronously.
+
+**Local handoff (not run here):** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn`, F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`, fire/switch/Q/focus loss, verify firing/tracers/cover/UI and both masters. RC0 state can be inspected at breakpoints or from a temporary local debugging harness: first shot OffsetDegrees pitch 2.0° rifle / 0.55° MG; after the cooldown but before recovery, two accepted MG shots yield 1.10°. Confirm no impulse on cooldown rejection or invalid/missing shot direction; settle stops `_Process`. **Do not expect physical weapon rise or upward bullet climb yet**—these require view integrations RC1/RC2.
+
+**Status:** Source implemented and statically reviewed; Godot/.NET build and runtime acceptance not verified. The phase is not marked Accepted. RC1/RC2 remain Planned and require separate authorization.
 
 ## RC1 — Primary top-down gameplay + visual recoil
 
