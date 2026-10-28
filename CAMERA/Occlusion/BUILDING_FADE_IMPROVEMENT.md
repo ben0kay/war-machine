@@ -1,10 +1,12 @@
 # OV1 — Correct exterior building fade false positives (Codex implementation plan)
 
-**Status:** Proposed / planning only — **no OV1 gameplay change is currently implemented**.  
+**Status:** OV1-A source audit complete; OV1-B implemented — **Awaiting local build/visual validation**. See current handoff below.
 **Owner:** CAMERA/Occlusion and WORLD/Content/Structures/Shared.  
 **Target:** `implement-td0-td1` development branch. Do not commit to `main`.  
 **Read first:** root `README.md`, `CodePreferences.md`, `CAMERA/Occlusion/README.md`, `WORLD/Content/Structures/Shared/README.md`, and `WORLD/Content/Structures/BUILDING_AUTHORING_README.md`.
 
+> The current implementation handoff below supersedes planning assumptions. The source at implementation base 212dbeb already contained bounds-only samples; these were replaced, not assumed correct.
+>
 > This note **replaces the older, completed building-opacity improvement history**. It is a new plan to fix *premature exterior whole-building fading*, not a request to re-implement the previous 15% opacity pass. The attempted multi-point **bounds-only** OV1-A commit was explicitly rolled back; do not assume any of that code exists.
 
 ## 1. The issue — distinguish a visible player from a genuinely hidden player
@@ -39,8 +41,8 @@ The player approaches a house from the exterior in the angled top-down 3D view. 
 
 | Phase | Goal | Suggested assistant | Status |
 | --- | --- | --- | --- |
-| **OV1-A** | Focused diagnosis and collision-coverage audit for the false-positive screenshot | Regular Chat for review; Codex for code inspection; Copilot/owner for local debug | **Planned** |
-| **OV1-B** | Implement shared, geometry-confirmed exterior fade decision with player-silhouette coverage and stable transitions | **Codex / ChatGPT Work** | **Planned — not authorized by this document** |
+| **OV1-A** | Focused diagnosis and collision-coverage audit for the false-positive screenshot | Regular Chat for review; Codex for code inspection; Copilot/owner for local debug | **Source audit complete; screenshot validation deferred** |
+| **OV1-B** | Implement shared, geometry-confirmed exterior fade decision with player-silhouette coverage and stable transitions | **Codex / ChatGPT Work** | **Implemented — Awaiting Validation** |
 | **OV2 (separate)** | Stop camera transparency exposing otherwise hidden zombies/entities | Separate planning task | **Not included in OV1** |
 
 ### OV1-A — Identify the falsely reported blocker before changing behaviour
@@ -96,3 +98,19 @@ The player approaches a house from the exterior in the angled top-down 3D view. 
 **Do not implement this plan simply because it exists.** Authorization to replace this Markdown is for planning **only**. OV1-A and OV1-B require separate explicit approval; OV2 is a separate feature. Before coding, check latest branch state (an earlier five-sample OV1-A commit was rolled back), inspect real C# sources, and update this plan with any verified collision-coverage findings. Do not resurrect deprecated mesh-AABB-only coverage logic.
 
 **Next recommended action:** start with a short OV1-A collision/geometry audit, then implement OV1-B directly against real building blockers. If source inspection already establishes a reliable geometry test, combine the *diagnosis within* an explicitly authorized OV1-B job rather than making extra scaffolding. Document changed files, commit SHA, build check performed/deferred, and owner visual/performance checks; mark **Awaiting Validation** until locally accepted.
+
+## OV1-A/B — geometry-confirmed exterior visibility (current)
+
+**Implemented; Awaiting local compilation/visual validation.** This supersedes the historical bounds-only OV1-A descriptions above. Bounding boxes alone no longer approve exterior fades. Five head/torso/screen-side/lower-body segments must each intersect actual cached opaque structural mesh triangles belonging to the same building. One clear sample keeps/restores it opaque. Each segment is projected from the active perspective/orthographic camera and stops 1cm before its player sample. OutsideObstructionRadius only pads broad rejection; it never thickens final geometry hits. Samples use transitioning CapsuleHeight for standing/crouching.
+
+**OV1-A source audit:** Buildings 001–004 all declare shared visibility and structural visual roles. Their collision helpers use solid layer 1, also used by unrelated world geometry. Main box walls and sloped roof slabs generally match art, but collision is not a complete visual truth: Building001 Gable and Shared StructureGeometry.GableEnd create visible triangular caps without physics, Building002 PorchRoof has null collision, and stair ramps deliberately differ from treads. Window panes have separate collision; current Paint helpers render their coloured panes opaque (no alpha transparency mode), so those panes really do block, while empty door gaps do not. Whole-mesh AABBs include the empty upper corners of triangular gables; radius expansion also reaches outside a visible wall. Either can approve the former false fade, even for five samples. Exact screenshot camera coordinates were not available and the screenshot has not been reproduced here.
+
+**Chosen correction:** cache real render-mesh faces at attach/Refresh/Rebuild instead of adding physics proxies or trusting mismatched colliders. Only metadata roles walls/roof/deck qualify; contents/stairs/unclassified art, characters and unrelated structures/terrain never supply blocker triangles. Repeated mesh resources share a face array within this provider. Per-sample whole bounds, then exact part bounds, reject before triangle tests. This is geometry confirmation, not another five-ray bounds approximation. It covers visual-only gables/porch roofs without changing generators, physical masks, weapons or AI. No new collider, master migration, rendering pass or building-name cases.
+
+**Material/authoring limits:** native opaque BaseMaterial3D surfaces qualify; alpha/blended/cutout or custom-shader meshes fail open, with a warning for unapproved shaders. A mixed-material mesh containing a nonopaque surface is skipped as a whole; split opaque shell and glass into separate MeshInstances. Unknown/no-face geometry warns instead of reverting to boxes. Optional structure_camera_blocker=false on a mesh/ancestor excludes it. GPU-deformed/skinned geometry, shader cutouts and exact pixel coverage are not supported; use separate static opaque structural meshes and call Refresh/Rebuild after art, material, visibility metadata or relative transform changes. Cosmetic GeometryInstance transparency is deliberately ignored: a faded building still blocks the hypothetical opaque sightline, avoiding fade/restore feedback. Explicit Visible=false art is skipped.
+
+**Performance/lifecycle:** only existing camera/player/stance invalidations at the bounded camera cadence (nominal 8Hz) invoke checks. Per provider/check: at most five samples and 16,384 narrow-phase triangle tests shared across those samples, early-out on any clear sample. Budget exhaustion keeps the house opaque and warns once, rather than guessing a fade. Work scales with candidate structural parts; complex imported shells may need simpler meshes. Arrays/transforms cache at setup; no hot-path mesh extraction, physics queries, new timer or building frame callback. Normal successful checks allocate no managed contact arrays. Existing opacity interpolation alone runs while changing, then sleeps. Shutdown clears cached parts/section references and disconnects movement; normal Refresh/Rebuild re-caches. No performance measurement claimed. Existing 0.15 outside target, 0.2s transitions, indoor floors/roof/walls/stairs, foliage and FPS opt-out remain unchanged. No hysteresis timer added without visual evidence of edge jitter.
+
+**Checks run:** diff/loop syntax and lifecycle/material ownership review; numeric segment/triangle/coverage checks for real wall, visible front-side player, corner with one clear sample, gable-box empty corner, wall beyond endpoint, reverse winding, degenerate/coplanar cases. Godot and .NET unavailable: compilation not verified. Numeric checks are a model of the math, not an engine integration test.
+
+**Local handoff:** run `dotnet build war-machine.csproj`; open WORLD/World.tscn and F6. For all four buildings, stand pressed against front/side walls and corners (solid), move fully behind (fade), return (restore), stop at each point (settles), and test partial cover/crouch/camera yaw/tilt/zoom in both projections. Inspect door openings, current opaque panes, sloped/gable/porch roofs, station canopy occupancy and lodge stairs/floors. Try spawn/unload/Refresh and FPS regression. Profile several candidate buildings while moving; confirm stationary checks and settled interpolation sleep. Do not treat this as hiding zombies exposed by transparency: OV2 remains separate.
