@@ -1,5 +1,7 @@
 # World content
 
+> **Planned only:** [AM0 one-pass Assets migration](ASSETS_MIGRATION_PLAN.md) consolidates existing reusable Sites, Structures, Infrastructure and Objects/Props under `WORLD/Content/Assets/`. **Do not use the planned paths until Codex completes AM0.** Current folder paths below remain authoritative for now.
+
 - `Vegetation/Trees`: existing procedural pines, moved with configs/shaders/artwork/validation.
 - `Vegetation/Plants`: flower clumps with stems, pointed leaves and five-petal flowers.
 - `Vegetation/Bushes`: low woody shrubs with folded leaves.
