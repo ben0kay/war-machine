@@ -17,7 +17,7 @@
 | Damage | 35 physical | 95 physical |
 | Range | 85 m | 90 m |
 | Base spread | 0.75° | 0.30° |
-| Tracer effect lifetime | 0.18 s | 0.07 s |
+| Tracer visual lifetime cap | 0.30 s | 0.35 s |
 | Reusable tracer slots | 4 | 1 (default) |
 | Flash lifetime | 0.05 s | 0.07 s (default) |
 | Sound | Optional, unset | Optional, unset |
@@ -30,7 +30,7 @@ Edit `EQUIPMENT/Configuration/EquipmentMaster.tres` and set `DefaultWeaponScene`
 
 Press F6 in `WORLD/World.tscn`, check the heavier mesh/hand placement, muzzle/tracer start, sustained 600 RPM, damage, spread and nearby-cover blocking. F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` for the FPS alternative.
 
-**Important:** With multiple live tracers, high-rate shooting can leave several distinct short-lived lines in the world simultaneously. The muzzle flash remains one reused mesh, resetting on every shot. The optional shot audio remains **one** `AudioStreamPlayer3D`, so overlapping machine gun sound/loop polish is a separate future task. No runtime/render test claimed here.
+**Important:** Automatic fire now launches short traveling streaks instead of full-length yellow lines. `TracerEveryNShots=2` displays one visible streak per two actual bullets; all accepted bullets still damage, flash/light and play their existing sound. Four pooled core/halo pairs allow overlap without creating firing-time meshes. The muzzle flash remains one reused mesh. The optional shot audio remains **one** `AudioStreamPlayer3D`, so overlapping machine gun sound/loop polish is a separate future task. No runtime/render test claimed here.
 
 Performance: `TracerPoolSize=4` pre-creates four tracer meshes at weapon initialization. Each shot only cycles an existing slot; no per-shot nodes, physics queries, materials or allocations from the VFX layer. `FirearmShotEffects._Process` runs only while a flash or at least one tracer is active, then sleeps. Stop/unequip hides every slot.
 
@@ -41,3 +41,7 @@ Test slots now implemented: press **1** for rifle, **2** for this machine gun in
 The existing light machine gun now uses chamfered/tapered receiver and stock forms, a more integrated cheek rest, open trigger guard, side feed-box with hinges/latch/reinforcing ribs, revised ejection/bolt cover, recessed cooling slots, real round heavy barrel/collar/brake, an open-air carry handle, raised sights and refined folded bipod. These details keep its heavy appearance without increasing the weapon's original envelope. Its `Muzzle` marker remains at `(0, 0.06, -1.20)` along local -Z. The authored FPS offset `(0.07, -0.18, -0.23)` and scale `0.78` are untouched.
 
 Geometry shares `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs` with the rifle; colours remain their original simple palettes with **no first-person material/texture/shader pass**. One-time mesh construction, cached static forms, no animations/process loops, no new collision. Controller, rate of fire, accuracy, shot sound/light and muzzle flash stay unchanged. **Local Godot/.NET build and top-down/FPS visual checks pending**.
+
+## Moving tracer pass
+
+MachineGunMaster now uses `TracerSpeed=360` m/s, `TracerLength=1.0`m, `TracerWidth=0.012`m, `TracerEveryNShots=2`, `EffectDuration=0.30`s max and `TracerPoolSize=4`. Setting `TracerEveryNShots=1` shows every shot again. These values affect appearance only; hitscan, impact strength/stagger, muzzle flash, lighting, sounds and cadence remain unchanged. Check fast turning, MG burst overlap and FPS/top-down visibility after compiling Godot C#.

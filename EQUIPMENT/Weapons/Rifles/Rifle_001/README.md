@@ -18,7 +18,7 @@ preview, selected by `EQUIPMENT/Configuration/EquipmentMaster.tres`.
 | ACC0 base spread | 0.30° maximum shot deviation (half-angle); 0° restores perfect accuracy |
 | Trigger | Click once or hold left mouse for slow repeating fire |
 | Hit mask | 5: world layer 1 + zombie layer 3; player layer 2 excluded |
-| Feedback | 0.07s flash and single pooled tracer; optional sound slot (empty by default) |
+| Feedback | Thin moving tracer (300m/s, 1.2m, 0.014m core), single pooled slot; 0.07s flash and optional sound |
 
 Mouse aims toward a physics surface using the active camera in either projection.
 Empty space falls back to a hand-height plane. The player faces the cursor while
@@ -72,3 +72,7 @@ No terrain rebake or parked FPS scene changes are required.
 The rifle Visual node now builds a more intentional compact carbine: reusable chamfered and tapered low-poly profiles on the receiver/stock, angled pistol grip, open trigger guard, stepped magazine, thin ejection/bolt details, inset handguard vent slots, upper accessory rail, protective front/rear sight ears, round barrel and short muzzle device. The overall grip-centred outline stays within the original weapon's approximate dimensions, with its `Muzzle` marker still fixed at `(0, 0.055, -0.81)` along local -Z. Top-down and first-person views share the same upgraded art; no FPS-only material variant, shader, textures or robot material import.
 
 Primitive geometry is shared through `EQUIPMENT/Weapons/Shared/WeaponVisualGeometry.cs`. The builder creates the full model one time and stops processing; static meshes/basic existing-tone materials are reused. Controller, equipment slots, shot origin, recoil/hit/tracer/light/audio rules, balancing and FPS offsets are unchanged. **Local build/FPS silhouette checks required**, particularly sight alignment/hand placement in motion.
+
+## Moving tracer pass
+
+RifleMaster now uses `TracerSpeed=300` m/s, `TracerLength=1.2`m, `TracerWidth=0.014`m, `TracerEveryNShots=1`, `EffectDuration=0.35`s max and one pooled slot. A short unshaded bright streak plus subtle amber halo travels down the original hitscan path and clips at the hit point. No ballistic simulation or damage delay, and cooldown, spread, audio, lights, muzzle flash and hit detection remain unchanged. Build and visually test in Godot (not verified here).

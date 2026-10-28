@@ -20,13 +20,20 @@ public partial class FirearmSettings : Resource
     [ExportGroup("Bullet impact")]
     [Export(PropertyHint.Range, "0,3,0.05")] public float BulletImpactStrength { get; set; }
     [Export(PropertyHint.Range, "0,0.5,0.01")] public float BulletStaggerSeconds { get; set; }
-    [ExportGroup("Feedback")]
-    [Export] public float EffectDuration { get; set; } = 0.07f;
+    [ExportGroup("Tracer visuals")]
+    // Visual cap only; hitscan impact is immediate and unaffected by tracer travel.
+    [Export(PropertyHint.Range, "0.03,0.6,0.01")] public float EffectDuration { get; set; } = 0.35f;
     [Export(PropertyHint.Range, "1,16,1")] public int TracerPoolSize { get; set; } = 1;
+    [Export(PropertyHint.Range, "80,1000,10,suffix:m/s")] public float TracerSpeed { get; set; } = 300f;
+    [Export(PropertyHint.Range, "0.2,3,0.05,suffix:m")] public float TracerLength { get; set; } = 1.2f;
+    [Export(PropertyHint.Range, "0.005,0.08,0.001")] public float TracerWidth { get; set; } = 0.014f;
+    // Render one tracer per N accepted shots; every shot still damages and flashes.
+    [Export(PropertyHint.Range, "1,8,1")] public int TracerEveryNShots { get; set; } = 1;
+    [Export] public Color ShotColor { get; set; } = new(1, 0.8f, 0.35f);
+
+    [ExportGroup("Muzzle feedback")]
     [Export(PropertyHint.Range, "0.01,0.25,0.01")] public float FlashDuration { get; set; } = 0.07f;
     [Export] public float FlashRadius { get; set; } = 0.08f;
-    [Export] public float TracerWidth { get; set; } = 0.035f;
-    [Export] public Color ShotColor { get; set; } = new(1, 0.8f, 0.35f);
     [Export] public bool EmitMuzzleLight { get; set; }
     [Export] public AudioCue? ShotCue { get; set; }
     // Legacy stream remains available for unmigrated weapons; pooled playback is required when ShotCue is set.

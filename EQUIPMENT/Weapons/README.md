@@ -12,9 +12,15 @@ Other firearm scenes can reuse the same mechanics and typed Resource.
 foundation (ACC0) and proposed player-specific stance/movement accuracy (ACC1).
 Projectile weapons, melee, ammo/reload and inventory remain future tasks.
 
-## Interpolated shot presentation — awaiting local validation
+## Moving bullet-tracer visuals — Godot validation pending
 
-Shared effects disable automatic interpolation of recycled world-space tracers and reset each reused transform. The flash follows the muzzle's interpolated position during the existing active render callback, including when cover makes the gameplay ray start at the shoulder. Damage/cover queries and fixed shot segments remain unchanged. No idle loop, allocations or extra physics queries. Applies to rifle, machine gun and FPS. Source/loop review only; compilation not verified (Godot/.NET unavailable). Build and check moving/turning automatic fire, cover, switching and FPS; feedback must expire/sleep and cancel on unequip.
+The original stretched muzzle-to-hit box is replaced with a **short moving bullet streak**. `FirearmShotEffects` now pools a bright thin unshaded core and a translucent amber halo per tracer slot. It stores the hitscan path once and advances only the active visual tip, displaying at most `TracerLength` metres, stopping at the actual hit point or `EffectDuration` upper visual time limit. `TracerSpeed`, `TracerLength`, `TracerWidth` and `TracerEveryNShots` are exported in the shared firearm settings. Visuals skip every N-1 shots on fast automatic weapons if configured; **all shots still deal immediate hitscan damage, collide with cover, flash/light and trigger normal audio.** No projectile physics, additional rays or per-shot mesh/material allocations were added.
+
+Rifle defaults: **300m/s**, **1.2m** streak, **0.014m** core width, every shot, 1 pooled slot, 0.35s maximum travel feedback. Machine gun: **360m/s**, **1.0m**, **0.012m**, every second shot, 4 pooled slots, 0.30s maximum travel feedback. The rendered hit location may appear a fraction of a second after damage (cosmetic only).
+
+Existing pooled effects still disable recycled physics interpolation, and muzzle flash follows the interpolated muzzle only while needed. `Stop` hides every slot and the shared feedback loop sleeps when no tracer, flash or muzzle light is active. No effect loops run on idle weapons.
+
+**Godot/local checks:** compile the C# project, run top-down and FPS, fire rifle/machine gun into nearby walls and distant targets while walking/turning, and verify no full-length lines or through-wall tracer tips. Check flash, sound, hits, spread, cover checks, switching and focus-loss cancellation. High frame times can show visible frame-stepping at these fast cosmetic speeds. Source review only: actual render appearance/build/performance are unverified.
 
 ## Shared light and rifle audio foundation
 

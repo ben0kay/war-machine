@@ -12,9 +12,13 @@ DamageKind = 0
 Range = 90.0
 BaseSpreadDegrees = 0.30
 HitMask = 21
-EffectDuration = 0.07
+EffectDuration = 0.35
+TracerPoolSize = 1
+TracerSpeed = 300.0
+TracerLength = 1.2
+TracerWidth = 0.014
+TracerEveryNShots = 1
 FlashRadius = 0.08
-TracerWidth = 0.035
 ShotColor = Color(1, 0.8, 0.35, 1)
 ShotVolumeDb = -12.0
 
