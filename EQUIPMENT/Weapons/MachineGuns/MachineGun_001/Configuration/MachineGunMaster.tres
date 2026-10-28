@@ -7,7 +7,7 @@ script = ExtResource("1")
 DisplayName = "Machine Gun 001"
 ShotInterval = 0.10
 Automatic = true
-Damage = 35.0
+Damage = 25.0
 DamageKind = 0
 Range = 85.0
 BaseSpreadDegrees = 0.75
@@ -27,5 +27,5 @@ ShotVolumeDb = -12.0
 
 EmitMuzzleLight = true
 
-BulletImpactStrength = 0.65
-BulletStaggerSeconds = 0.14
+BulletImpactStrength = 0.35
+BulletStaggerSeconds = 0.08

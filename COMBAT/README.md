@@ -21,11 +21,11 @@ Reactions/HitReaction.cs is a plain value-state helper advanced by the existing 
 | Profile | Impact strength | Requested stagger |
 | --- | --- | --- |
 | RifleMaster | 1.0 | 0.20s |
-| MachineGunMaster | 0.65 | 0.14s |
+| MachineGunMaster | 0.35 | 0.08s |
 
 Both zombie masters expose BulletReactionsEnabled, ImpactResistance, FlinchThreshold, MaxStaggerSeconds, MinFlinchInterval, MinRecoverySeconds, StaggerMoveMultiplier, ImpactVelocityRetention, StaggerBrakingAcceleration, RecoveryAcceleration, RecoverySeconds and FlinchDegrees. Runner resistance starts at 0.1; normal zombie at 0. Resistance reduces strength and duration, and 1 is immune. Default threshold 0.2, max duration 0.3s, minimum interval 0.45s and recovery gap 0.2s. Bullet rotation is cosmetic; bullet impacts still do not physically push. Shove impacts now do.
 
-Damage stays rifle 95 / MG 35 against default 100HP: two rifle hits / three MG hits kill. Check the first nonlethal shot to see stagger; the lethal shot still removes the zombie normally. To inspect repeated long bursts locally, temporarily raise test HP and restore it afterward rather than changing production gun damage.
+Damage is now rifle 95 / MG 25 against default 100HP: two rifle hits / four MG hits kill. Check the first nonlethal shot to see stagger; the lethal shot still removes the zombie normally. To inspect repeated long bursts locally, temporarily raise test HP and restore it afterward rather than changing production gun damage.
 
 ### Validation handoff
 
@@ -88,3 +88,13 @@ PlayerShovePose is a plain helper advanced only by the existing active melee phy
 Completion/cancel restores the selected gun's exact pre-shove transform and normal arms, hides FPS hands and sleeps. Weapon switch, focus loss, menus/capture release and unload use existing cancellation. Walking/crouching keep their normal lower-body animation. No CM3+ work.
 
 Checks here: source/lifecycle review, changed C# loop syntax, timing-envelope endpoints and git diff --check. Godot/.NET unavailable: compilation not verified. Locally run `dotnet build war-machine.csproj`, then F6 WORLD/World.tscn and DEBUG/TEST/FirstPerson/FirstPersonTest.tscn. Check both weapons, idle/walk/run/crouch, Q hit/miss, the sideways silhouette and two hand contacts, high/low FPS aim, return to accurate firing, click/held automatic fire during recovery, switch 1/2 mid-shove, UI/Escape/alt-tab and unload. Confirm no drifting transform, stuck arms or idle pose processing. Visual hand fit, physics-tick smoothness and timing feel remain owner checks; no measured performance claim.
+
+## Per-firearm stagger intensity and MG balance update (2026-10-28)
+
+**Implemented in source; awaiting local gameplay acceptance.** Per-weapon values already existed in `FirearmSettings` and are independently authored in RifleMaster and MachineGunMaster. Rifle remains **95 physical HP, impact strength 1.0, requested stagger 0.20s**. Machine gun is now **25 physical HP per bullet** (was 35), **impact strength 0.35** (was 0.65) and **requested stagger 0.08s** (was 0.14). Against default 100-HP zombies this is four machine-gun hits, not three.
+
+**The shared CM1 zombie receiver now scales its two movement effects with impact strength** after recipient resistance: at rifle strength 1, velocity retention stays at the old `ImpactVelocityRetention` (0.1 by default) and chase movement stays at `StaggerMoveMultiplier` (0.1). At weaker strength, both interpolate toward 1 (normal movement). For MG at strength 0.35 against a normal zombie, these factors are approximately **0.685**; against a runner with 0.1 impact resistance, effective strength 0.315 gives **0.7165**. Rifle against runner (0.9 effective strength) gives factor **0.19**. This means the MG makes a smaller visual flinch, retains most momentum and causes a shorter, softer slowdown rather than nearly stopping the target. Requested stagger duration and recipient resistance still resolve in the existing `HitReaction.TryStart` helper.
+
+The existing **0.45s minimum flinch interval**, 0.2s minimum recovery, impact threshold 0.2 and no-extension-while-active rule remain intact. Damage is **always applied per hit** even when the reaction gate refuses another flinch. Stagger values do not modify damage, Q shove, actual push displacement, normal movement, firearm firing cadence or shot visuals. No additional frame loop or physics queries were added.
+
+**Check locally:** `dotnet build war-machine.csproj`; run F6 `WORLD/World.tscn` and `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Fire a single rifle hit versus single MG hit into a zombie with enough HP to survive; verify MG briefly twitches/mostly keeps moving while the rifle substantially flinches/slows. Fire a sustained MG burst: 4 hits kill 100-HP enemies, damage every shot but only occasional flinch (reaction anti-stunlock). Repeat on resistant runner; verify shooting and Q shove unchanged. Source-only verification performed here, no Godot runtime/build.

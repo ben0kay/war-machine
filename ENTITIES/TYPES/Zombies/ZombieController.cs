@@ -113,7 +113,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
                     _config.MaxStaggerSeconds, _config.MinFlinchInterval, _config.MinRecoverySeconds,
                     Time.GetTicksMsec())) return;
             _shoveStagger = false;
-            float keep = Mathf.Clamp(_config.ImpactVelocityRetention, 0, 1);
+            // Weaker weapon impact retains more momentum; strength 1 keeps the original rifle response.
+            float power = Mathf.Clamp(_reaction.Strength, 0f, 1f);
+            float keep = Mathf.Lerp(1f, Mathf.Clamp(_config.ImpactVelocityRetention, 0f, 1f), power);
             Velocity = new Vector3(Velocity.X * keep, Velocity.Y, Velocity.Z * keep);
         }
         else if (impact.Kind == CombatImpactKind.Shove)
@@ -312,7 +314,10 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         { if (_search == SearchState.Travel) InvestigationArrived(); else Rest(); }
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
         float speed = Mathf.Max(0, IsPursuing ? _config.ChaseSpeed : _config.WanderSpeed);
-        if (reacting) speed *= Mathf.Clamp(_config.StaggerMoveMultiplier, 0, 1);
+        // Scale movement slowdown with accepted bullet strength. Do not alter shove displacement.
+        if (reacting && !_shoveStagger)
+            speed *= Mathf.Lerp(1f, Mathf.Clamp(_config.StaggerMoveMultiplier, 0f, 1f),
+                Mathf.Clamp(_reaction.Strength, 0f, 1f));
         float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
             : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
         // Chase AI cannot cancel shove travel. Use the ordinary MoveAndSlide collision path.

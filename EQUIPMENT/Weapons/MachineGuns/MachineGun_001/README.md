@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | Shot interval | 0.10 s (600 RPM) | 0.65 s (~92 RPM) |
 | Automatic | Yes | Yes |
-| Damage | 35 physical | 95 physical |
+| Damage | 25 physical | 95 physical |
 | Range | 85 m | 90 m |
 | Base spread | 0.75° | 0.30° |
 | Tracer visual lifetime cap | 0.30 s | 0.35 s |
@@ -23,6 +23,14 @@
 | Sound | Optional, unset | Optional, unset |
 
 Shots share `ShotSpread`, the existing shoulder-to-muzzle obstruction check, hit/damage pipeline, automatic trigger timer and `FirearmShotEffects` pooled tracers. No ammunition count, belt-feed simulation, reload, weapon switching, new input bindings, overheating or special NPC handling has been added.
+
+## Weapon-specific bullet stagger tuning
+
+The shared `FirearmSettings` resource already gives each firearm its own `BulletImpactStrength` and `BulletStaggerSeconds`; no separate MG receiver/attack code is needed. The current MG master uses **25 physical damage**, **0.35 impact strength** and **0.08s requested stagger**, versus rifle **95 physical**, **1.0 impact strength** and **0.20s**.
+
+The zombie's existing CM1 recipient now scales both the instant retained movement velocity and temporary chase-speed penalty with the effective impact strength (after recipient impact resistance). Strong rifle hits still retain the original near-stop behaviour, while the MG makes a smaller visible flinch with a much softer, shorter slowdown. The shared anti-stunlock `MinFlinchInterval` / `MinRecoverySeconds` remains unchanged: not every 600-RPM bullet interrupts the zombie, although **every accepted bullet still damages**.
+
+Against an unarmoured default 100-HP zombie, **four MG hits** are needed (25 each). Approximate sustained damage is **250 HP/s** assuming all shots connect. This is a balance/configuration pass, not a change to firing, visuals, hitscan, recoil physics or other enemy types. Build and test in both camera modes locally.
 
 ## How to test without implementing weapon switching
 
