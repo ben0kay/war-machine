@@ -24,34 +24,57 @@
 
 Codex may implement **ZD0–ZD3 together as one bounded job when explicitly asked to implement the entire corpse feature**, or individually when authorized by phase. The plan itself is not authorization to implement anything.
 
-## Suggested minimal structure
+## Proposed reusable folder structure — species-independent foundation
+
+**Build the shared corpse feature once, not a zombie-only corpse system.** Zombie 001 and runner 002 are the **only initial death integrations**. Deer, bears and humans are examples of *future consumers*, not authorization to implement those species' death logic now.
 
 ```text
 ENTITIES/
   Shared/
-    Corpses/                              NEW only during authorized implementation
-      CorpseManager.cs                    shared registration, age/budget, timed cleanup
-      CorpseBody.cs                       fall -> settled -> sinking -> freed lifecycle
-      CorpseSlowArea.cs                   overlap events / movement penalty ownership
+    Corpses/                               REUSABLE for all future living entity types
+      CorpseManager.cs                     one registration, TTL, budget and cleanup owner
+      CorpseBody.cs                        fall -> settle -> sink -> free lifecycle
+      CorpseSlowArea.cs                    soft overlap-based movement modifier
+      ICorpsePoseAdapter.cs                species/rig-independent pose adapter contract
       Configuration/
-        CorpseSettings.cs                 typed settings, safe bounds
-        CorpseMaster.tres                 ONE default tuning master
-      README.md
-  TYPES/Zombies/
-    ZombieController.cs                   small one-time death handoff only
-    ZombieSettings.cs                     optional per-species death enable/override
-    Zombie_002/ZombieRunnerController.cs  keep shared death handling; no copy
-    DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md  this plan
-WORLD/WorldController.cs                  wire one shared corpse manager/root
+        CorpseSettings.cs                  common typed tunables, safe value limits
+        CorpseMaster.tres                  shared 300s rest + sink/budget defaults
+        README.md                          ownership of shared settings
+      README.md                            explain shared mechanics and species adapters
+  TYPES/
+    Zombies/
+      ZombieController.cs                  one-shot death handoff to shared manager
+      ZombieSettings.cs                    optional species-specific corpse tuning
+      ZombieCorpsePose.cs                  maps existing procedural biped joints to fall pose
+      Zombie_002/
+        ZombieRunnerController.cs          reuses ZombieCorpsePose / shared lifecycle
+      DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md this document
+    Wildlife/
+      Deer/                                EXISTING; later add DeerCorpsePose.cs (NOT NOW)
+      Bear/                                FUTURE; later add BearCorpsePose.cs (NOT NOW)
+    Humans/                                FUTURE; later add HumanCorpsePose.cs (NOT NOW)
+WORLD/
+  WorldController.cs                       wires one CorpseManager and independent Corpses root
 ```
 
-Keep the exact ownership simple; no need to create separate corpse scenes for each zombie variant, no `_Process` on every idle corpse, no per-limb `RigidBody3D` for the entire corpse's life. C# helpers may stay plain classes rather than adding scene nodes when possible; use `Shared/Corpses` only if reusable by other species later. `C/` remains exclusively procedural mesh/artwork generation.
+The new files shown are **proposed**, not present yet. Do **not** create unused Deer/Bear/Humans folders, placeholders, scenes or logic merely because they appear in this diagram. Keep `C/` for generated art only. Plain C# helpers are preferred; the shared manager and active fall owner may be nodes where Godot physics requires them. No extra scene nodes or `_Process` loops per settled corpse, no one-scene-per-species duplicate systems, and no permanent per-limb rigidbody simulation.
+
+### Shared contract vs. species-specific anatomy
+
+- **`CorpseManager` and `CorpseBody` must not know about `ZombieController`, `LeftArm`, `RightKnee`, `ZombieMeshBuilder`, or any concrete animal/human class.** Their input should be a detached visual hierarchy, a small pose adapter, initial world transform, sanitized death-hit impulse and optional settings/footprint data.
+- **`ICorpsePoseAdapter` is the boundary.** It exposes the minimum actions the shared fall owner needs: initialise/capture pivots on a provided visual hierarchy, apply a normalized fall/limb-relaxation pose while active, and preserve the settled pose. Its implementations may work with procedural `Node3D` pivots **or** an imported skeletal rig later. Keep the API small and avoid a generic animation framework, per-frame scene searches or zombie-specific enum values in `Shared`.
+- **`ZombieCorpsePose` handles only biped presentation.** It caches the existing visual joints once and supports both standard and runner zombie artwork; the runner may supply a small tuning override but must not duplicate TTL, physics, slowdown or cleanup. Preserve spawn-seeded clothing and appearance resources in the transferred visual.
+- **Future deer** would supply a quadruped adapter (front/hind legs, neck/head); **future bears** a heavy quadruped adapter with a wider footprint/response; **future humans** could reuse the biped adapter or have a `Skeleton3D` adapter. These future adapters should plug into the same manager/body without modifications to lifecycle code.
+- **Mass, fall response, footprint and optional movement-slow tuning** may differ by species through a small per-spawn settings snapshot/override. Shared `CorpseMaster.tres` remains the default owner for lifetime (300s), sink time, physics budgets and removal; don't hardcode zombie-specific constants in the manager.
+- **Soft slowdown is an opt-in mover capability**, not a dependency on any zombie AI or player class. A future deer/bear/human mover can consume the same overlap penalty without importing zombie code. If adding an interface is useful, make it a narrow movement-modifier receiver; never let corpse areas write directly into unrelated character velocity without a cleanup/overlap contract.
+
+**Future extension acceptance:** it should be possible to add a hypothetical deer corpse with a `DeerCorpsePose` adapter + species settings/handoff, **without editing** `CorpseManager.cs`, `CorpseBody.cs` or `CorpseSlowArea.cs`. Do not actually implement deer deaths in this ZD job.
 
 ## ZD0 — One-shot fall / ragdoll-lite
 
 1. On the first lethal `HealthComponent.Died` notification, **latch death once** and stop roaming, chasing, sight timer, investigation, reaction, debug cone, collision and incoming combat. Preserve existing `HealthComponent` ownership and NPC health feedback events. Avoid the old immediate hide-and-free until the corpse visual has been handed off.
-2. Transfer the original `VisualRoot` or a lightweight pose-preserving copy to the independent `CorpseBody`. The original character/collision can then be removed. Preserve the runner's lean body and its existing clothing/blood material variations; no new model, mesh regeneration or duplicated material palette.
-3. Start a bounded **physics-assisted collapse (~1–2.5 seconds; tune)**: one temporary simplified torso/pelvis `RigidBody3D` (or equivalent small physics proxy), contact with terrain and already-settled corpses, modest hit-direction impulse, angular damping; let arms/legs/head swing/relax with short spring/interpolated procedural `Node3D` rotations. A front/back/side fall and irregular limbs should look natural. This is **not** independent physics per limb; keep expensive actual full-body ragdolls as an optional future milestone.
+2. Transfer the original `VisualRoot` or a lightweight pose-preserving copy to the independent `CorpseBody`, and pass a cached `ICorpsePoseAdapter` with the visual. The original character/collision can then be removed. Preserve the runner's lean body and existing clothing/blood material variations; no new model, mesh regeneration or duplicated material palette. Neither `CorpseBody` nor `CorpseManager` may fetch hardcoded zombie joint names.
+3. Start a bounded **physics-assisted collapse (~1–2.5 seconds; tune)**: one temporary simplified torso/pelvis `RigidBody3D` (or equivalent small physics proxy), contact with terrain and already-settled corpses, modest hit-direction impulse and angular damping. Call the **species pose adapter** during the short active collapse so limbs/head swing or relax with cached joint rotations. A front/back/side fall and irregular limbs should look natural. This is **not** independent physics per limb; keep expensive actual full-body ragdolls as an optional future milestone.
 4. Keep torso/fall geometry from tunnelling through ground and walls; do not snap bodies up onto roofs or move them across terrain. Follow confirmed collision ground. If there is no safe support (unloaded terrain, steep cliff, cave edge, invalid height), use a bounded fallback collapse/dismissal rather than a long-lived floating/falling body. Avoid unrealistic impulse sizes.
 5. Settle when contact and low velocity are stable or when a hard short timeout is reached. Freeze the final joint positions and transform; replace/disable moving rigid physics. **A settled corpse must have zero per-frame fall/gait/AI processing.** If killed while running, do not continue the runner's gait or rotate it toward the player.
 
@@ -61,7 +84,7 @@ Keep the exact ownership simple; no need to create separate corpse scenes for ea
 
 1. Corpses remain on ground as visible static meshes (not active `CharacterBody3D` actors). New falls may make contact with a **single, low-cost corpse proxy** per settled body so they can layer visually; do not simulate friction/limbs forever. Avoid creating dozens of contact shapes per individual corpse.
 2. A **shallow broad footprint** / `Area3D` on settled corpses signals nearby live movers. Apply **mild slowdown**, initially suggested `0.80×` normal movement in the footprint; an overlapping pile can become more troublesome but **cap combined slowdown** (e.g. no lower than `0.65×`, never multiplicative exponential slowdown). Apply via one shared movement-modifier contract or a narrow existing movement API rather than hijacking zombie perception, health, gravity or `MoveAndSlide()`. Track enter/exit, and clear penalties on corpse disposal, death, actor unload or mode change.
-3. Start by supporting zombie 001, runner 002 and any other moving entities opting into the modifier. Make player slowdown explicitly configurable and test it before enabling globally. Both actors must be able to **walk over or around** piles, not become permanently stuck on a hard full-height collision wall. Do **not** attach the old standing capsule to a corpse.
+3. Implement/verify slowdown initially for zombie 001 and runner 002, exposing a narrow **species-independent opt-in movement-modifier contract** usable by player, deer, bears and humans later. Make player slowdown explicitly configurable and test it before enabling globally. Both actors must be able to **walk over or around** piles, not become permanently stuck on a hard full-height collision wall. Do **not** attach the old standing capsule to a corpse.
 4. **Collision trade-off:** Godot `CharacterBody3D` does not automatically step over a raised obstacle. Prefer soft Area slowdown as the default initial gameplay blocker. If an optional very low solid pile collider is added, require demonstrated step/slide clearance for player, runner and shambler before enabling it; otherwise keep solid collision only for fall-on-corpse physics and not for living actor movement. Avoid blocking vision, bullets, the camera, or zombie targeting unless explicitly authorized later.
 5. Give the foot-area one bounded shape (roughly torso/leg footprint), on a designated collision layer/mask chosen after auditing existing world/weapon/sight layers. No per-frame scene-tree scans or distance calculations per corpse. Visual pile height should arise from actual settled transforms/contacts where feasible rather than randomly teleporting corpses upward.
 
@@ -81,6 +104,6 @@ Keep the exact ownership simple; no need to create separate corpse scenes for ea
 
 ## Explicit non-goals and Codex handoff
 
-Not in this feature: player or deer ragdolls; amputations/dismemberment; decaying gore; corpse loot or interaction; reanimation; persistent corpses across saves; new enemy navigation; true bone-ragdoll simulation; damaging the player on corpse contact; unlimited solid obstacles; scene-wide physics queries every frame.
+Not in this feature: player, deer, bear or human death integrations (only the reusable extension seam); amputations/dismemberment; decaying gore; corpse loot or interaction; reanimation; persistent corpses across saves; new enemy navigation; true bone-ragdoll simulation; damaging the player on corpse contact; unlimited solid obstacles; scene-wide physics queries every frame.
 
-**Codex instruction once authorized:** Re-read the root README, `CodePreferences.md`, this document, `ZombieController.cs`, both mesh builders, `EntityCore.cs`, `HealthComponent`, `DamagePacket`, `WorldController.cs`, active collision layers and FPS test. Implement the smallest shared solution, honoring current `OnKilled` and deactivation ordering. Update owning READMEs with **implemented vs planned** status. Review diff and do one brief build/basic check when possible; give explicit manual tests if Godot unavailable. Commit all authorized changes **once** to `implement-td0-td1` only. Do not silently expand to other entity species or change combat damage.
+**Codex instruction once authorized:** Re-read the root README, `CodePreferences.md`, this document, `ZombieController.cs`, both mesh builders, `EntityCore.cs`, `HealthComponent`, `DamagePacket`, `WorldController.cs`, active collision layers and FPS test. Implement the smallest shared solution, **including the proposed `Shared/Corpses` structure and `ICorpsePoseAdapter` seam**, honoring current `OnKilled` and deactivation ordering. Keep the death/aging/slowdown implementation species-independent and integrate only zombie 001 and runner 002. Update owning READMEs with **implemented vs planned** status. Review diff and do one brief build/basic check when possible; give explicit manual tests if Godot unavailable. Commit all authorized changes **once** to `implement-td0-td1` only. Do not silently expand to other entity species or change combat damage.
