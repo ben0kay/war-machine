@@ -38,6 +38,10 @@ BranchLengthFalloff = 1.1
 FoliageDensity = 1.0
 ConicalWidth = 0.18
 ColourVariation = 0.22
+BranchIrregularity = 0.55
+BranchDroop = 0.20
+NeedleSpraySpread = 0.55
+FoliageLayering = 0.85
 
 NeedleClusterLength = 0.95
 NeedleClusterThickness = 0.19

@@ -42,6 +42,11 @@ public partial class PineSettings : Resource
     [Export(PropertyHint.Range, "0.1,2,0.05")] public float FoliageDensity { get; set; } = 1f;
     [Export(PropertyHint.Range, "0.08,0.35,0.01")] public float ConicalWidth { get; set; } = 0.18f;
     [Export(PropertyHint.Range, "0,0.5,0.01")] public float ColourVariation { get; set; } = 0.22f;
+    [ExportGroup("Organic branches and needles")]
+    [Export(PropertyHint.Range, "0,1,0.05")] public float BranchIrregularity { get; set; } = 0.55f;
+    [Export(PropertyHint.Range, "0,0.5,0.01")] public float BranchDroop { get; set; } = 0.20f;
+    [Export(PropertyHint.Range, "0.1,1,0.05")] public float NeedleSpraySpread { get; set; } = 0.55f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float FoliageLayering { get; set; } = 0.85f;
     [ExportGroup("Distance / Quality")]
     [Export] public bool UseGeneratedLod { get; set; } = true;
     [Export(PropertyHint.Range, "32,256,8")] public float LodDistance { get; set; } = 48f;

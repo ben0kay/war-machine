@@ -1,73 +1,111 @@
-// Builds deterministic straight-trunk conifers with budgeted, layered foliage and connected leafy sprigs; no per-leaf nodes.
+// Builds deterministic asymmetric conifers with layered needle sprays and budgeted near/far meshes; no per-leaf nodes.
 using Godot;
 
 public static class PineMeshBuilder
 {
     // =========================================================
-    // Create two material surfaces per tree so branches and foliage can be replaced by authored art later.
+    // Two materials and one seeded skeleton per variant; only the foliage density changes across LODs.
     public static ArrayMesh CreatePine(PineSettings settings, int variation, Material woodMaterial, Material leafMaterial, int leafStride = 1)
     {
         var random = new RandomNumberGenerator { Seed = Mix(settings.Seed, variation, 19) };
-        float height = random.RandfRange(Mathf.Min(settings.MinimumHeight, settings.MaximumHeight), Mathf.Max(settings.MinimumHeight, settings.MaximumHeight)) * settings.HeightMultiplier;
+        float height = random.RandfRange(Mathf.Min(settings.MinimumHeight, settings.MaximumHeight),
+            Mathf.Max(settings.MinimumHeight, settings.MaximumHeight)) * settings.HeightMultiplier;
         float radius = Mathf.Max(0.05f, settings.TrunkRadius);
         using var wood = new SurfaceTool(); using var leaves = new SurfaceTool();
         wood.Begin(Mesh.PrimitiveType.Triangles); leaves.Begin(Mesh.PrimitiveType.Triangles);
         wood.SetMaterial(woodMaterial); leaves.SetMaterial(leafMaterial);
-        float trunkRadius = GetTrunkRadius(settings, variation);
         var bark = new Color(0.25f, 0.19f, 0.14f);
+        float trunkRadius = GetTrunkRadius(settings, variation);
         AddTaper(wood, Vector3.Zero, Vector3.Up * height, trunkRadius, trunkRadius * (1 - settings.TrunkTaper), bark, 8);
-        int fullTiers = Mathf.Clamp(settings.BranchTierCount, 3, 24);
+
         bool distant = leafStride > 1;
-        int tiers = fullTiers, branches = 6;
-        int budget = Mathf.Clamp((int)(settings.LeafBudget * settings.FoliageDensity), 72, 2400);
-        int count = Mathf.Max(2, budget / (fullTiers * 6));
-        if (distant) count = Mathf.Max(2, count / 3);
+        int tiers = Mathf.Clamp(settings.BranchTierCount, 3, 24);
+        // LeafBudget counts clusters, not triangles. This cap bounds extra near-detail geometry.
+        int budget = Mathf.Clamp((int)(settings.LeafBudget * Mathf.Clamp(settings.FoliageDensity, 0f, 2f)), 72, 1200);
+        int nearCount = Mathf.Max(2, budget / (tiers * 6));
+        int clusterCount = distant ? Mathf.Max(1, Mathf.CeilToInt((float)nearCount / Mathf.Clamp(leafStride, 2, 8))) : nearCount;
+        float irregularity = Mathf.Clamp(settings.BranchIrregularity, 0f, 1f);
+        float spread = Mathf.Clamp(settings.NeedleSpraySpread, 0.1f, 1f);
+        float layering = Mathf.Clamp(settings.FoliageLayering, 0f, 1f);
+        float droop = Mathf.Clamp(settings.BranchDroop, 0f, 0.5f);
+
         for (int tier = 0; tier < tiers; tier++)
         {
             float t = tier / (float)tiers;
-            float y = height * Mathf.Lerp(0.18f, 0.95f, t);
-            float length = height * settings.ConicalWidth * Mathf.Pow(1 - t, settings.BranchLengthFalloff);
             random.Seed = Mix(settings.Seed, variation, tier + 101);
+            int branches = 5 + random.RandiRange(0, 2);
             float rotation = random.RandfRange(0, Mathf.Tau);
+            float y = height * (Mathf.Lerp(0.17f, 0.94f, t) + random.RandfRange(-0.016f, 0.016f) * irregularity);
+            float tierLength = height * settings.ConicalWidth * Mathf.Pow(1 - t, settings.BranchLengthFalloff);
             for (int branch = 0; branch < branches; branch++)
             {
+                // Reset the random stream per branch: near and far keep identical wood silhouettes.
                 random.Seed = Mix(settings.Seed + variation, tier, branch + 501);
-                float angle = rotation + branch * Mathf.Tau / branches + random.RandfRange(-0.12f, 0.12f);
+                float angle = rotation + branch * Mathf.Tau / branches + random.RandfRange(-0.28f, 0.28f) * irregularity;
                 var direction = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
-                var start = Vector3.Up * y;
-                var end = start + direction * length * random.RandfRange(0.85f, 1.1f) - Vector3.Up * length * 0.24f;
+                var side = new Vector3(-direction.Z, 0, direction.X);
+                var start = Vector3.Up * (y + random.RandfRange(-0.012f, 0.012f) * height * irregularity);
+                float length = tierLength * Mathf.Lerp(1f, random.RandfRange(0.72f, 1.23f), irregularity);
+                float bend = length * (droop + random.RandfRange(-0.10f, 0.10f) * irregularity);
+                var end = start + direction * length - Vector3.Up * bend;
                 AddTaper(wood, start, end, radius * (1 - t) * 0.24f, 0.008f, bark, 5);
-                for (int j = 0; j < count; j++)
+
+                for (int j = 0; j < clusterCount; j++)
                 {
-                    float along = random.RandfRange(0.18f, 1f);
-                    var center = start.Lerp(end, along);
-                    var side = new Vector3(-direction.Z, 0, direction.X);
-                    float fan = length * 0.32f * (1 - along * 0.65f);
-                    var anchor = center + side * random.RandfRange(-fan, fan) + Vector3.Up * random.RandfRange(-0.45f, 0.45f);
-                    var axis = (direction + side * random.RandfRange(-1.8f, 1.8f) - Vector3.Up * 0.25f).Normalized();
-                    float needle = settings.NeedleClusterLength * random.RandfRange(0.7f, 1.2f) * (distant ? 1.8f : 1f);
-                    float shade = random.RandfRange(1 - settings.ColourVariation, 1 + settings.ColourVariation);
-                    var color = new Color(0.085f, 0.23f, 0.135f) * shade;
-                    if (distant && j % 2 != 0) continue;
-                    // Closed tapered tufts give volume with six triangles, replacing many intersecting needle fans.
-                    var tip = anchor + axis * needle;
-                    var across = axis.Cross(Vector3.Up).Normalized();
+                    // Sprays grow along branches, with modest lateral offsets instead of floating cones.
+                    float along = Mathf.Lerp(0.24f, 0.97f, (j + random.RandfRange(0.2f, 0.8f)) / clusterCount);
+                    float fan = length * 0.24f * (1 - along * 0.45f);
+                    var anchor = start.Lerp(end, along) + side * random.RandfRange(-fan, fan)
+                        + Vector3.Up * random.RandfRange(-0.12f, 0.12f);
+                    var axis = (direction + side * random.RandfRange(-0.7f, 0.7f)
+                        + Vector3.Up * random.RandfRange(-0.25f, 0.12f)).Normalized();
+                    var across = axis.Cross(Vector3.Up);
+                    if (across.LengthSquared() < 0.001f) across = axis.Cross(Vector3.Right);
+                    across = across.Normalized();
                     var up = across.Cross(axis).Normalized();
-                    float width = settings.NeedleClusterThickness * (distant ? 2.2f : 1f);
-                    var middle = anchor.Lerp(tip, 0.4f);
-                    var a = middle + across * width;
-                    var b = middle - across * width * 0.5f + up * width * 0.866f;
-                    var c = middle - across * width * 0.5f - up * width * 0.866f;
-                    AddLeafFace(leaves, anchor, b, a, color * 0.85f, 0, 0.4f, 0.4f);
-                    AddLeafFace(leaves, anchor, c, b, color * 0.9f, 0, 0.4f, 0.4f);
-                    AddLeafFace(leaves, anchor, a, c, color, 0, 0.4f, 0.4f);
-                    AddLeafFace(leaves, a, b, tip, color, 0.4f, 0.4f, 1);
-                    AddLeafFace(leaves, b, c, tip, color * 0.9f, 0.4f, 0.4f, 1);
-                    AddLeafFace(leaves, c, a, tip, color * 1.08f, 0.4f, 0.4f, 1);
+                    float needle = settings.NeedleClusterLength * Mathf.Lerp(1.16f, 0.58f, t)
+                        * random.RandfRange(0.78f, 1.25f) * (distant ? 1.65f : 1f);
+                    float width = settings.NeedleClusterThickness * (1 + 0.85f * spread)
+                        * (distant ? 2f : 1f) * random.RandfRange(0.85f, 1.15f);
+                    float tone = random.RandfRange(1 - settings.ColourVariation, 1 + settings.ColourVariation)
+                        * Mathf.Lerp(0.83f, 1.08f, t) * Mathf.Lerp(0.90f, 1.06f, along);
+                    var color = new Color(0.09f, 0.27f, 0.15f) * tone;
+
+                    // Each blade is two-sided, opaque and anchored for the existing GPU tip wind.
+                    AddNeedleSpray(leaves, anchor, axis, across, up, needle, width, color * 0.88f);
+                    if (distant || random.Randf() < layering)
+                    {
+                        var siblingAxis = (axis + across * random.RandfRange(-0.7f, 0.7f) * spread
+                            + up * random.RandfRange(-0.25f, 0.25f)).Normalized();
+                        var siblingAcross = siblingAxis.Cross(up);
+                        if (siblingAcross.LengthSquared() < 0.001f) siblingAcross = across;
+                        siblingAcross = siblingAcross.Normalized();
+                        var siblingUp = siblingAcross.Cross(siblingAxis).Normalized();
+                        var siblingAnchor = anchor + across * (width * 0.22f) - axis * (needle * 0.10f);
+                        AddNeedleSpray(leaves, siblingAnchor, siblingAxis, siblingAcross, siblingUp,
+                            needle * (distant ? 0.85f : random.RandfRange(0.65f, 0.94f)),
+                            width * (distant ? 0.85f : 0.68f), color * 1.08f);
+                    }
                 }
             }
         }
         var mesh = new ArrayMesh(); wood.Commit(mesh); leaves.Commit(mesh); return mesh;
+    }
+
+    // =========================================================
+    // Four opaque triangles per diamond-like spray: no alpha sorting or extra surface materials.
+    // UV.y stays at the branch root and rises towards the tips for shared wind movement.
+    private static void AddNeedleSpray(SurfaceTool leaves, Vector3 anchor, Vector3 axis,
+        Vector3 across, Vector3 up, float length, float width, Color color)
+    {
+        var tip = anchor + axis * length;
+        var midpoint = anchor + axis * (length * 0.49f);
+        var right = midpoint + across * width + up * (width * 0.16f);
+        var left = midpoint - across * (width * 0.75f) - up * (width * 0.12f);
+        AddLeafFace(leaves, anchor, right, tip, color, 0, 0.5f, 1);
+        AddLeafFace(leaves, anchor, tip, left, color * 0.92f, 0, 1, 0.5f);
+        AddLeafFace(leaves, tip, right, anchor, color * 0.92f, 1, 0.5f, 0);
+        AddLeafFace(leaves, left, tip, anchor, color * 0.86f, 0.5f, 1, 0);
     }
 
     // =========================================================
