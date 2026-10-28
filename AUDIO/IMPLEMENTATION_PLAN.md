@@ -1,6 +1,6 @@
 # AUDIO — future Codex implementation plan
 
-**Current status:** AU0 pool/listener and AU1 rifle playback binding are implemented, awaiting local validation. The rifle cue intentionally has no Stream: owner requested a plug-in foundation, not asset generation. AU2/AU3 remain unimplemented. See README for current API/budgets/limitations; phase descriptions below are original design context. Read root `README.md`, `CodePreferences.md`, `AUDIO/README.md` and the related gameplay sources at current HEAD. Use branch `implement-td0-td1` (**not main**). Do **only authorized phases**, one focused commit and brief validation. No runtime audio code or sound files should be assumed.
+**Current status:** AU0 pool/listener and AU1 rifle playback binding are implemented, awaiting local validation. The rifle cue intentionally has no Stream: owner requested a plug-in foundation, not asset generation. HE0 shared action/noise dispatch is now implemented; AU2 sources and AU3/HE1 AI responses remain unimplemented. See README for current API/budgets/limitations; phase descriptions below are original design context. Read root `README.md`, `CodePreferences.md`, `AUDIO/README.md` and the related gameplay sources at current HEAD. Use branch `implement-td0-td1` (**not main**). Do **only authorized phases**, one focused commit and brief validation. No runtime audio code or sound files should be assumed.
 
 ## AU0 — central playback pool and listener
 

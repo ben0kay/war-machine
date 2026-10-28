@@ -5,6 +5,7 @@ public partial class WorldAudio : Node
 {
     [Export] public AudioSettings Settings { get; set; } = null!;
     public AudioSettings RuntimeSettings { get; private set; } = null!;
+    public WorldSoundEvents SoundEvents { get; private set; } = null!;
     private sealed class Voice
     {
         public AudioStreamPlayer3D Spatial = null!;
@@ -27,6 +28,7 @@ public partial class WorldAudio : Node
     // =========================================================
     public override void _Ready()
     {
+        SoundEvents = new WorldSoundEvents(this);
         RuntimeSettings = (AudioSettings)Settings.Duplicate(true); _random.Randomize();
         _voices = new Voice[Mathf.Clamp(RuntimeSettings.MaxVoices, 1, 64)];
         for (int i = 0; i < _voices.Length; i++)
@@ -199,6 +201,7 @@ public partial class WorldAudio : Node
     // =========================================================
     public override void _ExitTree()
     {
+        SoundEvents?.Shutdown();
         if (IsInstanceValid(_camera)) _camera!.ViewChanged -= UpdateListener;
         if (IsInstanceValid(_player)) _player!.StanceChanged -= OnStance;
         StopAll();

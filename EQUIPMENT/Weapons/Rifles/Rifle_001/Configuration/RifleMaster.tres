@@ -1,6 +1,13 @@
-[gd_resource type="Resource" script_class="FirearmSettings" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="FirearmSettings" load_steps=5 format=3]
 [ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/FirearmSettings.cs" id="1"]
 [ext_resource type="Resource" path="res://AUDIO/OneShots/Weapons/RifleShot.tres" id="shot_cue"]
+
+[ext_resource type="Script" path="res://AUDIO/Shared/SoundEmissionSettings.cs" id="emission_script"]
+
+[sub_resource type="Resource" id="shot_emission"]
+script = ExtResource("emission_script")
+HearingRadiusMeters = 80.0
+Loudness = 1.0
 
 [resource]
 script = ExtResource("1")
@@ -21,6 +28,7 @@ TracerEveryNShots = 1
 FlashRadius = 0.08
 ShotColor = Color(1, 0.8, 0.35, 1)
 ShotVolumeDb = -12.0
+ShotEmission = SubResource("shot_emission")
 
 EmitMuzzleLight = true
 ShotCue = ExtResource("shot_cue")

@@ -48,6 +48,8 @@ public partial class FirearmSettings : Resource
     [Export] public float FlashRadius { get; set; } = 0.08f;
     [Export] public bool EmitMuzzleLight { get; set; }
     [Export] public AudioCue? ShotCue { get; set; }
+    // Optional shared emission profile; absent preserves legacy playback without adding gameplay noise.
+    [Export] public SoundEmissionSettings? ShotEmission { get; set; }
     // Legacy stream remains available for unmigrated weapons; pooled playback is required when ShotCue is set.
     [Export] public AudioStream? ShotSound { get; set; }
     [Export] public float ShotVolumeDb { get; set; } = -12;

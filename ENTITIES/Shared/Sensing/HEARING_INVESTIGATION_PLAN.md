@@ -1,7 +1,7 @@
 # Hearing, sound stimuli and movable investigation anchors
 
-> **Status: Proposed / reference only — nothing in this plan is implemented.**  
-> **Related roadmap:** [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) → PER2 (now specified as per-zombie randomized last-seen search) and PER5 (hearing). PER0/PER1 visual detection already exist; neither PER2 nor gameplay hearing is implemented.  
+> **Status: HE0 implemented in source, awaiting local validation. HE1–HE3 remain proposed.**
+> **Related roadmap:** [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) → PER2 (now specified as per-zombie randomized last-seen search) and PER5 (hearing). PER0/PER1 visual detection already exist; PER2 is implemented; HE0 now supplies gameplay noise events, but AI listening/reaction is not implemented.
 > **Branch:** `implement-td0-td1`. **Primary first consumer:** zombies in `WORLD/World.tscn`. Long-term consumers could include animals, hostile humans and robots, with species-specific responses.
 
 ## Desired player-facing behaviour
@@ -98,12 +98,12 @@ All values are design starting points, not physical acoustics. Tune against the 
 
 | Phase | Deliverable | State |
 | --- | --- | --- |
-| **HE0 — shared spatial noise** | Minimal immutable stimulus and world-local dispatcher; expose one shot-noise setting on weapon resource; issue a sound on successful `TryFire()` independently of audio playback. No zombie behaviour change yet. | Proposed |
+| **HE0 — shared spatial noise** | Minimal immutable stimulus and world-local dispatcher; expose one shot-noise setting on weapon resource; issue a sound on successful `TryFire()` independently of audio playback. No zombie behaviour change yet. | Implemented; awaiting local validation |
 | **HE1 — zombie hearing + anchor** | Receive and filter shot events, investigate a recorded offset position, prioritize current LOS chase, recenter `wanderAnchor` when reached without visual acquisition, handle timeout/stuck/multiple shots, cleanup on death/unload. | Proposed |
 | **HE2 — quiet/loud actions** | Add event-driven running/walking/crouched footstep thresholds, then melee, looting and crawl only as those systems become real. Per-action sounds use shared contract and data-driven radii. | Proposed |
 | **HE3 — polish and scale** | Optional hearing debug circles/last-noise marker, obstacle muffling with bounded budget, suppression/equipment/weather modifiers, listener spatial indexing if profiling justifies. Keep these optional. | Proposed |
 
-Recommended first useful playable pass: **HE0 + HE1 together**, after review/authorization, without changing robot scanner, natural eyesight geometry, melee attacks or the AI navigation system. PER2 last-seen memory may be integrated deliberately if implemented earlier; HE1 must function without PER2.
+HE0 is implemented. The next useful playable pass is **HE1**, after separate review/authorization, without changing robot scanner, natural eyesight geometry, melee attacks or the AI navigation system. PER2 last-seen memory may be integrated deliberately if implemented earlier; HE1 must function without PER2.
 
 ## Acceptance / regression checks (brief)
 
@@ -116,8 +116,20 @@ Recommended first useful playable pass: **HE0 + HE1 together**, after review/aut
 7. Stuck/no-path investigation terminates gracefully rather than cycling forever; no teleport, no additional idle timers, no leaks on actor death/deactivation/scene exit.
 8. Godot C# build, F6 `WORLD/World.tscn`, confirm current sight/cover, F7 debug cones, gunshot effects and hit damage are unchanged. User does visual gameplay/performance acceptance.
 
-**This file is only a design reference.** No code, settings, weapons, audio or zombie AI is modified by adding it. When authorized, follow root `CodePreferences.md`: one commit per job, brief validation, update the sensing and zombie READMEs, report outstanding local checks.
+**HE1–HE3 remain design references.** The HE0 handoff below supersedes old statements that the dispatcher does not exist. When authorized, follow root `CodePreferences.md`: one commit per job, brief validation, update the sensing and zombie READMEs, report outstanding local checks.
 
 ## PER2 integration note
 
-PER2 visual investigation is now implemented and, by explicit owner direction, already relocates the wander anchor to the physically settled give-up position. Future HE1 must preserve this visual behavior and reuse the actor-owned anchor policy; anchor relocation is no longer exclusive to hearing. HE0–HE3 themselves remain unimplemented, and audio playback still does not supply AI clues.
+PER2 visual investigation is now implemented and, by explicit owner direction, already relocates the wander anchor to the physically settled give-up position. Future HE1 must preserve this visual behavior and reuse the actor-owned anchor policy; anchor relocation is no longer exclusive to hearing. HE0 supplies shared gameplay events; HE1–HE3 remain unimplemented. Playback alone still does not supply AI clues.
+
+## HE0 implementation handoff — 2026-10-28
+
+Owner authorized a shared emission route through AUDIO plus independent gameplay hearing, with common action loudness and no sound assets required. `AUDIO/Shared/WorldSoundEvents.cs` is composed once by the existing WorldAudio. `SoundEmissionSettings` is reusable by future footsteps/melee/interactions. `SoundStimulus` and `SoundDispatcher` live here; no actor reference, global singleton, event queue or scene scan. Both current weapon masters opt in (rifle 80m, MG 70m at loudness 1); old custom firearms without ShotEmission preserve their earlier playback-only behavior. Active world/FPS already inject the same AUDIO owner through WeaponSlots. Other consumers must explicitly use their world's service.
+
+Each successful TryFire closes its cooldown gate, then emits one snapshot at the actual muzzle coordinate (not the cover-adjusted ray origin), before optional pooled playback. Failed cooldown/unequipped/invalid-aim calls emit nothing. Numeric source actor ID is separate from emitter weapon ID. Per-world sequence supports later HE1 arbitration; it is not a save identifier. A service without audio can also be constructed for silent gameplay/tests. Shutdown clears subscribers and rejects future emissions.
+
+Shared loudness is linear amplitude. Effective amplitude is profile loudness times action multiplier (individual and result caps 0–4); zero suppresses both. Playback adds 20log10(amplitude) dB to the existing gain, still subject to AudioCue distance and pool limits. Hearing radius is base radius times sqrt(amplitude), capped 1000m, with peak intensity equal to amplitude and linear distance falloff. Personal master/category volumes never alter hearing. Radius zero means playback only. These rules are simple gameplay tuning, not physical propagation.
+
+**No HE1 behavior:** zombies/deer/robots do not subscribe, investigate or change anchors from sounds yet. No footsteps, additional sounds or audio files were added. HE1 must range-filter registered active listeners, decide thresholds/priorities, unsubscribe and preserve PER2. See [shared API](../../../AUDIO/Shared/README.md).
+
+**Checks/handoff:** source and resource paths/load counts plus finite/zero/multiplier/falloff arithmetic reviewed. No Godot/.NET executable is available here, so compilation and runtime event/playback acceptance remain pending. Locally run `dotnet build war-machine.csproj`; F6 both World and FPS. Temporarily subscribe to `WorldAudio.SoundEvents.Hearing.Emitted` and count snapshots: one per accepted rifle/MG shot, none for cooldown/unequipped/UI-blocked attempts; positions stay fixed as the player moves and cover-adjusted shots retain their muzzle origin. Confirm radius-zero vs loudness-zero, shutdown/reload and independent world instances. With Stream unassigned/audio OFF/full voice pool, noise counts must remain unchanged. When a real rifle sound is assigned, verify one pooled sound per shot, existing nested caps, louder/quieter gain and no legacy double-play. Remove the temporary subscriber after checking. No runtime acceptance is claimed.

@@ -54,7 +54,7 @@ public partial class FirearmController : Node3D
     public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp)
     {
         if (!_equipped || !IsInstanceValid(_holder) || Muzzle == null || !_cooldown.IsStopped()) return false;
-        Vector3 start = Muzzle.GlobalPosition, direction = aimPoint - start;
+        Vector3 shotPosition = Muzzle.GlobalPosition, start = shotPosition, direction = aimPoint - start;
         if (!float.IsFinite(direction.X) || !float.IsFinite(direction.Y) || !float.IsFinite(direction.Z)
             || direction.LengthSquared() < 0.0001f) return false;
         // =========================================================
@@ -82,12 +82,25 @@ public partial class FirearmController : Node3D
             HitTargetResolver.Dispatch(hit["collider"].AsGodotObject() as Node, _holder, packet, impact);
         }
         _effects.ShowShot(start, end);
-        if (RuntimeSettings.ShotCue != null)
-        {
-            if (IsInstanceValid(_audioService)) _audioService!.PlayOneShot(RuntimeSettings.ShotCue, Muzzle.GlobalPosition, GetInstanceId(), RuntimeSettings.ShotVolumeDb);
-        }
-        else _legacyAudio?.Play();
+        // Close the acceptance gate before notifying sound/recoil observers; recursive requests cannot double-fire.
         _cooldown.Start(Mathf.Max(RuntimeSettings.ShotInterval, 0.03f));
+        if (RuntimeSettings.ShotEmission != null && IsInstanceValid(_audioService))
+        {
+            _audioService!.SoundEvents.Emit(RuntimeSettings.ShotEmission, SoundKind.Gunshot, shotPosition,
+                sourceId: _holder!.GetInstanceId(), emitterId: GetInstanceId(),
+                playbackCue: RuntimeSettings.ShotCue, gainDb: RuntimeSettings.ShotVolumeDb);
+        }
+        else if (RuntimeSettings.ShotCue != null)
+        {
+            if (IsInstanceValid(_audioService)) _audioService!.PlayOneShot(RuntimeSettings.ShotCue, shotPosition, GetInstanceId(), RuntimeSettings.ShotVolumeDb);
+        }
+        // Legacy streams remain exclusive of pooled cues and use the same action loudness, if configured.
+        if (RuntimeSettings.ShotCue == null && _legacyAudio != null)
+        {
+            float loudness = RuntimeSettings.ShotEmission?.Loudness ?? 1f;
+            if (float.IsFinite(loudness) && loudness > 0)
+            { _legacyAudio.VolumeDb = RuntimeSettings.ShotVolumeDb + 20f * System.MathF.Log10(Mathf.Clamp(loudness, 0.0001f, 4)); _legacyAudio.Play(); }
+        }
         // Current shot is already resolved; this impulse affects subsequent accepted shots.
         _recoil.OnAcceptedShot(RuntimeSettings);
         if (_recoil.IsActive) SetProcess(true);

@@ -1,3 +1,13 @@
-# Shared audio runtime
+# Shared sound and playback runtime
 
-Future reusable pooled AudioManager, playback handles, cue Resource and category routing belong here. No audio manager or running sound nodes exist yet. See `../IMPLEMENTATION_PLAN.md`.
+`WorldAudio` owns the existing bounded playback pool and one `WorldSoundEvents` entry point per world. `AudioCue` controls playback stream/category/priority/gain/distance. `SoundEmissionSettings` controls action hearing radius and loudness. Call `SoundEvents.Emit(profile, kind, position, sourceId, emitterId, playbackCue, gainDb, loudnessMultiplier)` for gameplay actions that should feed both consumers.
+
+The call publishes an immutable `SoundStimulus` through `SoundEvents.Hearing.Emitted` independently of optional pooled playback. No stream, mute, disabled audio, rejected voice or personal volume setting can gate gameplay noise. A zero hearing radius supports playback-only actions; a zero action loudness suppresses both. Emit returns action acceptance, not audible playback acceptance. Existing direct PlayOneShot/StartLoop calls remain playback-only and do not silently become AI clues.
+
+`SourceId` identifies the actor and `EmitterId` the weapon/action emitter using numeric IDs only. Both the hearing snapshot and playback position are copied immediately; listeners must not follow the actor via its ID. Sequences are monotonic per world service, not save-game identities. Hearing consumes no audio voice and currently has no AI subscribers. HE1 will register relevant active listeners and own range/sensitivity filtering and reactions.
+
+Loudness is linear amplitude, clamped 0–4 after multiplying profile and per-action multipliers (each individually clamped 0–4). Playback gain adds `20 * log10(loudness)` dB. Hearing radius is `baseRadius * sqrt(loudness)`, clamped to 1000m; peak intensity is loudness with linear distance falloff to zero at radius. These are tunable gameplay conventions, not physical acoustics. `AudioCue.MaxDistance` remains a separate playback cutoff; user mixer gains never change hearing. Example: loudness 0.25 adds -12.04dB and halves hearing radius. Future footsteps can pass stance/surface multipliers per actual step; HE0 does not emit footsteps.
+
+The coordinator and dispatcher are plain C# objects: no processes, timers, queues, per-event scene scans or retained event history. One discrete callback per registered subscriber; HE1 must unsubscribe on deactivation/death/unload. WorldAudio exit shuts down emissions and clears subscriptions. Looped ambience still uses the existing playback API and its active-only processing; HE0 is for discrete action sounds, not periodic stimuli from loops.
+
+Godot/.NET compilation and runtime acceptance are pending locally. See [hearing plan](../../ENTITIES/Shared/Sensing/HEARING_INVESTIGATION_PLAN.md).

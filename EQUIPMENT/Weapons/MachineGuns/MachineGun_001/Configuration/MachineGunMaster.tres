@@ -1,6 +1,13 @@
-[gd_resource type="Resource" script_class="FirearmSettings" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="FirearmSettings" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/FirearmSettings.cs" id="1"]
+
+[ext_resource type="Script" path="res://AUDIO/Shared/SoundEmissionSettings.cs" id="emission_script"]
+
+[sub_resource type="Resource" id="shot_emission"]
+script = ExtResource("emission_script")
+HearingRadiusMeters = 70.0
+Loudness = 1.0
 
 [resource]
 script = ExtResource("1")
@@ -24,6 +31,7 @@ FlashDuration = 0.05
 FlashRadius = 0.11
 ShotColor = Color(1, 0.78, 0.42, 1)
 ShotVolumeDb = -12.0
+ShotEmission = SubResource("shot_emission")
 
 EmitMuzzleLight = true
 
