@@ -43,3 +43,7 @@ The implementation plan includes **cross-phase modularity and performance guardr
 ## Wildlife foundation — Deer (2026-10-28)
 
 [TYPES/Wildlife/Deer](TYPES/Wildlife/Deer/README.md) now provides a passive, shootable deer prefab, inherited from the shared Entity scene rather than zombie behaviour. It has a one-time procedural animal silhouette and the existing `HealthComponent` / generic health-bar pipeline (120 HP). The active world has one configurable preview spawn near player spawn, grounded using the existing Terrain3D collision and cleared of some vegetation. **No deer AI, flee, herd, animation or spawning system** is implemented. See species README for visual/health tests and deferred Godot compilation.
+
+## Proposed zombie death and corpse persistence (ZD0–ZD3)
+
+[TYPES/Zombies/DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md](TYPES/Zombies/DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md) specifies a lightweight physics-assisted fall for existing procedural zombie joints, an independently managed settled corpse/pile system with soft movement slowdown, and five-minute aging plus timed sinking/removal. **Proposal only; no corpse or ragdoll logic has been implemented.** Both normal zombies and runner 002 should share one pipeline. The new plan is independent of robot RM phases and only becomes an implementation task when expressly requested.

@@ -1,3 +1,5 @@
+> **Future corpse / ragdoll-lite feature (ZD0–ZD3):** [DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md](DEATH_RAGDOLL_IMPLEMENTATION_PLAN.md) proposes falling zombies, frozen corpse piles that mildly slow moving actors, and sinking cleanup starting 5 minutes after death. **Planning only; current code still deletes zombies immediately on death.** Applies to shared ZombieController, including runner 002, when separately authorized.
+
 # Zombies
 
 Reusable mobile actors with basic incoming hit support inheriting `ENTITIES/Shared/Entity.tscn`. `Zombie.tscn`, `ZombieController.cs`, original procedural low-poly artwork and `Configuration/ZombieMaster.tres` all belong here, not inside the preview world. World placement calls `InitializeTarget(Node3D player, uint seed)` after spawning on safe ground. This keeps zombies independent of TopDownPlayer and Terrain3D.
