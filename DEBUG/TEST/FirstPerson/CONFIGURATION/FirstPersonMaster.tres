@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("1")
 FieldOfView = 75.0
-MouseSensitivity = 0.12
+MouseSensitivity = 0.10
 InvertMouseY = true
 MaximumPitch = 85.0
 EyeInset = 0.15

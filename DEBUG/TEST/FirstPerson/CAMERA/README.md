@@ -11,3 +11,7 @@ Event-driven render translation between physics snapshots replaces tick-only pos
 ## FPS recoil pitch is now permanent until mouse correction (2026-10-28)
 
 The current `FirstPersonCamera.ApplyWeaponRecoilKick` adds **positive pitch to the same `_lookPitchDegrees` controlled by mouse look**, bounded by existing `MaximumPitch`. It does not maintain a temporary camera offset or automatically subtract the recoil on release. This supersedes the older `SetWeaponRecoilPitch` additive recovery described above. The FPS adapter alone schedules those impulses; the camera has no new process loop. Other camera movement/input and the primary top-down view are unchanged. Use mouse movement to correct aim; local test needed.
+
+## Proposed walking head bob (not implemented)
+
+See [HEAD_BOB_IMPLEMENTATION_PLAN.md](HEAD_BOB_IMPLEMENTATION_PLAN.md) for a small FPS-only `FirstPersonHeadBob.cs` **plain C# helper** coordinated by `FirstPersonCamera.RecordPhysicsPose()`. The future bob should be a subtle positional eye offset driven by **actual grounded travel**, smooth back to zero on stopping, and sleep when settled; no additional camera node or permanent process callback. Mouse-look/recoil orientation, player capsule, camera interpolation, aiming and top-down view must keep working. Plan only; no bob code added by the sensitivity adjustment.
