@@ -124,3 +124,7 @@ Firing the machine gun now smoothly inclines the **actual camera view upward**, 
 ## FPS recoil no longer pans down on release (2026-10-28)
 
 The current FPS behavior is **one-way, shot-driven camera rise**: each rifle or MG shot increases actual view pitch, smoothly delivered by the FPS weapon adapter, and the camera stays at that angle when fire stops. Drag the mouse to readjust. The **MG FPS-only continuous-burst budget is 25°**, while the rifle uses a 3° budget reset between slow shots. The weapon Visual child still settles after its short kick. This supersedes the previous RC2 automatic camera-recovery explanation elsewhere in this README; the top-down camera/recoil system is unchanged. Source only; F6 testing pending.
+
+## RMB jump (2026-10-28)
+
+Right mouse press while the pointer is captured now requests one grounded jump through the shared player physics. Jumping uses `PLAYER/Configuration/PlayerMaster.tres` `JumpVelocity` (6m/s default), existing gravity/capsule physics and native FPS camera follow. No jump on UI panels, when uncaptured, crouched, airborne, blocked by inventory, or after death. Holding RMB does not cause automatic bunny hopping. Local build and FPS visual testing pending.

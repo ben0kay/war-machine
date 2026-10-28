@@ -37,6 +37,10 @@ public partial class FirstPersonPlayer : PlayerController
     }
 
     // =========================================================
+    // The FPS debug view only jumps when the mouse is captured for gameplay.
+    protected override bool CanAcceptJumpInput() => Input.MouseMode == Input.MouseModeEnum.Captured;
+
+    // =========================================================
     // Releases and camera capture changes wake the shared movement driver so velocity can settle.
     protected override Vector2 ReadMovementInput() => Input.MouseMode == Input.MouseModeEnum.Captured
         ? base.ReadMovementInput() : Vector2.Zero;

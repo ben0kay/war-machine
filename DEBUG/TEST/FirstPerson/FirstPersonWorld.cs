@@ -4,7 +4,7 @@ using Godot;
 public partial class FirstPersonWorld : WorldController
 {
     private FirstPersonFog _fpsFog = null!;
-    protected override string ControlsHelp => "FIRST PERSON TEST · arrows walk · Shift run · Right Ctrl crouch\nMouse look · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
+    protected override string ControlsHelp => "FIRST PERSON TEST · arrows walk · Shift run · Right Ctrl crouch · Right click jump\nMouse look · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
     protected override IDebugOverlayView? OverlayView => _fpsFog;
 
     // =========================================================

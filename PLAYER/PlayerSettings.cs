@@ -12,6 +12,7 @@ public partial class PlayerSettings : Resource
     [Export] public float RunMultiplier { get; set; } = 1.6f;
     [Export] public float Acceleration { get; set; } = 24;
     [Export] public float Gravity { get; set; } = 20;
+    [Export(PropertyHint.Range, "0,12,0.25")] public float JumpVelocity { get; set; } = 6f;
     [Export] public float GaitRate { get; set; } = 1.8f;
     [ExportGroup("Walking gait")]
     [Export(PropertyHint.Range, "0,60,1")] public float KneeBendDegrees { get; set; } = 35f;

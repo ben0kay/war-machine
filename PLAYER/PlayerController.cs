@@ -15,6 +15,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         blocked |= IsDead; // Closing a backpack cannot release the permanent death gate.
         if (GameplayInputBlocked == blocked) return;
         GameplayInputBlocked = blocked; _toggleCrouch = false;
+        if (blocked) _jumpRequested = false;
         if (blocked) Velocity = new Vector3(0, Velocity.Y, 0);
         SetPhysicsProcess(true); GameplayInputBlockChanged?.Invoke(blocked);
     }
@@ -38,7 +39,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     private float _shoveGrip;
     private float _recoilArmAngle, _recoilArmApplied;
     private float _crouch;
-    private bool _toggleCrouch;
+    private bool _toggleCrouch, _jumpRequested;
     private Vector3 _screenRight, _screenForward;
     private Camera3D? _movementCamera;
     private float _phase;
@@ -79,7 +80,8 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             Vitals = GetNode<PlayerVitals>("Vitals"); Vitals.Initialize(_settings.Vitals);
             Vitals.Died += OnDied;
         }
-        _initialized = true; Velocity = Vector3.Zero; SetPhysicsProcess(true);
+        _initialized = true; _jumpRequested = false;
+        Velocity = Vector3.Zero; SetPhysicsProcess(true);
     }
 
     // =========================================================
@@ -105,10 +107,22 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     }
 
     // =========================================================
-    // Keyboard changes wake movement/gravity. No new project-wide actions or explorer controls are introduced.
+    // Right-click requests one grounded jump; physics owns the impulse and GUI receives input first.
+    // Movement keys still wake the shared physics driver, never an always-on idle callback.
     public override void _UnhandledInput(InputEvent input)
     {
-        if (!_initialized || GameplayInputBlocked || input is not InputEventKey key || key.Echo) return;
+        if (!_initialized || GameplayInputBlocked) return;
+        if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Right && mouse.Pressed)
+        {
+            if (CanAcceptJumpInput() && GetWindow().HasFocus() && IsOnFloor() && !IsCrouching
+                && GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
+            {
+                _jumpRequested = true; SetPhysicsProcess(true);
+                GetViewport().SetInputAsHandled();
+            }
+            return;
+        }
+        if (input is not InputEventKey key || key.Echo) return;
         if (key.PhysicalKeycode == Key.F10 && key.Pressed)
         {
             _reportMovementCollision = true; SetPhysicsProcess(true);
@@ -127,7 +141,10 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     // Ground contact sleeps again after focus returns; no held direction is allowed while the window is unfocused.
     public override void _Notification(int what)
     {
-        if (_initialized && (what == NotificationApplicationFocusOut || what == NotificationApplicationFocusIn)) SetPhysicsProcess(true);
+        if (!_initialized) return;
+        if (what == NotificationApplicationFocusOut) _jumpRequested = false;
+        if (what == NotificationApplicationFocusOut || what == NotificationApplicationFocusIn)
+            SetPhysicsProcess(true);
     }
 
     // =========================================================
@@ -150,13 +167,19 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             _capsule.Height = Mathf.Lerp(1.8f, 1.4f, _crouch);
             _collider.Position = Vector3.Up * (_capsule.Height * 0.5f);
         }
+        // Consume the press once. Upward velocity naturally disables floor snapping; gravity
+        // continues while airborne until MoveAndSlide reports landing, then idle physics can sleep.
+        bool jumping = _jumpRequested && IsOnFloor() && !GameplayInputBlocked && !IsCrouching && GetWindow().HasFocus();
+        _jumpRequested = false;
         Vector2 keys = !GameplayInputBlocked && GetWindow().HasFocus() ? ReadMovementInput().Normalized() : Vector2.Zero;
         Vector3 direction = GetMovementDirection(keys);
         float speed = Mathf.Max(0.1f, _settings.WalkSpeed) * (IsCrouching ? Mathf.Clamp(_settings.CrouchSpeedMultiplier, 0.1f, 1) : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1, _settings.RunMultiplier) : 1);
         Vector3 horizontal = new(Velocity.X, 0, Velocity.Z);
         horizontal = UpdateHorizontalVelocity(horizontal, direction * speed, dt);
         Vector3 before = GlobalPosition;
-        Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - Mathf.Max(1, _settings.Gravity) * dt, horizontal.Z);
+        float vertical = jumping ? Mathf.Clamp(_settings.JumpVelocity, 0f, 12f)
+            : IsOnFloor() ? -0.1f : Velocity.Y - Mathf.Max(1, _settings.Gravity) * dt;
+        Velocity = new Vector3(horizontal.X, vertical, horizontal.Z);
         MoveAndSlide();
         if (_reportMovementCollision) ReportMovementCollision();
         Vector3 travel = GlobalPosition - before; travel.Y = 0;
@@ -193,6 +216,10 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             GD.Print($"Movement blocker: {path}; normal={hit.GetNormal()}; point={hit.GetPosition()}");
         }
     }
+
+    // =========================================================
+    // FPS only accepts jumps while its pointer is captured; overhead always accepts world clicks.
+    protected virtual bool CanAcceptJumpInput() => true;
 
     // =========================================================
     // Small input hooks let isolated test views reuse collision, crouch and movement without copying the controller.
