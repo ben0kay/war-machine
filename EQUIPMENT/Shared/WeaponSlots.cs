@@ -1,16 +1,18 @@
-// Two explicit test slots shared by both player input adapters. No inventory, per-frame polling or firing logic.
+// Three explicit equipment slots shared by both player input adapters. No inventory, per-frame polling or firing logic.
 using Godot;
 
 public partial class WeaponSlots : Node
 {
-    private readonly FirearmController?[] _weapons = new FirearmController?[2];
+    private readonly Node3D?[] _weapons = new Node3D?[3];
     private EquipmentConfig _config = null!;
     private CollisionObject3D _holder = null!;
     private Node3D _mount = null!;
     private Vector3 _offset;
     private WorldAudio? _audio;
     private int _selected = -1;
-    public FirearmController? Current => _selected < 0 ? null : _weapons[_selected];
+    public Node3D? CurrentItem => _selected < 0 ? null : _weapons[_selected];
+    public FirearmController? Current => CurrentItem as FirearmController;
+    public MeleeWeaponController? CurrentMelee => CurrentItem as MeleeWeaponController;
     // AM1: the selected firearm changes only through Select(), so HUDs subscribe once.
     public event System.Action<FirearmController?>? SelectionChanged;
 
@@ -20,22 +22,27 @@ public partial class WeaponSlots : Node
     { _config = config; _holder = holder; _mount = mount; _offset = offset; _audio = audio; SetProcess(false); SetPhysicsProcess(false); }
 
     // =========================================================
-    // Lazy scene creation is bounded to two weapons. Validate replacement before putting the current gun away.
+    // Lazy scene creation is bounded to three weapons. Validate replacement before putting the current gun away.
     public bool Select(int slot)
     {
         if (!_config.Enabled || slot < 0 || slot >= _weapons.Length || slot == _selected) return false;
-        var scene = slot == 0 ? _config.DefaultWeaponScene : _config.SecondaryWeaponScene;
+        var scene = slot == 0 ? _config.DefaultWeaponScene : slot == 1 ? _config.SecondaryWeaponScene : _config.MeleeWeaponScene;
         if (scene == null) { GD.PushWarning($"Weapon slot {slot + 1} has no configured scene."); return false; }
         if (!IsInstanceValid(_weapons[slot]))
         {
             Node instance = scene.Instantiate();
-            if (instance is not FirearmController firearm)
-            { GD.PushError("Weapon slots require FirearmController scene roots."); instance.Free(); return false; }
-            _weapons[slot] = firearm; _mount.AddChild(firearm); firearm.Position = _offset;
+            if (instance is not Node3D item || (instance is not FirearmController && instance is not MeleeWeaponController))
+            { GD.PushError("Weapon slots require a firearm or melee weapon root."); instance.Free(); return false; }
+            _weapons[slot] = item; _mount.AddChild(item); item.Position = _offset;
         }
-        if (IsInstanceValid(Current)) { Current!.Unequip(); Current.Hide(); Current.ProcessMode = ProcessModeEnum.Disabled; }
+        if (IsInstanceValid(CurrentItem))
+        {
+            Current?.Unequip(); CurrentMelee?.Cancel();
+            CurrentItem!.Hide(); CurrentItem.ProcessMode = ProcessModeEnum.Disabled;
+        }
         _selected = slot;
-        Current!.ProcessMode = ProcessModeEnum.Inherit; Current.Show(); Current.Equip(_holder, _audio);
+        CurrentItem!.ProcessMode = ProcessModeEnum.Inherit; CurrentItem.Show();
+        Current?.Equip(_holder, _audio); CurrentMelee?.Equip(_holder);
         SelectionChanged?.Invoke(Current);
         return true;
     }
@@ -45,7 +52,7 @@ public partial class WeaponSlots : Node
     public static int RequestedSlot(InputEvent input)
     {
         if (input is not InputEventKey key || !key.Pressed || key.Echo) return -1;
-        return key.PhysicalKeycode == Key.Key1 ? 0 : key.PhysicalKeycode == Key.Key2 ? 1 : -1;
+        return key.PhysicalKeycode == Key.Key1 ? 0 : key.PhysicalKeycode == Key.Key2 ? 1 : key.PhysicalKeycode == Key.Key3 ? 2 : -1;
     }
 
     // =========================================================
@@ -53,6 +60,6 @@ public partial class WeaponSlots : Node
     public override void _ExitTree()
     {
         foreach (var weapon in _weapons)
-            if (IsInstanceValid(weapon)) { weapon!.Unequip(); weapon.QueueFree(); }
+            if (IsInstanceValid(weapon)) { (weapon as FirearmController)?.Unequip(); (weapon as MeleeWeaponController)?.Cancel(); weapon!.QueueFree(); }
     }
 }

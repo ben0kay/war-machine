@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="MeleeSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://COMBAT/Melee/MeleeSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+Range = 1.65
+ArcDegrees = 130.0
+VerticalTolerance = 0.35
+SweepThickness = 0.20
+MaximumTargets = 3
+FirstPersonOffset = Vector3(0.20, -0.28, -0.38)
+HoldPitchDegrees = 49.0
+HoldYawDegrees = -14.0
+HitMask = 21
+WindupSeconds = 0.22
+ActiveSeconds = 0.20
+RecoverySeconds = 0.35
+CooldownSeconds = 0.85
+Damage = 11.0
+DamageKind = 0
+SeverPower = 0.0
+ImpactKind = 2
+ImpactStrength = 0.30
+ImpactDuration = 0.18

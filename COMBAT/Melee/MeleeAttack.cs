@@ -1,6 +1,7 @@
 // CM2-A: actor-neutral attack-window and invisible 3D melee contact query.
 // Created once per attacker; only Advance() performs physics work while an attack is active.
 using Godot;
+using System.Collections.Generic;
 
 public enum MeleeAimMode { Horizontal, ThreeDimensional }
 
@@ -8,11 +9,12 @@ public readonly struct MeleeContact
 {
     public readonly CollisionObject3D Collider;
     public readonly Node3D Target;
+    public readonly int ShapeIndex;
     public readonly Vector3 Position, Direction;
 
     // =========================================================
-    public MeleeContact(CollisionObject3D collider, Node3D target, Vector3 position, Vector3 direction)
-    { Collider = collider; Target = target; Position = position; Direction = direction; }
+    public MeleeContact(CollisionObject3D collider, Node3D target, Vector3 position, Vector3 direction, int shapeIndex = -1)
+    { ShapeIndex = shapeIndex; Collider = collider; Target = target; Position = position; Direction = direction; }
 }
 
 public sealed class MeleeAttack
@@ -26,6 +28,9 @@ public sealed class MeleeAttack
     private float _elapsed;
     private ulong _nextReady;
     private bool _contactUsed;
+    private readonly HashSet<ulong> _sweepHits = new();
+    private readonly List<MeleeContact> _sweepContacts = new(8);
+    private ulong _anatomyVersion = ulong.MaxValue;
 
     public bool IsActive => _profile != null;
     public float ElapsedSeconds => _elapsed;
@@ -53,7 +58,7 @@ public sealed class MeleeAttack
     {
         if (!GodotObject.IsInstanceValid(_owner) || !_owner.IsInsideTree() || IsActive
             || Time.GetTicksMsec() < _nextReady) return false;
-        _profile = profile; _elapsed = 0f; _contactUsed = false;
+        _profile = profile; _elapsed = 0f; _contactUsed = false; _sweepHits.Clear();
         _nextReady = Time.GetTicksMsec()
             + (ulong)Mathf.CeilToInt(Safe(profile.CooldownSeconds, 0.05f, 3f) * 1000f);
         return true;
@@ -83,9 +88,73 @@ public sealed class MeleeAttack
     }
 
     // =========================================================
+    // Bounded side sweep for damaging melee. Shared timing/occlusion/receiver rules; one hit per actor per attack.
+    public IReadOnlyList<MeleeContact> AdvanceSweep(float delta, Vector3 origin, Vector3 aim)
+    {
+        _sweepContacts.Clear();
+        if (_profile == null) return _sweepContacts;
+        if (!GodotObject.IsInstanceValid(_owner) || !_owner.IsInsideTree()) { Cancel(); return _sweepContacts; }
+        MeleeSettings profile = _profile;
+        float previous = _elapsed; _elapsed += Safe(delta, 0, 1);
+        float windup = Safe(profile.WindupSeconds, 0, 1), active = Safe(profile.ActiveSeconds, 0.01f, 1);
+        int cap = Mathf.Clamp(profile.MaximumTargets, 1, 8);
+        aim.Y = 0;
+        if (Finite(origin) && Finite(aim) && aim.LengthSquared() > 0.000001f
+            && previous < windup + active && _elapsed >= windup && _sweepHits.Count < cap)
+        {
+            aim = aim.Normalized();
+            if (_anatomyVersion != AnatomyHitboxes.RegistryVersion)
+            {
+                AnatomyHitboxes.ConfigureShotQuery(_line, _owner);
+                _overlap.Exclude = _line.Exclude;
+                _anatomyVersion = AnatomyHitboxes.RegistryVersion;
+            }
+            _overlap.CollideWithAreas = true; _line.HitFromInside = true;
+            float range = Safe(profile.Range, 0.25f, 5);
+            _rangeShape.Radius = range; _overlap.Transform = new Transform3D(Basis.Identity, origin);
+            _overlap.CollisionMask = _line.CollisionMask = profile.HitMask;
+            float arc = Mathf.DegToRad(Safe(profile.ArcDegrees, 10, 180));
+            float from = arc * (0.5f - Mathf.Clamp((previous - windup) / active, 0, 1));
+            float to = arc * (0.5f - Mathf.Clamp((_elapsed - windup) / active, 0, 1));
+            int rays = 0;
+            foreach (Godot.Collections.Dictionary result in _owner.GetWorld3D().DirectSpaceState.IntersectShape(_overlap, 64))
+            {
+                if (_sweepHits.Count >= cap || rays >= 16) break;
+                if (result["collider"].AsGodotObject() is not CollisionObject3D body
+                    || !GodotObject.IsInstanceValid(body) || body.IsQueuedForDeletion()) continue;
+                Node3D? actor = FindReceiver(body, _owner);
+                if (actor == null || _sweepHits.Contains(actor.GetInstanceId())) continue;
+                Vector3 centre = body is AnatomyHitboxes
+                    ? body.ToGlobal(body.ShapeOwnerGetTransform(body.ShapeFindOwner(result["shape"].AsInt32())).Origin)
+                    : ContactCentre(body);
+                Vector3 offset = centre - origin;
+                if (Mathf.Abs(offset.Y) > Safe(profile.VerticalTolerance, 0.05f, 3)) continue;
+                offset.Y = 0;
+                float distance = offset.Length();
+                if (distance < 0.001f || distance > range) continue;
+                float angle = Mathf.Atan2(aim.Cross(offset / distance).Y, aim.Dot(offset / distance));
+                float thickness = Mathf.Atan2(Safe(profile.SweepThickness, 0.01f, 0.5f), distance);
+                if (angle > from + thickness || angle < to - thickness) continue;
+                _line.From = origin; _line.To = centre; rays++;
+                var hit = _owner.GetWorld3D().DirectSpaceState.IntersectRay(_line);
+                if (hit.Count == 0 || hit["collider"].AsGodotObject() is not Node first
+                    || !IsDescendantOf(first, actor)) continue;
+                Vector3 direction = centre - _owner.GlobalPosition; direction.Y = 0;
+                if (direction.LengthSquared() < 0.001f) direction = aim;
+                _sweepHits.Add(actor.GetInstanceId());
+                _sweepContacts.Add(new MeleeContact((CollisionObject3D)first, actor,
+                    hit["position"].AsVector3(), direction.Normalized(), hit["shape"].AsInt32()));
+            }
+        }
+        if (_elapsed >= windup + active + Safe(profile.RecoverySeconds, 0, 1))
+        { _profile = null; _elapsed = 0; }
+        return _sweepContacts;
+    }
+
+    // =========================================================
     // Abort safely on focus loss, weapon swap, death, deactivation or unload.
     // Preserve attack cooldown so interruption cannot reset the rate limit.
-    public void Cancel() { _profile = null; _elapsed = 0f; _contactUsed = false; }
+    public void Cancel() { _profile = null; _elapsed = 0f; _contactUsed = false; _sweepContacts.Clear(); _sweepHits.Clear(); }
 
     // =========================================================
     // Broad phase finds overlapping bodies; arc/height/reach and an occlusion ray

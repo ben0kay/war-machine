@@ -174,7 +174,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public void ReceiveImpact(in CombatImpact impact)
     {
         if (!IsActive || !_configured || _health.IsDead || IsQueuedForDeletion() || _awaitingSpawnGround) return;
-        if (impact.Kind == CombatImpactKind.Bullet)
+        if (impact.Kind == CombatImpactKind.Bullet || impact.Kind == CombatImpactKind.Melee)
         {
             if (!_config.BulletReactionsEnabled
                 || !_reaction.TryStart(impact, _config.ImpactResistance, _config.FlinchThreshold,

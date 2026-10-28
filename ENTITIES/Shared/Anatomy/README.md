@@ -1,3 +1,5 @@
+> **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../../../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
+
 # ELD1 — limb condition and severing
 
 **Implemented in source; awaiting local compilation and World/FPS acceptance (2026-10-28).** ELD0 has owner-provided FPS evidence for Head, Torso and RightLeg hits. This is not full ELD0 regression acceptance. ELD2–ELD5 remain Planned. The ELD0 notes below are historical where they say there is no condition/severing yet.

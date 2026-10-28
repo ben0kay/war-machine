@@ -1,3 +1,5 @@
+> **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
+
 # COMBAT — cross-actor impacts and reactions
 
 **CM0/CM1 and CM2-A/B1/B2/C Accepted following owner confirmation of local validation. CM2-D implemented, awaiting local compilation/animation acceptance. CM3–CM5 Planned.** Q shove has a side-on two-handed gun pose in both views; bat/knife and zombie attacks remain future work. Earlier validation/animation statements below are historical phase snapshots.

@@ -4,6 +4,7 @@ using Godot;
 [GlobalClass]
 public partial class EquipmentConfig : Resource
 {
+    [Export] public PackedScene? MeleeWeaponScene { get; set; }
     [Export] public bool Enabled { get; set; } = true;
     [Export] public PackedScene SecondaryWeaponScene { get; set; } = null!;
     [Export] public PackedScene DefaultWeaponScene { get; set; } = null!;

@@ -1,3 +1,5 @@
+> **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
+
 > **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../ENTITIES/Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
 
 > **ELD0 source implementation (2026-10-28):** [Shared region detection](../ENTITIES/Shared/Anatomy/README.md) now routes firearm shape hits for both zombie variants in both views. BodyRegion moved to ENTITIES/Shared/Anatomy with values unchanged. Existing damage balance/player rules and melee stay unchanged; no injuries, severing or new attacks. Local build/runtime validation pending.
@@ -190,6 +192,8 @@ These are **design-test starting points**, not implemented stats or decisions ab
 CM2-B1 introduced shove recognition and a stationary pause; CM2-B2 now extends it with controlled backward velocity and braking through MoveAndSlide. Neither phase wires player input or a new animation. CM2-C (Q input + shared melee hit dispatch for top-down and FPS) is now implemented in source; Q now allows integrated testing of B1/B2 in-game once the local build succeeds.
 
 ## CM3 — Baseball bat sweep (multi-target)
+
+**Implemented in source; Awaiting Validation.** Current defaults and acceptance are in the linked bat README above. Slot 3 is an explicit test equipment slot, not inventory. Remaining older phase prose below describes design intent.
 
 **Objective:** When a baseball bat is equipped, **left-click** performs its configured blunt primary attack hitting up to three unobstructed zombies, while **Quick Melee** still shoves with the held bat on its separate button. This proves the dual-action contract.
 

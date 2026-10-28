@@ -17,7 +17,7 @@ public sealed class PlayerShovePose
     public void Start(Node3D weapon, bool firstPerson)
     {
         Cancel(); _weapon = weapon; _rest = weapon.Transform; _firstPerson = firstPerson;
-        if (firstPerson)
+        if (firstPerson && weapon is not MeleeWeaponController)
         {
             _hands = weapon.GetNodeOrNull<Node3D>("ShoveHands");
             if (_hands == null) _hands = ShoveHandsBuilder.Build(weapon);

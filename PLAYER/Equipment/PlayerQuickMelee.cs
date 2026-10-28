@@ -28,10 +28,10 @@ public sealed class PlayerQuickMelee
     // =========================================================
     // Capture real horizontal momentum when Q is pressed. The player can shove while idle,
     // walking or sprinting; later braking during windup cannot silently reduce its force.
-    public bool TryStart(FirearmController weapon, bool firstPerson = false)
+    public bool TryStart(Node3D weapon, bool firstPerson = false)
     {
         if (!_attack.TryStart(_settings)) return false;
-        weapon.ResetRecoil(); // Q shove takes control of the weapon pose; discard stored gun recoil.
+        if (weapon is FirearmController gun) gun.ResetRecoil(); // Q shove takes control of the weapon pose; discard stored gun recoil.
         _pose ??= new PlayerShovePose(_owner);
         _pose.Start(weapon, firstPerson);
         Vector3 velocity = _owner.Velocity;

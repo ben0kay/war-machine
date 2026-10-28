@@ -6,6 +6,7 @@ public partial class PlayerWeaponController : Node
     private PlayerController _player = null!;
     private Camera _camera = null!;
     private FirearmController? _weapon;
+    private MeleeWeaponController? _melee;
     private WeaponSlots _slots = null!;
     private PhysicsRayQueryParameters3D _aimQuery = null!;
     private bool _held, _shotRequested, _aimDirty, _initialized;
@@ -43,10 +44,15 @@ public partial class PlayerWeaponController : Node
     {
         var previous = _weapon;
         if (!_slots.Select(slot)) return;
-        _shove?.Cancel(); CancelTrigger(); CancelVisualRecoil();
+        _shove?.Cancel(); _melee?.Cancel(); CancelTrigger(); CancelVisualRecoil();
         if (IsInstanceValid(previous))
         { previous!.ReadyToFire -= OnReadyToFire; previous.ShotAccepted -= OnShotAccepted; }
-        _weapon = _slots.Current!;
+        _weapon = _slots.Current; _melee = _slots.CurrentMelee;
+        if (_melee != null)
+        {
+            _melee.SetView(false); _aimQuery.CollisionMask = _melee.RuntimeSettings.HitMask;
+            RequestAim(); return;
+        }
         _visualRecoil = new TopDownWeaponRecoil(_player, _weapon);
         _weapon.ReadyToFire += OnReadyToFire; _weapon.ShotAccepted += OnShotAccepted;
         _aimQuery.CollisionMask = _weapon.RuntimeSettings.HitMask;
@@ -77,7 +83,7 @@ public partial class PlayerWeaponController : Node
             // UI has first refusal on keys, as it already does for gunfire.
             if (GetViewport().GuiGetHoveredControl() == null && GetViewport().GuiGetFocusOwner() == null)
             {
-                if (_shove?.TryStart(_weapon!) == true) CancelVisualRecoil();
+                if (_melee?.IsAttacking != true && _shove?.TryStart(_slots.CurrentItem!) == true) CancelVisualRecoil();
                 RequestAim(); GetViewport().SetInputAsHandled();
             }
             return;
@@ -127,10 +133,10 @@ public partial class PlayerWeaponController : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!_initialized || !IsInstanceValid(_weapon) || !GetWindow().HasFocus() || _player.GameplayInputBlocked)
-        { CancelTrigger(); _shove?.Cancel(); return; }
+        if (!_initialized || (!IsInstanceValid(_weapon) && !IsInstanceValid(_melee)) || !GetWindow().HasFocus() || _player.GameplayInputBlocked)
+        { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); return; }
         if (GetViewport().GuiGetHoveredControl() != null || GetViewport().GuiGetFocusOwner() != null)
-        { CancelTrigger(); _shove?.Cancel(); return; }
+        { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); return; }
         if (_aimDirty || _shotRequested)
         {
             _aimDirty = false;
@@ -144,16 +150,22 @@ public partial class PlayerWeaponController : Node
             else
             {
                 float distance = Mathf.Abs(direction.Y) > 0.0001f ? (_player.WeaponMount.GlobalPosition.Y - origin.Y) / direction.Y : -1;
-                _aimPoint = distance > 0 ? origin + direction * distance : _player.WeaponMount.GlobalPosition - _player.WeaponMount.GlobalBasis.Z * _weapon!.RuntimeSettings.Range;
+                _aimPoint = distance > 0 ? origin + direction * distance : _player.WeaponMount.GlobalPosition - _player.WeaponMount.GlobalBasis.Z * (_weapon?.RuntimeSettings.Range ?? _melee!.RuntimeSettings.Range);
             }
-            _player.SetWeaponAim(_aimPoint);
+            if (_melee?.IsAttacking != true) _player.SetWeaponAim(_aimPoint);
         }
         if (_shotRequested && _shove?.IsActive != true)
         {
             _shotRequested = false;
             // Camera-up is the screen-up recoil reference: the crosshair stays fixed and
             // actual bullet/tracer direction climbs independently from ACC0 random spread.
-            _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin, _camera.GlobalBasis.Y);
+            if (_melee != null) _melee.TryStart(_player, _aimPoint - _player.GlobalPosition, false);
+            else _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin, _camera.GlobalBasis.Y);
+        }
+        if (_melee?.IsAttacking == true)
+        {
+            _melee.Advance((float)delta, _player.WeaponProbeOrigin);
+            if (_melee.IsAttacking) SetPhysicsProcess(true); else RequestAim();
         }
         if (_shove?.IsActive == true)
         {
@@ -169,7 +181,7 @@ public partial class PlayerWeaponController : Node
     private void OnInputBlocked(bool blocked)
     {
         if (!blocked) { RequestAim(); return; }
-        CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); SetPhysicsProcess(false);
+        CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); SetPhysicsProcess(false);
     }
 
     // =========================================================
@@ -180,7 +192,7 @@ public partial class PlayerWeaponController : Node
     public override void _Notification(int what)
     {
         if (!_initialized) return;
-        if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); SetPhysicsProcess(false); }
+        if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); SetPhysicsProcess(false); }
         else if (what == NotificationApplicationFocusIn) RequestAim();
     }
 
@@ -188,7 +200,7 @@ public partial class PlayerWeaponController : Node
     // Explicitly release cross-node subscriptions before world unload or replacing this adapter.
     public override void _ExitTree()
     {
-        CancelTrigger(); _shove?.Cancel(); CancelVisualRecoil();
+        CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil();
         if (!_initialized) return;
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;

@@ -7,7 +7,7 @@ public partial class PlayerController
     {
         private readonly PlayerController _player;
         public bool _weaponPose;
-        private Node3D? _shoveWeapon;
+        private Node3D? _shoveWeapon, _rightGrip, _leftGrip;
         private float _shoveGrip, _recoilArmAngle;
         public float _recoilArmApplied;
         // =========================================================
@@ -60,6 +60,11 @@ public partial class PlayerController
         // Preserve two-hand shove grip ownership and pre-initialization handling.
         public void SetShoveGrip(Node3D? weapon, float weight)
         {
+            if (_shoveWeapon != weapon)
+            {
+                _rightGrip = weapon?.GetNodeOrNull<Node3D>("GripRight");
+                _leftGrip = weapon?.GetNodeOrNull<Node3D>("GripLeft");
+            }
             _shoveWeapon = weapon; _shoveGrip = Mathf.Clamp(weight, 0, 1);
             if (!_player._initialized) return;
             _player._animation._leftArm.RotationDegrees = _player._settings.LeftWeaponArmDegrees;
@@ -73,8 +78,8 @@ public partial class PlayerController
         public void ApplyShoveGrips()
         {
             if (_shoveGrip <= 0 || !GodotObject.IsInstanceValid(_shoveWeapon)) return;
-            ReachGrip(_player._animation._rightArm, _player._animation._rightElbow, _shoveWeapon!.ToGlobal(new Vector3(0, -0.10f, 0.02f)), 1);
-            ReachGrip(_player._animation._leftArm, _player._animation._leftElbow, _shoveWeapon.ToGlobal(new Vector3(0, -0.10f, -0.40f)), -1);
+            ReachGrip(_player._animation._rightArm, _player._animation._rightElbow, GodotObject.IsInstanceValid(_rightGrip) ? _rightGrip!.GlobalPosition : _shoveWeapon!.ToGlobal(new Vector3(0, -0.10f, 0.02f)), 1);
+            ReachGrip(_player._animation._leftArm, _player._animation._leftElbow, GodotObject.IsInstanceValid(_leftGrip) ? _leftGrip!.GlobalPosition : _shoveWeapon!.ToGlobal(new Vector3(0, -0.10f, -0.40f)), -1);
         }
 
         // =========================================================

@@ -10,6 +10,14 @@ public partial class MeleeSettings : Resource
     [Export(PropertyHint.Range, "10,180,1")] public float ArcDegrees { get; set; } = 65f;
     [Export(PropertyHint.Range, "0.25,3,0.05")] public float VerticalTolerance { get; set; } = 1.25f;
     [Export(PropertyHint.Layers3DPhysics)] public uint HitMask { get; set; } = 21;
+    [ExportGroup("Sweep")]
+    [Export(PropertyHint.Range, "1,8,1")] public int MaximumTargets { get; set; } = 3;
+    [Export(PropertyHint.Range, "0.01,0.5,0.01")] public float SweepThickness { get; set; } = 0.20f;
+    [Export] public float SeverPower { get; set; }
+    [ExportGroup("Melee presentation")]
+    [Export] public Vector3 FirstPersonOffset { get; set; } = new(0.20f, -0.28f, -0.38f);
+    [Export(PropertyHint.Range, "0,85,1")] public float HoldPitchDegrees { get; set; } = 49f;
+    [Export(PropertyHint.Range, "-90,90,1")] public float HoldYawDegrees { get; set; } = -14f;
     [ExportGroup("Attack timing")]
     [Export(PropertyHint.Range, "0,1,0.01")] public float WindupSeconds { get; set; } = 0.10f;
     [Export(PropertyHint.Range, "0.01,1,0.01")] public float ActiveSeconds { get; set; } = 0.12f;

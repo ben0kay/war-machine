@@ -1,3 +1,5 @@
+> **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
+
 # Melee foundation (CM2-A)
 
 The actor-neutral `MeleeAttack` helper and `MeleeSettings` resource are now **wired to Q quick shove** via `PLAYER/Equipment/PlayerQuickMelee.cs` and both camera-mode adapters. `COMBAT/Configuration/QuickShoveMaster.tres` is the initial zero-damage profile.

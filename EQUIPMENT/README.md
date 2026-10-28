@@ -1,3 +1,5 @@
+> **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
+
 # EQUIPMENT — reusable weapons and handheld tools
 
 The first usable firearm is implemented and integrated into the active top-down scene.
