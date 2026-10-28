@@ -58,3 +58,9 @@ OV1 caches opaque walls/roof/deck triangles and requires all five player samples
 ## AIM1 paired static collision
 
 Shared `StructureGeometry.Box` automatically links each generated visual to its matching CollisionShape3D via `FadeAwareAim.Link`. This metadata lets top-down mouse aiming skip **only** building pieces that `CameraOccluder` has actually faded, including floor and whole-building fades, while preserving bullet/movement collision and opaque members of a shared StaticBody3D. Future custom/imported structures need the same explicit pairing. See [building authoring](../BUILDING_AUTHORING_README.md) and [AIM1](../../../../../PLAYER/Equipment/AIM1_FADE_AWARE_AIM.md). No extra per-frame work.
+
+## BW1 — authored wall groups and clearance volumes
+
+`StructureLayout.FadeGroup(node)` marks one physical wall assembly beneath an existing `walls` visual-role owner. `CameraOccluder` uses a shared fade target for **all mesh pieces in the same marked node**, while keeping one narrow obstruction proxy per piece. No global registry or per-frame scan. Unmarked buildings keep legacy per-mesh behavior until migrated. See `CAMERA/Occlusion/CameraGroupFadeTarget.cs`.
+
+`StructureClearance` is a one-time builder utility: `Reserve(name, center, size)` declares named 3D protected walkways, entry/window openings, and stair/headroom zones before furnishing, writing metadata to `Generated/ClearanceVolumes/<Name>`. `Allows(name, center, size)` rejects fixture bounds that overlap these reservations; `AllowsPlacement(clearanceRoot, candidateAabb)` offers the same rule to future GLB placement tools. Volumes are building-local and have **no physical collision**; runtime collision and navigation still need an actual walk test. Reference implementation: ConvenienceStore001.

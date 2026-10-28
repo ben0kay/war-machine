@@ -1,5 +1,39 @@
 # Building authoring contract — give this to future building-design chats
 
+> **BW1 reference standard (implemented in source, local Godot validation pending):** start with `ConvenienceStore001` for **logical wall fade assemblies, aperture/walkway clearance and the staged furnishing process**. `Building002` remains the multi-floor reference; migrate other structures later, only after the store has been visually accepted. Existing unmarked walls keep per-mesh fading and do not need immediate rebuilding.
+
+## Mandatory authoring sequence — layout first, decoration last
+
+1. **Plan the footprint and circulation.** Choose floor levels, terrain alignment, entrances/exits, window apertures, stairs, landings and the direct walkable routes joining doors to doors. Draw/declare minimum clear human-width corridors before adding shelves, furniture or art. Keep emergency exit routes and stair headroom clear in both views.
+2. **Build the structural shell:** foundations, floor/deck, **separate solid wall spans around genuine door/window holes**, roof and stair geometry, with matching collision geometry. A painted glass texture or invisible blocker is **not** a substitute for an actual opening. Door and window openings need explicit unobstructed vertical as well as horizontal space.
+3. **Declare logical wall assemblies:** each physically continuous wall (including sections flanking a doorway, lintel/header, frames and compatible decorations) gets a **single fade group node**. Different perpendicular walls must have separate groups. Doorframes belong to their wall group; future door leaves may join visually but must retain independent transforms/physics for interaction. Moving leaves will need explicit obstruction-proxy refresh when their transform changes.
+4. **Reserve clearance volumes** before constructing furnishings: door thresholds and swing/interaction zones, window apertures, the main route through the interior, stair footprints/landings and corridors between exits. A reservation covers the intended full volume, not just floor pixels. Reuse the cached `StructureClearance` helper and persist named reservation markers under `Generated/ClearanceVolumes`.
+5. **Add major fixtures only after clearance validation:** counters, shelving, beds, wardrobes, built-in appliances. Reject/reposition any fixture whose complete bounds intersect a reserved volume. Walking paths and door/windows always take priority over aesthetic placement. Test that the player body can traverse the complete sequence of openings.
+6. **Add decorative mesh art:** lights, wall pictures/clocks, signage, trim and surface details, then **last** add reusable static GLB Objects and pickup Props, only in safe locations. Do not put any art, collision, hanging pictures, shelves or furniture inside a window/door opening or over a doorway, and keep window sight lines visibly open. Attach wall-mounted art to the correct fade group if it should fade with the wall. Loose physics items must remain outside generated-wall ownership.
+7. **Validate from both camera perspectives** at normal zoom and near walls: circulation is unobstructed, openings are clear, each complete wall assembly fades coherently, roofs/whole-building exterior fading still work, and AIM1 visual targeting skips only faded paired colliders. Verify bullets, movement, zombie sight and FPS stay physically correct. Correct the *layout first* rather than adding camera-visibility exceptions for a bad layout.
+
+**Clearance starting recommendations (authoring values, not global game rules):** ~2.0m clear width for primary aisles and most connecting corridors, ≥2.2m vertical clearance through doors and occupied walk paths, and extra space at stair landings and swinging doors. Use the actual player collider/dynamics and prefab dimensions to validate. Smaller/larger building layouts may need explicit alternative values, but must still provide continuous collision-free circulation.
+
+## OV-W1 grouped-fade ownership — don't merge all meshes
+
+A single continuous wall is a **logical unit**, not necessarily one triangle mesh. Keep independent `CollisionShape3D` boxes for lintels, piers, window sills and doors; geometry/collision remains correct through openings. Under a level's `structure_visual_role="walls"` subtree, create one `Node3D` per complete wall and call `StructureLayout.FadeGroup(group)` (sets `structure_wall_fade_group=true` metadata). Put all its wall sections, frames, future door leaf and wall-attached ornaments under it. One obstruction of *any* child affects every mesh belonging to that group. Adjacent/perpendicular walls get separate groups; small ungrouped details retain legacy per-mesh behavior.
+
+Shared `CameraOccluder` creates a **separate precise obstruction proxy per child mesh**, but reuses one `CameraGroupFadeTarget` for every proxy in the group. This prevents an oversized single group bounds proxy fading from empty space while synchronizing the displayed opacity of all members. No names are hardcoded, no whole-building mesh merges, no extra fade timer/physics loop. Floor-level owner, roof role, outside whole-building reveal and the existing AIM1 collider-to-mesh links still apply. A closed door inside a wall group should fade with that wall but must keep its own collider; opening it must not be treated as solid cover across the doorway. Moving door geometry requires an explicit occlusion-proxy refresh/rebuild when it changes position (not a per-frame scan). **New imported meshes require real material/mesh ownership and explicit collision links**, not an opaque collision block over the full facade.
+
+```csharp
+var walls = StructureGeometry.Group(level0, "Walls");
+StructureLayout.Visual(walls, "walls");
+var north = StructureGeometry.Group(walls, "NorthWall");
+StructureLayout.FadeGroup(north);
+StructureGeometry.WallX(north, collision, "LeftPier", ...);
+StructureGeometry.WallX(north, collision, "DoorHead", ...);
+StructureGeometry.WallX(north, collision, "RightPier", ...);
+// Put doorframe / optionally movable door and wall decorations in north's visual group.
+```
+
+**BW1 convenience store reference:** `ConvenienceStore001/C/ConvenienceStoreMesh.cs` creates FrontWall, RearWall, WestWall, EastWall and the StockroomPartition group. It preserves the real apertures and existing building physics; only the fade ownership changes. Its `StructureClearance` authoring phase reserves a front entrance, interior stockroom door, rear exit, front/side window apertures and three connecting path volumes; collidable shelf/counter/crate placements are guarded by full-bounds checks. Future AI-driven GLB placement should consult `Generated/ClearanceVolumes` through `StructureClearance.AllowsPlacement(clearanceRoot, candidateBounds)` before instancing an object (candidate bounds in building-local coordinates). Reservations describe protected openings/routes and are not physical blockers; do not copy them into collision geometry.
+
+
 Use **Building002** as the multi-storey reference. Reuse shared visibility; do not add building-name cases to WorldController or put camera/player code in a mesh generator.
 
 ## Prefab and ownership
@@ -38,7 +72,7 @@ StructureLayout.Visual(stairs, "stairs");
 
 ## What each role does
 
-- **walls:** individual camera-to-player obstruction fading on the occupied floor; lower-storey walls restore upstairs.
+- **walls:** authored groups fade as complete walls; ungrouped legacy wall meshes still fade individually. Lower-storey walls restore upstairs.
 - **roof:** fades indoors when at/above the occupied level. A roof belongs to its supporting floor; a global top roof goes on the top floor.
 - **deck / contents:** solid on the occupied/lower floors; upper levels fade and restore near their landing. Furniture never inherits wall/roof camera fading.
 - **stairs:** stays readable indoors across levels; only the outside whole-building fade affects it.
@@ -56,7 +90,7 @@ Brief checks: compile, spawn/despawn a second instance, walk behind/in/out, asce
 
 New [Placeables library](../Objects/README.md) and [catalogue](../Objects/PLACEABLE_CATALOG.md) hold reusable non-pickup **Objects** and future physics-liftable **Props**, with original model-only Bookcase001 and Book001 GLBs. These **are not yet collision-ready scenes**.
 
-Future AI can furnish buildings using stable asset prefabs rather than building furniture into each procedural structure's `C/` mesh generator. Put fixed furniture in the appropriate floor furnishing/`contents` presentation subtree, without blocking entrances and stairs. Loose physics props need authored spawn anchors and an independent authoritative prop owner/state so building art regeneration and top-down fading do not own/destroy physical movement. A faded item never loses its collider. Don't generate or place furniture automatically until requested.
+Future AI can furnish buildings using stable asset prefabs rather than building furniture into each procedural structure's `C/` mesh generator. Put fixed furniture in the appropriate floor furnishing/`contents` presentation subtree **after** reserving window/door openings, stairs and exit-to-exit routes; use full-bounds clearance checks, not visual guesswork. Loose physics props need authored spawn anchors and an independent authoritative prop owner/state so building art regeneration and top-down fading do not own/destroy physical movement. A faded item never loses its collider. Don't generate or place furniture automatically until requested.
 
 ## OV1 — accurate exterior blockers
 

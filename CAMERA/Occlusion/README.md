@@ -1,3 +1,5 @@
+> **BW1 logical wall assemblies:** `CameraOccluder` now supports marked `structure_wall_fade_group` nodes. Each wall mesh keeps an individual obstruction proxy, but proxies within a group resolve to one `CameraGroupFadeTarget`, so the whole wall (including opening frames) fades together. This is opt-in: unmarked walls continue per-mesh fading. The convenience store is the reference and the authoring contract is `WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md`. Local Godot validation pending.
+
 > **AIM1 cursor targeting:** see [AIM1 plan/handoff](../../PLAYER/Equipment/AIM1_FADE_AWARE_AIM.md). `CameraOccluder` exposes composed visual fade only to the top-down mouse aim helper. Bullet/movement collision remain unchanged. Local Godot validation pending.
 
 **Current exterior fade:** OV1-A/B geometry-confirmed samples are implemented, awaiting local validation. See CAMERA/Occlusion/BUILDING_FADE_IMPROVEMENT.md current handoff; older bounds-only descriptions below are historical.

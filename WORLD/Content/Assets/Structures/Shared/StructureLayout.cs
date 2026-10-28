@@ -18,6 +18,12 @@ public sealed class StructureLayout
     public static void Visual(Node3D node, string role) => node.SetMeta("structure_visual_role", role);
 
     // =========================================================
+    // OV-W1: a marked group (walls, doorframe, optional door, opening trim) fades together.
+    // Group identity is the node itself, not a global building name or a merged mesh.
+    public const string FadeGroupMeta = "structure_wall_fade_group";
+    public static void FadeGroup(Node3D group) => group.SetMeta(FadeGroupMeta, true);
+
+    // =========================================================
     public static void Level(Node3D node, int level, float elevation)
     { node.SetMeta("floor_level", level); node.SetMeta("floor_elevation", elevation); }
 

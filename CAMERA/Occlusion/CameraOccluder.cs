@@ -53,11 +53,27 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
         {
             if (FadeIndividualMeshes)
             {
+                // OV-W1: one proxy per physical wall piece, but one fade target per logical wall
+                // assembly. The entire assembly fades if *any* member blocks the player.
+                var groups = new Dictionary<Node, CameraGroupFadeTarget>();
                 for (int i = 0; i < _meshes.Count; i++)
                 {
                     var meshBounds = CameraOcclusionMath.TransformBounds(_meshes[i].GetAabb(),
                         GlobalTransform.AffineInverse() * _meshes[i].GlobalTransform);
-                    AddProxy(meshBounds, new CameraMeshFadeTarget { Owner = this, MeshIndex = i });
+                    Node? group = FindFadeGroup(_meshes[i]);
+                    GodotObject target;
+                    if (group != null)
+                    {
+                        if (!groups.TryGetValue(group, out var handle))
+                        {
+                            handle = new CameraGroupFadeTarget { Owner = this };
+                            groups.Add(group, handle);
+                        }
+                        handle.MeshIndices.Add(i);
+                        target = handle;
+                    }
+                    else target = new CameraMeshFadeTarget { Owner = this, MeshIndex = i };
+                    AddProxy(meshBounds, target);
                 }
             }
             else AddProxy(bounds, this);
@@ -67,7 +83,20 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     }
 
     // =========================================================
-    // Fine-grained wall targets share this owner and presentation factor; static Areas do not poll or process.
+    // The first marked ancestor under this visual role identifies a whole logical wall assembly.
+    // Unmarked geometry keeps the old per-mesh fade, so legacy buildings are not changed.
+    private Node? FindFadeGroup(MeshInstance3D mesh)
+    {
+        for (Node? node = mesh; node != null; node = node.GetParent())
+        {
+            if (node.HasMeta(StructureLayout.FadeGroupMeta)) return node;
+            if (node == ObjectRoot) break;
+        }
+        return null;
+    }
+
+    // =========================================================
+    // Fine-grained obstruction proxies share one group target; static Areas do not poll or process.
     private void AddProxy(Aabb bounds, GodotObject target)
     {
         var proxy = new Area3D { Name = "CameraObstructionProxy", CollisionLayer = ObstructionLayer,
@@ -142,6 +171,21 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
     {
         _meshCameraOpacity[index] = Mathf.Clamp(opacity, 0, 1);
         if (ApplyMeshOpacity(index)) AimFadeChanged?.Invoke();
+    }
+
+    // =========================================================
+    // An obstruction on one piece fades all meshes in that authored wall assembly.
+    // AIM1 gets one notification after the group, not one per frame or mesh.
+    public void SetGroupCameraOpacity(System.Collections.Generic.IReadOnlyList<int> indices, float opacity)
+    {
+        bool changed = false;
+        opacity = Mathf.Clamp(opacity, 0, 1);
+        foreach (int index in indices)
+        {
+            if (index < 0 || index >= _meshCameraOpacity.Count) continue;
+            _meshCameraOpacity[index] = opacity; changed |= ApplyMeshOpacity(index);
+        }
+        if (changed) AimFadeChanged?.Invoke();
     }
 
     // =========================================================

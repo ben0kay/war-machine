@@ -40,6 +40,11 @@ public partial class ConvenienceStoreMesh : Node3D
         StructureLayout.Level(ground, 0, 0f);
         var walls = Role(ground, "OutsideWalls", "walls");
         var partitions = Role(ground, "StockroomPartition", "walls");
+        StructureLayout.FadeGroup(partitions); // Both sides, header and doorway frame fade as one wall.
+        var frontWall = WallGroup(walls, "FrontWall");
+        var rearWall = WallGroup(walls, "RearWall");
+        var westWall = WallGroup(walls, "WestWall");
+        var eastWall = WallGroup(walls, "EastWall");
         var furniture = Role(ground, "InteriorFixtures", "contents");
         _roof = Role(ground, "RoofAndAwning", "roof"); _roof.Visible = ShowRoof;
         var body = StructureGeometry.Body(ground);
@@ -72,32 +77,33 @@ public partial class ConvenienceStoreMesh : Node3D
         // Huge *unglazed* front windows: real holes, not tinted panes or visual-only gaps.
         const float entryHalf = 1.25f, sill = 0.76f, windowHead = 3.46f, entryHead = 3.05f;
         float west = -hx + 0.82f, east = hx - 0.82f;
-        StructureGeometry.WallX(walls, body, "FrontWestPier", -hx, west, front, 0, h, stucco);
-        WindowX(walls, body, "BigWestShopfront", west, -entryHalf, front, sill, windowHead, h, stucco, metal);
-        StructureGeometry.WallX(walls, body, "FrontDoorHead", -entryHalf, entryHalf, front, entryHead, h, stucco);
-        WindowX(walls, body, "BigEastShopfront", entryHalf, east, front, sill, windowHead, h, stucco, metal);
-        StructureGeometry.WallX(walls, body, "FrontEastPier", east, hx, front, 0, h, stucco);
-        FrameDoor(furniture, "FrontEntry", 0, front + 0.13f, entryHalf * 2, entryHead, metal);
+        StructureGeometry.WallX(frontWall, body, "FrontWestPier", -hx, west, front, 0, h, stucco);
+        WindowX(frontWall, body, "BigWestShopfront", west, -entryHalf, front, sill, windowHead, h, stucco, metal);
+        StructureGeometry.WallX(frontWall, body, "FrontDoorHead", -entryHalf, entryHalf, front, entryHead, h, stucco);
+        WindowX(frontWall, body, "BigEastShopfront", entryHalf, east, front, sill, windowHead, h, stucco, metal);
+        StructureGeometry.WallX(frontWall, body, "FrontEastPier", east, hx, front, 0, h, stucco);
+        FrameDoor(frontWall, "FrontEntry", 0, front + 0.13f, entryHalf * 2, entryHead, metal);
 
         // Rear exit opens from the separate stockroom to outside. No door mesh, no collider across gap.
         float serviceLeft = hx - 3.5f, serviceRight = hx - 1.1f;
         const float serviceHead = 2.85f;
-        StructureGeometry.WallX(walls, body, "RearWest", -hx, serviceLeft, rear, 0, h, stucco);
-        StructureGeometry.WallX(walls, body, "RearExitHead", serviceLeft, serviceRight, rear,
+        StructureGeometry.WallX(rearWall, body, "RearWest", -hx, serviceLeft, rear, 0, h, stucco);
+        StructureGeometry.WallX(rearWall, body, "RearExitHead", serviceLeft, serviceRight, rear,
             serviceHead, h, stucco);
-        StructureGeometry.WallX(walls, body, "RearEast", serviceRight, hx, rear, 0, h, stucco);
-        FrameDoor(furniture, "RearServiceExit", (serviceLeft + serviceRight) * 0.5f,
+        StructureGeometry.WallX(rearWall, body, "RearEast", serviceRight, hx, rear, 0, h, stucco);
+        FrameDoor(rearWall, "RearServiceExit", (serviceLeft + serviceRight) * 0.5f,
             rear - 0.13f, serviceRight - serviceLeft, serviceHead, metal);
 
         // Side customer windows also have open space, framed by solid wall spans.
         float winStart = divider + 0.78f, winEnd = front - 1.3f;
         foreach (float x in new[] { -hx, hx })
         {
-            WindowZ(walls, body, x < 0 ? "LeftSideWindow" : "RightSideWindow", x, rear, front,
+            var sideWall = x < 0 ? westWall : eastWall;
+            WindowZ(sideWall, body, x < 0 ? "LeftSideWindow" : "RightSideWindow", x, rear, front,
                 winStart, winEnd, 1.13f, 3.03f, h, stucco, metal);
-            StructureGeometry.Box(furniture, null, "CornerPostFront", new Vector3(x, h * 0.5f, front),
+            StructureGeometry.Box(sideWall, null, "CornerPostFront", new Vector3(x, h * 0.5f, front),
                 new Vector3(0.28f, h, 0.28f), metal);
-            StructureGeometry.Box(furniture, null, "CornerPostRear", new Vector3(x, h * 0.5f, rear),
+            StructureGeometry.Box(sideWall, null, "CornerPostRear", new Vector3(x, h * 0.5f, rear),
                 new Vector3(0.28f, h, 0.28f), metal);
         }
 
@@ -109,13 +115,13 @@ public partial class ConvenienceStoreMesh : Node3D
             partitionDoorHalf, divider, partitionHead, h - 0.16f, insideWall, 0.17f);
         StructureGeometry.WallX(partitions, body, "DividerEast", partitionDoorHalf, hx - 0.2f,
             divider, 0, h - 0.16f, insideWall, 0.17f);
-        FrameDoor(furniture, "StockroomDoor", 0, divider + 0.12f,
+        FrameDoor(partitions, "StockroomDoor", 0, divider + 0.12f,
             partitionDoorHalf * 2, partitionHead, metal);
 
         // Simple weather-worn fascia and a shallow entrance awning; no signage text/texture.
-        StructureGeometry.Box(walls, null, "StoreSignBoard",
+        StructureGeometry.Box(frontWall, null, "StoreSignBoard",
             new Vector3(0, h - 0.48f, front + 0.20f), new Vector3(w - 1.8f, 0.70f, 0.13f), metal);
-        StructureGeometry.Box(walls, null, "SignAccent",
+        StructureGeometry.Box(frontWall, null, "SignAccent",
             new Vector3(0, h - 0.46f, front + 0.29f), new Vector3(w - 3.6f, 0.32f, 0.06f), accent);
         StructureGeometry.Box(_roof, null, "EntryAwning",
             new Vector3(0, h - 0.72f, front + 0.85f), new Vector3(6.8f, 0.17f, 1.5f), metal);
@@ -134,8 +140,31 @@ public partial class ConvenienceStoreMesh : Node3D
             new Vector3(hx - 2.1f, h + 0.70f, rear + 2f),
             new Vector3(1.65f, 0.9f, 1.48f), metal);
 
+        // Reserve headroom and horizontal passage BEFORE placing any interior fixtures or future GLBs.
+        // Reserved volumes are authored in building-local coordinates and remain queryable as metadata.
+        var clearance = new StructureClearance(generated);
+        clearance.Reserve("FrontEntrance", new(0, 1.18f, front - 0.20f), new(2.16f, 2.36f, 2.35f));
+        clearance.Reserve("StockroomDoor", new(0, 1.18f, divider), new(2.04f, 2.36f, 2.40f));
+        float rearDoorX = (serviceLeft + serviceRight) * 0.5f;
+        clearance.Reserve("RearServiceExit", new(rearDoorX, 1.18f, rear + 0.15f), new(2.12f, 2.36f, 2.0f));
+        // Main public aisle, turn across the stockroom, then travel back to the rear service exit.
+        clearance.Reserve("RetailMainAisle", new(0, 1.05f, (divider + front) * 0.5f), new(2.0f, 2.1f, front - divider));
+        clearance.Reserve("StockroomCrossAisle", new(rearDoorX * 0.5f, 1.05f, divider - 0.95f),
+            new(rearDoorX + 2.0f, 2.1f, 1.50f));
+        clearance.Reserve("StockroomServiceAisle", new(rearDoorX, 1.05f, (rear + divider) * 0.5f),
+            new(2.0f, 2.1f, divider - rear));
+        // Keep the actual unglazed apertures clear of signs, picture frames, clocks and future GLB props.
+        clearance.Reserve("FrontWindowWest", new((west - entryHalf) * 0.5f, (sill + windowHead) * 0.5f, front),
+            new(-entryHalf - west - 0.16f, windowHead - sill - 0.16f, 0.65f));
+        clearance.Reserve("FrontWindowEast", new((entryHalf + east) * 0.5f, (sill + windowHead) * 0.5f, front),
+            new(east - entryHalf - 0.16f, windowHead - sill - 0.16f, 0.65f));
+        foreach (float x in new[] { -hx, hx })
+            clearance.Reserve(x < 0 ? "WestSideWindow" : "EastSideWindow",
+                new(x, (1.13f + 3.03f) * 0.5f, (winStart + winEnd) * 0.5f),
+                new(0.65f, 3.03f - 1.13f - 0.16f, winEnd - winStart - 0.16f));
+
         if (s.ShowFurnishings)
-            Furnish(furniture, body, hx, front, rear, divider,
+            Furnish(furniture, body, clearance, hx, front, rear, divider,
                 Mathf.Clamp(s.ShelfHeight, 0.8f, 1.8f), shelfMetal, shelfDark, metal,
                 concrete, cardboard, red, green, yellow);
 
@@ -176,44 +205,50 @@ public partial class ConvenienceStoreMesh : Node3D
 
     // =========================================================
     // Shelves stay on each side of the centre corridor, with the till near the front windows.
-    private static void Furnish(Node3D group, StaticBody3D body, float hx, float front,
+    private static void Furnish(Node3D group, StaticBody3D body, StructureClearance clearance, float hx, float front,
         float rear, float divider, float shelfHeight, Material shelf, Material shade,
         Material trim, Material floor, Material boxes, Material red, Material green, Material yellow)
     {
         float depth = Mathf.Clamp(front - divider - 3.85f, 2.45f, 3.55f);
         float centre = divider + 1.2f + depth * 0.5f;
         foreach (float x in new[] { -hx + 2.2f, -2.75f, 2.75f, hx - 2.2f })
-            DisplayShelf(group, body, "ShopShelf", x, centre, 1.02f, shelfHeight,
+            DisplayShelf(group, body, clearance, "ShopShelf", x, centre, 1.02f, shelfHeight,
                 depth, shelf, shade, boxes, red, green, yellow);
 
         float tillX = -hx + 2.15f, tillZ = front - 1.45f;
-        StructureGeometry.Box(group, body, "CheckoutCounter", new Vector3(tillX, 0.68f, tillZ),
-            new Vector3(2.55f, 1.16f, 0.88f), shelf);
-        StructureGeometry.Box(group, null, "CounterTop", new Vector3(tillX, 1.30f, tillZ),
-            new Vector3(2.69f, 0.10f, 1.02f), floor);
-        StructureGeometry.Box(group, null, "CashTill", new Vector3(tillX - 0.65f, 1.44f, tillZ - 0.08f),
-            new Vector3(0.50f, 0.23f, 0.39f), trim);
-        StructureGeometry.Box(group, null, "TillDisplay", new Vector3(tillX - 0.65f, 1.65f, tillZ - 0.23f),
-            new Vector3(0.47f, 0.34f, 0.07f), shade);
-        StructureGeometry.Box(group, null, "CardReader", new Vector3(tillX + 0.53f, 1.42f, tillZ + 0.19f),
-            new Vector3(0.25f, 0.16f, 0.30f), trim);
+        if (clearance.Allows("CheckoutCounter", new(tillX, 0.68f, tillZ), new(2.69f, 1.20f, 1.02f)))
+        {
+            StructureGeometry.Box(group, body, "CheckoutCounter", new Vector3(tillX, 0.68f, tillZ),
+                new Vector3(2.55f, 1.16f, 0.88f), shelf);
+            StructureGeometry.Box(group, null, "CounterTop", new Vector3(tillX, 1.30f, tillZ),
+                new Vector3(2.69f, 0.10f, 1.02f), floor);
+            StructureGeometry.Box(group, null, "CashTill", new Vector3(tillX - 0.65f, 1.44f, tillZ - 0.08f),
+                new Vector3(0.50f, 0.23f, 0.39f), trim);
+            StructureGeometry.Box(group, null, "TillDisplay", new Vector3(tillX - 0.65f, 1.65f, tillZ - 0.23f),
+                new Vector3(0.47f, 0.34f, 0.07f), shade);
+            StructureGeometry.Box(group, null, "CardReader", new Vector3(tillX + 0.53f, 1.42f, tillZ + 0.19f),
+                new Vector3(0.25f, 0.16f, 0.30f), trim);
+        }
 
         // Stockroom shelving occupies the west/rear side; path from centre door to east exit stays open.
         float stockZ = rear + 1.2f;
-        DisplayShelf(group, body, "StockShelfWest", -hx + 1.6f, stockZ,
+        DisplayShelf(group, body, clearance, "StockShelfWest", -hx + 1.6f, stockZ,
             0.92f, 1.79f, 1.35f, shelf, shade, boxes, red, green, yellow);
-        DisplayShelf(group, body, "StockShelfMiddle", -hx + 4.0f, stockZ,
+        DisplayShelf(group, body, clearance, "StockShelfMiddle", -hx + 4.0f, stockZ,
             0.92f, 1.79f, 1.35f, shelf, shade, boxes, red, green, yellow);
-        StructureGeometry.Box(group, body, "StockCrate", new Vector3(-hx + 1.15f, 0.43f, divider - 0.82f),
-            new Vector3(0.82f, 0.70f, 0.83f), boxes);
+        if (clearance.Allows("StockCrate", new(-hx + 1.15f, 0.43f, divider - 0.82f), new(0.82f, 0.70f, 0.83f)))
+            StructureGeometry.Box(group, body, "StockCrate", new Vector3(-hx + 1.15f, 0.43f, divider - 0.82f),
+                new Vector3(0.82f, 0.70f, 0.83f), boxes);
     }
 
     // =========================================================
     // One collision shape per shelf, with non-colliding coloured stock on three shelf levels.
-    private static void DisplayShelf(Node3D group, StaticBody3D body, string name,
+    private static void DisplayShelf(Node3D group, StaticBody3D body, StructureClearance clearance, string name,
         float x, float z, float width, float height, float depth, Material metal, Material dark,
         Material box, Material red, Material green, Material yellow)
     {
+        if (!clearance.Allows(name, new(x, height * 0.5f + 0.12f, z),
+            new(width + 0.04f, height + 0.07f, depth))) return;
         body.AddChild(new CollisionShape3D { Name = name + "Solid",
             Position = new Vector3(x, height * 0.5f + 0.12f, z),
             Shape = new BoxShape3D { Size = new Vector3(width, height, depth) } });
@@ -293,7 +328,15 @@ public partial class ConvenienceStoreMesh : Node3D
     }
 
     // =========================================================
-    // Disjoint visual roles allow shared per-wall, full roof and external whole-house fading.
+    // New wall assemblies fade as one without merging meshes or changing independent collision.
+    private static Node3D WallGroup(Node3D parent, string name)
+    {
+        var group = StructureGeometry.Group(parent, name);
+        StructureLayout.FadeGroup(group); return group;
+    }
+
+    // =========================================================
+    // Disjoint visual roles allow shared wall groups, full roof and exterior whole-house fading.
     private static Node3D Role(Node3D parent, string name, string role)
     {
         var node = StructureGeometry.Group(parent, name);
