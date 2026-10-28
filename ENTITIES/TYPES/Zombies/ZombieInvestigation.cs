@@ -46,7 +46,8 @@ public partial class ZombieController
             if (now >= _lookUntil) { FinishInvestigation(); return; }
             // A few modest turns on existing sight ticks, while grounded physics remains asleep.
             float turn = Mathf.Sin((float)(_lookUntil - now) * 0.006f) * 0.55f;
-            VisualRoot.Rotation = new Vector3(VisualRoot.Rotation.X, _lookYaw + turn, 0);
+            SetMobilityFacing(_lookYaw + turn);
+            UpdatePose(0);
         }
     }
 
@@ -64,7 +65,7 @@ public partial class ZombieController
             ? _config.EarlyInvestigationFraction : _config.ModerateInvestigationFraction, 0.05f, 1);
         _goal = GlobalPosition.Lerp(_lastSeen, fraction); _hasGoal = true;
         Vector3 distance = _goal - GlobalPosition; distance.Y = 0;
-        float travel = distance.Length() / SafePolicy(_config.ChaseSpeed, 0.1f, 30);
+        float travel = distance.Length() / SafePolicy(_locomotion.Speed(_config.ChaseSpeed), 0.1f, 30);
         float seconds = travel * SamplePolicy(_config.InvestigationTimeScale, 1, 3)
             + SafePolicy(_config.InvestigationTimeAllowance, 0.5f, 20);
         seconds = Mathf.Min(seconds, SafePolicy(_config.InvestigationMaxSeconds, 1, 120));

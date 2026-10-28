@@ -1,3 +1,5 @@
+> **ELD2 source implementation (2026-10-28), awaiting local validation:** [Injury locomotion and World/FPS acceptance](../Anatomy/README.md). Both variants share limp, one-leg shuffle, low living crawl and immobilization. Debug panel buttons demonstrate injuries without HP changes. Existing attacks/ELD3 and ZD1–ZD3 remain deferred. This supersedes older ELD2-Planned/upright-legless descriptions below.
+
 # Shared gameplay debug overlay
 
 Instance `DEBUG/Overlay/DebugOverlay.tscn` once beneath the active CanvasLayer. World.tscn does this under DebugUIRoot/Controls; FirstPersonTest inherits the same scene. WorldController binds the ready references after environment, vegetation, fog and zombie-debug initialization. No global lookups or independently created FPS/top-down panel.

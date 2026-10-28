@@ -75,6 +75,23 @@ public sealed class AnatomyComponent
     }
 
     // =========================================================
+    // Internal debug injection: explicit in-world tooling only, monotonic, with the same state-event boundary.
+    internal void DebugSetState(BodyRegion region, LimbState state)
+    {
+        if (!OS.IsDebugBuild() || _changing || !IsLimb(region) || (int)state < 0 || (int)state > 3) return;
+        int index = (int)region;
+        if ((int)state <= (int)_states[index]) return;
+        _changing = true;
+        try
+        {
+            _states[index] = state;
+            _condition[index] = state == LimbState.Damaged ? Maximum * 0.5f : state == LimbState.Disabled ? Maximum * 0.1f : 0;
+            StateChanged?.Invoke(region, state);
+        }
+        finally { _changing = false; }
+    }
+
+    // =========================================================
     public AnatomySnapshot Capture()
     {
         uint states = 0;

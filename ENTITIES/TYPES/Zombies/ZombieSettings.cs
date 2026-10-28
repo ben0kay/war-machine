@@ -4,6 +4,8 @@ using Godot;
 [GlobalClass]
 public partial class ZombieSettings : EntitySettings
 {
+    [ExportGroup("Injury locomotion")]
+    [Export] public ZombieLocomotionSettings? LocomotionProfile { get; set; }
     [ExportGroup("Anatomy")]
     [Export] public AnatomySettings? AnatomyProfile { get; set; }
     [ExportGroup("Health")]

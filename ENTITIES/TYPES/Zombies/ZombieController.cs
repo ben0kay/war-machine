@@ -10,6 +10,12 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private ZombieAnatomy _anatomyVisual = null!;
     public AnatomyComponent? Anatomy { get; private set; }
     private bool _receivingHit;
+    private ZombieLocomotion _locomotion = null!;
+    private Node3D _anatomyHead = null!;
+    private bool _mobilityDirty, _reportedMobilityBlock;
+    public ZombieMobility Mobility => _locomotion?.Mode ?? ZombieMobility.Walk;
+    public bool LowBodyActive => _locomotion?.IsLowBody == true;
+    public Vector3 SightOrigin => LowBodyActive ? _anatomyHead.GlobalPosition : GlobalPosition + Vector3.Up * _config.EyeHeight;
     public BodyRegion LastHitRegion { get; private set; } = BodyRegion.Unknown;
     public uint AnatomicalHitCount { get; private set; }
     public float Health => _health == null ? 0 : _health.CurrentHealth;
@@ -64,6 +70,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
+        _locomotion ??= new ZombieLocomotion(this, _bodyShape, VisualRoot, _anatomyHead,
+            _config.LocomotionProfile ?? new ZombieLocomotionSettings(),
+            _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee);
     }
 
     // =========================================================
@@ -73,7 +82,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         _anatomy = new AnatomyHitboxes { Name = "AnatomyHitboxes" }; AddChild(_anatomy);
         _anatomy.Initialize(this, (Settings as ZombieSettings)?.AnatomyProfile
             ?? GD.Load<AnatomySettings>("res://ENTITIES/Shared/Anatomy/Configuration/AnatomyMaster.tres"));
-        Node3D head = VisualRoot.GetNode<Node3D>("Head");
+        Node3D head = _anatomyHead = VisualRoot.GetNode<Node3D>("Head");
         var pivots = new[] { VisualRoot, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
         var regions = new[] { BodyRegion.Torso, BodyRegion.Head, BodyRegion.LeftArm, BodyRegion.RightArm,
             BodyRegion.LeftLeg, BodyRegion.RightLeg, BodyRegion.LeftLeg, BodyRegion.RightLeg };
@@ -88,15 +97,65 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private void OnAnatomyChanged(BodyRegion region, LimbState state)
     {
         if (state == LimbState.Severed) _anatomy.DisableRegion(region);
-        _anatomyVisual.Apply(Anatomy!.Capture());
+        AnatomySnapshot snapshot = Anatomy!.Capture();
+        _anatomyVisual.Apply(snapshot);
+        ZombieMobility previous = Mobility;
+        _locomotion.Refresh(snapshot); _mobilityDirty = true; _reportedMobilityBlock = false;
+        if (previous != Mobility && _anatomy.RuntimeSettings.LogRegionHits)
+            GD.Print($"[ELD2] {GetPath()} mode={Mobility}");
+        if (IsActive && !_awaitingSpawnGround) SetPhysicsProcess(true);
         if (_anatomy.RuntimeSettings.LogRegionHits)
             GD.Print($"[ELD1] {GetPath()} region={region} state={state} condition={Anatomy.Condition(region):0.##}");
     }
 
     // =========================================================
+    // Debug builds only: demonstrate surviving multi-limb injuries without changing damage or vitality settings.
+    public void DebugInjure(BodyRegion region, LimbState state)
+    {
+        if (!OS.IsDebugBuild() || _receivingHit || !IsActive || !_configured || _health.IsDead) return;
+        _receivingHit = true;
+        try { Anatomy!.DebugSetState(region, state); }
+        finally { _receivingHit = false; }
+    }
+
+    // =========================================================
     // Preserve virtual species pose hooks; synchronize even when AI changes pose outside the movement tick.
     private void UpdatePose(float step, float leftLift = 0, float rightLift = 0)
-    { Pose(step, leftLift, rightLift); _anatomy?.SyncPose(); }
+    { PoseWithMobility(step, leftLift, rightLift); _anatomy?.SyncPose(); }
+
+    // =========================================================
+    // Healthy virtual poses remain species-owned; injury presentation overlays them for both variants.
+    private void PoseWithMobility(float step, float leftLift = 0, float rightLift = 0)
+    {
+        VisualRoot.Rotation = new Vector3(0, VisualRoot.Rotation.Y, 0);
+        Pose(step, leftLift, rightLift);
+        _locomotion?.ApplyPose(step);
+    }
+
+    // =========================================================
+    private void TryMobilityBody()
+    {
+        if (!_locomotion.BodyPending) return;
+        if (!_locomotion.TryBody(VisualRoot.Rotation.Y))
+        {
+            if (!_reportedMobilityBlock && _anatomy.RuntimeSettings.LogRegionHits)
+                GD.Print($"[ELD2] {GetPath()} waiting for body clearance; mode={Mobility}");
+            _reportedMobilityBlock = true; return;
+        }
+        _reportedMobilityBlock = false;
+        if (_anatomy.RuntimeSettings.LogRegionHits) GD.Print($"[ELD2] {GetPath()} low_body={LowBodyActive}");
+        _recoveryQuery.Shape = _wanderQuery.Shape = _bodyShape.Shape;
+        UpdatePose(0); ResetPhysicsInterpolation();
+        if (IsActive && !_awaitingSpawnGround) SetPhysicsProcess(true);
+    }
+
+    // =========================================================
+    // Long crawler colliders must turn with their visual body, including slow investigation-look turns.
+    private void SetMobilityFacing(float yaw)
+    {
+        yaw = _locomotion.TryTurn(yaw);
+        VisualRoot.Rotation = new Vector3(VisualRoot.Rotation.X, yaw, VisualRoot.Rotation.Z);
+    }
 
     // =========================================================
     // Subtypes only supply art and optional motion tuning; detection, health and AI stay shared.
@@ -135,7 +194,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (Anatomy != null) Anatomy.StateChanged -= OnAnatomyChanged;
         Anatomy = new AnatomyComponent(_config.AnatomyProfile ?? _anatomy.RuntimeSettings);
         Anatomy.StateChanged += OnAnatomyChanged;
-        _anatomyVisual.Apply(Anatomy.Capture());
+        AnatomySnapshot reset = Anatomy.Capture();
+        _anatomyVisual.Apply(reset); _locomotion.Refresh(reset); _mobilityDirty = true;
         _anatomy.RestoreRegions(CollisionLayer);
         LastHitRegion = BodyRegion.Unknown; AnatomicalHitCount = 0;
         _health.Configure(_config.HealthProfile);
@@ -249,6 +309,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         var head = visual.GetNodeOrNull<Node3D>("Head"); if (head != null) joints.Add(head);
         AnatomySnapshot injuries = Anatomy!.Capture();
         var pose = new ZombieCorpsePose(_corpseSeed, injuries, joints.ToArray());
+        bool alignCorpsePivot = LowBodyActive;
         var owner = CorpseOwner;
         Deactivate(); _configured = false; CollisionLayer = CollisionMask = 0;
         _anatomyVisual.Apply(injuries); // Explicitly preserve the final snapshot after Pose(0)/reaction reset.
@@ -260,7 +321,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             try
             {
                 if (IsInstanceValid(owner) && owner!.IsInsideTree())
-                    owner.TrySpawn(visual, at, pose, hit.Direction, velocity, _corpseSeed);
+                    owner.TrySpawn(visual, at, pose, hit.Direction, velocity, _corpseSeed, alignPivotToVisual: alignCorpsePivot);
             }
             finally { QueueFree(); }
         }).CallDeferred();
@@ -282,6 +343,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (!IsActive || !_configured) return;
         if (_awaitingSpawnGround && !ConfirmSpawnGround())
         { _brain.Start(Mathf.Max(0.1f, _config.SightIntervalSeconds)); return; }
+        TryMobilityBody();
         CheckGroundPenetration();
         bool wasChasing = IsChasing;
         bool targetValid = IsInstanceValid(_target) && _target!.IsInsideTree() && !_target.IsQueuedForDeletion();
@@ -297,24 +359,24 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
                 bool inCone = IsChasing || IsInvestigating;
                 if (!inCone)
                 {
-                    Vector3 forward = -VisualRoot.GlobalBasis.Z; forward.Y = 0; forward = forward.Normalized();
+                    Vector3 forward = Vector3.Forward.Rotated(Vector3.Up, VisualRoot.Rotation.Y);
                     float threshold = Mathf.Cos(Mathf.DegToRad(Mathf.Clamp(_config.VisionAngleDegrees, 1, 180)) * 0.5f);
                     inCone = squared < 0.000001f || forward.Dot(offset / Mathf.Sqrt(squared)) >= threshold;
                 }
                 if (inCone)
                     chasing = _visibility.CanSee(GetWorld3D().DirectSpaceState,
-                        GlobalPosition + Vector3.Up * _config.EyeHeight, _sightTarget);
+                        SightOrigin, _sightTarget);
             }
         }
         if (chasing != IsChasing)
         { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); UpdatePose(0); } }
         ulong now = Time.GetTicksMsec();
         UpdateInvestigation(wasChasing, now, targetValid);
-        if (!IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)
+        if (_locomotion.CanDrive && !IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)
         {
             if (!TryChooseWanderGoal()) Rest();
         }
-        if (_hasGoal || _anchorPending || !IsOnFloor()) SetPhysicsProcess(true);
+        if ((_hasGoal && _locomotion.CanDrive) || _anchorPending || !IsOnFloor()) SetPhysicsProcess(true);
         UpdateVisionDebug();
         _brain.Start(Mathf.Max(0.1f, _config.SightIntervalSeconds));
     }
@@ -322,7 +384,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // =========================================================
     // Debug owns mesh construction/input; species owns visibility lifecycle. No debug frame callback.
     public void AttachVisionDebug(MeshInstance3D cone)
-    { _visionCone = cone; _showVisionCone = _config.ShowVisionCone; UpdateVisionDebug(); }
+    { cone.Reparent(this, true); _visionCone = cone; _showVisionCone = _config.ShowVisionCone; UpdateVisionDebug(); }
 
     // =========================================================
     public void SetVisionDebugVisible(bool visible)
@@ -334,6 +396,13 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (_visionCone == null) return;
         bool visible = IsActive && _showVisionCone;
         if (_visionCone.Visible != visible) _visionCone.Visible = visible;
+        if (visible)
+        {
+            Vector3 position = ToLocal(SightOrigin);
+            Vector3 rotation = new(0, VisualRoot.Rotation.Y, 0);
+            if (_visionCone.Position != position) _visionCone.Position = position;
+            if (_visionCone.Rotation != rotation) _visionCone.Rotation = rotation;
+        }
         float range = Mathf.Max(0, VisionRange);
         var scale = new Vector3(range, 1, range);
         if (_visionCone.Scale != scale) _visionCone.Scale = scale;
@@ -402,6 +471,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (_awaitingSpawnGround) { SetPhysicsProcess(false); return; }
         float dt = (float)delta;
         RemoveReactionPose();
+        if (_mobilityDirty) { TryMobilityBody(); UpdatePose(0); _mobilityDirty = false; }
         bool reacting = _reaction.IsActive;
         bool shovePushing = reacting && _shoveStagger;
         if (reacting)
@@ -418,22 +488,23 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance)
             : _search == SearchState.Travel ? SafePolicy(_config.InvestigationArrivalDistance, 0.2f, 1.5f) : 0.4f;
-        bool walking = _hasGoal && offset.LengthSquared() > stop * stop;
-        if (_hasGoal && !walking && !IsChasing && !shovePushing)
+        bool walking = _locomotion.CanDrive && _hasGoal && offset.LengthSquared() > stop * stop;
+        if (_hasGoal && _locomotion.CanDrive && !walking && !IsChasing && !shovePushing)
         { if (_search == SearchState.Travel) InvestigationArrived(); else Rest(); }
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
-        float speed = Mathf.Max(0, IsPursuing ? _config.ChaseSpeed : _config.WanderSpeed);
+        float speed = _locomotion.Speed(Mathf.Max(0, IsPursuing ? _config.ChaseSpeed : _config.WanderSpeed));
         // Scale movement slowdown with accepted bullet strength. Do not alter shove displacement.
         if (reacting && !_shoveStagger)
             speed *= Mathf.Lerp(1f, Mathf.Clamp(_config.StaggerMoveMultiplier, 0f, 1f),
                 Mathf.Clamp(_reaction.Strength, 0f, 1f));
         float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
-            : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
+            : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration * _locomotion.AccelerationScale;
         // Chase AI cannot cancel shove travel. Use the ordinary MoveAndSlide collision path.
         Vector3 currentHorizontal = new(Velocity.X, 0, Velocity.Z);
         Vector3 horizontal = shovePushing
             ? currentHorizontal.MoveToward(Vector3.Zero, dt * SafeShoveSetting(_config.ShoveBrakingAcceleration, 40f))
             : currentHorizontal.MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
+        if (!_locomotion.CanDrive && !shovePushing) horizontal = Vector3.Zero;
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - 20 * dt, horizontal.Z);
         MoveAndSlide();
@@ -448,24 +519,25 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
                 {
                     _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter) * 1.2f;
                     float stride = Mathf.Cos(_phase);
-                    Pose(-Mathf.Sin(_phase) * 0.8f, Mathf.Max(0f, stride), Mathf.Max(0f, -stride));
+                    PoseWithMobility(-Mathf.Sin(_phase) * 0.8f, Mathf.Max(0f, stride), Mathf.Max(0f, -stride));
                 }
-                else Pose(0);
+                else PoseWithMobility(0);
             }
             else
             {
                 float yaw = Mathf.Atan2(-travel.X, -travel.Z);
-                VisualRoot.Rotation = new Vector3(0, Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)), 0);
-                _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter);
+                SetMobilityFacing(Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)));
+                _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter * _locomotion.GaitScale);
                 // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
                 float swing = Mathf.Cos(_phase);
-                Pose(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
+                PoseWithMobility(Mathf.Sin(_phase), Mathf.Max(0, swing), Mathf.Max(0, -swing));
             }
             _stuck = 0;
         }
-        else { Pose(0); if (walking && !reacting && !recovering) _stuck += dt; }
+        else { PoseWithMobility(0); if (walking && !reacting && !recovering) _stuck += dt; }
         ApplyReactionPose();
         _anatomy.SyncPose();
+        UpdateVisionDebug();
         if (_stuck > 2)
         { if (IsInvestigating) FinishInvestigation(); else Rest(); _stuck = 0; }
         if (!reacting && !recovering && (!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())

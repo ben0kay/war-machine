@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="ZombieSettings" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="ZombieSettings" load_steps=6 format=3]
 [ext_resource type="Script" path="res://ENTITIES/TYPES/Zombies/ZombieSettings.cs" id="1"]
 [ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="2"]
 
 [ext_resource type="Resource" path="res://ENTITIES/TYPES/Zombies/Configuration/ZombieAnatomyMaster.tres" id="anatomy"]
+[ext_resource type="Resource" path="res://ENTITIES/TYPES/Zombies/Zombie_002/Configuration/ZombieRunnerLocomotionMaster.tres" id="locomotion"]
 [sub_resource type="Resource" id="RunnerHealth"]
 script = ExtResource("2")
 MaxHealth = 100.0
@@ -15,6 +16,7 @@ FireResistance = 0.0
 [resource]
 script = ExtResource("1")
 AnatomyProfile = ExtResource("anatomy")
+LocomotionProfile = ExtResource("locomotion")
 TypeLabel = "Zombie_002_Runner"
 StartActive = false
 AppearanceVariationEnabled = true
