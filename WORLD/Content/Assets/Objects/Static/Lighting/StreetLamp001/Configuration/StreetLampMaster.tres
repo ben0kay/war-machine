@@ -3,7 +3,7 @@
 
 [resource]
 script = ExtResource("1")
-PoleHeight = 5.8
+PoleHeight = 7.0
 ArmReach = 1.1
 MetalColor = Color(0.17, 0.21, 0.23, 1)
 HousingColor = Color(0.25, 0.28, 0.29, 1)
