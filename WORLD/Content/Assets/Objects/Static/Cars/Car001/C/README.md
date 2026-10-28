@@ -1,5 +1,5 @@
-# C — procedural car visual builder
+# C — GLB scene adapter
 
-`Car001Mesh.cs` generates the low-poly stationary hatchback once. Its **front-left door** is a separate `DriverDoor` pivot with child static collider, closed at the shared `DoorAngle=0` default. The `DriverDoorAngleOverride` export on the car root (`-1` inherit, `0..82` explicit degrees) allows different scene instances to keep different fixed poses. `SetDoorAngle(float)` changes only this instance's hinge/collision—**never the shared master**.
+`Car001Mesh.cs` now **loads** `../Artwork/Car001.glb`, rather than constructing the rendered car from C# BoxMesh/CylinderMesh. It preserves the existing `Car001` node/API, imported `DriverDoor` pivot, instance-specific `DriverDoorAngleOverride` and `SetDoorAngle(float)`, body/hinge collision, per-instance palette and camera-occlusion integration.
 
-All other existing body geometry and procedural wheel meshes remain unchanged. No update loops or animation, no missing-wheel/door implementation yet; see [../MODULAR_VARIANTS_PLAN.md](../MODULAR_VARIANTS_PLAN.md).
+The script builds once and then sleeps. It keeps only coarse static collision shapes; no physics simulation or per-frame animation. Artwork is shared across instances. See [../README.md](../README.md).
