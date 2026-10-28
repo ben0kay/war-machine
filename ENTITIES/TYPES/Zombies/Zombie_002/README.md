@@ -6,7 +6,7 @@
 - **Behaviour:** derives from `../ZombieController.cs`; reuses health, sight/cover checks, wandering, pursuit and terrain recovery. The only subtype overrides are the procedural visuals and gait/acceleration feel. **No melee/attack system**.
 - **Art:** `C/ZombieRunnerMeshBuilder.cs` builds a slimmer body, narrow shoulders, a tilted head, ripped dark clothing and lean limbs, with the same six limb pivots as Zombie 001. No per-mesh script, extra animation timer or collision change. `Artwork/` is reserved for an imported replacement.
 - **Speed:** `ChaseSpeed = 8.3 m/s` once LOS confirms the player (slightly above the player's default `WalkSpeed 5 × RunMultiplier 1.6 = 8.0 m/s`). Wanders at `0.85 m/s`. Chase acceleration = 20 m/s² and the animation stride rate adapts to running velocity; idle continues to use the existing one-shot brain timer.
-- **Config:** `Configuration/ZombieRunnerMaster.tres` is an independent `ZombieSettings` authoring resource with the same hearing-ready/sight-related contract as Zombie 001. Its 100 HP, 18 m detection range and 10 m wander radius match the existing zombie; its speed/gait/body are the first differences.
+- **Config:** `Configuration/ZombieRunnerMaster.tres` is an independent `ZombieSettings` authoring resource with the same hearing-ready/sight-related contract as Zombie 001. Its 100 HP, updated 22.5 m detection/28.75 m retention ranges and 10 m wander radius match the regular zombie; its speed/gait/body are the first differences.
 
 **When placing later:** world owner should instantiate this scene, put it on terrain at a sampled valid surface, and call inherited `InitializeTarget(player, seed, optionalGroundHeight)`; if using F7 vision-cone debug, register it with the existing world debug helper. The owner has now authorized a separate RunnerSpawnOffsets test set; existing slow placements remain.
 
@@ -25,3 +25,7 @@ Runners now reuse the standard zombie's `../C/ZombieAppearance.cs` generated mat
 Shares closed UV-mapped anatomy meshes with Zombie 001, with narrower skull, human-sized eye slits, tapered forearms/knees, smaller shoes and minimal hand digits. `ZombieRunnerController` and its faster speed are not changed. Visual FPS and top-down comparison still needs local checking.
 
 PER2 uses the shared last-seen investigation, speed-aware expiry and actual-stop wandering anchor. Runner pursuit speed/acceleration/gait continue during travel to a frozen clue; look/rest returns to its ordinary pose. Policy fields are on Configuration/ZombieRunnerMaster.tres. No independent runner AI/timer. Local build/memory/collision acceptance pending.
+
+## Shared perception range tuning (2026-10-28)
+
+Runner detection is now **22.5m** and its alerted/search retention range **28.75m**, matching the regular zombie's +25% range increase. Runner `WanderSpeed=0.85m/s` and `ChaseSpeed=8.3m/s` intentionally remain unchanged. The forward-cone requirement during chase remains unchanged until the separately proposed alerted-target rear tracking is authorized.

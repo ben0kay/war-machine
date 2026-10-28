@@ -1,3 +1,5 @@
+> **Proposed PER2A (not implemented):** [Alerted-target tracking after initial detection](ALERTED_TRACKING_PROPOSAL.md) addresses loss of sight when the player runs behind an already chasing zombie. A +25% visual-range balance pass is implemented in both zombie masters; the strict 160° cone still applies during chase for now.
+
 # Optional sensors and shared perception — RM3 and proposed PER stages
 
 > **Implementation status:** The existing `ScanSensor` remains implemented as documented below. PER0/PER1 shared natural eyesight and crouch/cover sampling are implemented, awaiting local validation. PER2 memory is implemented; HE0 noise dispatch is implemented; AI hearing reactions and robot resolver integration remain unimplemented. See [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) for the Codex-ready staged design, reusable code layout, performance constraints and zombie-first test criteria.

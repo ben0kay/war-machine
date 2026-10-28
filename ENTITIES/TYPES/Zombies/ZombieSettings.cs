@@ -31,8 +31,8 @@ public partial class ZombieSettings : EntitySettings
     [Export(PropertyHint.Range, "0,20,0.1")] public float ShoveMaxPushSpeed { get; set; } = 10f;
     [Export(PropertyHint.Range, "0,40,0.5")] public float ShoveBrakingAcceleration { get; set; } = 9f;
     [ExportGroup("Movement")]
-    [Export] public float WanderSpeed { get; set; } = 0.65f;
-    [Export] public float ChaseSpeed { get; set; } = 1.15f;
+    [Export] public float WanderSpeed { get; set; } = 0.78f;
+    [Export] public float ChaseSpeed { get; set; } = 1.38f;
     [Export] public float WanderRadius { get; set; } = 10;
     [ExportGroup("Ground recovery")]
     [Export] public bool GroundRecoveryEnabled { get; set; } = true;
@@ -56,7 +56,7 @@ public partial class ZombieSettings : EntitySettings
     [ExportGroup("Vision debug")]
     [Export] public bool ShowVisionCone { get; set; } = true;
     [ExportGroup("Awareness")]
-    [Export] public float DetectionRange { get; set; } = 18;
-    [Export] public float LoseRange { get; set; } = 23;
+    [Export] public float DetectionRange { get; set; } = 22.5f;
+    [Export] public float LoseRange { get; set; } = 28.75f;
     [Export] public float StopDistance { get; set; } = 1.3f;
 }
