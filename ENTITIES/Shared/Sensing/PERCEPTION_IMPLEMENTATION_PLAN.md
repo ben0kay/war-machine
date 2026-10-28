@@ -1,3 +1,5 @@
+> **Shared investigation + bullet-hit clue (2026-10-28):** [Current owner/acceptance](../Investigation/README.md). The existing last-seen episode policy now lives in a species-independent passive helper. Surviving player bullet contacts can start the same fixed-point search with the same give-up rules, independently of flinch. Both zombie variants/views share it. No nearby-gunshot hearing/HE1, new movement AI or attacks are included. Source implemented; local validation pending. This supersedes older hit-trigger-deferred/no-shot-investigation statements below; existing hearing phases retain their own status.
+
 > **Vision-range balance adjustment (2026-10-28, implemented in settings):** normal and runner detection **18m → 22.5m**, retention **23m → 28.75m** (both +25%). Regular wandering **0.65m/s → 0.78m/s** and chase **1.15m/s → 1.38m/s** (+20%). Runner speeds unchanged. **PER2A now adds angle-independent, LOS-gated retention during chase/investigation**; initial frontal detection remains. See [PER2A implementation](ALERTED_TRACKING_PROPOSAL.md).
 
 # PER — Shared perception, crouch cover and species-specific sensing

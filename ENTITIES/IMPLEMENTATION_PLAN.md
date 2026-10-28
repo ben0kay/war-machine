@@ -1,3 +1,5 @@
+> **Shared investigation + bullet-hit clue (2026-10-28):** [Current owner/acceptance](Shared/Investigation/README.md). The existing last-seen episode policy now lives in a species-independent passive helper. Surviving player bullet contacts can start the same fixed-point search with the same give-up rules, independently of flinch. Both zombie variants/views share it. No nearby-gunshot hearing/HE1, new movement AI or attacks are included. Source implemented; local validation pending. This supersedes older hit-trigger-deferred/no-shot-investigation statements below; existing hearing phases retain their own status.
+
 > **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). This coordinates future shared anatomy, zombie injury locomotion and corpse handoff. Existing entity/robot phases and species integrations retain their scope/status; no ELD production work is authorized yet.
 
 # RM — Reusable Entity, Mechanical Walker and Scanning Prototype

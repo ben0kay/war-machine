@@ -70,6 +70,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
+        _investigation ??= new InvestigationMemory(_config.CreateInvestigationSettings());
         _locomotion ??= new ZombieLocomotion(this, _bodyShape, VisualRoot, _anatomyHead,
             _config.LocomotionProfile ?? new ZombieLocomotionSettings(),
             _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee);
@@ -236,6 +237,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (!IsActive || !_configured || _health.IsDead || IsQueuedForDeletion() || _awaitingSpawnGround) return;
         if (impact.Kind == CombatImpactKind.Bullet)
         {
+            InvestigateBulletHit(impact.Source);
             if (!_config.BulletReactionsEnabled
                 || !_reaction.TryStart(impact, _config.ImpactResistance, _config.FlinchThreshold,
                     _config.MaxStaggerSeconds, _config.MinFlinchInterval, _config.MinRecoverySeconds,
@@ -487,10 +489,10 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (recovering) _recoveryRemaining = Mathf.Max(0, _recoveryRemaining - dt);
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance)
-            : _search == SearchState.Travel ? SafePolicy(_config.InvestigationArrivalDistance, 0.2f, 1.5f) : 0.4f;
+            : _investigation.Phase == InvestigationPhase.Travel ? SafePolicy(_config.InvestigationArrivalDistance, 0.2f, 1.5f) : 0.4f;
         bool walking = _locomotion.CanDrive && _hasGoal && offset.LengthSquared() > stop * stop;
         if (_hasGoal && _locomotion.CanDrive && !walking && !IsChasing && !shovePushing)
-        { if (_search == SearchState.Travel) InvestigationArrived(); else Rest(); }
+        { if (_investigation.Phase == InvestigationPhase.Travel) InvestigationArrived(); else Rest(); }
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
         float speed = _locomotion.Speed(Mathf.Max(0, IsPursuing ? _config.ChaseSpeed : _config.WanderSpeed));
         // Scale movement slowdown with accepted bullet strength. Do not alter shove displacement.

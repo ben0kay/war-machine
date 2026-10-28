@@ -1,3 +1,5 @@
+> **Shared investigation + bullet-hit clue (2026-10-28):** [Current owner/acceptance](../Investigation/README.md). The existing last-seen episode policy now lives in a species-independent passive helper. Surviving player bullet contacts can start the same fixed-point search with the same give-up rules, independently of flinch. Both zombie variants/views share it. No nearby-gunshot hearing/HE1, new movement AI or attacks are included. Source implemented; local validation pending. This supersedes older hit-trigger-deferred/no-shot-investigation statements below; existing hearing phases retain their own status.
+
 # PER2A — Alerted-target tracking after initial visual acquisition
 
 **Status: PER2A implemented in source (2026-10-28), awaiting local build/gameplay validation.**
