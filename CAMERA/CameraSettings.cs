@@ -16,6 +16,7 @@ public partial class CameraSettings : Resource
     [Export(PropertyHint.Range, "64,2048,1")] public float FarClipDistance { get; set; } = 256;
     [ExportGroup("Angle and follow")]
     [Export] public float CameraYawDegrees { get; set; } = 45;
+    [Export(PropertyHint.Range, "0.05,2,0.05")] public float OrbitDragSensitivityDegrees { get; set; } = 0.25f;
     [Export] public float CameraPitchDegrees { get; set; } = 35;
     [Export] public float CameraDistance { get; set; } = 25;
     [Export] public float CameraSize { get; set; } = 20;

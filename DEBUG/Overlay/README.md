@@ -20,3 +20,8 @@ No new Process/PhysicsProcess, polling, timers or scene/actor scans. UI input an
 The active `WORLD/World.tscn` owns a sibling `DebugUIRoot/Controls/FPS` label backed by the existing `DEBUG/FpsCounter.cs` and `DebugMaster.tres`, **not a control inside DebugOverlay**. This keeps the FPS label visible while panels/sections are collapsed and in both the inherited FPS test world and top-down world. The floating debug panel begins at top-left Y=148 while the counter starts at Y=112, leaving a small gap. Engine FPS updates on its throttled timer and interpolates text colour green (>=60), yellow (40), orange (30), red (<=20). The editor-only Legacy TestWorld uses the same script; it now receives the same colour behaviour without any duplicate FPS node in the active world.
 
 Do not move FPS inside the scroll container or wire it to debug visibility; `FpsCounter.ApplySettings()` explicitly stops its timer when the FPS label is disabled. No panel-control feature or camera adapter has been changed. Local Godot scene/layout validation pending.
+
+
+## Top-down orbit input update — 2026-10-28
+
+The Camera section no longer contains the yaw/rotation slider. It instead tells users to **hold middle mouse and drag horizontally** over the world to orbit the top-down camera. Yaw remains an authored/copied numeric setting, and the FOV, pitch, projection and zoom UI remain. The FPS adapter continues to hide this top-down camera section; its mouse-look is unchanged. See [CAMERA/README.md](../../CAMERA/README.md) for event and focus behaviour. Local build and manual top-down/FPS checks pending.

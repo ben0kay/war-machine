@@ -10,10 +10,10 @@ public partial class DebugOverlay : PanelContainer
     private WorldRenderCulling? _renderCulling;
     private Camera _camera = null!;
     private CameraSettings _settings = null!;
-    private HSlider _pitch = null!, _yaw = null!, _zoom = null!, _fov = null!;
+    private HSlider _pitch = null!, _zoom = null!, _fov = null!;
     private Label _fovLabel = null!;
     private OptionButton _projection = null!;
-    private Label _pitchLabel = null!, _yawLabel = null!, _zoomLabel = null!;
+    private Label _pitchLabel = null!, _zoomLabel = null!;
     private Button _copy = null!;
     private SkyController _sky = null!;
     private PinePlacement _pines = null!;
@@ -54,8 +54,7 @@ public partial class DebugOverlay : PanelContainer
             _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
             _pitch = AddSlider(rows, 35, 80, 0.5);
             rows.AddChild(new Label { Text = "35° downward minimum → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
-            _yawLabel = new Label(); rows.AddChild(_yawLabel);
-            _yaw = AddSlider(rows, 0, 360, 1);
+            rows.AddChild(new Label { Text = "Hold middle mouse + drag left/right to rotate", Modulate = new Color(0.75f, 0.8f, 0.85f) });
             _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
             _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
                 Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
@@ -208,7 +207,6 @@ public partial class DebugOverlay : PanelContainer
         if (_view == null)
         {
             _pitch.ValueChanged += OnPitchChanged;
-            _yaw.ValueChanged += OnYawChanged;
             _zoom.ValueChanged += OnZoomChanged;
         }
         _copy.Pressed += CopySettings;
@@ -274,7 +272,6 @@ public partial class DebugOverlay : PanelContainer
     }
 
     private void OnPitchChanged(double value) => _camera.SetPitch((float)value);
-    private void OnYawChanged(double value) => _camera.SetYaw((float)value);
     private void OnZoomChanged(double value) => _camera.SetZoom((float)value);
 
     // =========================================================
@@ -282,7 +279,6 @@ public partial class DebugOverlay : PanelContainer
     private void Refresh()
     {
         _pitch.SetValueNoSignal(_settings.CameraPitchDegrees);
-        _yaw.SetValueNoSignal(_settings.CameraYawDegrees);
         _projection.Select(_settings.UsePerspective ? 1 : 0);
         _fov.Visible = _fovLabel.Visible = _settings.UsePerspective;
         _fov.SetValueNoSignal(_settings.PerspectiveFov);
@@ -295,7 +291,6 @@ public partial class DebugOverlay : PanelContainer
             : Mathf.Max(5, Mathf.Max(_settings.MinimumZoom, _settings.MaximumZoom));
         _zoom.SetValueNoSignal(_settings.UsePerspective ? _settings.CameraDistance : _settings.CameraSize);
         _pitchLabel.Text = $"Tilt downward: {_settings.CameraPitchDegrees:0.0}°";
-        _yawLabel.Text = $"Camera rotation: {_settings.CameraYawDegrees:0}°";
         _zoomLabel.Text = _settings.UsePerspective ? $"Camera distance: {_settings.CameraDistance:0.0} m" : $"Zoom / view size: {_settings.CameraSize:0.0} m";
         _copy.Text = "Copy settings";
     }

@@ -14,7 +14,7 @@ public partial class Camera : Camera3D
     private CameraSettings _settings = null!;
     private Vector3 _target;
     private float _zoomTarget;
-    private bool _initialized;
+    private bool _initialized, _orbitDragging;
     private ulong _lastMovementTick;
 
     // =========================================================
@@ -26,6 +26,7 @@ public partial class Camera : Camera3D
     public virtual void Initialize(PlayerController player, CameraSettings settings)
     {
         if (_initialized) _player.PositionChanged -= OnPlayerMoved;
+        _orbitDragging = false;
         _player = player; _settings = settings;
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // Render-frame camera must not be interpolated twice.
         Projection = settings.UsePerspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
@@ -52,15 +53,44 @@ public partial class Camera : Camera3D
     { _lastMovementTick = Engine.GetPhysicsFrames(); SetProcess(true); }
 
     // =========================================================
-    // Mouse wheel smoothly changes orthographic size within bounded test-only settings.
+    // A drag begun over the world keeps rotating even when the pointer crosses the debug panel.
+    // Motion and release are handled before GUI so the drag cannot stick on a consumed release.
+    public override void _Input(InputEvent input)
+    {
+        if (!_initialized || !_orbitDragging) return;
+        if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Middle && !mouse.Pressed)
+        {
+            _orbitDragging = false;
+            GetViewport().SetInputAsHandled(); return;
+        }
+        if (input is not InputEventMouseMotion motion) return;
+        if (_player.GameplayInputBlocked || !GetWindow().HasFocus() || !Input.IsMouseButtonPressed(MouseButton.Middle))
+        { _orbitDragging = false; return; }
+        if (Mathf.Abs(motion.ScreenRelative.X) > 0.001f)
+            SetYaw(_settings.CameraYawDegrees - motion.ScreenRelative.X * Mathf.Clamp(_settings.OrbitDragSensitivityDegrees, 0.05f, 2f));
+        GetViewport().SetInputAsHandled();
+    }
+
+    // =========================================================
+    // World-only middle-button press begins horizontal yaw rotation. Wheel zoom is unchanged.
     public override void _UnhandledInput(InputEvent input)
     {
         if (!_initialized || _player.GameplayInputBlocked || input is not InputEventMouseButton mouse || !mouse.Pressed) return;
+        if (mouse.ButtonIndex == MouseButton.Middle)
+        {
+            if (!GetWindow().HasFocus() || GetViewport().GuiGetHoveredControl() != null) return;
+            _orbitDragging = true; GetViewport().SetInputAsHandled(); return;
+        }
         int direction = mouse.ButtonIndex == MouseButton.WheelUp ? -1 : mouse.ButtonIndex == MouseButton.WheelDown ? 1 : 0;
         if (direction == 0) return;
         SetZoom((_settings.UsePerspective ? _settings.CameraDistance : _zoomTarget) + direction * Mathf.Max(0.1f, _settings.ZoomStep));
         GetViewport().SetInputAsHandled();
     }
+
+    // =========================================================
+    // Never retain a held drag after the game window loses focus.
+    public override void _Notification(int what)
+    { if (what == NotificationApplicationFocusOut) _orbitDragging = false; }
 
     // =========================================================
     // Tilt changes update framing immediately and preserve the current camera orbit angle.
@@ -78,7 +108,8 @@ public partial class Camera : Camera3D
     public void SetYaw(float degrees)
     {
         if (!_initialized) return;
-        float yaw = Mathf.Clamp(degrees, 0, 360);
+        if (!float.IsFinite(degrees)) return;
+        float yaw = Mathf.PosMod(degrees, 360f); // Continuous 360° orbit in either drag direction.
         if (Mathf.IsEqualApprox(_settings.CameraYawDegrees, yaw)) return;
         _settings.CameraYawDegrees = yaw;
         RotationDegrees = new Vector3(-_settings.CameraPitchDegrees, yaw, 0);
@@ -163,5 +194,8 @@ public partial class Camera : Camera3D
     // =========================================================
     // Target unload cannot retain a camera subscription.
     public override void _ExitTree()
-    { if (_initialized && GodotObject.IsInstanceValid(_player)) _player.PositionChanged -= OnPlayerMoved; }
+    {
+        _orbitDragging = false;
+        if (_initialized && GodotObject.IsInstanceValid(_player)) _player.PositionChanged -= OnPlayerMoved;
+    }
 }

@@ -6,6 +6,7 @@ UsePerspective = true
 PerspectiveFov = 50.5
 FarClipDistance = 256.0
 CameraYawDegrees = 45.0
+OrbitDragSensitivityDegrees = 0.25
 CameraPitchDegrees = 35.0
 CameraDistance = 25.0
 CameraSize = 20.0
