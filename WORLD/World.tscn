@@ -89,6 +89,7 @@ position = Vector3(512, 4, 512)
 [node name="Objects" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
 [node name="Cars" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot/Objects"]
 [node name="Zombies" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot"]
+[node name="Wildlife" type="Node3D" parent="WorldActorsRoot/PersistentEntitiesRoot"]
 
 [node name="SystemsRoot" type="Node" parent="."]
 [node name="Audio" parent="SystemsRoot" instance=ExtResource("audio_service")]

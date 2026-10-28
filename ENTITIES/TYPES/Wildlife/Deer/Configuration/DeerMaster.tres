@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DeerSettings" load_steps=4 format=3]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Wildlife/Deer/DeerSettings.cs" id="1"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="2"]
+
+[sub_resource type="Resource" id="DeerHealth"]
+script = ExtResource("2")
+MaxHealth = 120.0
+Armour = 0.0
+PhysicalResistance = 0.0
+EnergyResistance = 0.0
+ExplosiveResistance = 0.0
+FireResistance = 0.0
+
+[resource]
+script = ExtResource("1")
+TypeLabel = "Deer"
+StartActive = true
+HealthProfile = SubResource("DeerHealth")
+CoatColor = Color(0.48, 0.29, 0.16, 1)
+BellyColor = Color(0.72, 0.62, 0.47, 1)
+HoofColor = Color(0.15, 0.13, 0.11, 1)
+AntlerColor = Color(0.43, 0.33, 0.22, 1)
+HasAntlers = true

@@ -142,6 +142,7 @@ public partial class WorldController : Node3D
         if (_village != null) grassClearings = _village.GrassClearings;
         foreach (Rect2 cliffClearing in mountainPath)
         { sceneryClearings.Add(cliffClearing); grassClearings.Add(cliffClearing); }
+        AddDeerPreviewClearing(grassClearings);
         _grass = new TerrainGrass { Name = "Grass",
             Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
@@ -157,6 +158,7 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.ZombieSpawnOffsets);
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Fast);
+        AddDeerPreviewClearing(_pines.ExclusionAreas);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
         _rocks = new ContentScatter { Name = "Rocks",
@@ -167,6 +169,7 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.RunnerSpawnOffsets);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Fast);
+        AddDeerPreviewClearing(_rocks.ExclusionAreas);
         // Keep the giant's route and foot corridor free of new solid boulders.
         if (_village == null)
             _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
@@ -187,6 +190,7 @@ public partial class WorldController : Node3D
         GetNode("DebugUIRoot").AddChild(_visionDebug);
         InitializeControls(camera);
         SpawnZombies(data, player, horde.Slow, horde.Fast);
+        SpawnDeerPreview(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings, _village?.Structures);
         status.Text = ControlsHelp
             + (_village != null ? "\nVillage · Store ahead · Road east then north to depot/lodge/office · Fuel station northeast · Robot on western perimeter"
@@ -350,6 +354,57 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    // =========================================================
+    // Reserve one small wildlife test footprint with the existing grass/tree/rock exclusion systems.
+    private void AddDeerPreviewClearing(Godot.Collections.Array<Rect2> exclusions)
+    {
+        if (!Settings.DeerPreviewEnabled) return;
+        Vector2 at = Settings.SpawnXZ + Settings.DeerPreviewOffset;
+        exclusions.Add(new Rect2(at - Vector2.One * 2.5f, Vector2.One * 5f));
+    }
+
+    // =========================================================
+    // One world-owned stationary deer preview. Sample actual Terrain3D collision at startup;
+    // no wildlife AI, ongoing terrain sampling or per-frame world search.
+    private void SpawnDeerPreview(GodotObject terrainData, PlayerController player)
+    {
+        if (!Settings.DeerPreviewEnabled) return;
+        Vector2 at = Settings.SpawnXZ + Settings.DeerPreviewOffset;
+        float height = terrainData.Call("get_height", new Vector3(at.X, 0, at.Y)).AsSingle();
+        if (!float.IsFinite(height))
+        { GD.PushWarning("Deer preview skipped: terrain height unavailable."); return; }
+
+        var space = player.GetWorld3D().DirectSpaceState;
+        var supportRay = new PhysicsRayQueryParameters3D
+        {
+            From = new Vector3(at.X, height + 2f, at.Y),
+            To = new Vector3(at.X, height - 1.5f, at.Y),
+            CollisionMask = 1, CollideWithAreas = false
+        };
+        var support = space.IntersectRay(supportRay);
+        if (support.Count == 0 || support["normal"].AsVector3().Y < 0.75f)
+        { GD.PushWarning("Deer preview skipped: no walkable support at configured offset."); return; }
+
+        var scene = GD.Load<PackedScene>("res://ENTITIES/TYPES/Wildlife/Deer/Deer.tscn");
+        if (scene == null) { GD.PushWarning("Deer preview scene not found."); return; }
+        var deer = scene.Instantiate<DeerController>();
+        var wildlife = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Wildlife");
+        wildlife.AddChild(deer);
+        deer.GlobalPosition = support["position"].AsVector3() + Vector3.Up * 0.06f;
+        var body = deer.GetNode<CollisionShape3D>("CollisionShape3D");
+        var clearance = new PhysicsShapeQueryParameters3D
+        {
+            Shape = body.Shape, Transform = body.GlobalTransform,
+            CollisionMask = 23, CollideWithBodies = true, CollideWithAreas = false,
+            Exclude = new Godot.Collections.Array<Rid> { deer.GetRid() }
+        };
+        if (space.IntersectShape(clearance, 1).Count > 0)
+        {
+            GD.PushWarning("Deer preview skipped: spawn blocked by scenery or other actors.");
+            deer.QueueFree();
+        }
+    }
+
     // Scene-local placement only; all zombie behaviour, artwork and defaults live under ENTITIES/TYPES/Zombies.
     private void SpawnZombies(GodotObject terrainData, PlayerController player, Vector2[] hordeSlow, Vector2[] hordeFast)
     {

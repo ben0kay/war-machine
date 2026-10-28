@@ -65,3 +65,7 @@ environment has no Godot/.NET runtime; source/resource wiring was reviewed only.
 ## CM0 / CM1 impact integration
 
 COMBAT/Shared now provides a separate optional impact contract and one contact dispatcher. Firearms still send the same DamagePacket through IDamageReceiver/HealthComponent; damage resolves before impact and death wins. A zero-damage impact omits health entirely. Zombie bullet reactions are recipient-owned, not a second DamageResolver or health event hack. See ../../../COMBAT/README.md for values, anti-stun-lock and local checks. CM2+ melee remains planned. This folder remains the only damage/health implementation, unchanged by CM0/CM1.
+
+## Wildlife consumer
+
+The new `ENTITIES/TYPES/Wildlife/Deer/DeerController.cs` forwards `IDamageReceiver.ReceiveHit` to a normal `HealthComponent` using `DeerMaster.tres`'s embedded 120-HP profile. Health bars use the shared `HealthChanged` event; the species only decides how death removes the actor. No new damage formulas or target-specific firearm code.

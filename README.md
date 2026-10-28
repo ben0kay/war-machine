@@ -131,3 +131,5 @@ Start with this README for intent, then read the owning README, relevant plan an
 - [ENTITIES/IMPLEMENTATION_PLAN.md](ENTITIES/IMPLEMENTATION_PLAN.md), [WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md](WORLD/ENVIRONMENT_IMPLEMENTATION_PLAN.md) and [WORLD/Content/Caves/IMPLEMENTATION_PLAN.md](WORLD/Content/Caves/IMPLEMENTATION_PLAN.md) — feature/historical plans, not automatic next steps
 
 **North star:** *Build an atmospheric, mechanically interesting top-down survival game about navigating a hostile, unfamiliar Earth—using stealth, exploration and carefully chosen combat to survive zombies and science-fiction threats. Keep the first-person test useful, but keep the main game achievable for one developer.*
+
+> **Wildlife preview (2026-10-28):** `ENTITIES/TYPES/Wildlife/Deer/` now contains an inherited passive deer entity, 120 HP and a basic procedural animal mesh. One stationary deer is configured to spawn near the active world's player for shooting tests, with an opt-out in `WORLD/Configuration/WorldMaster.tres`. AI and wildlife populations are not implemented. See [deer README](ENTITIES/TYPES/Wildlife/Deer/README.md).

@@ -44,6 +44,10 @@ public partial class WorldSettings : Resource
     [ExportGroup("Runner placement")]
     [Export] public Vector2[] RunnerSpawnOffsets { get; set; } = new Vector2[]
     { new(19, -34) };
+    [ExportGroup("Wildlife preview")]
+    [Export] public bool DeerPreviewEnabled { get; set; } = true;
+    // One static, shootable deer near player spawn; offset is in world X/Z metres.
+    [Export] public Vector2 DeerPreviewOffset { get; set; } = new(-14f, 12f);
     [ExportGroup("Zombie placement")]
     // Village-relative safe candidates; actual solid surface and body clearance are checked before activation.
     [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[]

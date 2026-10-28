@@ -39,3 +39,7 @@ The implementation plan includes **cross-phase modularity and performance guardr
 ## Proposed shared perception (PER)
 
 [Shared/Sensing/PERCEPTION_IMPLEMENTATION_PLAN.md](Shared/Sensing/PERCEPTION_IMPLEMENTATION_PLAN.md) describes how to reuse the existing robot `ScanSensor` logic while adding reusable natural eyesight and crouch-aware cover detection for zombies, with optional hearing and future deer/wildlife integration. **Documentation only; no PER gameplay phase has been started.** The robot's cyan `ScanBeam` remains a robot-only visual component, not a generic sight indicator.
+
+## Wildlife foundation — Deer (2026-10-28)
+
+[TYPES/Wildlife/Deer](TYPES/Wildlife/Deer/README.md) now provides a passive, shootable deer prefab, inherited from the shared Entity scene rather than zombie behaviour. It has a one-time procedural animal silhouette and the existing `HealthComponent` / generic health-bar pipeline (120 HP). The active world has one configurable preview spawn near player spawn, grounded using the existing Terrain3D collision and cleared of some vegetation. **No deer AI, flee, herd, animation or spawning system** is implemented. See species README for visual/health tests and deferred Godot compilation.

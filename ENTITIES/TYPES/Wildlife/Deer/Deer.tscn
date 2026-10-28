@@ -1,0 +1,29 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://ENTITIES/Shared/Entity.tscn" id="1"]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Wildlife/Deer/DeerController.cs" id="2"]
+[ext_resource type="Resource" path="res://ENTITIES/TYPES/Wildlife/Deer/Configuration/DeerMaster.tres" id="3"]
+[ext_resource type="Script" path="res://ENTITIES/TYPES/Wildlife/Deer/C/DeerMeshBuilder.cs" id="4"]
+[ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthComponent.cs" id="5"]
+
+[sub_resource type="CapsuleShape3D" id="DeerBody"]
+resource_local_to_scene = true
+radius = 0.42
+height = 1.65
+
+[node name="Deer" instance=ExtResource("1")]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("2")
+Settings = ExtResource("3")
+
+[node name="CollisionShape3D" parent="." index="0"]
+position = Vector3(0, 0.825, 0)
+shape = SubResource("DeerBody")
+
+[node name="VisualRoot" parent="." index="1"]
+script = ExtResource("4")
+Settings = ExtResource("3")
+
+[node name="Health" type="Node" parent="." index="2"]
+script = ExtResource("5")
