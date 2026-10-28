@@ -23,3 +23,5 @@ Runners now reuse the standard zombie's `../C/ZombieAppearance.cs` generated mat
 ### Refined Runner art
 
 Shares closed UV-mapped anatomy meshes with Zombie 001, with narrower skull, human-sized eye slits, tapered forearms/knees, smaller shoes and minimal hand digits. `ZombieRunnerController` and its faster speed are not changed. Visual FPS and top-down comparison still needs local checking.
+
+PER2 uses the shared last-seen investigation, speed-aware expiry and actual-stop wandering anchor. Runner pursuit speed/acceleration/gait continue during travel to a frozen clue; look/rest returns to its ordinary pose. Policy fields are on Configuration/ZombieRunnerMaster.tres. No independent runner AI/timer. Local build/memory/collision acceptance pending.

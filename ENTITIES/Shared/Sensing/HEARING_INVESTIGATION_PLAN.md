@@ -117,3 +117,7 @@ Recommended first useful playable pass: **HE0 + HE1 together**, after review/aut
 8. Godot C# build, F6 `WORLD/World.tscn`, confirm current sight/cover, F7 debug cones, gunshot effects and hit damage are unchanged. User does visual gameplay/performance acceptance.
 
 **This file is only a design reference.** No code, settings, weapons, audio or zombie AI is modified by adding it. When authorized, follow root `CodePreferences.md`: one commit per job, brief validation, update the sensing and zombie READMEs, report outstanding local checks.
+
+## PER2 integration note
+
+PER2 visual investigation is now implemented and, by explicit owner direction, already relocates the wander anchor to the physically settled give-up position. Future HE1 must preserve this visual behavior and reuse the actor-owned anchor policy; anchor relocation is no longer exclusive to hearing. HE0–HE3 themselves remain unimplemented, and audio playback still does not supply AI clues.

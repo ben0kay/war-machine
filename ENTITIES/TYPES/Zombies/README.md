@@ -6,7 +6,7 @@ Default wandering speed **0.65m/s**, chase **1.15m/s**, wander radius **10m**, d
 
 Sight decisions use an individually staggered, one-shot **0.4s timer** with an explicit player reference, no global searches; gated, bounded LOS raycasts. Wandering includes random 1–3s rests. Active motion/falling uses CharacterBody3D and one gait callback; grounded stationary actors stop physics and animation, retaining only the sight timer. Deactivate stops that timer and all processing through EntityCore; scene unload owns cleanup. Particle/audio/attack loops are absent. This is a small active prototype population, not an unbounded crowd/streaming manager.
 
-Awareness now uses frontal eyesight and physical cover (PER0/PER1). No memory, attacking, zombie/robot targeting or navigation/pathfinding. Zombies stop near the player and cannot hurt them. Collisions can block a direct route; stuck wandering picks another goal. Larger crowds or obstacle-rich worlds will require deliberate navigation/relevance work later.
+Awareness now uses frontal eyesight and physical cover (PER0/PER1). PER2 adds last-seen memory (current handoff below); attacking, zombie/robot targeting and navigation/pathfinding remain unimplemented. Zombies stop near the player and cannot hurt them. Collisions can block a direct route; stuck wandering picks another goal. Larger crowds or obstacle-rich worlds will require deliberate navigation/relevance work later.
 
 ## ZW0 — Basic wander and converge
 
@@ -99,3 +99,9 @@ These settings are read **only at spawn/initialize time**; edit, reload and rein
 ## Refined human-like procedural geometry
 
 Zombie 001 and Runner 002 now use a small shared cached profile mesh library `C/ZombieHumanGeometry.cs` with human-shaped shoulder/waist and skull contours, thin eyes, slimmer limb and foot silhouettes, and short hanging fingers. The original animation pivots, speed and combat AI remain in place, and spawn-seeded material variation is retained. The shambler has slight left-knee/arm asymmetry; runner keeps its chase animations. No imported models or new material pass. Godot visual and build validation pending.
+
+## PER2 — last-seen search and safe new wander anchor
+
+Implemented, awaiting local build/gameplay acceptance. ZombieInvestigation.cs extends the same partial ZombieController with early/mid/thorough remembered-position travel, speed-scaled timeout and thorough look-around. Both masters expose the policy. A zombie that loses interest settles physically, then wanders around that actual stopping point rather than its spawn. New wander goals must pass support, slope, full-body overlap and direct capsule-sweep checks (four attempts maximum); failed selections rest. This is conservative local clearance, not navigation around buildings or a promise of traversability across cliffs. Existing colliders are required for obstacle avoidance.
+
+No extra timer/node/idle physics; existing decision ticks manage search and existing movement/gait handles motion. IsChasing means visible pursuit; IsInvestigating is separate, and IsPursuing lets slow/runner movement preserve chase speed/gait while traveling to the clue. Sight reacquisition cancels search; death/deactivate/reset/unload clear memory. See ../../Shared/Sensing/PERCEPTION_IMPLEMENTATION_PLAN.md PER2 handoff for defaults, costs and exact local checks. No convenience-store scene changes.

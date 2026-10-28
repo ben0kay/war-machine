@@ -11,7 +11,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private VisibilityResolver? _visibility;
     private MeshInstance3D? _visionCone;
     private bool _showVisionCone;
-    public float VisionRange => IsChasing ? Mathf.Max(_config.DetectionRange, _config.LoseRange) : _config.DetectionRange;
+    public float VisionRange => (IsChasing || IsInvestigating) ? Mathf.Max(_config.DetectionRange, _config.LoseRange) : _config.DetectionRange;
     private ZombieSettings _config = null!;
     private Timer _brain = null!;
     private readonly RandomNumberGenerator _random = new();
@@ -49,6 +49,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         _recoveryQuery = new PhysicsShapeQueryParameters3D { Shape = _bodyShape.Shape, CollisionMask = CollisionMask,
             Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
+        _wanderQuery = new PhysicsShapeQueryParameters3D { Shape = _bodyShape.Shape,
+            CollisionMask = CollisionMask | 17u, CollideWithBodies = true, CollideWithAreas = false,
+            Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
     }
@@ -79,7 +82,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // World owns placement and target references; the entity has no dependency on PlayerController or Terrain3D.
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
-        Deactivate(); ClearReaction(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
+        Deactivate(); ClearReaction(); ClearInvestigation(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
         // ZMAT0: spawn-seeded cached material assignment; does not advance the movement RNG.
         ZombieAppearance.Apply(VisualRoot, seed, _config.AppearanceVariationEnabled, _config.BloodChance);
         _sightTarget = player as IPerceptionTarget;
@@ -169,7 +172,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     protected override void OnDeactivated()
-    { ClearReaction(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); UpdateVisionDebug(); }
+    { ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); UpdateVisionDebug(); }
 
     // =========================================================
     // Cheap range and visual-facing gates precede bounded head/torso LOS. No hidden live-position pursuit.
@@ -179,8 +182,10 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (_awaitingSpawnGround && !ConfirmSpawnGround())
         { _brain.Start(Mathf.Max(0.1f, _config.SightIntervalSeconds)); return; }
         CheckGroundPenetration();
+        bool wasChasing = IsChasing;
+        bool targetValid = IsInstanceValid(_target) && _target!.IsInsideTree() && !_target.IsQueuedForDeletion();
         bool chasing = false;
-        if (IsInstanceValid(_target) && _target!.IsInsideTree() && _visibility != null && _sightTarget != null)
+        if (targetValid && _visibility != null && _sightTarget != null)
         {
             Vector3 offset = _target.GlobalPosition - GlobalPosition; offset.Y = 0;
             float squared = offset.LengthSquared(), range = Mathf.Max(0, VisionRange);
@@ -192,16 +197,13 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         }
         if (chasing != IsChasing)
         { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); Pose(0); } }
-        if (IsChasing)
-        { _goal = _target!.GlobalPosition; _hasGoal = true; }
-        else if (!_hasGoal && Time.GetTicksMsec() >= _restUntil)
+        ulong now = Time.GetTicksMsec();
+        UpdateInvestigation(wasChasing, now, targetValid);
+        if (!IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)
         {
-            float angle = _random.RandfRange(0, Mathf.Tau);
-            float radius = Mathf.Sqrt(_random.Randf()) * Mathf.Max(1, _config.WanderRadius);
-            _goal = _home + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
-            _hasGoal = true;
+            if (!TryChooseWanderGoal()) Rest();
         }
-        if (_hasGoal || !IsOnFloor()) SetPhysicsProcess(true);
+        if (_hasGoal || _anchorPending || !IsOnFloor()) SetPhysicsProcess(true);
         UpdateVisionDebug();
         _brain.Start(Mathf.Max(0.1f, _config.SightIntervalSeconds));
     }
@@ -303,11 +305,13 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         bool recovering = !reacting && _recoveryRemaining > 0;
         if (recovering) _recoveryRemaining = Mathf.Max(0, _recoveryRemaining - dt);
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
-        float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance) : 0.4f;
+        float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance)
+            : _search == SearchState.Travel ? SafePolicy(_config.InvestigationArrivalDistance, 0.2f, 1.5f) : 0.4f;
         bool walking = _hasGoal && offset.LengthSquared() > stop * stop;
-        if (_hasGoal && !walking && !IsChasing && !shovePushing) Rest();
+        if (_hasGoal && !walking && !IsChasing && !shovePushing)
+        { if (_search == SearchState.Travel) InvestigationArrived(); else Rest(); }
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
-        float speed = Mathf.Max(0, IsChasing ? _config.ChaseSpeed : _config.WanderSpeed);
+        float speed = Mathf.Max(0, IsPursuing ? _config.ChaseSpeed : _config.WanderSpeed);
         if (reacting) speed *= Mathf.Clamp(_config.StaggerMoveMultiplier, 0, 1);
         float acceleration = reacting ? Mathf.Max(1, _config.StaggerBrakingAcceleration)
             : recovering ? Mathf.Max(0.1f, _config.RecoveryAcceleration) : MovementAcceleration;
@@ -341,9 +345,14 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         }
         else { Pose(0); if (walking && !reacting && !recovering) _stuck += dt; }
         ApplyReactionPose();
-        if (_stuck > 2) { Rest(); _stuck = 0; }
+        if (_stuck > 2)
+        { if (IsInvestigating) FinishInvestigation(); else Rest(); _stuck = 0; }
         if (!reacting && !recovering && (!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())
-        { Velocity = Vector3.Zero; SetPhysicsProcess(false); }
+        {
+            Velocity = Vector3.Zero;
+            if (_anchorPending) { _home = GlobalPosition; _anchorPending = false; }
+            SetPhysicsProcess(false);
+        }
     }
 
     // =========================================================
@@ -356,8 +365,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     protected virtual void Pose(float step, float leftLift = 0, float rightLift = 0)
     {
         VisualRoot.Position = Vector3.Up * (Mathf.Abs(step) * 0.015f);
-        _leftArm.Rotation = new Vector3((IsChasing ? 1.31f : 0.12f) - step * 0.10f, 0, -0.11f);
-        _rightArm.Rotation = new Vector3((IsChasing ? 1.40f : 0.20f) + step * 0.07f, 0, 0.07f);
+        _leftArm.Rotation = new Vector3((IsPursuing ? 1.31f : 0.12f) - step * 0.10f, 0, -0.11f);
+        _rightArm.Rotation = new Vector3((IsPursuing ? 1.40f : 0.20f) + step * 0.07f, 0, 0.07f);
         _leftLeg.Rotation = new Vector3(step * 0.22f, 0.02f, -0.025f);
         _rightLeg.Rotation = new Vector3(-step * 0.19f, -0.02f, 0.018f);
         _leftKnee.Rotation = new Vector3(-0.10f - leftLift * 0.30f, 0, 0);

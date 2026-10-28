@@ -50,3 +50,13 @@ ShoveMaxStaggerSeconds = 0.45
 ShovePushSpeed = 4.0
 ShoveMaxPushSpeed = 10.0
 ShoveBrakingAcceleration = 9.0
+
+LastSeenInvestigationEnabled = true
+InvestigationWeights = Vector3(0.4, 0.35, 0.25)
+EarlyInvestigationFraction = Vector2(0.4, 0.6)
+ModerateInvestigationFraction = Vector2(0.65, 0.9)
+InvestigationTimeScale = Vector2(1.1, 1.6)
+InvestigationTimeAllowance = 3.0
+InvestigationMaxSeconds = 60.0
+InvestigationArrivalDistance = 0.45
+InvestigationLookSeconds = Vector2(0.8, 2.0)

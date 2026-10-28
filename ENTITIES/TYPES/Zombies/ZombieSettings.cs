@@ -42,6 +42,17 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float EyeHeight { get; set; } = 1.6f;
     [Export] public float SightIntervalSeconds { get; set; } = 0.4f;
     [Export(PropertyHint.Layers3DPhysics)] public uint SightBlockerMask { get; set; } = 17;
+    [ExportGroup("Last seen investigation")]
+    [Export] public bool LastSeenInvestigationEnabled { get; set; } = true;
+    // X early, Y moderate, Z thorough. Nonnegative weights are normalized per episode.
+    [Export] public Vector3 InvestigationWeights { get; set; } = new(0.40f, 0.35f, 0.25f);
+    [Export] public Vector2 EarlyInvestigationFraction { get; set; } = new(0.40f, 0.60f);
+    [Export] public Vector2 ModerateInvestigationFraction { get; set; } = new(0.65f, 0.90f);
+    [Export] public Vector2 InvestigationTimeScale { get; set; } = new(1.10f, 1.60f);
+    [Export(PropertyHint.Range, "0.5,20,0.5")] public float InvestigationTimeAllowance { get; set; } = 3f;
+    [Export(PropertyHint.Range, "1,120,1")] public float InvestigationMaxSeconds { get; set; } = 60f;
+    [Export(PropertyHint.Range, "0.2,1.5,0.05")] public float InvestigationArrivalDistance { get; set; } = 0.45f;
+    [Export] public Vector2 InvestigationLookSeconds { get; set; } = new(0.8f, 2f);
     [ExportGroup("Vision debug")]
     [Export] public bool ShowVisionCone { get; set; } = true;
     [ExportGroup("Awareness")]
