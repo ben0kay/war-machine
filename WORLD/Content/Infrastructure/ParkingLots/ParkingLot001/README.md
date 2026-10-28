@@ -9,3 +9,5 @@
 **Performance:** one-shot mesh construction, shared meshes/materials and static collision, no permanent `_Process`/physics callback. Separate visual asphalt/paint from curbs' collision so the player can walk across the apron. Plan for foliage clearing based on the complete lot footprint.
 
 **Not included now:** asphalt geometry, collision, lines, curbs, parking markers, vehicle positions, materials, lighting, vegetation clearing, site instancing, terrain edits or world placement. Open the scene and you will see an empty root, by design.
+
+**Roadmap:** see [site-owned PL implementation plan](../../../Sites/ConvenienceStoreSite001/IMPLEMENTATION_PLAN.md) for PL0A and remaining site phases.
