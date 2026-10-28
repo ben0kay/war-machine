@@ -200,7 +200,10 @@ public partial class DebugOverlay : PanelContainer
             _visionToggle.Toggled += visionDebug.SetConesVisible;
             _visionDebug.VisibilityChanged += OnVisionDebugChanged;
             if (OS.IsDebugBuild() && player != null)
+            {
                 ZombieInjuryDebug.Build(AddSection(rows, "Zombie injury tests"), visionDebug, player);
+                AnatomyPerformanceDebug.Build(AddSection(rows, "Anatomy performance"));
+            }
         }
         _clock = _sky.Sky.GetNode("TimeOfDay");
         _timeChanged = Callable.From<float>(OnTimeChanged);

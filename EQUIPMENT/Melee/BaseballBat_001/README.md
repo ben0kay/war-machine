@@ -1,3 +1,5 @@
+> **ELD-PERF1 source implementation (2026-10-28), awaiting local build/correctness/performance validation:** [Deferred anatomy and A/B acceptance](../../../ENTITIES/Shared/Anatomy/DEFERRED_HIT_DETECTION.md). Default is one broad native shape per actor; current joint-local limb boxes are resolved only during firearm/bat attacks. No per-frame limb-shape updates in deferred mode. Physical comparison mode requires a profile edit and scene restart. This supersedes older eight-native-shapes/always-sync descriptions below; no measured FPS gain is claimed.
+
 > **CM3 bat swing and knockback tuning (2026-10-28):** FPS uses a dedicated camera-local `FirstPersonMeleeSwing` pose to draw the bat well left of centre, snap across the viewport and finish on the right. The overhead pose and shared hit sweep remain unchanged. LMB bat impacts now use actual collision-aware zombie recoil/backsteps (roughly 1–2 m in open ground depending on resistance/obstacles), including limb gait and torso lean, while bullets and Q keep their previous behaviour. This source pass needs local Godot compilation/visual testing.
 
 # Baseball bat — CM3

@@ -89,7 +89,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             BodyRegion.LeftLeg, BodyRegion.RightLeg, BodyRegion.LeftLeg, BodyRegion.RightLeg };
         var boundaries = new System.Collections.Generic.HashSet<Node3D>(pivots);
         for (int i = 0; i < pivots.Length; i++) _anatomy.AddRegion(pivots[i], regions[i], boundaries);
-        _anatomy.SyncPose();
+        if (_anatomy.RequiresPoseSync) _anatomy.SyncPose();
         _anatomyVisual = new ZombieAnatomy(_leftArm, _rightArm, _leftLeg, _rightLeg);
     }
 
@@ -122,7 +122,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // =========================================================
     // Preserve virtual species pose hooks; synchronize even when AI changes pose outside the movement tick.
     private void UpdatePose(float step, float leftLift = 0, float rightLift = 0)
-    { PoseWithMobility(step, leftLift, rightLift); _anatomy?.SyncPose(); }
+    { PoseWithMobility(step, leftLift, rightLift); if (_anatomy?.RequiresPoseSync == true) _anatomy.SyncPose(); }
 
     // =========================================================
     // Healthy virtual poses remain species-owned; injury presentation overlays them for both variants.
@@ -540,7 +540,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         }
         else { PoseWithMobility(0); if (walking && !reacting && !recovering) _stuck += dt; }
         ApplyReactionPose();
-        _anatomy.SyncPose();
+        if (_anatomy.RequiresPoseSync) _anatomy.SyncPose();
         UpdateVisionDebug();
         if (_stuck > 2)
         { if (IsInvestigating) FinishInvestigation(); else Rest(); _stuck = 0; }

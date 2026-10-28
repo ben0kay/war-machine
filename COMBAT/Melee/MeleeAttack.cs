@@ -28,7 +28,8 @@ public sealed class MeleeAttack
     private float _elapsed;
     private ulong _nextReady;
     private bool _contactUsed;
-    private readonly HashSet<ulong> _sweepHits = new();
+    private readonly HashSet<ulong> _sweepHits = new(), _sweepCandidates = new();
+    private readonly AnatomyRaycaster _anatomyRay = new();
     private readonly List<MeleeContact> _sweepContacts = new(8);
     private ulong _anatomyVersion = ulong.MaxValue;
 
@@ -116,34 +117,16 @@ public sealed class MeleeAttack
             float arc = Mathf.DegToRad(Safe(profile.ArcDegrees, 10, 180));
             float from = arc * (0.5f - Mathf.Clamp((previous - windup) / active, 0, 1));
             float to = arc * (0.5f - Mathf.Clamp((_elapsed - windup) / active, 0, 1));
-            int rays = 0;
+            int rays = 0; _sweepCandidates.Clear();
             foreach (Godot.Collections.Dictionary result in _owner.GetWorld3D().DirectSpaceState.IntersectShape(_overlap, 64))
             {
                 if (_sweepHits.Count >= cap || rays >= 16) break;
                 if (result["collider"].AsGodotObject() is not CollisionObject3D body
                     || !GodotObject.IsInstanceValid(body) || body.IsQueuedForDeletion()) continue;
                 Node3D? actor = FindReceiver(body, _owner);
-                if (actor == null || _sweepHits.Contains(actor.GetInstanceId())) continue;
-                Vector3 centre = body is AnatomyHitboxes
-                    ? body.ToGlobal(body.ShapeOwnerGetTransform(body.ShapeFindOwner(result["shape"].AsInt32())).Origin)
-                    : ContactCentre(body);
-                Vector3 offset = centre - origin;
-                if (Mathf.Abs(offset.Y) > Safe(profile.VerticalTolerance, 0.05f, 3)) continue;
-                offset.Y = 0;
-                float distance = offset.Length();
-                if (distance < 0.001f || distance > range) continue;
-                float angle = Mathf.Atan2(aim.Cross(offset / distance).Y, aim.Dot(offset / distance));
-                float thickness = Mathf.Atan2(Safe(profile.SweepThickness, 0.01f, 0.5f), distance);
-                if (angle > from + thickness || angle < to - thickness) continue;
-                _line.From = origin; _line.To = centre; rays++;
-                var hit = _owner.GetWorld3D().DirectSpaceState.IntersectRay(_line);
-                if (hit.Count == 0 || hit["collider"].AsGodotObject() is not Node first
-                    || !IsDescendantOf(first, actor)) continue;
-                Vector3 direction = centre - _owner.GlobalPosition; direction.Y = 0;
-                if (direction.LengthSquared() < 0.001f) direction = aim;
-                _sweepHits.Add(actor.GetInstanceId());
-                _sweepContacts.Add(new MeleeContact((CollisionObject3D)first, actor,
-                    hit["position"].AsVector3(), direction.Normalized(), hit["shape"].AsInt32()));
+                if (actor == null || _sweepHits.Contains(actor.GetInstanceId()) || !_sweepCandidates.Add(actor.GetInstanceId())) continue;
+                if (!TrySweepContact(body, actor, origin, aim, profile, range, from, to, ref rays, out MeleeContact contact)) continue;
+                _sweepHits.Add(actor.GetInstanceId()); _sweepContacts.Add(contact);
             }
         }
         if (_elapsed >= windup + active + Safe(profile.RecoverySeconds, 0, 1))
@@ -152,9 +135,43 @@ public sealed class MeleeAttack
     }
 
     // =========================================================
+    // Refine each broad actor only during this active sector, preserving per-region height/arc and real cover.
+    private bool TrySweepContact(CollisionObject3D body, Node3D actor, Vector3 origin, Vector3 aim,
+        MeleeSettings profile, float range, float from, float to, ref int rays, out MeleeContact contact)
+    {
+        contact = default;
+        AnatomyHitboxes? anatomy = body as AnatomyHitboxes;
+        int parts = anatomy?.PartCount ?? 1;
+        var space = _owner.GetWorld3D().DirectSpaceState;
+        for (int part = 0; part < parts && rays < 16; part++)
+        {
+            Vector3 centre;
+            if (anatomy != null) { if (!anatomy.TryPartCentre(part, out centre)) continue; }
+            else centre = ContactCentre(body);
+            Vector3 offset = centre - origin;
+            if (!Finite(offset) || Mathf.Abs(offset.Y) > Safe(profile.VerticalTolerance, 0.05f, 3)) continue;
+            offset.Y = 0;
+            float distance = offset.Length();
+            if (distance < 0.001f || distance > range) continue;
+            float angle = Mathf.Atan2(aim.Cross(offset / distance).Y, aim.Dot(offset / distance));
+            float thickness = Mathf.Atan2(Safe(profile.SweepThickness, 0.01f, 0.5f), distance);
+            if (angle > from + thickness || angle < to - thickness) continue;
+            _line.From = origin; _line.To = centre;
+            bool hasHit = _anatomyRay.TryHit(space, _line, out AnatomyRayHit hit, 16 - rays);
+            rays += _anatomyRay.LastQueryCount;
+            if (!hasHit || hit.Collider is not CollisionObject3D first || !IsDescendantOf(first, actor)) continue;
+            Vector3 direction = centre - _owner.GlobalPosition; direction.Y = 0;
+            if (direction.LengthSquared() < 0.001f) direction = aim;
+            contact = new MeleeContact(first, actor, hit.Position, direction.Normalized(), hit.ShapeIndex);
+            return true;
+        }
+        return false;
+    }
+
+    // =========================================================
     // Abort safely on focus loss, weapon swap, death, deactivation or unload.
     // Preserve attack cooldown so interruption cannot reset the rate limit.
-    public void Cancel() { _profile = null; _elapsed = 0f; _contactUsed = false; _sweepContacts.Clear(); _sweepHits.Clear(); }
+    public void Cancel() { _profile = null; _elapsed = 0f; _contactUsed = false; _sweepContacts.Clear(); _sweepHits.Clear(); _sweepCandidates.Clear(); }
 
     // =========================================================
     // Broad phase finds overlapping bodies; arc/height/reach and an occlusion ray

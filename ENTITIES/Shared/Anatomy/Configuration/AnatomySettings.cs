@@ -11,6 +11,9 @@ public partial class AnatomySettings : Resource
     [Export(PropertyHint.Range, "1,100000,1")] public float SeverThreshold { get; set; } = 65;
     [Export(PropertyHint.Range, "0.01,100,0.05")] public float SeverResistance { get; set; } = 1;
     [ExportGroup("Detection & diagnostics")]
+    [Export] public bool DeferredHitDetection { get; set; } = true;
+    [Export(PropertyHint.Range, "0.5,10,0.05")] public float BroadRadius { get; set; } = 1.6f;
+    [Export] public Vector3 BroadCentre { get; set; } = new(0, 0.8f, 0);
     [Export(PropertyHint.Range, "0,0.02,0.001")] public float Padding { get; set; } = 0.005f;
     [Export] public bool LogRegionHits { get; set; } = true;
 }

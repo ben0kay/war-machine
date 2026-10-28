@@ -1,3 +1,5 @@
+> **ELD-PERF1 source implementation (2026-10-28), awaiting local build/correctness/performance validation:** [Deferred anatomy and A/B acceptance](../DEFERRED_HIT_DETECTION.md). Default is one broad native shape per actor; current joint-local limb boxes are resolved only during firearm/bat attacks. No per-frame limb-shape updates in deferred mode. Physical comparison mode requires a profile edit and scene restart. This supersedes older eight-native-shapes/always-sync descriptions below; no measured FPS gain is claimed.
+
 # Anatomy configuration
 
 AnatomySettings owns detection padding/logging and ELD1 condition, state fractions, sever threshold/resistance. AnatomyMaster.tres is the shared fallback. Zombie masters select their species profile at `ENTITIES/TYPES/Zombies/Configuration/ZombieAnatomyMaster.tres`; runtime copies protect authored resources. Weapon SeverPower lives in each firearm master, independent of HP damage. Player BodyCondition settings are unchanged. See [anatomy ownership and validation](../README.md).

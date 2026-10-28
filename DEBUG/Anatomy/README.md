@@ -1,3 +1,5 @@
+> **ELD-PERF1 source implementation (2026-10-28), awaiting local build/correctness/performance validation:** [Deferred anatomy and A/B acceptance](../../ENTITIES/Shared/Anatomy/DEFERRED_HIT_DETECTION.md). Default is one broad native shape per actor; current joint-local limb boxes are resolved only during firearm/bat attacks. No per-frame limb-shape updates in deferred mode. Physical comparison mode requires a profile edit and scene restart. This supersedes older eight-native-shapes/always-sync descriptions below; no measured FPS gain is claimed.
+
 # In-world anatomy debugging
 
 ZombieInjuryDebug adds explicit injury buttons to the existing World/FPS overlay, under Debug → Zombie injury tests. Debug builds only; select the nearest registered living zombie within 12m, then apply monotonic limb states without altering HP. No keyboard bindings, new scenes, timers, physics loops or ongoing searches. No healing/reset/resurrection. This exists to exercise ELD2 multiple-surviving-injury states while production damage remains unchanged. See [locomotion acceptance](../../ENTITIES/TYPES/Zombies/LOCOMOTION_README.md).

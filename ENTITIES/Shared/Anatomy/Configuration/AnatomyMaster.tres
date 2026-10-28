@@ -2,5 +2,8 @@
 [ext_resource type="Script" path="res://ENTITIES/Shared/Anatomy/Configuration/AnatomySettings.cs" id="1"]
 [resource]
 script = ExtResource("1")
+DeferredHitDetection = true
+BroadRadius = 1.6
+BroadCentre = Vector3(0, 0.8, 0)
 Padding = 0.005
 LogRegionHits = true

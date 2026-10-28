@@ -26,6 +26,7 @@ public partial class FirearmController : Node3D
     private CollisionObject3D? _holder;
     private readonly RandomNumberGenerator _shotRandom = new();
     private bool _equipped;
+    private readonly AnatomyRaycaster _anatomyRay = new();
     private ulong _anatomyVersion = ulong.MaxValue;
     private FirearmRecoil _recoil;
     public Vector2 RecoilOffsetDegrees => _recoil.OffsetDegrees;
@@ -89,20 +90,20 @@ public partial class FirearmController : Node3D
         // Prevent a barrel sticking through cover from firing out of the other side.
         _query.From = probeOrigin; _query.To = start;
         var space = GetWorld3D().DirectSpaceState;
-        var hit = space.IntersectRay(_query);
-        if (hit.Count > 0) start = probeOrigin;
+        bool hasHit = _anatomyRay.TryHit(space, _query, out AnatomyRayHit hit);
+        if (hasHit) start = probeOrigin;
         else
         {
             _query.From = start; _query.To = start + direction * Mathf.Clamp(RuntimeSettings.Range, 0.1f, 1000);
-            hit = space.IntersectRay(_query);
+            hasHit = _anatomyRay.TryHit(space, _query, out hit);
         }
-        Vector3 end = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
-        if (hit.Count > 0)
+        Vector3 end = hasHit ? hit.Position : _query.To;
+        if (hasHit)
         {
             var packet = new DamagePacket(RuntimeSettings.Damage, RuntimeSettings.DamageKind, _holder, end, direction, severPower: RuntimeSettings.SeverPower);
             var impact = new CombatImpact(_holder, end, end - _holder!.GlobalPosition,
                 CombatImpactKind.Bullet, RuntimeSettings.BulletImpactStrength, RuntimeSettings.BulletStaggerSeconds);
-            HitTargetResolver.Dispatch(hit["collider"].AsGodotObject() as Node, _holder, packet, impact, hit["shape"].AsInt32());
+            HitTargetResolver.Dispatch(hit.Collider, _holder, packet, impact, hit.ShapeIndex);
         }
         _effects.ShowShot(start, end);
         // Close the acceptance gate before notifying sound/recoil observers; recursive requests cannot double-fire.
