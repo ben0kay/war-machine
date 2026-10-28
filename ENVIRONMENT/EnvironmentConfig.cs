@@ -15,7 +15,7 @@ public partial class EnvironmentConfig : Resource
     [Export] public Color DuskFogColor { get; set; } = new(0.24f, 0.22f, 0.25f);
     [Export] public Color NightAmbientColor { get; set; } = new(0.22f, 0.29f, 0.42f);
     [Export] public Color DayAmbientColor { get; set; } = new(0.65f, 0.70f, 0.76f);
-    [Export] public float NightAmbientEnergy { get; set; } = 0.55f;
+    [Export] public float NightAmbientEnergy { get; set; } = 1.5f;
     [Export(PropertyHint.Range, "0,1,0.01")] public float FpsSkyFogOpacity { get; set; } = 0.08f;
     [ExportGroup("Sun / moon rays / Forward+")]
     [Export] public bool LightRaysEnabled { get; set; } = true;
@@ -51,7 +51,7 @@ public partial class EnvironmentConfig : Resource
     [Export(PropertyHint.Range, "0,0.3,0.001")] public float GroundHazeDensity { get; set; } = 0.18f;
     [Export(PropertyHint.Range, "0.25,8,0.05")] public float GroundHazeHeight { get; set; } = 1.1f;
     [Export] public float GroundHazeNoiseScale { get; set; } = 0.35f;
-    [Export] public float GroundHazeDriftSpeed { get; set; } = 0.3f;
+    [Export] public float GroundHazeDriftSpeed { get; set; } = 1.5f;
     [Export] public float GroundHazeContrast { get; set; } = 0.8f;
     [Export(PropertyHint.Range, "0,1,0.01")] public float GroundHazeTurbulence { get; set; } = 0.15f;
     [Export(PropertyHint.Range, "6,48,1")] public float GroundHazeCoverageRadius { get; set; } = 9;

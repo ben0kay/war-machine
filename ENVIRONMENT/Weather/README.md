@@ -13,7 +13,7 @@ One cached local FogVolume replaces overlapping boxes, eliminating internal tile
 - GroundHazeDensity = 0.22
 - GroundHazeHeight = 1.2 metres (wisps can extend to ~1.45× this)
 - GroundHazeNoiseScale = 0.25 (smaller = larger features)
-- GroundHazeDriftSpeed = 0.2 m/s
+- GroundHazeDriftSpeed = 1.5 m/s (increased from 0.2 m/s on 2026-10-28)
 - GroundHazeContrast = 0.85
 - GroundHazeTurbulence = 0.15
 - GroundHazeCoverageRadius = 30 metres, clamped 6–48
@@ -64,3 +64,7 @@ Shared scene ownership now lives in ENVIRONMENT/Environment.tscn (GameEnvironmen
 ## Interior/shelter roadmap
 
 [../INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md](../INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md) plans shared building volumes and spatial ground-haze masking in both views. Rain shelter/exclusion is explicitly **FPS only**; top-down rain stays unchanged even indoors and even in perspective mode. Other weather effects are independent opt-ins. No new clipping/masking code is implemented by the plan.
+
+### Drift default (2026-10-28)
+
+The active `GameplayEnvironmentMaster.tres` and legacy `EnvironmentMaster.tres` now default to **1.5 m/s** ground-haze drift, and the `EnvironmentConfig` C# fallback matches. The existing `GroundHazeControls` UI range (0–2 m/s) and `GroundHaze.ApplySettings` GPU shader clamp already support 1.5 without code changes. Density, height, coverage, turbulence and fog rendering are untouched. A freshly loaded world uses 1.5; live edits in the debug sliders remain instance-only until copied into a master.

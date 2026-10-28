@@ -58,7 +58,7 @@ public partial class StreetLampLighting : Node3D
         _downlight.LightColor = s.LightColor;
         _downlight.LightEnergy = Mathf.Clamp(s.SpotEnergy, 0f, 6f);
         _downlight.SpotRange = Mathf.Clamp(s.SpotRange, 6f, 20f);
-        _downlight.SpotAngle = Mathf.Clamp(s.SpotHalfAngle, 20f, 75f);
+        _downlight.SpotAngle = Mathf.Clamp(s.SpotHalfAngle, 20f, 85f);
         _downlight.SpotAttenuation = Mathf.Clamp(s.SpotFalloff, 0.2f, 3f);
         _downlight.SpotAngleAttenuation = Mathf.Clamp(s.ConeEdgeSoftness, 0.3f, 4f);
         _downlight.LightVolumetricFogEnergy = Mathf.Clamp(s.SpotFogEnergy, 0f, 1f);

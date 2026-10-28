@@ -34,5 +34,6 @@ GroundHazeEnabled = true
 GroundHazeDensity = 0.18
 GroundHazeHeight = 1.1
 GroundHazeNoiseScale = 0.35
-GroundHazeDriftSpeed = 0.3
+GroundHazeDriftSpeed = 1.5
 GroundHazeContrast = 0.8
+NightAmbientEnergy = 1.5

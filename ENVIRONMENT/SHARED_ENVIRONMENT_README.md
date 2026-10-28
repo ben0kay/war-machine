@@ -39,3 +39,7 @@ Brief checks: source/resource/API/loop/lifetime review only; no Godot/.NET execu
 ## Planned interior exclusions
 
 See [INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md](INTERIOR_EXCLUSION_IMPLEMENTATION_PLAN.md). Proposed IE0–IE4 register interior/shelter data independently of camera fading, exclude local ground haze spatially in both views, and hide rain only in first person. Top-down rain remains visible in either projection; global distance fog is preserved. Snow/addon mist/motes retain their existing behavior until separately opted in. Plan only; no environment behavior changed.
+
+## Default atmospheric brightness and haze speed — 2026-10-28
+
+Both views inherit the updated `GameplayEnvironmentMaster.tres` defaults: **NightAmbientEnergy=1.5** (previously 0.55) and **GroundHazeDriftSpeed=1.5 m/s** (previously 0.2). `EnvironmentConfig.cs` fallback and the legacy `EnvironmentMaster.tres` have matching defaults. `SkyController.UpdateAtmosphere` still blends night ambient into the unchanged daytime ambient energy using Sky3D's sun elevation; this does not change the day-night clock, moonlight, ground-haze GPU sampling cost or atmospheric controls. The four site street lamps independently use an enlarged 75.6° half-cone (20% above 63°), with unchanged range and energy. Pull and restart the scenes to apply saved defaults; previous in-game slider edits are not persisted.

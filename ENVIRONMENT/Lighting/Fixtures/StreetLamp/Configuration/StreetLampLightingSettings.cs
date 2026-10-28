@@ -10,7 +10,7 @@ public partial class StreetLampLightingSettings : Resource
     [Export] public Color LightColor { get; set; } = new(1.0f, 0.82f, 0.61f);
     [Export(PropertyHint.Range, "0,6,0.05")] public float SpotEnergy { get; set; } = 4.5f;
     [Export(PropertyHint.Range, "6,20,0.5")] public float SpotRange { get; set; } = 20f;
-    [Export(PropertyHint.Range, "20,75,1")] public float SpotHalfAngle { get; set; } = 63f;
+    [Export(PropertyHint.Range, "20,85,0.1")] public float SpotHalfAngle { get; set; } = 75.6f;
     [Export(PropertyHint.Range, "0.2,3,0.1")] public float SpotFalloff { get; set; } = 0.85f;
     [Export(PropertyHint.Range, "0.3,4,0.1")] public float ConeEdgeSoftness { get; set; } = 1.45f;
     [Export] public bool SpotShadows { get; set; } = false;
