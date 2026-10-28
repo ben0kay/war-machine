@@ -1,6 +1,6 @@
 # Objects — reusable world asset library
 
-**Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
+**Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. The F1 menu now discovers eligible canonical visual-wrapper scenes automatically (source implemented; local validation pending). Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
 
 ## Object versus Prop
 
@@ -32,9 +32,9 @@ See [PLACEABLE_CATALOG.md](PLACEABLE_CATALOG.md) for canonical paths, dimensions
 2. Use `C/` only when generating visible geometry in C#. A small interaction/colour-setting script belongs alongside its scene or `Shared/`. Preserve pivot, dimensions and material surface naming/order on re-export.
 3. Share meshes/materials across instances; avoid per-frame work or physics on decorative clutter. The size helper is event/ready-driven and dormant at rest.
 4. Add physical collision only when authorized: Bookcase001 needs separate thin shelf colliders, Book001 can use one small sleeping rigid body, Bed001 needs appropriate frame/bed collision. Keep colliders in agreement with visible size, particularly when scale is not uniform.
-5. Reuse IX0–IX8 in `INTERACTION/IMPLEMENTATION_PLAN.md`; do not place/migrate assets in active world or inventory as part of visual art authoring.
+5. Reuse IX0–IX8 in `INTERACTION/IMPLEMENTATION_PLAN.md`; do not place/migrate assets in active world or inventory as part of visual art authoring. The F1 menu now automatically discovers valid `PlaceableVisual` scenes by canonical folder/scene name, with public exported enum variant choices; do not hardcode F1 indices or paths.
 6. [Car001](Static/Cars/Car001/README.md) now lives under `Static/Cars/`; it retains its procedural geometry, original settings and existing collision. Its master is not a GLB size master.
 
 ## F1 visual previews
 
-Run `WORLD/World.tscn` or the FPS debug scene with F6, press **F1**, then spawn Bookcase001, Book001 or any of the four Bed001 palettes or three Table001 wood finishes, or PineTree001 using the [Placeable Spawner](../../../../DEBUG/PlaceableSpawner/README.md). All previews use the **canonical scene and corresponding `.tres`**. Bed and bookcase are grounded by their Y=0 source pivot; book hovers to allow close inspection. These are temporary previews without collision, gravity, pickup or saved placement. Godot import/build/visual acceptance remains pending locally.
+Run `WORLD/World.tscn` or the FPS debug scene with F6, press **F1**, then select any automatically listed canonical GLB visual wrapper, including Hedge001, the four Bed001 palettes, the three Table001 wood finishes, Bookcase001, Book001 or PineTree001, using the [Placeable Spawner](../../../../DEBUG/PlaceableSpawner/README.md). All previews use the **canonical scene and corresponding `.tres`**. Bed and bookcase are grounded by their Y=0 source pivot; book hovers to allow close inspection. These are temporary previews without collision, gravity, pickup or saved placement. Godot import/build/visual acceptance remains pending locally.

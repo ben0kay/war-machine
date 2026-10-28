@@ -7,6 +7,7 @@
 [node name="PineTree001" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
+metadata/f1_preview_min_distance = 12.0
 
 [node name="Model" type="Node3D" parent="."]
 

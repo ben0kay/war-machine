@@ -7,3 +7,5 @@ The imported book remains a muted-teal hardcover with page ridges and small gold
 **Size tuning:** `SizeMultiplier = Vector3(1, 1, 1)`: X width, Y thickness and Z length. You could make a smaller paperback-like variation by e.g. `Vector3(0.85, 0.8, 0.85)`. This setting applies to all default Book001 instances and F1 previews on reload; duplicate a settings resource for an individual scene override. Imported model stays identical.
 
 **Policy:** Future movable **Prop**, intended for shared carry/drop/throw; does not automatically enter inventory. The visual wrapper currently has no `RigidBody3D`, collision, gravity or pickup. Later physics should use a suitable simple box collider and mass that match chosen size; the visual-only scale adapter does not add these features.
+
+**F1 dynamic preview (2026-10-28):** This canonical scene has `metadata/f1_preview_hover = true`, preserving the existing `BookHoverHeight` debug hover. Its appearance in F1 is automatic through the generic catalogue scanner, not an asset-name switch. No world collision/placement change.

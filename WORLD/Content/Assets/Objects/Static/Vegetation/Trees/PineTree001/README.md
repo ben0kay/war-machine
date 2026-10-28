@@ -27,3 +27,5 @@ The current active pines use seeded `MultiMesh` batches, shader wind, low-detail
 ## WS1 distance policy (2026-10-28)
 
 F1 instances under PersistentPropsRoot now automatically receive the shared conservative fog-aware native visibility range, like other GLB/procedural static objects. Imported mesh LOD remains enabled by normal Godot import defaults; inspect actual generated LODs locally. This does not replace the active forest, add wind/collision to this visual-only prefab or create manual far-tree artwork. All earlier forest-replacement constraints still apply. See WORLD/Rendering/README.md for coverage and validation limits.
+
+**F1 dynamic preview (2026-10-28):** This canonical scene has `metadata/f1_preview_min_distance = 12.0`, preserving the old 12m minimum preview spacing for wide pine crowns. It is automatically listed from its canonical wrapper; no special-case PineTree001 branch in F1. No changes to procedural forest trees.

@@ -7,6 +7,7 @@
 [node name="Book001" type="Node3D"]
 script = ExtResource("1")
 Settings = ExtResource("2")
+metadata/f1_preview_hover = true
 
 [node name="Model" type="Node3D" parent="."]
 

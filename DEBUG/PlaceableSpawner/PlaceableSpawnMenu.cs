@@ -1,14 +1,12 @@
-// F1 placeable preview: GLB scene wrappers with shared per-asset size masters; no physics.
+// F1 catalogue-driven placeable preview: canonical GLB wrappers, exported enum variations, no physics.
+// File scan runs once at startup. Key/button events only; no idle process or spawn-index switches.
 using Godot;
+using System.Collections.Generic;
 
 public partial class PlaceableSpawnMenu : CanvasLayer
 {
-    private const string BookcasePath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Bookcases/Bookcase001/Bookcase001.tscn";
-    private const string BookPath = "res://WORLD/Content/Assets/Objects/Props/Books/Book001/Book001.tscn";
-    private const string BedPath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Beds/Bed001/Bed001.tscn";
-    private const string TablePath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Tables/Table001/Table001.tscn";
-    private const string PineTreePath = "res://WORLD/Content/Assets/Objects/Static/Vegetation/Trees/PineTree001/PineTree001.tscn";
     private const int MaxInstances = 24;
+    private readonly List<PlaceableEntry> _entries = new();
     private PlayerController? _player;
     private Camera3D? _camera;
     private Node3D? _terrain;
@@ -20,28 +18,39 @@ public partial class PlaceableSpawnMenu : CanvasLayer
     private bool _wasCaptured;
 
     // =========================================================
-    // Everything is driven by key/button events; neither the UI nor instances poll each frame.
+    // Discover canonical objects/props once; options and variant IDs derive from cached entries.
     public override void _Ready()
     {
         SetProcess(false); SetPhysicsProcess(false);
         _backdrop = GetNode<ColorRect>("Backdrop");
         _selection = GetNode<OptionButton>("Backdrop/Panel/Margin/Rows/Selection");
         _status = GetNode<Label>("Backdrop/Panel/Margin/Rows/Status");
+        _settings = GD.Load<PlaceableSpawnSettings>("res://DEBUG/PlaceableSpawner/Configuration/PlaceableSpawnMaster.tres");
         _backdrop.Hide();
-        _selection.AddItem("OBJECT · Bookcase001");
-        _selection.AddItem("PROP · Book001");
-        _selection.AddItem("OBJECT · Bed001 · Slate Blue");
-        _selection.AddItem("OBJECT · Bed001 · Moss Green");
-        _selection.AddItem("OBJECT · Bed001 · Warm Sand");
-        _selection.AddItem("OBJECT · Bed001 · Dusty Rose");
-        _selection.AddItem("OBJECT · Table001 · Weathered Oak");
-        _selection.AddItem("OBJECT · Table001 · Dark Walnut");
-        _selection.AddItem("OBJECT · Table001 · Faded Grey");
-        _selection.AddItem("OBJECT · PineTree001 · Imported GLB");
+        _entries.AddRange(PlaceableCatalog.Discover());
+        PopulateOptions();
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Spawn").Pressed += SpawnSelected;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Clear").Pressed += ClearSpawned;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Close").Pressed += () => CloseMenu(true);
-        _settings = GD.Load<PlaceableSpawnSettings>("res://DEBUG/PlaceableSpawner/Configuration/PlaceableSpawnMaster.tres");
+    }
+
+    // =========================================================
+    // Category separators are disabled entries; OptionButton IDs always index _entries, never menu rows.
+    private void PopulateOptions()
+    {
+        _selection.Clear();
+        string category = "";
+        int first = -1;
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            PlaceableEntry entry = _entries[i];
+            if (category != entry.Category) { category = entry.Category; _selection.AddSeparator(category); }
+            _selection.AddItem(entry.DisplayName, i);
+            if (first < 0) first = _selection.ItemCount - 1;
+        }
+        if (first >= 0) _selection.Select(first);
+        else { _selection.AddItem("No GLB placeables found"); _selection.Disabled = true; }
+        GetNode<Button>("Backdrop/Panel/Margin/Rows/Spawn").Disabled = first < 0;
     }
 
     // =========================================================
@@ -75,7 +84,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
     {
         _wasCaptured = Input.MouseMode == Input.MouseModeEnum.Captured;
         Input.MouseMode = Input.MouseModeEnum.Visible;
-        _status.Text = "Visual preview only · no collision or gravity";
+        _status.Text = _entries.Count == 0 ? "No eligible GLB object scenes found." : "Visual preview only · no collision or gravity";
         _backdrop.Show();
     }
 
@@ -88,7 +97,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
     }
 
     // =========================================================
-    // Ground against standing height or sampled Terrain3D height; book hovers for a legible model preview.
+    // Preview any discovered asset; no name/index checks. Source scene and authored size master remain intact.
     private void SpawnSelected()
     {
         if (_player == null || _camera == null || _terrain == null || _spawned == null || _settings == null)
@@ -96,26 +105,17 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         if (_spawned.GetChildCount() >= MaxInstances)
         { _status.Text = "Preview limit reached. Clear models."; return; }
 
-        bool isBook = _selection.Selected == 1;
-        bool isBed = _selection.Selected >= 2 && _selection.Selected <= 5;
-        bool isTable = _selection.Selected >= 6 && _selection.Selected <= 8;
-        bool isPine = _selection.Selected == 9;
-        string path = isPine ? PineTreePath : isTable ? TablePath : isBed ? BedPath : isBook ? BookPath : BookcasePath;
-        var source = ResourceLoader.Load<PackedScene>(path);
-        if (source == null) { _status.Text = "Could not load model/scene; see Godot Output."; return; }
-        if (source.Instantiate() is not Node3D instance)
-        { _status.Text = "Placeable does not have a Node3D root."; return; }
-        // Select the palette before AddChild/_Ready; Bed001 swaps materials without rebuilding geometry.
-        if (isBed && instance is BedVisual bed)
-            bed.BeddingVariant = (BedVisual.BeddingPalette)(_selection.Selected - 2);
-        if (isTable && instance is TableVisual table)
-            table.FinishVariant = (TableVisual.WoodFinish)(_selection.Selected - 6);
+        int selectedId = _selection.GetSelectedId();
+        if (selectedId < 0 || selectedId >= _entries.Count)
+        { _status.Text = "Select a placeable first."; return; }
+        PlaceableEntry choice = _entries[selectedId];
+        Node3D? instance = choice.CreateInstance();
+        if (instance == null) { _status.Text = "Could not instantiate selected placeable; see Godot Output."; return; }
 
         Vector3 direction = -_camera.GlobalBasis.Z;
         direction.Y = 0;
         direction = direction.LengthSquared() < 0.0001f ? Vector3.Forward : direction.Normalized();
-        // Trees have wide crowns; preview farther away without changing the generic distance master.
-        float spawnDistance = isPine ? Mathf.Max(_settings.SpawnDistance, 12f) : _settings.SpawnDistance;
+        float spawnDistance = Mathf.Max(_settings.SpawnDistance, choice.MinimumSpawnDistance);
         Vector3 at = _player.GlobalPosition + direction * spawnDistance;
         float ground = _player.GlobalPosition.Y;
         var data = _terrain.Get("data").AsGodotObject();
@@ -124,11 +124,12 @@ public partial class PlaceableSpawnMenu : CanvasLayer
             float height = data.Call("get_height", new Vector3(at.X, 0, at.Z)).AsSingle();
             if (float.IsFinite(height)) ground = Mathf.Max(ground, height);
         }
-        instance.Name = isPine ? "Preview_PineTree001" : isTable ? $"Preview_Table001_{_selection.Selected - 6}" : isBed ? $"Preview_Bed001_{_selection.Selected - 2}" : isBook ? "Preview_Book001" : "Preview_Bookcase001";
+        string suffix = choice.VariantName.Length == 0 ? "" : "_" + choice.VariantName.Replace(' ', '_');
+        instance.Name = "Preview_" + choice.AssetId + suffix;
         _spawned.AddChild(instance);
-        instance.GlobalPosition = new Vector3(at.X, ground + (isBook ? _settings.BookHoverHeight : 0), at.Z);
+        instance.GlobalPosition = new Vector3(at.X, ground + (choice.HoverForPreview ? _settings.BookHoverHeight : 0), at.Z);
         instance.Rotation = new Vector3(0, Mathf.Atan2(-direction.X, -direction.Z), 0);
-        _status.Text = $"Spawned {instance.Name} · {_spawned.GetChildCount()}/{MaxInstances}";
+        _status.Text = $"Spawned {choice.DisplayName} · {_spawned.GetChildCount()}/{MaxInstances}";
     }
 
     // =========================================================
@@ -142,7 +143,5 @@ public partial class PlaceableSpawnMenu : CanvasLayer
 
     // =========================================================
     public override void _ExitTree()
-    {
-        if (_backdrop != null && _backdrop.Visible) Input.MouseMode = Input.MouseModeEnum.Visible;
-    }
+    { if (_backdrop != null && _backdrop.Visible) Input.MouseMode = Input.MouseModeEnum.Visible; }
 }
