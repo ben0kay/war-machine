@@ -7,6 +7,7 @@ public partial class DeerController : EntityCore, IDamageReceiver
     public float Health => _health?.CurrentHealth ?? 0f;
     public bool IsDead => _health?.IsDead ?? false;
     public bool IsFleeing => _fleeing;
+    public bool IsAiReady { get; private set; }
     public Vector3 WanderAnchor => _anchor;
     private HealthComponent _health = null!;
     private DeerSettings _config = null!;
@@ -30,6 +31,10 @@ public partial class DeerController : EntityCore, IDamageReceiver
     // The scene master starts dormant. The active world injects target/terrain after placement.
     public override void _Ready()
     {
+        IsAiReady = false;
+        // The inherited exported Node3D wrapper can be stale after the child gains its C# artwork script.
+        // Resolve the actual live scripted child before reading joints or initializing the brain.
+        VisualRoot = GetNode<DeerMeshBuilder>("VisualRoot");
         _health = GetNode<HealthComponent>("Health");
         _body = GetNode<CollisionShape3D>("CollisionShape3D");
         _brain = new Timer { Name = "DecisionTimer", OneShot = true,
@@ -53,13 +58,14 @@ public partial class DeerController : EntityCore, IDamageReceiver
         _config = (DeerSettings)RuntimeSettings;
         _health.Damaged += OnDamaged; _health.Died += OnKilled;
         _health.Configure(_config.HealthProfile);
-        SetProcess(false); SetPhysicsProcess(false);
+        SetProcess(false); SetPhysicsProcess(false); IsAiReady = true;
     }
 
     // =========================================================
     // Like zombies, deer take explicit world placement, one target and optional terrain-height input.
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
+        if (!IsAiReady) { GD.PushWarning("[Deer] Target setup skipped: Ready did not complete."); return; }
         Deactivate();
         _target = player; _perception = player as IPerceptionTarget;
         _visibility = player is CollisionObject3D body && _perception != null
@@ -277,7 +283,8 @@ public partial class DeerController : EntityCore, IDamageReceiver
     // =========================================================
     protected override void OnEntityExitTree()
     {
-        _brain.Timeout -= Think;
+        IsAiReady = false;
+        if (GodotObject.IsInstanceValid(_brain)) _brain.Timeout -= Think;
         if (GodotObject.IsInstanceValid(_health))
         { _health.Damaged -= OnDamaged; _health.Died -= OnKilled; }
         _target = null; _perception = null; _visibility = null; _groundHeight = null;

@@ -476,6 +476,9 @@ public partial class WorldController : Node3D
         var deer = scene.Instantiate<DeerController>();
         var wildlife = GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Wildlife");
         wildlife.AddChild(deer);
+        // Godot can report a script Ready exception without throwing from AddChild. Do not cascade into target setup.
+        if (!deer.IsAiReady)
+        { GD.PushWarning("Deer preview skipped: initialization failed; world startup will continue."); deer.QueueFree(); return; }
         deer.GlobalPosition = support["position"].AsVector3() + Vector3.Up * 0.06f;
         var body = deer.GetNode<CollisionShape3D>("CollisionShape3D");
         var clearance = new PhysicsShapeQueryParameters3D
