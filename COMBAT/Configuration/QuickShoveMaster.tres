@@ -18,3 +18,5 @@ ImpactDuration = 0.4
 StationaryStrengthMultiplier = 0.45
 RunningStrengthMultiplier = 2.25
 FullMomentumSpeed = 8.0
+ShoveSidewaysDegrees = 90.0
+ShoveExtension = 0.12

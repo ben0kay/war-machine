@@ -19,3 +19,7 @@ Shared EQUIPMENT/Shared/WeaponSlots owns two explicit scenes from EquipmentMaste
 Switching cancels the trigger/pending shot, unsubscribes the old cooldown callback, stops old VFX/audio via Unequip, hides and disables the old gun, equips the new one and updates the adapter's hit mask. Click again to fire. Scenes instantiate lazily once per slot (maximum two); returning reuses the instance. No frame loop, inventory, reload/ammo, pickups or new weapon-specific firing code. Current test switching resets the unequipped gun's cooldown through existing Unequip semantics. Unload explicitly frees camera/hand-mounted weapons and releases subscriptions. Missing/invalid replacement leaves the old gun selected.
 
 Local validation pending: Godot/.NET unavailable here. Build, F6 World/FPS, 1/2 repeatedly, shoot/hold then switch, release/focus loss, GUI slider clicks and scene unload. Confirm only selected mesh draws, only selected gun fires, MG tracers/spread work, and both mounts/muzzles look right.
+
+## CM2-D — side-on shove
+
+Implemented: two-handed sideways gun push in overhead/FPS, driven by existing attack timing. Focus/menu/switch/unload cancels and restores the gun; pending fire waits for recovery. No idle pose processing. See COMBAT/README.md CM2-D handoff for tuning and deferred local build/visual checks. Prior no-animation statements are historical.

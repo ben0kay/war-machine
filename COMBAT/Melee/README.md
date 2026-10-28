@@ -15,3 +15,7 @@ Create one `MeleeAttack(actorCollisionBody)` per attacking actor when equipment/
 ## Player momentum scaling — small Q tuning pass
 
 `PlayerQuickMelee.TryStart()` captures the player's XZ movement speed only when a Q attack **successfully begins**. The shared `MeleeAttack` hit query, view-specific horizontal/FPS aiming, separate cooldown and one-target dispatch stay unchanged. The `QuickShoveMaster.tres` exports `StationaryStrengthMultiplier` (0.45), `RunningStrengthMultiplier` (2.25) and `FullMomentumSpeed` (8 m/s). Walking strength lies between the endpoints according to actual speed. At 0/5/8 m/s and base impact strength 1, resolved impact strengths are approximately 0.45/1.575/2.25 before the zombie's resistance. Only Shove impact strength scales, **not damage or stagger duration**. Zombie max knockback speed is now 10 m/s to avoid flattening run-tier force. Everything sleeps while idle; no new animation (CM2-D) or movement action is introduced.
+
+## CM2-D — side-on shove
+
+Implemented: two-handed sideways gun push in overhead/FPS, driven by existing attack timing. Focus/menu/switch/unload cancels and restores the gun; pending fire waits for recovery. No idle pose processing. See ../README.md CM2-D handoff for tuning and deferred local build/visual checks. Prior no-animation statements are historical.

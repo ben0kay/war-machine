@@ -1,6 +1,6 @@
 # CM — Melee, shove and hit-reaction implementation plan
 
-> **Current status: CM0/CM1 and CM2-A/B1/B2/C implemented in source, awaiting local validation; CM2-D and CM3–CM5 remain Planned.** See COMBAT/README.md for exact contracts, tuning, no-knockback scope and validation handoff. Read [root README](../README.md), [CodePreferences](../CodePreferences.md), [COMBAT ownership](README.md) and the actual branch source before authorizing a phase. **Do not automatically implement the next phase.** Work on `implement-td0-td1` unless the owner requests another branch.
+> **Current status: Owner confirms prior CM0/CM1 and CM2-A/B1/B2/C local validation is okay (Accepted). CM2-D implemented in source, Awaiting Validation for compilation/animation fit; CM3–CM5 Planned.** See COMBAT/README.md for the current handoff. Work on `implement-td0-td1`; do not auto-implement later phases.
 
 ## Phase overview
 
@@ -149,7 +149,7 @@ These are **design-test starting points**, not implemented stats or decisions ab
 
 ## CM2 — Reusable quick-melee shove (revised scope)
 
-> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B1/B2 zombie reaction/knockback and CM2-C Q input/contact dispatch in both camera modes are implemented in source, awaiting local validation; CM2-D shove poses remain planned.** Quick shove is now available from Q when the player faces a valid target. See `COMBAT/Melee/README.md`.
+> **Partial progress (CM2-A, 2026-10-27):** Shared `MeleeSettings`, `MeleeAttack` and `QuickShoveMaster.tres` implement an actor-neutral, attack-only one-target contact query, cooldown/timing, wall filtering and horizontal/top-down vs pitch-sensitive FPS aim. Awaiting local validation. **CM2-B1/B2 zombie reaction/knockback and CM2-C Q input/contact dispatch in both camera modes are implemented in source, awaiting local validation; CM2-D side-on two-handed shove poses are implemented in source, awaiting local animation validation.** Quick shove is now available from Q when the player faces a valid target. See `COMBAT/Melee/README.md`.
 
 
 
@@ -254,3 +254,7 @@ CM2-B1 introduced shove recognition and a stationary pause; CM2-B2 now extends i
 ## CM0 / CM1 implementation handoff
 
 Implemented contracts, dispatcher, recipient reaction state, gun/zombie masters and docs only. No CM2+ or basement work. Damage/health files are unchanged. Actual values and the mandatory recovery-gap policy are in README; this supersedes the planning snapshot's statement that nonlethal hits cannot interrupt movement. Source and numeric checks only: local .NET build and both-view F6 acceptance pending. No permanent idle reaction callback; existing physics wakes on impact and settles normally. Future phases require separate authorization.
+
+## CM2-D — side-on gun shove handoff
+
+**Implemented; Awaiting Validation.** Owner confirmed earlier staggering and Q-shove work is locally okay. This completes the currently authorized CM2-D animation task only: both hands hold the gun across the chest and push with its side. See COMBAT/README.md CM2-D handoff for implementation files, tunable angle/extension, activation/cancellation and exact deferred checks. No bat, knife or outgoing zombie attack work is authorized. CM3 remains Planned. Earlier no-animation descriptions are historical phase snapshots.

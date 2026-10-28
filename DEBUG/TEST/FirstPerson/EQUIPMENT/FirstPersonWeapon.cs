@@ -63,7 +63,7 @@ public partial class FirstPersonWeapon : Node
         if (PlayerQuickMelee.Requested(input))
         {
             if (GetViewport().GuiGetFocusOwner() == null)
-            { _shove?.TryStart(); SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
+            { _shove?.TryStart(_weapon!, true); SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
             return;
         }
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
@@ -80,11 +80,12 @@ public partial class FirstPersonWeapon : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!IsInstanceValid(_weapon) || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured)
+        if (!IsInstanceValid(_weapon) || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured
+            || GetViewport().GuiGetFocusOwner() != null)
         { CancelTrigger(); _shove?.Cancel(); return; }
         Vector2 centre = _camera.GetViewport().GetVisibleRect().Size * 0.5f;
         Vector3 origin = _camera.ProjectRayOrigin(centre), direction = _camera.ProjectRayNormal(centre);
-        if (_requested)
+        if (_requested && _shove?.IsActive != true)
         {
             _requested = false;
             _query.From = origin; _query.To = origin + direction * _weapon!.RuntimeSettings.Range;
@@ -98,7 +99,7 @@ public partial class FirstPersonWeapon : Node
             float height = Mathf.Clamp(_camera.GlobalPosition.Y - _player.GlobalPosition.Y - 0.30f, 0.65f, 1.5f);
             _shove.Advance((float)delta, _player.GlobalPosition + Vector3.Up * height,
                 direction, MeleeAimMode.ThreeDimensional);
-            if (_shove.IsActive) SetPhysicsProcess(true);
+            if (_shove.IsActive || _requested) SetPhysicsProcess(true);
         }
     }
 

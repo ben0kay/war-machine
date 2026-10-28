@@ -21,3 +21,5 @@ FPS refinement adds a minimal virtual UpdateHorizontalVelocity hook; its base im
 ## Quick shove momentum feel
 
 The Q shove is usable while standing, walking or running in both overhead and FPS. Only its impact strength changes: `PlayerQuickMelee` samples real XZ speed once on attack start and scales the reaction through the three new `QuickShoveMaster.tres` movement tuning fields; no extra input, animations or permanent tick loops. Zero-speed pushes are deliberately small, full-speed runs considerably stronger. Knockback remains collision-aware in the zombie receiver and no HP is lost by default. Awaiting in-game tuning.
+
+CM2-D now adds a two-handed side-on gun shove using the existing arm/elbow rig, with an active-only PlayerShovePose helper. Prior no-animation statements describe the earlier CM2-C snapshot. See Equipment/README.md for checks and cancellation. Local animation/build acceptance pending.
