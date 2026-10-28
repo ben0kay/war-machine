@@ -276,6 +276,10 @@ public partial class WorldController : Node3D
     }
 
     // =========================================================
+    // Views can author their streaming band without changing the shared world master or scheduler.
+    protected virtual WorldStreamingSettings CreateStreamingSettings() => Settings.Streaming;
+
+    // =========================================================
     // Adopt static village buildings only after terrain, visibility, diagnostics and actor startup have finished.
     private void InitializeStaticStreaming(PlayerController player, Camera camera)
     {
@@ -285,7 +289,7 @@ public partial class WorldController : Node3D
         try
         {
             bridge.Initialize(player, camera, GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures"),
-                GetNode("WorldActorsRoot/PersistentEntitiesRoot"), _sectionManifest, Settings.Streaming);
+                GetNode("WorldActorsRoot/PersistentEntitiesRoot"), _sectionManifest, CreateStreamingSettings());
             _sectionDiagnostics?.BindStreaming(bridge.Streamer);
             _village.ReleaseStartupBuildingReferences();
         }

@@ -19,6 +19,10 @@ public partial class ActiveStreamingContractTest : Node3D
             Vector2 overhead = WorldStaticStreaming.Distances(settings, 256, 25.9f);
             Vector2 fps = WorldStaticStreaming.Distances(settings, 220, 32);
             Vector2 clearFps = WorldStaticStreaming.Distances(settings, 1800, 32);
+            var tunedFpsSettings = new WorldStreamingSettings { LoadDistance = 180, UnloadDistance = 244 };
+            Vector2 tunedFps = WorldStaticStreaming.Distances(tunedFpsSettings, 235, 4);
+            Check(tunedFps == new Vector2(272, 336), "FPS tuned preload and unload with 115m fog edge");
+            Check(tunedFps.X > 235 + 4 && tunedFps.Y - tunedFps.X == 64, "clip safety and hysteresis retained");
             Check(overhead == new Vector2(320, 400), "overhead full-zoom/clip envelope");
             Check(fps.X >= 220 + 32 + 32 && clearFps.X > 1800, "FPS and fog-off far clip covered");
             var manifest = WorldManifest.Create(new WorldSectionSettings(), 1);

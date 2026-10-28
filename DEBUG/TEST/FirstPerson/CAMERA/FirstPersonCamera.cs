@@ -104,6 +104,8 @@ public partial class FirstPersonCamera : Camera
         { SetEye(_currentEye); SetProcess(false); return; }
         SetEye(_previousEye.Lerp(_currentEye, (float)Engine.GetPhysicsInterpolationFraction()));
     }
+    // FPS follows at eye level, with a small allowance for translation interpolation; it has no overhead orbit.
+    public override float MaximumRenderOffset => 4;
     public override float ViewHeight => 4;
 
     // =========================================================

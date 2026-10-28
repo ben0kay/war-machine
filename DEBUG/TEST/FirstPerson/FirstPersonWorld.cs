@@ -8,6 +8,17 @@ public partial class FirstPersonWorld : WorldController
     protected override IDebugOverlayView? OverlayView => _fpsFog;
 
     // =========================================================
+    // FPS-only hysteresis tuning. Full far-clip coverage and actor pins remain enforced by the shared bridge.
+    protected override WorldStreamingSettings CreateStreamingSettings()
+    {
+        var profile = (WorldStreamingSettings)Settings.Streaming.Duplicate(true);
+        var view = ((FirstPersonCamera)_camera).TestSettings;
+        float band = Mathf.Max(profile.MovementStep * 4 + 1, view.StreamingHysteresisDistance);
+        profile.UnloadDistance = profile.LoadDistance + band;
+        return profile;
+    }
+
+    // =========================================================
     protected override void InitializeEquipment(PlayerController player, Camera camera)
     {
         var weapon = new FirstPersonWeapon { Name = "FirstPersonEquipment" }; player.AddChild(weapon);

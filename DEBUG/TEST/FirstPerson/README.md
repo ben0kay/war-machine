@@ -128,3 +128,13 @@ The current FPS behavior is **one-way, shot-driven camera rise**: each rifle or 
 ## RMB jump (2026-10-28)
 
 Right mouse press while the pointer is captured now requests one grounded jump through the shared player physics. Jumping uses `PLAYER/Configuration/PlayerMaster.tres` `JumpVelocity` (6m/s default), existing gravity/capsule physics and native FPS camera follow. No jump on UI panels, when uncaptured, crouched, airborne, blocked by inventory, or after death. Holding RMB does not cause automatic bunny hopping. Local build and FPS visual testing pending.
+
+## FPS fog / static streaming tuning — 2026-10-28
+
+Default opaque fog edge is **115m** (was 100m, +15%); start remains 1m and hidden render buffer remains 120m, so the linked camera far clip is 235m. Only the FPS master/class defaults change. Restart the FPS scene after pulling/building; existing runtime slider edits are not changed in-place.
+
+FPS now reports its actual eye-camera envelope (4m allowance, not the overhead fallback 32m). Its settings author StreamingHysteresisDistance=64m; CreateStreamingSettings copies the world profile and applies that band for FPS only. The shared conservative clip rule therefore resolves to **272m preload / 336m unload**, versus the previous **288m / 368m**. Top-down remains 320m / 400m. Fog-off FPS still expands to cover the full far clip; actor pins and the existing resource/operation limits remain.
+
+Owner observed roughly 50 seconds sprinting from Building001 before unload. Scaling the former 368m threshold by 45/50 suggests 331.2m; the clip-safe rounded profile gives 336m, equivalent to **about 45.7 seconds** on the same route/speed. This is an empirical estimate, not a timed despawn: actual footprint distance, route angle, terrain, movement batching and actor pins affect the result. No movement speeds or section sizes changed. Preload remains beyond the renderer's 235m far clip; a 64m hysteresis band prevents boundary thrashing.
+
+Source/math checks passed; no local Godot/.NET runtime available. Build and F6 FirstPersonTest; confirm opaque fog reaches farther, walk/sprint the same Building001 route, and verify unload/return collision without visible pop-in. Optional ActiveStreamingContractTest adds assertions for 272/336 and unchanged overhead distances. No idle polling or new scenery-wide zoom refresh was introduced.

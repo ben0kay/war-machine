@@ -15,9 +15,11 @@ public partial class FirstPersonSettings : Resource
     [ExportGroup("Fog and render distance")]
     [Export] public bool DistanceFogEnabled { get; set; } = true;
     [Export] public float FogStartDistance { get; set; } = 1;
-    [Export] public float FogEndDistance { get; set; } = 100;
+    [Export] public float FogEndDistance { get; set; } = 115;
     [Export] public float FogCullBuffer { get; set; } = 120;
     [Export] public Color FogColor { get; set; } = new(0.39f, 0.46f, 0.48f);
+    [ExportGroup("Static streaming")]
+    [Export(PropertyHint.Range, "33,160,1")] public float StreamingHysteresisDistance { get; set; } = 64;
     [ExportGroup("Movement")]
     [Export] public float WalkSpeed { get; set; } = 5;
     [Export] public float RunMultiplier { get; set; } = 1.6f;
