@@ -15,6 +15,11 @@ public partial class FirstPersonWorld : WorldController
     }
 
     // =========================================================
+    // The FPS debug adapter owns its own slots; shared AM1 HUD observes that selected gun.
+    protected override WeaponSlots? ResolveWeaponSlots(PlayerController player)
+    { return player.GetNodeOrNull<WeaponSlots>("FirstPersonEquipment/WeaponSlots"); }
+
+    // =========================================================
     // FPS keeps physical scenery opaque; atmosphere is shared through Environment.tscn.
     protected override void InitializeOcclusion(Camera camera, PlayerController player) { }
 

@@ -84,3 +84,7 @@ Optional `FirearmSettings.ShotEmission` adds shared sound loudness and hearing r
 ## AM0 — per-weapon magazine/reload foundation (2026-10-28)
 
 `FirearmAmmo.cs` is a per-instance, non-Node helper: finite `MagazineRounds`, `ReserveRounds`, debug `HasUnlimitedReserveAmmo`, `IsReloading`. `FirearmController` owns the single accepted-shot decrement and one one-shot physics `Reload` timer; its `TryReload()` blocks gunfire until completion. Gun scenes persist magazines across 1/2 switch; an unfinished reload cancels without refilling on unequip. Automatic reload on empty and R manual reload use the same path; held auto can resume through `ReadyToFire` only when reloaded and cooldown ends. `AmmoChanged`, `ReloadStarted`, `ReloadCompleted`, `ReloadCancelled` events are ready for later AM1/AM2. All balance in gun masters; no new idle physics loop, ammo visuals or inventory dependency. See [AMMO_IMPLEMENTATION_PLAN.md](../AMMO_IMPLEMENTATION_PLAN.md); local Godot/.NET tests pending.
+
+## AM1 selection-to-HUD event (2026-10-28)
+
+AM1 attaches the ammo HUD to `WeaponSlots.SelectionChanged` rather than handling scene/camera input in firearm logic. Each selected gun's AM0 events (`AmmoChanged`, `ReloadStarted`, `ReloadCompleted`, `ReloadCancelled`) refresh a read-only `UI/GameplayHUD/Ammo/AmmoHud`. It shows the real magazine and `∞`/finite reserve. There is no duplicated ammo state, hot-path HUD polling, or damage/recoil change. See [AMMO_IMPLEMENTATION_PLAN.md](../AMMO_IMPLEMENTATION_PLAN.md). Awaiting local build and visual checks.

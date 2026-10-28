@@ -7,3 +7,9 @@
 The existing nine-slot [Hotbar](Hotbar/README.md) and [Backpack Inventory](Inventory/README.md) share this screen-space HUD. PH1's new visual-only `FEEDBACK/Bars/PlayerStatus` widget should be a sibling of the hotbar/backpack in the single `GameplayHUD/Screen`, shared by overhead/FPS, with `MouseFilter.Ignore` and region event subscriptions only. No duplicate overlays, new player-health arithmetic, interference with shooting or constant HUD polling. Display only severity information that actually exists; detailed wounds/treatments inside a future Inventory Health tab are not authorized now.
 
 This document change creates no scenes, scripts or layout adjustments.
+
+## AM1 ammunition widget — implemented in source 2026-10-28
+
+`Ammo/AmmoHud.tscn` + `AmmoHud.cs` introduce a **compact 160×66px magazine/reserve display** in the shared `GameplayHUD/Screen`, to the right of the player-body condition HUD and immediately left of the centred hotbar at normal desktop widths. The readout shows `30 / ∞`, `100 / ∞` etc., switching to amber `RELOADING` during AM0 reload and `R RELOAD` when a partial magazine can be reloaded. On narrow windows it relocates above the hotbar and to the right of the body HUD to avoid visible overlap. Like other gameplay feedback it has `MouseFilter.Ignore`.
+
+`WorldController.InitializeAmmoHud` adds exactly one panel per active world; inherited FPS shares it, resolving the different equipment-slots path through a small overridden method. `WeaponSlots.SelectionChanged` and the selected `FirearmController` AM0 ammo/reload events update the UI **only when state changes**, plus one viewport-resize callback for positioning. All subscriptions are released on exit. The ammo widget never alters AM0, recoil, inventory or shooting. No HUD progress bar, sound or reload animation introduced. [AM0–AM2 implementation plan](../../EQUIPMENT/Weapons/AMMO_IMPLEMENTATION_PLAN.md). **Source implemented; Godot/.NET build and layout QA pending.**

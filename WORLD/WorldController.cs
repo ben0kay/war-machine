@@ -130,6 +130,7 @@ public partial class WorldController : Node3D
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
         InitializeHealthFeedback(player, camera);
+        InitializeAmmoHud(player);
         InitializeBackpack(player);
         // The shared F1 model spawner is debug-only, with no real prop physics or world placement.
         var spawnMenu = GD.Load<PackedScene>("res://DEBUG/PlaceableSpawner/PlaceableSpawnMenu.tscn").Instantiate<PlaceableSpawnMenu>();
@@ -247,6 +248,22 @@ public partial class WorldController : Node3D
         var body = GD.Load<PackedScene>("res://FEEDBACK/Bars/PlayerStatus/BodyConditionWidget.tscn").Instantiate<BodyConditionWidget>();
         hud.AddChild(body);
         body.Initialize(player.Vitals, GD.Load<FeedbackSettings>("res://FEEDBACK/Configuration/FeedbackMaster.tres"));
+    }
+
+    // =========================================================
+    // Select the live equipment slots once at startup; FPS overrides only this lookup path.
+    protected virtual WeaponSlots? ResolveWeaponSlots(PlayerController player)
+    { return player.GetNodeOrNull<WeaponSlots>("Equipment/WeaponSlots"); }
+
+    // =========================================================
+    // One read-only ammo panel in the existing GameplayHUD/Screen, between body silhouette and hotbar.
+    private void InitializeAmmoHud(PlayerController player)
+    {
+        var slots = ResolveWeaponSlots(player);
+        if (slots == null) { GD.PushWarning("AM1 HUD: selected weapon slots were not found."); return; }
+        var hud = GD.Load<PackedScene>("res://UI/GameplayHUD/Ammo/AmmoHud.tscn").Instantiate<AmmoHud>();
+        GetNode<Control>("GameplayHUD/Screen").AddChild(hud);
+        hud.Initialize(slots);
     }
 
     // =========================================================

@@ -15,3 +15,7 @@ An inventory/quick-access model should eventually own item references and select
 ### Local validation
 
 Only syntax/path/layout inspection was completed here; **Godot runtime display has not been verified**. F6 `WORLD/World.tscn` to confirm nine slots at the bottom center at 1920×1080 and a smaller window. Confirm UI does not block aiming or clicking and doesn't overlap debug readouts. F6 the FPS test to confirm the inherited bar, mouse capture and F9 fog controls. No terrain rebake. No code compilation needed for this static UI-only addition.
+
+## AM1 sibling ammo display (2026-10-28)
+
+One `UI/GameplayHUD/Ammo/AmmoHud.tscn` is now mounted by WorldController alongside the existing static Hotbar scene under `GameplayHUD/Screen`. It sits immediately to the left of the bottom-centred nine-slot bar on desktop widths, right of the player-body HUD, and moves higher at narrower widths. No `Hotbar.tscn` slot size, 1–9 numbering, panel appearance or input behavior changes. Updates occur on selected-weapon/ammo events; no per-frame polling. Local Godot visual tests pending.

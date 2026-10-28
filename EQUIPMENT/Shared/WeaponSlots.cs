@@ -11,6 +11,8 @@ public partial class WeaponSlots : Node
     private WorldAudio? _audio;
     private int _selected = -1;
     public FirearmController? Current => _selected < 0 ? null : _weapons[_selected];
+    // AM1: the selected firearm changes only through Select(), so HUDs subscribe once.
+    public event System.Action<FirearmController?>? SelectionChanged;
 
     // =========================================================
     // Actual scenes remain data-driven; FPS supplies its eye-camera mount, overhead supplies the hand socket.
@@ -34,6 +36,7 @@ public partial class WeaponSlots : Node
         if (IsInstanceValid(Current)) { Current!.Unequip(); Current.Hide(); Current.ProcessMode = ProcessModeEnum.Disabled; }
         _selected = slot;
         Current!.ProcessMode = ProcessModeEnum.Inherit; Current.Show(); Current.Equip(_holder, _audio);
+        SelectionChanged?.Invoke(Current);
         return true;
     }
 

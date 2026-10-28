@@ -1,6 +1,6 @@
 # Ammunition and reloading — AM0–AM2
 
-> **Status (2026-10-28): AM0 implemented in source, local Godot/.NET verification pending. AM1 and AM2 planned only.** Working branch: `implement-td0-td1`. This document describes the current foundation and later stages; do not implement AM1/AM2 without explicit authorization.
+> **Status (2026-10-28): AM0 implemented in source, local Godot/.NET verification pending. AM1 implemented in source (awaiting local HUD validation); AM2 planned only.** Working branch: `implement-td0-td1`. This document describes the current foundation and later stages; do not implement AM1/AM2 without explicit authorization.
 
 ## Design decision: unlimited reserve, not an unlimited magazine
 
@@ -28,9 +28,19 @@ Rifle_001 starts at **30 / ∞**, with a **2.2-second** reload. MachineGun_001 s
 
 **Validation:** Source integration verified against current repository state. In-game and .NET compile checks have **not** been performed in this environment; leave AM0 status "implemented, awaiting acceptance" until tested locally.
 
-## AM1 — HUD / reloading feedback (planned only)
+## AM1 — ammunition HUD (implemented in source; awaiting local validation)
 
-In the existing GameplayHUD, display current magazine / reserve, with `∞` for debug reserve. Use event subscriptions on current weapon to display "Reloading…" and eventually elapsed/reload progress, rather than polling all weapon instances. Respect inventory and hotbar hierarchy. AM1 is not part of this commit.
+**Layout and scope:** `UI/GameplayHUD/Ammo/AmmoHud.tscn` + `AmmoHud.cs` add one compact 160×66px, noninteractive readout to the existing `GameplayHUD/Screen`, mounted by shared `WorldController.InitializeAmmoHud` after equipment and player-health widgets initialize. It is **to the left of the 472px bottom-centre hotbar**, and **to the right of the 244px bottom-left player body HUD** on desktop screens, sharing the hotbar's bottom margin. For narrow windows (left-of-hotbar space under 278px), it moves just **above the bar and right of the body panel**, avoiding overlap with both at typical window sizes; extremely narrow windows cannot physically keep all three side-by-side. Position changes only on viewport resize, not every frame. The appearance matches hotbar's subdued charcoal card.
+
+**Readout:** Large `magazine / reserve` text (e.g. `30 / ∞` or `12 / 30`) with a compact AMMO label. When reloading, show amber `RELOADING`; partially depleted but not reloading, show `R RELOAD`; empty, `EMPTY`. Values come only from shared AM0 authoritative firearm state. No reload progress tween or bar: not asked for in this compact first pass. Labels and styles are created once, all UI Controls have MouseFilter.Ignore to avoid blocking shooting/camera/UI.
+
+**Event binding:** `EQUIPMENT/Shared/WeaponSlots.cs` exposes a `SelectionChanged(FirearmController?)` event emitted after a successful slot selection; the new widget subscribes once, reads `slots.Current` at startup, unsubscribes from old weapon and subscribes to selected gun's `AmmoChanged`, `ReloadStarted`, `ReloadCompleted`, `ReloadCancelled`. Bind/unbind and viewport-size events explicitly disconnect on exit. No ammo polling, duplicate ammo state, changes to the recoil/fire/hit pipeline or new global manager.
+
+**Both camera modes:** WorldController resolves `Equipment/WeaponSlots` for the primary top-down player. `FirstPersonWorld` overrides only the resolve path with `FirstPersonEquipment/WeaponSlots`, so the inherited FPS scene gets **the same one HUD card** without duplicating UI. Weapon switching refreshes the new selected weapon's actual remaining magazine immediately, including after a reload was interrupted during switch. No separate FPS ammo view.
+
+**Local verification:** `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn` and F6 `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn`. Confirm visually at 1920×1080, 1280×720 and narrower: the AMMO card is between the player body silhouette and hotbar (or safely above bar on a narrow view). Hold fire to watch 30→29 / ∞ and 100→99 / ∞, reload manually R and automatically on empty, check RELOADING state/duration and return to full, 1↔2 with partially spent magazines and cancelled reloads, finite debug reserve OFF test, backpack open, cursor hover/UI focus and FPS mouse capture. Verify one widget per inherited scene, no gunfire blocked by the card, and no idle ammo HUD callbacks.
+
+**Validation status:** Static source/layout/event-path review only. C# compilation, Godot scene instantiation and visual window-size checks unavailable in this connector session. Leave **Awaiting Validation** until owner verifies. AM2 remains planned only.
 
 ## AM2 — actual ammunition and physical magazines (planned only)
 

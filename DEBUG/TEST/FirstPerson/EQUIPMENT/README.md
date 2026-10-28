@@ -47,3 +47,7 @@ The original RC2 separately offset the final bullet ray while leaving the crossh
 ## AM0 FPS magazine/reload (2026-10-28)
 
 Press physical **R** while mouse is captured (and no UI input has focus). The selected shared firearm refills after its configured reload timer; firing is blocked until then. Rifle 30 rounds / 2.2s, MG 100 rounds / 4.5s. Debug flag supplies unlimited reserve only, not unlimited magazine. On an empty magazine, auto reload begins and held automatic fire can resume after completion. Gun count survives 1/2 switches; interrupted reloads do not finish on unequipped guns. No additional FPS-specific ammo logic, recoil change, animation or HUD. See [ammo plan](../../../../EQUIPMENT/Weapons/AMMO_IMPLEMENTATION_PLAN.md). Local testing pending.
+
+## AM1 shared ammunition HUD (2026-10-28)
+
+The inherited FPS world displays the **same** AM1 `GameplayHUD/Ammo/AmmoHud` as top-down. `FirstPersonWorld.ResolveWeaponSlots` points the shared WorldController's one-time HUD binding at `FirstPersonEquipment/WeaponSlots`. It shows the currently selected gun's magazine / reserve, reloading status, and follows 1/2 weapon swaps without polling. Mouse capture and aim are unaffected because all Controls ignore mouse input. Inspect [AMMO_IMPLEMENTATION_PLAN.md](../../../../EQUIPMENT/Weapons/AMMO_IMPLEMENTATION_PLAN.md) for layout/validation. No FPS-specific ammo counts or new firing logic.
