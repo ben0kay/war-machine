@@ -52,8 +52,8 @@ public partial class DebugOverlay : PanelContainer
             _fov = AddSlider(rows, 25, 90, 0.5);
             _fov.ValueChanged += value => _camera.SetPerspectiveFov((float)value);
             _pitchLabel = new Label(); rows.AddChild(_pitchLabel);
-            _pitch = AddSlider(rows, 25, 80, 0.5);
-            rows.AddChild(new Label { Text = "25° low angle → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
+            _pitch = AddSlider(rows, 35, 80, 0.5);
+            rows.AddChild(new Label { Text = "35° downward minimum → 80° overhead", Modulate = new Color(0.75f, 0.8f, 0.85f) });
             _yawLabel = new Label(); rows.AddChild(_yawLabel);
             _yaw = AddSlider(rows, 0, 360, 1);
             _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
@@ -384,6 +384,7 @@ public partial class DebugOverlay : PanelContainer
             values["WS1HiddenBuffer"] = _renderCulling.Settings.HiddenBuffer;
             values["WS1ShadowBuffer"] = _renderCulling.Settings.ShadowBuffer;
         }
+        if (_view == null) values[nameof(_settings.FarClipDistance)] = _settings.FarClipDistance;
         _view?.WriteSnapshot(values);
         DisplayServer.ClipboardSet("War Machine · World camera and environment settings\n"
             + JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true }));

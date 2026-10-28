@@ -13,16 +13,17 @@ public partial class CameraSettings : Resource
     [ExportGroup("Projection")]
     [Export] public bool UsePerspective { get; set; }
     [Export] public float PerspectiveFov { get; set; } = 65;
+    [Export(PropertyHint.Range, "64,2048,1")] public float FarClipDistance { get; set; } = 256;
     [ExportGroup("Angle and follow")]
     [Export] public float CameraYawDegrees { get; set; } = 45;
-    [Export] public float CameraPitchDegrees { get; set; } = 55;
-    [Export] public float CameraDistance { get; set; } = 36;
-    [Export] public float CameraSize { get; set; } = 40;
+    [Export] public float CameraPitchDegrees { get; set; } = 35;
+    [Export] public float CameraDistance { get; set; } = 25;
+    [Export] public float CameraSize { get; set; } = 20;
     [ExportGroup("Zoom limits")]
     [Export] public float MinimumZoom { get; set; } = 15;
-    [Export] public float MaximumZoom { get; set; } = 40;
+    [Export] public float MaximumZoom { get; set; } = 20;
     [Export] public float MinimumPerspectiveDistance { get; set; } = 15;
-    [Export] public float MaximumPerspectiveDistance { get; set; } = 50;
+    [Export] public float MaximumPerspectiveDistance { get; set; } = 25;
     [Export] public float ZoomStep { get; set; } = 4;
     [Export] public float FollowSmoothing { get; set; } = 8;
 }

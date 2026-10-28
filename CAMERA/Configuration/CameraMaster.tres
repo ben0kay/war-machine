@@ -4,14 +4,15 @@
 script = ExtResource("1")
 UsePerspective = true
 PerspectiveFov = 50.5
+FarClipDistance = 256.0
 CameraYawDegrees = 45.0
-CameraPitchDegrees = 40.0
-CameraDistance = 36.5
-CameraSize = 40.0
+CameraPitchDegrees = 35.0
+CameraDistance = 25.0
+CameraSize = 20.0
 MinimumZoom = 15.0
-MaximumZoom = 40.0
+MaximumZoom = 20.0
 MinimumPerspectiveDistance = 15.0
-MaximumPerspectiveDistance = 50.0
+MaximumPerspectiveDistance = 25.0
 FollowSmoothing = 8.0
 
 ObstructionFadeEnabled = true

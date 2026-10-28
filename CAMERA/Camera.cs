@@ -24,8 +24,9 @@ public partial class Camera : Camera3D
         _player = player; _settings = settings;
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // Render-frame camera must not be interpolated twice.
         Projection = settings.UsePerspective ? ProjectionType.Perspective : ProjectionType.Orthogonal;
-        Fov = Mathf.Clamp(settings.PerspectiveFov, 25, 90); KeepAspect = KeepAspectEnum.Height; Current = true; Near = 0.1f; Far = 1800;
-        settings.CameraPitchDegrees = Mathf.Clamp(settings.CameraPitchDegrees, 25, 80);
+        Fov = Mathf.Clamp(settings.PerspectiveFov, 25, 90); KeepAspect = KeepAspectEnum.Height; Current = true; Near = 0.1f;
+        Far = float.IsFinite(settings.FarClipDistance) ? Mathf.Clamp(settings.FarClipDistance, 64, 2048) : 256;
+        settings.CameraPitchDegrees = Mathf.Clamp(settings.CameraPitchDegrees, 35, 80);
         settings.CameraYawDegrees = Mathf.Clamp(settings.CameraYawDegrees, 0, 360);
         settings.CameraDistance = ClampPerspectiveDistance(settings.CameraDistance);
         RotationDegrees = new Vector3(-settings.CameraPitchDegrees, settings.CameraYawDegrees, 0);
@@ -61,7 +62,7 @@ public partial class Camera : Camera3D
     public void SetPitch(float degrees)
     {
         if (!_initialized) return;
-        _settings.CameraPitchDegrees = Mathf.Clamp(degrees, 25, 80);
+        _settings.CameraPitchDegrees = Mathf.Clamp(degrees, 35, 80);
         RotationDegrees = new Vector3(-_settings.CameraPitchDegrees, _settings.CameraYawDegrees, 0);
         GlobalPosition = DesiredPosition();
         ViewChanged?.Invoke(); SettingsChanged?.Invoke();
