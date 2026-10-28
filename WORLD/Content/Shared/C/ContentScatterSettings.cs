@@ -28,6 +28,10 @@ public partial class ContentScatterSettings : Resource
     [Export] public Color PrimaryColor { get; set; } = new(0.12f, 0.28f, 0.1f);
     [Export] public Color AccentColor { get; set; } = new(0.7f, 0.5f, 0.85f);
     [Export] public float WindStrength { get; set; } = 0.15f;
+    [ExportGroup("Rock Geometry")]
+    // Mesh-only controls: generated once per silhouette/rebuild; don't alter placement RNG.
+    [Export(PropertyHint.Range, "0,1,0.05")] public float RockCrownFlatness { get; set; } = 0.65f;
+    [Export(PropertyHint.Range, "0,1,0.05")] public float RockAngularVariation { get; set; } = 0.55f;
     [ExportGroup("Rock Surface")]
     [Export] public Material? SurfaceMaterial { get; set; }
     [Export(PropertyHint.Range, "0.1,5,0.05")] public float RockTextureScale { get; set; } = 0.8f;

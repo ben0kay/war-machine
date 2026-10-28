@@ -15,6 +15,8 @@ AccentColor = Color(0.46, 0.47, 0.43, 1)
 WindStrength = 0.0
 
 SurfaceMaterial = ExtResource("2")
+RockCrownFlatness = 0.65
+RockAngularVariation = 0.55
 RockTextureScale = 0.8
 RockNormalStrength = 0.65
 RockMossAmount = 0.35

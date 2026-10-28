@@ -38,6 +38,13 @@ public static class RockGenerator
         var middle = new Vector3[sides];
         var shoulder = new Vector3[sides];
         var crown = new Vector3[sides];
+        float angular = Mathf.Clamp(settings.RockAngularVariation, 0f, 1f);
+        float flatness = Mathf.Clamp(settings.RockCrownFlatness, 0f, 1f);
+        bool slabProfile = type == 0 || type == 3 || type == 5 || type == 8;
+        bool fractureProfile = type == 2 || type == 4 || type == 6 || type == 7;
+        int chippedCorner = random.RandiRange(0, sides - 1);
+        // Broad flat crowns for slabs, broken upper edges for angular stones; no extra polygons.
+        float crownCentreRatio = 1f - flatness * (slabProfile ? 0.10f : 0.05f);
         float bendX = radiusX * random.RandfRange(-0.17f, 0.17f);
         float bendZ = radiusZ * random.RandfRange(-0.17f, 0.17f);
 
@@ -48,18 +55,29 @@ public static class RockGenerator
             float x = Mathf.Cos(angle) * radiusX * irregularity;
             float z = Mathf.Sin(angle) * radiusZ * irregularity;
             float shoulderBump = random.RandfRange(0.82f, 1.15f);
+            float facet = random.RandfRange(-0.15f, 0.15f) * angular;
+            float chip = fractureProfile && i == chippedCorner ? angular * 0.20f : 0f;
+            float shoulderRadius = shoulderBump * 0.87f * (1f + facet - chip);
+            float crownRadius = cap * (1f + facet * 0.60f - chip * 0.75f);
+            float shoulderY = random.RandfRange(0.68f, 0.82f)
+                + random.RandfRange(-0.08f, 0.08f) * angular;
+            float roughCrownY = random.RandfRange(0.89f, 0.98f);
+            float levelCrownY = crownCentreRatio + random.RandfRange(-0.045f, 0.045f) * angular;
+            // The old central peak made broad rocks dome-shaped. This preserves flatter,
+            // slightly fractured tops without increasing mesh triangles or collider count.
+            float crownY = Mathf.Lerp(roughCrownY, levelCrownY, flatness);
+            if (chip > 0f) crownY -= chip * 0.20f;
             // Below-ground skirt conceals small terrain sampling differences.
             foot[i] = new Vector3(x * 0.80f, -0.13f * size, z * 0.80f);
             middle[i] = new Vector3(x, height * random.RandfRange(0.22f, 0.36f), z);
-            shoulder[i] = new Vector3(x * shoulderBump * 0.87f + bendX * 0.45f,
-                height * random.RandfRange(0.68f, 0.82f),
-                z * shoulderBump * 0.87f + bendZ * 0.45f);
-            crown[i] = new Vector3(x * cap + bendX, height * random.RandfRange(0.89f, 0.98f),
-                z * cap + bendZ);
+            shoulder[i] = new Vector3(x * shoulderRadius + bendX * 0.45f,
+                height * shoulderY, z * shoulderRadius + bendZ * 0.45f);
+            crown[i] = new Vector3(x * crownRadius + bendX, height * crownY,
+                z * crownRadius + bendZ);
         }
 
         var centre = new Vector3(bendX * 0.45f, height * 0.40f, bendZ * 0.45f);
-        var crownCentre = new Vector3(bendX, height, bendZ);
+        var crownCentre = new Vector3(bendX, height * crownCentreRatio, bendZ);
         var bottomCentre = new Vector3(0, -0.13f * size, 0);
         for (int i = 0; i < sides; i++)
         {
