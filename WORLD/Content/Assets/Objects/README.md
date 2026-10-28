@@ -1,6 +1,6 @@
 # Objects — reusable world asset library
 
-**Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001 and PineTree001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
+**Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
 
 ## Object versus Prop
 
@@ -17,6 +17,7 @@ AM0 consolidated the former libraries here. [Static](Static/README.md) includes 
 - [Book001](Props/Books/Book001/README.md): original GLB, a new visual `Book001.tscn`, plus `Configuration/BookMaster.tres`.
 - [Bed001](Static/Furniture/Beds/Bed001/README.md): **converted the original C# geometry to `Artwork/Bed001.glb`**, kept a stable visual `Bed001.tscn` and `Configuration/BedMaster.tres`, plus 4 selectable cloth palettes.
 - [Table001](Static/Furniture/Tables/Table001/README.md): 1.82m rectangular wooden dining table GLB, `Table001.tscn`, `TableMaster.tres` and three shared wood finishes. Visual only, no physics.
+- [Hedge001](Static/Landscaping/Hedges/Hedge001/README.md): imported 4.8m-wide, ~2.14m-tall clipped ornamental hedge GLB, static manual landscaping rather than procedural vegetation; same size master; visual-only and not placed in a world/site yet.
 - [PineTree001](Static/Vegetation/Trees/PineTree001/README.md): imported 14.4m pine GLB with a size master and F1 visual preview; kept **separate from** the active procedural MultiMesh forest under `VEGETATION/Trees/Pine/`. Higher-detail art prototype, not a forest replacement.
 
 The common [Shared/PlaceableSizeSettings.cs](Shared/PlaceableSizeSettings.cs) exposes `SizeMultiplier = Vector3(1, 1, 1)`: X=width, Y=height/thickness, Z=depth/length, **relative to the GLB's native dimensions**. Change each asset's own master and respawn/reload to update all default instances. Use a duplicated/overridden master for individually sized copies. The common [PlaceableVisual.cs](Shared/PlaceableVisual.cs) applies size once on `_Ready`. The bed's [BedVisual.cs](Static/Furniture/Beds/Bed001/BedVisual.cs) changes materials only, **never rebuilds meshes**.
