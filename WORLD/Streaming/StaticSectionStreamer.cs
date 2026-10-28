@@ -18,6 +18,11 @@ public partial class StaticSectionStreamer : Node
     public int LoadCount { get; private set; }
     public int UnloadCount { get; private set; }
     public bool Working => IsProcessing();
+    public int PinnedCount => _blocked.Count;
+    public int FailedCount => _failed.Count;
+    public Func<WorldPlacementRecord, bool>? CanUnload { get; set; }
+    private readonly HashSet<string> _blocked = new();
+    private readonly Dictionary<string, string> _names = new();
     private readonly Dictionary<string, Node3D> _resident = new();
     private readonly Dictionary<string, Request> _requests = new();
     private readonly List<string> _release = new();
@@ -46,13 +51,37 @@ public partial class StaticSectionStreamer : Node
     }
 
     // =========================================================
+    // Transfer existing startup instances without reparenting or rebuilding geometry/physics/visibility owners.
+    public void Adopt(string id, Node3D node)
+    {
+        bool known = false;
+        foreach (var item in _manifest.Placements) if (item.InstanceId == id) { known = true; break; }
+        if (!known || !IsInstanceValid(node) || node.GetParent() != _root || node.IsQueuedForDeletion()
+            || _resident.ContainsKey(id) || _resident.Count >= _settings.MaxResident)
+            throw new ArgumentException("Invalid WS2 adoption.");
+        _names[id] = node.Name.ToString(); node.SetMeta("world_placement_id", id);
+        _resident.Add(id, node); _wanted.Add(id);
+        _readyAt[id] = Engine.GetPhysicsFrames(); LoadCount++;
+    }
+
+    // =========================================================
+    // View envelope changes are explicit and guarded by the adapter, never a scroll-driven full scenery pass.
+    public void SetDistances(float load, float unload, Vector3 anchor)
+    {
+        if (!_initialized) return;
+        var next = (WorldStreamingSettings)_settings.Duplicate(true);
+        next.LoadDistance = load; next.UnloadDistance = unload; next.Validate();
+        _settings = next; UpdateAnchor(anchor, true);
+    }
+
+    // =========================================================
     // Caller supplies movement events. Hysteresis uses actual footprints, so crossing an ownership edge cannot duplicate a site.
     public void UpdateAnchor(Vector3 position, bool force = false)
     {
         if (!_initialized || !float.IsFinite(position.X) || !float.IsFinite(position.Z)) return;
         Vector2 next = new(position.X, position.Z);
         if (_hasAnchor && !force && next.DistanceSquaredTo(_anchor) < _settings.MovementStep * _settings.MovementStep) return;
-        _anchor = next; _hasAnchor = true;
+        _anchor = next; _hasAnchor = true; _blocked.Clear();
         foreach (var item in _manifest.Placements)
         {
             float distance = DistanceToBounds(next, item.Bounds);
@@ -81,8 +110,12 @@ public partial class StaticSectionStreamer : Node
         foreach (var item in _manifest.Placements)
         {
             if (budget == 0) break;
-            if (!_wanted.Contains(item.InstanceId) && _resident.Remove(item.InstanceId, out Node3D? node))
-            { _readyAt.Remove(item.InstanceId); node.Free(); budget--; UnloadCount++; }
+            if (!_wanted.Contains(item.InstanceId) && !_blocked.Contains(item.InstanceId)
+                && _resident.TryGetValue(item.InstanceId, out Node3D? node))
+            {
+                if (CanUnload != null && !CanUnload(item)) { _blocked.Add(item.InstanceId); continue; }
+                _resident.Remove(item.InstanceId); _readyAt.Remove(item.InstanceId); node.Free(); budget--; UnloadCount++;
+            }
         }
         foreach (Request request in _requests.Values)
         {
@@ -114,7 +147,7 @@ public partial class StaticSectionStreamer : Node
             {
                 instance = request.Scene.Instantiate();
                 if (instance is not Node3D visual) throw new InvalidOperationException("Static placement needs a Node3D root.");
-                visual.Name = item.InstanceId; visual.SetMeta("world_placement_id", item.InstanceId);
+                visual.Name = _names.TryGetValue(item.InstanceId, out string? name) ? name : item.InstanceId; visual.SetMeta("world_placement_id", item.InstanceId);
                 // Set world placement before Ready, including a transformed residency root.
                 visual.Transform = _root.GlobalTransform.AffineInverse() * item.WorldTransform;
                 _root.AddChild(visual); _resident.Add(item.InstanceId, visual);
@@ -141,7 +174,7 @@ public partial class StaticSectionStreamer : Node
         foreach (string path in _release) _requests.Remove(path);
         bool remaining = _requests.Count > 0;
         foreach (var item in _manifest.Placements)
-            if ((_resident.ContainsKey(item.InstanceId) && !_wanted.Contains(item.InstanceId))
+            if ((_resident.ContainsKey(item.InstanceId) && !_wanted.Contains(item.InstanceId) && !_blocked.Contains(item.InstanceId))
                 || (_wanted.Contains(item.InstanceId) && !_resident.ContainsKey(item.InstanceId)
                     && !_failed.Contains(item.InstanceId) && _resident.Count < _settings.MaxResident)) { remaining = true; break; }
         SetProcess(remaining); Changed?.Invoke();
@@ -162,6 +195,7 @@ public partial class StaticSectionStreamer : Node
             Node root = GetTree().Root;
             Callable.From(() => { if (IsInstanceValid(root) && root.IsInsideTree()) root.AddChild(drain); else drain.Free(); }).CallDeferred();
         }
+        _blocked.Clear(); _names.Clear(); CanUnload = null;
         _resident.Clear(); _readyAt.Clear(); _wanted.Clear(); _requests.Clear(); _failed.Clear(); Changed = null;
     }
 }

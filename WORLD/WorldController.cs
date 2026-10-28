@@ -24,6 +24,8 @@ public partial class WorldController : Node3D
     private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
     private VillageLayout? _village;
+    private WorldManifest? _sectionManifest;
+    private WorldSectionDiagnostics? _sectionDiagnostics;
     private Node3D _startupTerrain = null!;
     private GodotObject _startupData = null!;
     private Godot.Collections.Array<Rect2> _startupMountain = new();
@@ -201,6 +203,7 @@ public partial class WorldController : Node3D
                 : "\nShowcase layout · Existing scenery/robot inspection")
             + (patrolReady ? "" : "\nRobot placement failed; see Output.")
             + (horde.Slow.Length + horde.Fast.Length > 0 ? $"\nDebug horde: {horde.Slow.Length} slow + {horde.Fast.Length} fast" : "");
+        InitializeStaticStreaming(player, camera);
     }
 
     // =========================================================
@@ -260,6 +263,7 @@ public partial class WorldController : Node3D
             var diagnostic = new WorldSectionDiagnostics { Name = "WorldSections" };
             GetNode<Control>("GameplayHUD/Screen").AddChild(diagnostic);
             diagnostic.Initialize(player, manifest, Settings.Sections);
+            _sectionManifest = manifest; _sectionDiagnostics = diagnostic;
             if (Settings.Sections.ShowHeading)
             {
                 var status = DebugControls.GetNode<Label>("Status");
@@ -269,6 +273,24 @@ public partial class WorldController : Node3D
         }
         catch (System.Exception error) when (error is System.ArgumentException or System.IO.InvalidDataException or System.OverflowException or System.Text.Json.JsonException)
         { GD.PushWarning($"WS0 diagnostics unavailable: {error.Message}"); }
+    }
+
+    // =========================================================
+    // Adopt static village buildings only after terrain, visibility, diagnostics and actor startup have finished.
+    private void InitializeStaticStreaming(PlayerController player, Camera camera)
+    {
+        if (_village == null || !Settings.StreamVillageBuildings || _sectionManifest == null) return;
+        var bridge = new WorldStaticStreaming { Name = "WorldStreaming" };
+        GetNode("SystemsRoot").AddChild(bridge);
+        try
+        {
+            bridge.Initialize(player, camera, GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures"),
+                GetNode("WorldActorsRoot/PersistentEntitiesRoot"), _sectionManifest, Settings.Streaming);
+            _sectionDiagnostics?.BindStreaming(bridge.Streamer);
+            _village.ReleaseStartupBuildingReferences();
+        }
+        catch (System.ArgumentException error)
+        { GD.PushWarning($"WS2 streaming unavailable; startup scenery retained: {error.Message}"); }
     }
 
     // =========================================================

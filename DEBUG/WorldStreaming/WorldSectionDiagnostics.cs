@@ -9,6 +9,7 @@ public partial class WorldSectionDiagnostics : Control
     private SectionMap _map = null!;
     private SectionCoordinate _cell;
     private bool _initialized, _inside;
+    private StaticSectionStreamer? _streamer;
 
     // =========================================================
     public override void _Ready()
@@ -35,6 +36,14 @@ public partial class WorldSectionDiagnostics : Control
         OnMoved(player.GlobalPosition); Refresh();
         // Hidden diagnostics retain only F3 input handling; movement notifications are detached entirely.
         UpdateSubscription();
+    }
+
+    // =========================================================
+    // Scene residency changes update the existing heading; no new HUD polling loop or input bindings.
+    public void BindStreaming(StaticSectionStreamer streamer)
+    {
+        if (_streamer != null) _streamer.Changed -= Refresh;
+        _streamer = streamer; _streamer.Changed += Refresh; Refresh();
     }
 
     private bool _subscribed, _viewportSubscribed;
@@ -86,12 +95,18 @@ public partial class WorldSectionDiagnostics : Control
     private void Refresh()
     {
         _heading.Text = $"Section ({_cell.X}, {_cell.Z})" + (_inside ? "" : " · outside world bounds");
+        if (IsInstanceValid(_streamer))
+            _heading.Text += $" · Buildings {_streamer!.ResidentCount}/4 · L{_streamer.LoadCount}/U{_streamer.UnloadCount}"
+                + (_streamer.PinnedCount > 0 ? $" · pinned {_streamer.PinnedCount}" : "")
+                + (_streamer.FailedCount > 0 ? $" · failed {_streamer.FailedCount}" : "")
+                + (_streamer.Working ? " · loading" : " · asleep");
         if (_map.Visible) _map.UpdateMap(Manifest, _cell);
     }
 
     // =========================================================
     public override void _ExitTree()
     {
+        if (IsInstanceValid(_streamer)) _streamer!.Changed -= Refresh;
         if (_subscribed && IsInstanceValid(_player)) _player.PositionChanged -= OnMoved;
         if (_viewportSubscribed) GetViewport().SizeChanged -= FitMap;
         _subscribed = _viewportSubscribed = _initialized = false;

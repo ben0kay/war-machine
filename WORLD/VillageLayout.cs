@@ -79,6 +79,10 @@ public sealed class VillageLayout
     }
 
     // =========================================================
+    // Startup support/road measurements are now value data; streamed buildings must not remain referenced here.
+    public void ReleaseStartupBuildingReferences() => _buildings.Clear();
+
+    // =========================================================
     // Reusable art is built synchronously at Ready; collect actual transformed corners once, not per frame.
     public static Rect2 Bounds(Node3D root)
     {

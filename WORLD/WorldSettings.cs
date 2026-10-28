@@ -8,6 +8,9 @@ public partial class WorldSettings : Resource
     public const int TerrainSize = 1024;
     [ExportGroup("World sections (WS0 diagnostics)")]
     [Export] public WorldSectionSettings Sections { get; set; } = new();
+    [ExportGroup("Static building streaming (WS2)")]
+    [Export] public bool StreamVillageBuildings { get; set; } = true;
+    [Export] public WorldStreamingSettings Streaming { get; set; } = new();
     [ExportGroup("Fog-aware rendering (WS1)")]
     [Export] public WorldRenderSettings RenderPolicy { get; set; } = new();
     [ExportGroup("Village layout")]

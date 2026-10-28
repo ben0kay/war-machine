@@ -1,7 +1,17 @@
-[gd_resource type="Resource" script_class="WorldSettings" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WorldSettings" load_steps=8 format=3]
 [ext_resource type="Script" path="res://WORLD/WorldSettings.cs" id="1"]
 [ext_resource type="Script" path="res://WORLD/Streaming/WorldSectionSettings.cs" id="sections_script"]
 [ext_resource type="Script" path="res://WORLD/Rendering/WorldRenderSettings.cs" id="render_script"]
+[ext_resource type="Script" path="res://WORLD/Streaming/WorldStreamingSettings.cs" id="streaming_script"]
+[sub_resource type="Resource" id="streaming"]
+script = ExtResource("streaming_script")
+LoadDistance = 180.0
+UnloadDistance = 260.0
+MovementStep = 8.0
+MaxPlacements = 128
+MaxResident = 16
+MaxInFlight = 2
+OperationsPerFrame = 1
 [sub_resource type="Resource" id="render_policy"]
 script = ExtResource("render_script")
 Enabled = true
@@ -22,6 +32,8 @@ ShowGrid = false
 [resource]
 script = ExtResource("1")
 Sections = SubResource("sections")
+StreamVillageBuildings = true
+Streaming = SubResource("streaming")
 RenderPolicy = SubResource("render_policy")
 Seed = 48193
 SpawnXZ = Vector2(512, 550)

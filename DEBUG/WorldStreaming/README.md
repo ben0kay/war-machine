@@ -46,3 +46,19 @@ godot --headless --path . res://DEBUG/WorldStreaming/StaticStreamingProof.tscn -
 Supplied but **not run here**: no Godot/.NET executable. Expected `[WS2] PASS` / exit 0. Automated checks cover procedural + GLB loading, four footprint cells/one ID, boundary crossings, hysteresis, unload/return, obsolete request draining, caps/sleep, and a physics ray against the returned car. Stop/restart the F6 scene during loading and when settled; verify no orphan proof scenes or permanently active StaticSectionLoadDrain nodes. Repeat a few loops and inspect car collision. Compile/import before treating this as accepted.
 
 Profile first visit and warm return separately for frame-time spikes and memory; resource import/shaders/physics and procedural Ready can still stall. Threaded resource reading is not threaded scene instantiation. Briefly open World.tscn/FPS afterward: neither should gain a streamer or lose existing scenery. Share build errors, visible pop-in, count growth, or collision failures before active-world opt-in. WS3 remains unimplemented.
+
+## WS2 active World/FPS integration checks
+
+The separate proof has now been followed by a **Building001–004 integration in normal World.tscn and inherited FirstPersonTest.tscn**. Normal arrow-key controls remain unchanged. Build C#, F6 World, and check top-centre `Buildings 4/4 · L4/U0 · asleep` after startup. Walk well away from the village (default top-down unload is roughly 400m from each building footprint), then return. Expect count/unload changes, restored original names/transforms and no duplicates. Store site, roads, terrain, grass/trees and all actors retain existing lifetime; F1 previews are not persistent streamed placements.
+
+Inspect Remote `WorldActorsRoot/PersistentPropsRoot/Structures`: the four selected roots must actually disappear and return; the convenience-store root stays. Enter returned buildings and check wall/floor/stair collision, roof/floor reveals and exterior fading, including zoom/orbit. Default terrain needs **no rebake**. Check WS1 on/off still behaves correctly. NPCs close to a selected footprint pin that building (heading shows pinned count); move away again after the NPC leaves to allow reconsideration. Do not expect the pinned scheduler to poll while stationary.
+
+Briefly repeat unload/return in FPS; it keeps opaque buildings and uses its own clip-derived preload distance. Disabling FPS distance fog expands residency to cover its original far clip (so all four may stay loaded). Explicit range expansion may need a warm-up; this pass is not teleport/vehicle readiness. Ordinary scroll/orbit must not force full scenery refreshes or cause a new always-running streamer. Stop/restart while loading and settled; watch for stale node/visibility errors. Measure first-return procedural generation separately from warm traversal; no stall-free claim has been made.
+
+Optional actual-code integration contract smoke test (provided, **not run here**):
+
+```sh
+godot --headless --path . res://DEBUG/WorldStreaming/ActiveStreamingContractTest.tscn
+```
+
+Expected `[WS2 integration] PASS` / exit 0. Tests adoption without duplicates, sleeping pins and release, preserved identity/name/transform on canonical procedural reload, envelope expansion and top-down/FPS/fog-off distances. It does not instantiate the terrain/village or replace the manual collision/fading checks. Set `WorldMaster.StreamVillageBuildings=false` and restart to compare the previous resident-building behaviour. WS3 remains planned; no mutable saves are implemented.

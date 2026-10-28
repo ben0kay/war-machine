@@ -38,7 +38,10 @@ public partial class FirstPersonFog : Node, IDebugOverlayView
         _fogSettings.DistanceFogOpacity = 1; _fogSettings.DistanceFogEdgeVariation = 0;
         _fogSettings.DistanceFogColor = _settings.FogColor;
         _fog.ApplySettings();
-        _camera.Far = _settings.DistanceFogEnabled ? end + buffer : _originalFar;
+        float far = _settings.DistanceFogEnabled ? end + buffer : _originalFar;
+        bool rangeChanged = !Mathf.IsEqualApprox(_camera.Far, far);
+        _camera.Far = far;
+        if (rangeChanged) _camera.NotifyRenderRangeChanged();
         if (IsInstanceValid(_readout)) _readout.Text = $"Clear: {start:0}m · opaque: {end:0}m · render far: {_camera.Far:0}m";
     }
 

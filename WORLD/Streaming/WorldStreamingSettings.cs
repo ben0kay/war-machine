@@ -1,4 +1,4 @@
-// WS2 bounded static proof settings. No active-world opt-in is implied by this resource.
+// WS2 bounded static residency settings; WorldSettings separately controls active-village opt-in.
 using Godot;
 
 [GlobalClass]

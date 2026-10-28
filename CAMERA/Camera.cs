@@ -5,6 +5,11 @@ public partial class Camera : Camera3D
 {
     public event System.Action? SettingsChanged;
     public event System.Action? ViewChanged;
+    public event System.Action? RenderRangeChanged;
+
+    // =========================================================
+    // Presentation adapters announce explicit far-plane changes without a camera polling loop.
+    public void NotifyRenderRangeChanged() => RenderRangeChanged?.Invoke();
     private PlayerController _player = null!;
     private CameraSettings _settings = null!;
     private Vector3 _target;
