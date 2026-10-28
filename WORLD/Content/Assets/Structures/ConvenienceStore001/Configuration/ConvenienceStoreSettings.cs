@@ -6,10 +6,10 @@ using Godot;
 public partial class ConvenienceStoreSettings : StructureSettings
 {
     [ExportGroup("Dimensions")]
-    [Export(PropertyHint.Range, "14,20,0.5")] public float Width { get; set; } = 16f;
-    [Export(PropertyHint.Range, "11,16,0.5")] public float Depth { get; set; } = 12f;
+    [Export(PropertyHint.Range, "16,32,0.5")] public float Width { get; set; } = 24f;
+    [Export(PropertyHint.Range, "12,24,0.5")] public float Depth { get; set; } = 16f;
     [Export(PropertyHint.Range, "3.8,5.2,0.1")] public float WallHeight { get; set; } = 4.2f;
-    [Export(PropertyHint.Range, "3.3,5.2,0.1")] public float StockroomDepth { get; set; } = 4f;
+    [Export(PropertyHint.Range, "4.5,8,0.1")] public float StockroomDepth { get; set; } = 5.2f;
 
     [ExportGroup("Interior")]
     [Export] public bool ShowFurnishings { get; set; } = true;

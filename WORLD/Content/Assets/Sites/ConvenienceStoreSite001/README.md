@@ -1,3 +1,5 @@
+> **CS2 current layout (2026-10-28):** convenience store expanded to **24×16m = twice the previous floor area**, moved behind the existing hedge and sidewalk line; rear marker and a simple flush front access strip updated. Existing 56×36m car park, eight hedges, seven cars, four lamps, road and site origin are unchanged. Source implemented, Godot validation pending. **Older store position/size references below are historical unless updated.**
+
 **Current ground contract:** flat terrain-backed site, no added wedges or duplicate pavement/floor collision. See Flush ground-alignment correction below; older ramp descriptions are historical.
 
 # ConvenienceStoreSite001 — village-centre roadside location
@@ -11,14 +13,15 @@ The site is a native PackedScene composition: ParkingLot001, one ConvenienceStor
 | Element | Position/details |
 | --- | --- |
 | Parking lot | Origin; main asphalt 56 x 36, +Z driveway ends at Z=24 |
-| Store | (0,0,-23.75); front at Z=-17.75 aligns with the new sidewalk/central gap |
+| Store | (0,0,-29.25); 24×16m; front at Z=-21.25 with 3.5m setback behind former storefront line; rear Z=-37.25 |
 | Parked cars | Bays 01/03/05/08/10/12/14; X=-20.15/-13.95/-7.75/1.55/7.75/13.95/20.15, Y=0.12, Z=-12.03 |
 | Car orientation | Bays 03 and 12 backed in; others face -Z. Doors closed by default |
 | Parking-edge hedge border | Eight Hedge001 instances at X=±4.5/9.4/14.3/19.2, site Y=0.15, Z=-15.7; two runs flanking an open centre. |
 | Store lamps | X=-25/+25, Y=0.12, Z=-12.2; heads face inward |
 | Approach lamps | X=-24/+24, Y=0.12, Z=12.5; heads face inward |
-| FrontEntrance marker | (0,0.12,-17.4) |
-| RearServiceExit marker | (5.7,0.12,-30.2) |
+| FrontEntrance marker | (0,0.12,-20.9) |
+| RearServiceExit marker | (0,0.12,-37.65) |
+| StorefrontApproach | 3.6m wide × 3.62m long flat concrete strip, centre (0,0.013,-19.45), visual only: connects new frontage to old central sidewalk gap |
 | RoadConnection marker | (0,0.12,24) |
 | PlayerTestSpawn marker | (0,0.16,4); passive only, not the world's arrival spawn |
 
@@ -28,7 +31,7 @@ The site now uses flush native terrain support with no perimeter wedges (current
 
 The authored site is beneath WorldActorsRoot/PersistentPropsRoot/Structures. The nested store alone registers shared StructureVisibility; asphalt/lamps never inherit whole-store fading. Cars retain their own existing independent camera occluders.
 
-The expanded mesh envelope includes X +/-28.8m shoulders and Z approximately -30.2..24.8, plus reserved rear/driveway access. VillageLayout measures generated bounds, surveys the entire expanded footprint and grades/clears it via existing systems. Road start and extra access reservations now follow the actual RoadConnection/RearServiceExit markers instead of the previous fixed coordinates. Rear access follows its moved marker on the same graded walking plane. The northbound village road stays at X=35 (nearest edge X=32), outside the wider paving. Other buildings/robot remain in their existing safe village locations; player arrival remains Z=38. Two rear slow-zombie markers move to Z=-33, runner to Z=-34; actual collision support/clearance and player buffer still gate spawning. Saved terrain is not rebaked.
+The expanded mesh envelope includes X +/-28.8m parking shoulders and Z approximately -37.7..24.8, plus reserved rear/driveway access. VillageLayout measures generated bounds, surveys the entire expanded footprint and grades/clears it via existing systems. Road start and extra access reservations now follow the actual RoadConnection/RearServiceExit markers instead of the previous fixed coordinates. Rear access follows its moved marker on the same graded walking plane. The northbound village road stays at X=35 (nearest edge X=32), outside the wider paving. Other buildings/robot remain in their existing safe village locations; player arrival remains Z=38. Two rear slow-zombie markers move to X=±18, Z=-42; the runner to X=20, Z=-43; actual collision support/clearance and player buffer still gate spawning. Saved terrain is not rebaked.
 
 ## Brief checks
 
@@ -75,3 +78,11 @@ As requested, only the **site-local** `Configuration/HedgeRowMaster.tres` height
 The user's trimmed-hedge reference photo shows naturally uneven **deep olive greens and mossy highlights**, not the earlier bright, saturated evergreen. `Hedge001.glb` now uses **three low-saturation opaque foliage materials** (shadow, moss and soft olive highlight), with subtle vertex-brightness variation. Each material has a non-white PBR base to preserve the intended colour if Godot does not honour glTF `COLOR_0`. All 2,540 triangles and mesh proportions are preserved; draw-surface count is now three, rather than one. No extra textures or shaders were added.
 
 **Site-specific taller dimensions are unchanged:** eight existing instances still use `Configuration/HedgeRowMaster.tres` with `SizeMultiplier = Vector3(1, 1.125, 0.43)` (~2.41m high), the same coordinates/central gap, and no collision. Reimport the GLB in Godot and restart the world before visual comparison from both perspectives. Inspect imported material overrides if the former bright colour persists. Runtime appearance has not been verified remotely.
+
+## CS2 — enlarged store set back from hedges
+
+The site retains its original world origin and **56×36m lot**; the independently packed `Store` alone moves 5.5m farther negative Z **by centre** to compensate for its larger depth (12→16m) and achieve a **3.5m net setback at the shop front**. The hedge line remains site Z=-15.7 and the lowered central entrance remains open. A small `StorefrontApproach` (noncolliding concrete) fills the new access gap from the parking walkway to the shop front. Store front Z=-21.25 / rear Z=-37.25; main site entrance marker Z=-20.9, rear marker Z=-37.65 (X=0).
+
+The new full-footprint bounds are still surveyed, graded and excluded from foliage by `VillageLayout`; no saved terrain file changes and no physical ramp/stair/lip was introduced. The two previously near-rear slow-zombie offsets and one runner offset have been moved outside the enlarged building in `WORLD/Configuration/WorldMaster.tres` and `WORLD/WorldSettings.cs`. All car, hedge, lamp and asphalt transforms remain unchanged.
+
+**Acceptance:** see [store CS2 test list](../../Structures/ConvenienceStore001/README.md). In particular check the new front strip is flush with the graded ground, the entrance is now visible behind hedges and the two rear rooms/corridor are navigable. The larger footprint may survey a slightly different terrain elevation; startup grade/overlap checks remain authoritative. No runtime Godot test has been performed remotely.

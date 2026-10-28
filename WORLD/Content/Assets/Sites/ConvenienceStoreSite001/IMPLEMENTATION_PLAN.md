@@ -1,5 +1,7 @@
 # PL — Modular convenience-store and parking-lot location
 
+> **CS2 implemented (2026-10-28; local Godot validation pending).** The current composed store is **24×16m / 384m²**, moved back so the front is site Z=-21.25, with two rear rooms, central passage and rear exit at site Z=-37.25. Hedge/car/parking geometry remains unchanged. Site front/rear markers and a simple central concrete access strip track that move; world zombie offsets no longer overlap the enlarged building. See current store and site README sections; older PL0-size/placement descriptions in this history are superseded.
+
 **Canonical plan for current development:** `implement-td0-td1`. **No writes to `main`.** Read root `README.md`, `CodePreferences.md`, this plan and the child-prefab READMEs before any phase. Work only on explicitly requested phases, make one commit per job, validate briefly and report what Godot still needs checking.
 
 ## Game direction and ownership

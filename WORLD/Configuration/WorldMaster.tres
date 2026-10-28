@@ -47,7 +47,7 @@ CliffDepth = 36.0
 CliffRampLength = 38.0
 CliffPathWidth = 10.0
 
-RunnerSpawnOffsets = PackedVector2Array(19, -34)
+RunnerSpawnOffsets = PackedVector2Array(20, -43)
 
 HordeCount = 0
 HordeRunnerCount = 0
@@ -61,4 +61,4 @@ VillageBlendWidth = 18.0
 VillageRoadWidth = 6.0
 VillageHillScale = 1.0
 VillageZombieWanderRadius = 8.0
-ZombieSpawnOffsets = PackedVector2Array(-17, -4, 17, -4, -10, 3, 10, 3, -15, 10, 15, 10, -11, -33, 11, -33, 0, 0)
+ZombieSpawnOffsets = PackedVector2Array(-17, -4, 17, -4, -10, 3, 10, 3, -15, 10, 15, 10, -18, -42, 18, -42, 0, 0)

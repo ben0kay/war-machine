@@ -47,7 +47,7 @@ public partial class WorldSettings : Resource
     [Export(PropertyHint.Range, "1.8,4,0.1")] public float HordeSpacing { get; set; } = 2.5f;
     [ExportGroup("Runner placement")]
     [Export] public Vector2[] RunnerSpawnOffsets { get; set; } = new Vector2[]
-    { new(19, -34) };
+    { new(20, -43) };
     [ExportGroup("Wildlife preview")]
     [Export] public bool DeerPreviewEnabled { get; set; } = true;
     // One AI deer south of the village approach; offset is in world X/Z metres from player spawn.
@@ -57,6 +57,6 @@ public partial class WorldSettings : Resource
     [Export] public Vector2[] ZombieSpawnOffsets { get; set; } = new Vector2[]
     {
         new(-17, -4), new(17, -4), new(-10, 3), new(10, 3), new(-15, 10),
-        new(15, 10), new(-11, -33), new(11, -33), new(0, 0)
+        new(15, 10), new(-18, -42), new(18, -42), new(0, 0)
     };
 }

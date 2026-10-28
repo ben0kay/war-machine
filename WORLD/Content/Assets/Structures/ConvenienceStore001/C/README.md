@@ -1,3 +1,5 @@
+> **CS2 current source:** 24×16m building, six retail aisles, front till, two separately partitioned rear rooms and a central front-to-back emergency/service route; 14 clearance reservations. The older four-aisle/single-stockroom summary below is historical.
+
 # ConvenienceStoreMesh.cs — store-only implementation
 
 The `[Tool]` store builder generates a single-storey retail shell with genuine unglazed storefront/side windows, a till counter, four customer display shelves, partitioned stockroom, stock shelving, rear exit, fascia and a flat roof. Real structural walls/roof/floor and the larger interior fixtures have separate static collider shapes. Small decoration and products have no collider. It reuses shared `StructureGeometry` meshes/material helpers and explicitly registers occupied/floor/role metadata for shared `StructureVisibility`.

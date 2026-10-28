@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Infrastructure/ParkingLots/ParkingLot001/ParkingLot001.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Structures/ConvenienceStore001/ConvenienceStore001.tscn" id="2"]
@@ -7,7 +7,19 @@
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Landscaping/Hedges/Hedge001/Hedge001.tscn" id="5"]
 [ext_resource type="Resource" path="res://WORLD/Content/Assets/Sites/ConvenienceStoreSite001/Configuration/HedgeRowMaster.tres" id="6"]
 
+[sub_resource type="BoxMesh" id="StoreFrontApproachMesh"]
+size = Vector3(3.6, 0.018, 3.62)
+
+[sub_resource type="StandardMaterial3D" id="StoreFrontApproachMaterial"]
+albedo_color = Color(0.42, 0.43, 0.40, 1)
+roughness = 0.97
+
 [node name="ConvenienceStoreSite001" type="Node3D"]
+
+[node name="StorefrontApproach" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.013, -19.45)
+mesh = SubResource("StoreFrontApproachMesh")
+material_override = SubResource("StoreFrontApproachMaterial")
 
 [node name="ParkingLot" parent="." instance=ExtResource("1")]
 position = Vector3(0, -0.12, 0)
@@ -17,7 +29,7 @@ UseTerrainSupport = true
 position = Vector3(0, -0.12, 0)
 
 [node name="Store" parent="Structures" instance=ExtResource("2")]
-position = Vector3(0, 0, -23.75)
+position = Vector3(0, 0, -29.25)
 UseTerrainSupport = true
 
 [node name="ParkedCars" type="Node3D" parent="."]
@@ -106,10 +118,10 @@ rotation = Vector3(0, -1.570796, 0)
 position = Vector3(0, -0.12, 0)
 
 [node name="FrontEntrance" type="Marker3D" parent="SiteMarkers"]
-position = Vector3(0, 0.12, -17.4)
+position = Vector3(0, 0.12, -20.9)
 
 [node name="RearServiceExit" type="Marker3D" parent="SiteMarkers"]
-position = Vector3(5.7, 0.12, -30.2)
+position = Vector3(0, 0.12, -37.65)
 
 [node name="RoadConnection" type="Marker3D" parent="SiteMarkers"]
 position = Vector3(0, 0.12, 24)
