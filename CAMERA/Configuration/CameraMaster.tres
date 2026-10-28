@@ -1,23 +1,10 @@
-[gd_resource type="Resource" script_class="CameraSettings" load_steps=2 format=3]
-[ext_resource type="Script" path="res://CAMERA/CameraSettings.cs" id="1"]
+[gd_resource type="Resource" script_class="CameraSettings" format=3 uid="uid://nknne7f25prw"]
+
+[ext_resource type="Script" uid="uid://dthqbbbokh6mv" path="res://CAMERA/CameraSettings.cs" id="1"]
+
 [resource]
 script = ExtResource("1")
+ObstructionRadius = 0.45
+ObstructionFadeSeconds = 0.2
 UsePerspective = true
 PerspectiveFov = 50.5
-FarClipDistance = 256.0
-CameraYawDegrees = 45.0
-OrbitDragSensitivityDegrees = 0.25
-CameraPitchDegrees = 35.0
-CameraDistance = 25.0
-CameraSize = 20.0
-MinimumZoom = 15.0
-MaximumZoom = 20.0
-MinimumPerspectiveDistance = 15.0
-MaximumPerspectiveDistance = 25.0
-FollowSmoothing = 8.0
-
-ObstructionFadeEnabled = true
-ObstructedOpacity = 0.5
-ObstructionRadius = 0.45
-ObstructionChecksPerSecond = 8.0
-ObstructionFadeSeconds = 0.2

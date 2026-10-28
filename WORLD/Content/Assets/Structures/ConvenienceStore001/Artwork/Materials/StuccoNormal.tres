@@ -1,19 +1,15 @@
-[gd_resource type="NoiseTexture2D" load_steps=2 format=3]
+[gd_resource type="NoiseTexture2D" format=3 uid="uid://dlommexow6hmw"]
 
 [sub_resource type="FastNoiseLite" id="StuccoFineNoise"]
-noise_type = 1
 seed = 94841
 frequency = 0.145
-fractal_type = 1
 fractal_octaves = 3
-fractal_lacunarity = 2.0
 fractal_gain = 0.48
 
 [resource]
 width = 256
 height = 256
-seamless = true
-generate_mipmaps = true
 noise = SubResource("StuccoFineNoise")
+seamless = true
 as_normal_map = true
 bump_strength = 2.8

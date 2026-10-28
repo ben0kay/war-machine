@@ -1,24 +1,6 @@
-[gd_resource type="Resource" script_class="StreetLampLightingSettings" load_steps=2 format=3]
-[ext_resource type="Script" path="res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/StreetLampLightingSettings.cs" id="1"]
+[gd_resource type="Resource" script_class="StreetLampLightingSettings" format=3 uid="uid://d4bxfpj1dnvnw"]
+
+[ext_resource type="Script" uid="uid://b0moubaot5oev" path="res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/Configuration/StreetLampLightingSettings.cs" id="1"]
 
 [resource]
 script = ExtResource("1")
-LightsEnabled = true
-LightColor = Color(1, 0.82, 0.61, 1)
-SpotEnergy = 4.5
-SpotRange = 20.0
-SpotHalfAngle = 75.6
-SpotFalloff = 0.85
-ConeEdgeSoftness = 1.45
-SpotShadows = false
-FillEnabled = true
-FillEnergy = 0.75
-FillRange = 12.0
-FillFalloff = 1.0
-SpotFogEnergy = 0.25
-FillFogEnergy = 0.05
-VisibleConeEnabled = true
-VisibleConeOpacity = 0.035
-VisibleConeLength = 7.4
-VisibleConeGroundOverlap = 0.85
-VisibleConeBaseRadius = 3.0

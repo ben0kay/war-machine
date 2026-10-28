@@ -1,22 +1,18 @@
-[gd_resource type="NoiseTexture2D" load_steps=3 format=3]
-
-[sub_resource type="FastNoiseLite" id="StuccoColourNoise"]
-noise_type = 1
-seed = 47816
-frequency = 0.036
-fractal_type = 1
-fractal_octaves = 4
-fractal_lacunarity = 2.0
-fractal_gain = 0.55
+[gd_resource type="NoiseTexture2D" format=3 uid="uid://s1is7ysj43pb"]
 
 [sub_resource type="Gradient" id="StuccoColourRamp"]
 offsets = PackedFloat32Array(0, 0.21, 0.43, 0.67, 0.88, 1)
 colors = PackedColorArray(0.68, 0.66, 0.63, 1, 0.78, 0.76, 0.73, 1, 0.89, 0.88, 0.85, 1, 0.97, 0.96, 0.94, 1, 0.99, 0.99, 0.98, 1, 1, 1, 1, 1)
 
+[sub_resource type="FastNoiseLite" id="StuccoColourNoise"]
+seed = 47816
+frequency = 0.036
+fractal_octaves = 4
+fractal_gain = 0.55
+
 [resource]
 width = 256
 height = 256
-seamless = true
-generate_mipmaps = true
 noise = SubResource("StuccoColourNoise")
 color_ramp = SubResource("StuccoColourRamp")
+seamless = true

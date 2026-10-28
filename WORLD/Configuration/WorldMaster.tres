@@ -1,81 +1,23 @@
-[gd_resource type="Resource" script_class="WorldSettings" load_steps=8 format=3]
-[ext_resource type="Script" path="res://WORLD/WorldSettings.cs" id="1"]
-[ext_resource type="Script" path="res://WORLD/Streaming/WorldSectionSettings.cs" id="sections_script"]
-[ext_resource type="Script" path="res://WORLD/Rendering/WorldRenderSettings.cs" id="render_script"]
-[ext_resource type="Script" path="res://WORLD/Streaming/WorldStreamingSettings.cs" id="streaming_script"]
-[sub_resource type="Resource" id="streaming"]
-script = ExtResource("streaming_script")
-LoadDistance = 180.0
-UnloadDistance = 260.0
-MovementStep = 8.0
-MaxPlacements = 128
-MaxResident = 16
-MaxInFlight = 2
-OperationsPerFrame = 1
+[gd_resource type="Resource" script_class="WorldSettings" format=3 uid="uid://22scon2dxg2b"]
+
+[ext_resource type="Script" uid="uid://rwyynbc4fx7j" path="res://WORLD/WorldSettings.cs" id="1"]
+[ext_resource type="Script" uid="uid://d25txnfxtsb2m" path="res://WORLD/Rendering/WorldRenderSettings.cs" id="render_script"]
+[ext_resource type="Script" uid="uid://digvqdyh6nn8a" path="res://WORLD/Streaming/WorldSectionSettings.cs" id="sections_script"]
+[ext_resource type="Script" uid="uid://x1pkera3orby" path="res://WORLD/Streaming/WorldStreamingSettings.cs" id="streaming_script"]
+
 [sub_resource type="Resource" id="render_policy"]
 script = ExtResource("render_script")
-Enabled = true
-HiddenBuffer = 8.0
-CameraRefreshStep = 2.0
-ShadowBuffer = 48.0
-DeformationPadding = 2.0
-FadeLocalLights = true
-LightFadeLength = 8.0
+
 [sub_resource type="Resource" id="sections"]
 script = ExtResource("sections_script")
-WorldId = "war-machine-main"
-Origin = Vector2(0, 0)
-SectionSize = 128.0
-LogicalBounds = Rect2(0, 0, 1024, 1024)
-ShowHeading = true
-ShowGrid = false
+
+[sub_resource type="Resource" id="streaming"]
+script = ExtResource("streaming_script")
+UnloadDistance = 260.0
+
 [resource]
 script = ExtResource("1")
 Sections = SubResource("sections")
-StreamVillageBuildings = true
 Streaming = SubResource("streaming")
 RenderPolicy = SubResource("render_policy")
-Seed = 48193
-SpawnXZ = Vector2(512, 550)
-GroundHeight = 4.0
 Relief = 0.15
-HillOffset = Vector2(30, -10)
-HillHeight = 5.0
-HillRadius = 24.0
-
-Building001Offset = Vector2(-35, -90)
-Building002Offset = Vector2(-35, -145)
-Building003Offset = Vector2(80, -75)
-Building004Offset = Vector2(45, -190)
-Car001Offset = Vector2(24, 42)
-DeerPreviewEnabled = true
-DeerPreviewOffset = Vector2(-18, 50)
-
-CliffEnabled = false
-CliffOffset = Vector2(-6, 76)
-CliffHeight = 12.0
-CliffWidth = 44.0
-CliffDepth = 36.0
-CliffRampLength = 38.0
-CliffPathWidth = 10.0
-
-RunnerSpawnOffsets = PackedVector2Array(20, -43)
-
-HordeCount = 0
-HordeRunnerCount = 0
-HordeCenterOffset = Vector2(-38, -16)
-HordeSpacing = 2.5
-
-VillageEnabled = true
-VillageOriginXZ = Vector2(512, 512)
-VillageMaxCutFill = 8.0
-VillageBlendWidth = 18.0
-VillageRoadWidth = 6.0
-VillageHillScale = 1.0
-VillageZombieWanderRadius = 8.0
-; Site-local stress population: 16 additional slow, 4 additional runners.
-; Toggle false to compare performance with the original world population.
-StoreStressZombiesEnabled = true
-StoreStressSlowOffsets = PackedVector2Array(-19, -6, -11, -6.5, 11, -6, 19, -6, -17, 5.3, -9, 5.3, 9, 5.3, 17, 5.3, 0, -3, 0, 11, -29, -25, 29, -25, -10, -44, 0, -46, 10, -46, -4, -54)
-StoreStressRunnerOffsets = PackedVector2Array(-25, -20, 25, -22, -13, -52, 14, -55)
-ZombieSpawnOffsets = PackedVector2Array(-17, -4, 17, -4, -10, 3, 10, 3, -15, 10, 15, 10, -18, -42, 18, -42, 0, 0)

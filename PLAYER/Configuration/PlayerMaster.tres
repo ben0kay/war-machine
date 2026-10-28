@@ -1,41 +1,19 @@
-[gd_resource type="Resource" script_class="PlayerSettings" load_steps=6 format=3]
-[ext_resource type="Script" path="res://PLAYER/PlayerSettings.cs" id="1"]
-[ext_resource type="Script" path="res://PLAYER/Stats/PlayerVitalsSettings.cs" id="vitals_script"]
-[ext_resource type="Script" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="health_script"]
+[gd_resource type="Resource" script_class="PlayerSettings" format=3 uid="uid://0fd3g70mxjht"]
+
+[ext_resource type="Script" uid="uid://bib5vp2nymrrx" path="res://PLAYER/PlayerSettings.cs" id="1"]
+[ext_resource type="Script" uid="uid://d274w6cw6muei" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="health_script"]
+[ext_resource type="Script" uid="uid://dxuwqkvtibfcv" path="res://PLAYER/Stats/PlayerVitalsSettings.cs" id="vitals_script"]
+
 [sub_resource type="Resource" id="health"]
 script = ExtResource("health_script")
-MaxHealth = 100.0
-Armour = 0.0
-PhysicalResistance = 0.0
-EnergyResistance = 0.0
-ExplosiveResistance = 0.0
-FireResistance = 0.0
+
 [sub_resource type="Resource" id="vitals"]
 script = ExtResource("vitals_script")
 Health = SubResource("health")
-Head = 100.0
-Torso = 100.0
-LeftArm = 100.0
-RightArm = 100.0
-LeftLeg = 100.0
-RightLeg = 100.0
+
 [resource]
 script = ExtResource("1")
 Vitals = SubResource("vitals")
-WalkSpeed = 5.0
 CrouchSpeedMultiplier = 0.45
-ProneSpeedMultiplier = 0.17
-ProneCollisionHeight = 0.75
 RunMultiplier = 1.6
-JumpVelocity = 6.0
 GaitRate = 1.8
-KneeBendDegrees = 35.0
-FootRollDegrees = 8.0
-TorsoTwistDegrees = 4.0
-TorsoRollDegrees = 1.5
-ShoulderSwayDegrees = 2.5
-ElbowFlexDegrees = 14.0
-WeaponProbeOffset = Vector3(0, 0.38, 0)
-WeaponMountOffset = Vector3(0.24, 0.40, -0.45)
-LeftWeaponArmDegrees = Vector3(72, -25, 23)
-RightWeaponArmDegrees = Vector3(72, 0, 8)

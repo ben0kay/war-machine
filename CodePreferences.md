@@ -94,13 +94,13 @@ This is a **source-art versus future-imported-art convention**, not an instructi
 // Correct: enumerate fixed positions (typed variable).
 foreach (float x in new[] { -0.114f, 0.114f })
 {
-    // Build the vent/leg at this x position.
+	// Build the vent/leg at this x position.
 }
 
 // Correct: infer the element type when appropriate.
 foreach (var item in items)
 {
-    Process(item);
+	Process(item);
 }
 ```
 
@@ -110,15 +110,15 @@ foreach (var item in items)
 // Correct: count/index iteration.
 for (int i = 0; i < 4; i++)
 {
-    BuildPart(i);
+	BuildPart(i);
 }
 
 // Correct: enumerate an array by index when the index is needed.
 float[] offsets = { -0.114f, 0.114f };
 for (int i = 0; i < offsets.Length; i++)
 {
-    float x = offsets[i];
-    BuildAt(x);
+	float x = offsets[i];
+	BuildAt(x);
 }
 ```
 
@@ -128,7 +128,7 @@ for (int i = 0; i < offsets.Length; i++)
 // INVALID C# — triggers "'foreach' expected".
 for (float x in new[] { -0.114f, 0.114f })
 {
-    BuildAt(x);
+	BuildAt(x);
 }
 ```
 
