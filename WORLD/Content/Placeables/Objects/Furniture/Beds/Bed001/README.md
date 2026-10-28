@@ -1,24 +1,13 @@
-# Bed001 — reusable single bed, Phase 1 material variants
+# Bed001 — imported GLB with four bedding variations
 
-**Status:** Visual-only reusable Godot C# asset; **awaiting local Godot/.NET compile and visual validation**. No physical collision, rigid body, pickup, bed/sleep interaction or automatic world placement.
+**Status:** GLB scene conversion complete in source; **local Godot import, C# build and visual validation pending**. No physical collision, pickup, bed/sleep interaction or permanent world placement.
 
-## What exists
+**Files:** [Bed001.tscn](Bed001.tscn) wraps [Artwork/Bed001.glb](Artwork/Bed001.glb) inside `Model/Artwork`. The old `C/BedMesh.cs` and `Configuration/BedSettings.cs` geometry-generation approach has been removed. The scene-root script [BedVisual.cs](BedVisual.cs) only applies **shared size settings and per-instance bedding material changes**, not geometry generation.
 
-- `Bed001.tscn`: stable **Object** prefab with `C/BedMesh.cs` visual geometry, no new continuous processing.
-- `Configuration/BedSettings.cs` + `BedMaster.tres`: reusable nominal **1.25m wide × 2.10m long** single-bed footprint, configurable common dimensions; 0m ground pivot, headboard at **-Z**, foot at **+Z**.
-- Low-poly worn timber frame, four feet, open under-bed gap, headboard, mattress, light fitted sheet, two separate cream pillows, duvet, turn-over hem and small fold lines.
-- **One mesh layout, four selected palettes** via the exported `BedMesh.BeddingVariant` enum: **SlateBlue** (default), **MossGreen**, **WarmSand**, **DustyRose**. Only duvet and folded trim change. All other geometry/materials remain identical.
-- Shared Godot primitive box mesh and shared matte `StandardMaterial3D` resources. No per-variant duplicated model files, image textures or material cloning; instances choose existing colour materials.
-- `Artwork/` is reserved for a later imported 3D model that could replace the generated art without changing this asset's identity.
+**Size:** Native GLB approx. **1.32m W × 1.183m H × 2.125m L**, Y=0 ground pivot, head -Z. Edit [Configuration/BedMaster.tres](Configuration/BedMaster.tres) `SizeMultiplier = Vector3(1, 1, 1)`; X adjusts width, Y height, Z length. For example `Vector3(1.1, 1, 1)` is 10% wider. All default instances and F1 previews share this master; individual overrides may duplicate the resource.
 
-## How to use
+**BeddingVariant:** SlateBlue, MossGreen, WarmSand, DustyRose; all share the **same GLB**, frame and pillows. `BedVisual.SetBeddingVariant(...)` changes only the two duvet/fold material surfaces (indices 5 and 6). Geometry, imported meshes and original material resources are not cloned or modified.
 
-In Godot, instance `Bed001.tscn` under a building's floor `contents` visual subtree, then set the scene root's **BeddingVariant** enum to SlateBlue, MossGreen, WarmSand or DustyRose. `SetBeddingVariant(...)` is available for explicit runtime changes. In the F1 **Placeable Spawner**, choose one of the four Bed001 entries and spawn adjacent samples to compare them. This is debug visual placement, not permanent world furnishing.
+**Performance:** 288 triangles in seven material groups, no per-frame work, no physics bodies. Slightly more draw calls than one material but far fewer geometry nodes than the old code-generated version. Asset fits reusable furnishing of houses, cabins, lodge and motel rooms. Future collision needs separately designed frame/bed shapes and careful handling of nonuniform scaling.
 
-The bed **has no collision yet**: actors pass through it in F1 preview and when manually instanced. In a later authorized gameplay phase, introduce a reusable fixed `StaticBody3D` and sensibly shaped frame/mattress colliders without enclosing the open under-bed area; then consider possible sleep/interaction as a separate feature.
-
-## Performance and validation
-
-Geometry is built once per scene instance (or deliberate palette change); the prefab turns off idle/physics processing immediately. Twenty-plus small mesh parts mean a modest draw-call cost per bed, appropriate for a few furnished rooms; if adding hundreds in view, consider batching material surfaces or a future authored GLB. No rigid physics, timers or per-frame palette updates.
-
-**Local checks pending:** `dotnet build war-machine.csproj`; open `Bed001.tscn` in Godot; F6 `WORLD/World.tscn`, press F1 and spawn each bedding colour; check headboard, full silhouette, duvet coverage, scale, ground placement and no collision; verify palette switching affects only cloth and does not change mesh layout. Recheck F1 book and bookcase previews. Repeat in FPS debug scene if desired.
+**Local check:** `dotnet build war-machine.csproj`; import GLB in Godot, open `Bed001.tscn` and verify 7 material surfaces and correct form. F6 `WORLD/World.tscn` → F1 → spawn all 4 palettes side by side, verify only bedding differs. Adjust scale master and reload/respawn to inspect. Test old Bookcase001/Book001 previews still work. No runtime 3D validation was run remotely.

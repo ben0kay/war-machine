@@ -1,10 +1,10 @@
-// F1 placeable preview: imported GLBs and Bed001 palette variants; all previews are static and noncolliding.
+// F1 placeable preview: GLB scene wrappers with shared per-asset size masters; no physics.
 using Godot;
 
 public partial class PlaceableSpawnMenu : CanvasLayer
 {
-    private const string BookcasePath = "res://WORLD/Content/Placeables/Objects/Furniture/Bookcases/Bookcase001/Artwork/Bookcase001.glb";
-    private const string BookPath = "res://WORLD/Content/Placeables/Props/Books/Book001/Artwork/Book001.glb";
+    private const string BookcasePath = "res://WORLD/Content/Placeables/Objects/Furniture/Bookcases/Bookcase001/Bookcase001.tscn";
+    private const string BookPath = "res://WORLD/Content/Placeables/Props/Books/Book001/Book001.tscn";
     private const string BedPath = "res://WORLD/Content/Placeables/Objects/Furniture/Beds/Bed001/Bed001.tscn";
     private const int MaxInstances = 24;
     private PlayerController? _player;
@@ -97,9 +97,9 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         if (source == null) { _status.Text = "Could not load model/scene; see Godot Output."; return; }
         if (source.Instantiate() is not Node3D instance)
         { _status.Text = "Placeable does not have a Node3D root."; return; }
-        // Select the palette before AddChild/_Ready so the same scene builds just one variant.
-        if (isBed && instance is BedMesh bed)
-            bed.BeddingVariant = (BedMesh.BeddingPalette)(_selection.Selected - 2);
+        // Select the palette before AddChild/_Ready; Bed001 swaps materials without rebuilding geometry.
+        if (isBed && instance is BedVisual bed)
+            bed.BeddingVariant = (BedVisual.BeddingPalette)(_selection.Selected - 2);
 
         Vector3 direction = -_camera.GlobalBasis.Z;
         direction.Y = 0;

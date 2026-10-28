@@ -1,5 +1,9 @@
-# Bed001 imported artwork placeholder
+# Bed001.glb — original imported bed model
 
-Phase 1 uses `../C/BedMesh.cs` to generate original low-poly art under the stable `../Bed001.tscn` prefab. No GLB or bitmap textures exist here yet.
+[Bed001.glb](Bed001.glb) is the canonical geometry for Bed001: **288 triangles, 7 material surfaces**, one model with wooden frame, mattress, sheet, pillows and coloured duvet/fold. The old procedural geometry from `C/BedMesh.cs` was converted to a static GLB and removed from runtime.
 
-When authoring a replacement GLB, preserve the root floor pivot (Y=0), head at -Z, approximately 1.25 × 2.10m footprint and one common bedding surface whose materials can be swapped without duplicating geometry. Keep collision/interaction separately owned in the future.
+**Native bounds:** ~1.32m wide, 1.183m tall, 2.125m deep. Floor pivot Y=0, headboard at -Z, foot at +Z. Models are low-poly, matte and texture-free.
+
+The glTF mesh primitives are intentionally ordered: 0=Wood, 1=WoodTrim, 2=Mattress, 3=Sheet, 4=Pillow, **5=BeddingMain**, **6=BeddingTrim**. `../BedVisual.cs` changes only surfaces 5/6 using per-instance material overrides to offer four bedding palettes without another GLB. If the GLB is re-exported, preserve this order or update its adapter.
+
+Resize all default Bed001 scenes through `../Configuration/BedMaster.tres`: `SizeMultiplier = Vector3(X, Y, Z)`. The GLB source geometry stays untouched. See [Bed001 README](../README.md).

@@ -1,18 +1,18 @@
-# F1 Placeable Spawner — visual catalogue inspection only
+# F1 Placeable Spawner — GLB scene and size-master preview
 
-Run `WORLD/World.tscn` (F6) or `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` (F6) and press **F1**. The isolated, right-side menu has **OBJECT Bookcase001**, **PROP Book001**, **four OBJECT Bed001 bedding colour variants**, **Spawn selected model**, **Clear spawned**, and **Close (F1)**.
+Run `WORLD/World.tscn` (F6) or `DEBUG/TEST/FirstPerson/FirstPersonTest.tscn` (F6), press **F1**. Choose Bookcase001, Book001 or one of four Bed001 bedding palettes, then **Spawn selected model**, **Clear spawned**, or Close (F1).
 
-- The menu uses the **actual imported GLB artwork and procedural Bed001 scene** under `WORLD/Content/Placeables/`; it does not create or modify gameplay prefabs. Preview instances live in `WorldActorsRoot/PersistentPropsRoot/DebugSpawnedPlaceables`, and disappear on scene exit or when Clear spawned is clicked. Max **24** live previews.
-- Spawned models appear **3m ahead along the horizontal active-camera view direction**, at player standing elevation or sampled Terrain3D surface height (whichever is higher). The **bookcase and Bed001 stand on the ground** using its Y=0 base pivot. The small **book hovers 0.95m** above that height so its artwork can be inspected. Alter distances in `Configuration/PlaceableSpawnMaster.tres`.
-- **No physics/collision:** the GLBs are visual Node3D instances, not StaticBody3D or RigidBody3D. They cannot fall, push, settle, be hit, or be picked up. The player and enemies can pass through them. Real collision/physics are later IX1/IX2 tasks.
-- The debug code is self-contained under `DEBUG/PlaceableSpawner/`; world composition merely loads and initializes it for both camera modes. Its full-screen GUI backdrop prevents UI clicks from also firing a gun/recapturing FPS look. F1 releases captured FPS mouse while the menu is open; F1/Close restores capture if it was captured previously, while **Esc** closes the menu without recapturing (click outside to recapture).
-- Everything is input-driven: no `_Process` or `_PhysicsProcess` on the menu or generated visual meshes. GLBs/scenes load only when spawned; terrain height is sampled only on a click. No changes to saved terrain, live building geometry or IX phases.
+- **Source:** Instantiates canonical `Bookcase001.tscn`, `Book001.tscn` and `Bed001.tscn`. Each is a visual wrapper around its imported GLB with its own `Configuration/<Asset>Master.tres` `SizeMultiplier`. Bed palettes override only the two bedding material surfaces of one GLB. Models are **not** built in C# at spawn.
+- **Preview placement:** 3m ahead of the player along the horizontal camera direction, at player/terrain height. Bookcase and bed stand on their Y=0 pivot; Book001 hovers 0.95m. F1 distance/hover options remain in `Configuration/PlaceableSpawnMaster.tres`. Change the asset masters to resize each default preview, then respawn/reload to see the changed dimensions.
+- **Lifetime:** Up to 24 instances under `WorldActorsRoot/PersistentPropsRoot/DebugSpawnedPlaceables`, removed by Clear or exiting the world. Nothing is saved to permanent structures, terrain or placement data.
+- **No gameplay physics:** No collider, `StaticBody3D`, `RigidBody3D`, push/pickup/throw or inventory feature in these assets yet; actors can walk through the previews. IX implementation remains separate.
+- Input only, no idle `_Process`/`_PhysicsProcess`. F1 releases FPS captured mouse; F1/Close restores it if captured, Esc closes without recapture. UI clicks do not fire guns.
 
 ## Local test / acceptance (pending)
 
-1. In Godot .NET import the GLB files and build Bed001's C# class and run `dotnet build war-machine.csproj`.
-2. F6 `WORLD/World.tscn`; press F1, spawn the bookcase and book, then each of the four Bed001 variants side-by-side. Verify identical bed geometry with different duvet/trim colours, correct grounding, visible models, and walk-through noncollision. Clear, reopen and spawn again. They should remain fixed even when bumped.
-3. F6 FPS scene; verify F1 releases mouse, buttons operate without firing, F1 or Close recaptures appropriately and Esc leaves mouse released.
-4. Confirm no errors loading imported models, no extra idle callbacks, no terrain rebake or runtime saved changes.
+1. Pull the development branch, import `Bed001.glb` in Godot .NET and run `dotnet build war-machine.csproj`.
+2. F6 `WORLD/World.tscn` → F1. Spawn the original Bookcase001 and Book001 and four Bed001 colours. Check geometry appears, ground/hover placement and bed colours (same frame, different duvet/fold).
+3. Edit `BedMaster.tres` to `SizeMultiplier = Vector3(1.2, 1, 1)`, reload/respawn and check bed is 20% wider. Repeat with book and bookcase masters; restore multipliers to 1. Individual scene override should be possible by copying a settings resource.
+4. Check for GLB import/material-surface and missing-script warnings; ensure no stale `BedMesh` or `BedSettings` references, and visual props remain noncolliding. Test FPS F1 cursor/Close/Esc and preview clearing.
 
-Only GitHub source/scene review was performed here. Godot compilation, GLB import and procedural Bed001 render and FPS mouse behavior require local validation. This is **not** implementation/acceptance of IX0–IX2.
+Remote source/GLB byte checks were performed; Godot/.NET build and in-game visual verification are deferred.

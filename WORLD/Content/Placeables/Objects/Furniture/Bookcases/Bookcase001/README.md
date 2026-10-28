@@ -1,11 +1,9 @@
 # Bookcase001 — weathered wooden bookcase
 
-**Model complete; game implementation pending.** Original self-contained [Artwork/Bookcase001.glb](Artwork/Bookcase001.glb). No `.tscn`, collider or world placement.
+**Original imported GLB retained unchanged.** [Bookcase001.tscn](Bookcase001.tscn) is a new lightweight visual wrapper for [Artwork/Bookcase001.glb](Artwork/Bookcase001.glb), with per-asset size master [Configuration/BookcaseMaster.tres](Configuration/BookcaseMaster.tres). **No physics/interactions yet; local validation pending.**
 
-**Design:** old walnut-toned timber; detailed chamfered upright frame, wood backing planks with seams, protruding cornice, six separate empty shelf boards with edging, four short feet and tiny brass accents. 7 embedded low-roughness? No: mostly *matte/high-roughness* PBR colour materials, **1,484 triangles**, no external textures. Bounds approximately **1.215m wide, 1.93m tall, 0.415m deep**. Ground pivot Y=0, shelves face +Z.
+The imported model remains an old walnut-toned case with backing, shelf boards, feet and brass accents: **1,484 triangles**, seven matte PBR colours, approx. **1.215m W × 1.93m H × 0.415m D**, Y=0 ground pivot, front +Z. The original GLB is not rebuilt or duplicated.
 
-**Owner policy:** fixed **Object**, **cannot lift, push, interact or break**. Future books are separate physics Props; do not bake Book001 into this bookcase.
+**Size tuning:** `SizeMultiplier = Vector3(1, 1, 1)` in `BookcaseMaster.tres` uses X=width, Y=height, Z=depth multipliers. A changed master affects all future default instances/F1 previews when respawned; override/duplicate settings to vary a single bookcase.
 
-**Later gameplay prefab:** import GLB under `Bookcase001.tscn` with `StaticBody3D`; build thin colliders for every shelf and separate narrow uprights/back. **Never one large collision box filling empty shelf compartments**, or a thrown Book001 could not enter the shelf. Use this one canonical prefab when furnishing any building; ensure floor `contents` role and structural fading stay visual-only. Original GLB can be replaced later without changing interaction APIs.
-
-See the [Placeables library](../../../../README.md).
+**Policy:** Non-pickup **Object**, fixed/noninteractive design. `Bookcase001.tscn` is visual-only so actors pass through it. Later extend the scene with carefully fitted shelf, upright, and back collision; **never** fill the shelves with one solid collider, or a carried Book001 cannot fit. Keep the original GLB and reusable catalogue location, and attach furnishings to the appropriate structure `contents` role.
