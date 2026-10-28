@@ -1,3 +1,5 @@
+> **DOOR1 correction (2026-10-28):** owner-reported crooked/unpushable rear door traced in source to incorrect hinge-axis orientation. Joint-local Z is now vertical; body bindings/COM/thin-slab margin and explicit contact diagnostics added, force unchanged. Source implemented, runtime acceptance pending. [DOOR1–DOOR3 roadmap](../WORLD/Content/Assets/Objects/Static/Doors/Door001/IMPLEMENTATION_PLAN.md). DOOR2/DOOR3 and IX0–IX8 remain unimplemented.
+
 # IX — Physical interactions, persistent items and scavenging
 
 > **DOOR1 external dependency implemented in source (2026-10-28; local Godot acceptance pending):** a reusable, manually pushable `RigidBody3D` leaf and `HingeJoint3D` were added at the convenience store's rear exit under `WORLD/Content/Assets/Objects/Static/Doors/Door001/`. It is *not* IX1 loose-prop physics, IX0 targeting, or IX3 cupboard interaction: those phases remain planned. The door has `HandleInside` and `HandleOutside` marker anchors ready for future DOOR2 pull-to-close or cupboard doors; no grabbing/click input implemented. Reuse the hinge physics as a reference in IX3 without assuming the whole IX roadmap is complete.

@@ -74,20 +74,7 @@ public partial class PlayerController
         // =========================================================
         // Preserve the existing single slide-contact door push without extra queries.
         private void PushContactBody(Vector3 horizontal, float delta)
-        {
-            Vector3 direction = horizontal.Normalized();
-            int contacts = _player.GetSlideCollisionCount();
-            for (int i = 0; i < contacts; i++)
-            {
-                var hit = _player.GetSlideCollision(i);
-                if (hit.GetCollider() is not RigidBody3D body
-                    || body.GetParent() is not ICharacterContactPushable pushable) continue;
-                // Only a character walking *into* the surface should push it.
-                if (direction.Dot(-hit.GetNormal()) < 0.35f) continue;
-                if (pushable.TryPushFromCharacter(direction, hit.GetPosition(), horizontal.Length(), delta))
-                    break;
-            }
-        }
+            => CharacterContactPush.TryApply(_player, horizontal, delta);
 
         // =========================================================
         // F10 reports existing slide contacts once.
@@ -101,6 +88,8 @@ public partial class PlayerController
                 var hit = _player.GetSlideCollision(i);
                 string path = hit.GetCollider() is Node node ? node.GetPath().ToString() : "native/non-node collider";
                 GD.Print($"Movement blocker: {path}; normal={hit.GetNormal()}; point={hit.GetPosition()}");
+                if (hit.GetCollider() is RigidBody3D body && body.GetParent() is ICharacterContactPushable pushable)
+                    GD.Print(pushable.GetContactPushDiagnostics());
             }
         }
 

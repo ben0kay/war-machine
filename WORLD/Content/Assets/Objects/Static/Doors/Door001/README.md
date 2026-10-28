@@ -1,40 +1,45 @@
-> **DOOR1 contact-push fix (2026-10-28):** Both sides of the hinged door are pushable. The initial implementation relied on automatic `MoveAndSlide` rigid-body response, which could stop at the hinge without visibly rotating. The player now sends its *existing* slide contact point/movement into `ICharacterContactPushable`; `HingedDoor001` converts that into a small `RigidBody3D.ApplyImpulse` proportional to delta, direction and contact distance from the hinge. Default `CharacterContactForce=38` in `DoorMaster.tres`; adjust if too light/heavy. Push at the **handle edge**, not right on the hinge, from either side. No mouse action, additional rays, persistent door process or change to bullet collisions. **Source implemented; local Godot validation pending.**
+# Door001 — DOOR1 physical service door
 
-# Door001 — DOOR1 physical hinged service door
+**Joint-axis foundation fix implemented in source; awaiting local compilation/Jolt/contact/visual acceptance.** Initial `4a3fc01` and contact follow-up `1f867b9` did not produce a working door in the owner's playtest. The door was crooked and unpushable; this pass fixes the demonstrated source defect rather than increasing force. [DOOR1–DOOR3 roadmap](IMPLEMENTATION_PLAN.md).
 
-**Status (2026-10-28): source implemented on development branch; local .NET/Godot playtest pending.** Reusable `Door001.tscn` is an independent non-pickup world asset. The 24×16m `ConvenienceStore001` instances exactly **one** at its **rear exterior exit**; the **front store doorway remains open**, and all three interior openings remain open. No global physical-props/pickup/door-interaction framework was implemented.
+## Diagnosed defect and correction
 
-## Node construction at runtime
+Godot's HingeJoint3D, including the Jolt backend, uses its **joint-local Z axis**. The old code incorrectly assumed +Y and left the hinge at identity. Its permitted axis was therefore horizontal (through the leaf normal). Gravity could rotate/sag the off-centre slab about the wrong axis, while a character's handle push generated vertical torque that the joint constrained. See the official [Jolt hinge implementation](https://github.com/godotengine/godot/blob/master/modules/jolt_physics/joints/jolt_hinge_joint_3d.cpp), which reads `Vector3::AXIS_Z` for both hinge axes.
 
-```text
-Door001 (Node3D, HingedDoor001.cs)            # Root at hinge X/Z, local Y=0
-  HingeAnchor (StaticBody3D, shape-less)       # fixed building/world anchor
-  Leaf (RigidBody3D, collisions on layer 1)
-    Panel (MeshInstance3D)                    # matte steel service-door slab
-    DoorCollision (CollisionShape3D)          # solid, matches slab
-    HandleOutside / HandleInside (Marker3D)   # future DOOR2 grab/pull points
-    HandlePlateOutside / Inside (MeshInstance3D)
-  HingeJoint3D (HingeJoint3D, +Y axis)         # StaticBody3D → RigidBody3D
-```
+The joint frame now starts at **X=-90°**, mapping its +Z to door-local +Y. The **leaf remains at its closed identity rotation**. HingeAnchor and Leaf are both explicitly bound and their NodeA/NodeB paths checked after attachment. The leaf origin and custom centre of mass are the slab centre; the joint anchor is at its left edge at the same height. No motor, rigid-body angular axis locks, artificial leaf rotation, animation/tween or per-door update loop. Jolt owns all constrained motion; symmetric ±110° limits avoid single-sided limit-sign ambiguity.
 
-The leaf rotates physically about the vertical **left hinge**, constrained to ±110° by default with **no motor or locking**. Player `CharacterBody3D.MoveAndSlide()` detects the same existing slide contacts; DOOR1 now uses a **bounded contact impulse** on the leaf when the player pushes into it. No interaction key or new raycasts added. RigidBody3D can sleep once settled. Both sides have handle anchors (DOOR2), which move with the leaf; handle click/drag, lock/latch, automatic closing and saving door angles are not DOOR1.
+Mass remains **9kg**, angular damping **2.2** and CharacterContactForce **38**. Angular damping explicitly replaces environmental damping so the authored number is predictable. The sleeping leaf is explicitly woken before a real impulse. A small authored **5mm BoxShape margin** fits the thin 75mm slab. No speculative force increase or unrelated collision changes.
 
-Tuning is through [Configuration/DoorMaster.tres](Configuration/DoorMaster.tres) and the typed `HingedDoorSettings.cs` (1.38m wide, 2.60m tall, 0.075m thick, 0.18m bottom gap; 9kg, angular damp 2.2, ±110°, handle height 1.15m). Door visual finish is generated once from that shared master; no textures, GLB source, animated nodes or per-frame C# processing. `HingeJoint3D` and `RigidBody3D` perform ordinary engine physics only when needed.
+## Reusable prefab and geometry
 
-## Placement / fade / aiming integration
+Door001.tscn remains the canonical prefab. Its fixed root is the hinge X/Z at floor Y=0. Runtime construction:
 
-The building generator has a narrower **1.52m rear wall opening** inside the unchanged **2.6m service corridor**. The door's hinge root is placed at `(-0.69, 0, rearZ)` under the existing `RearWall` logical fade group; the jamb, header and wall still have their original static collision and their own narrow obstruction proxies.
+- HingeAnchor: shape-less StaticBody3D, no collision layer/mask.
+- Leaf: RigidBody3D at `(width/2, bottom+height/2, 0)`, layer/mask 1; DoorCollision matches Panel.
+- HandleInside / HandleOutside and metal plates: unchanged leaf-local anchors for future DOOR2.
+- HingeJoint3D: at `(0, bottom+height/2, 0)`, local Z oriented vertically, two-body binding and collision exclusion.
 
-`CameraOccluder` collects the panel and handle plates for **rear-wall grouped fading**, but deliberately **does not bake obstruction proxies** for their moving meshes. `structure_camera_blocker=false` keeps them out of the external stationary-triangle cache. Thus an opened door never blocks camera sight at its previous closed location; actual dynamic door collision always remains solid. `FadeAwareAim.Link(DoorCollision, Panel)` allows **top-down cursor aim** through the door while its wall is faded, but **firearm/bullet rays and character/zombie collision always hit the real leaf at its current physics position**. Dynamic door is not itself an independently tracked obstruction-triggering section in DOOR1; nearby fixed wall sections still drive the wall group's fade.
+The convenience store still creates **one rear door only** under `Generated/Level_0/OutsideWalls/RearWall/RearServiceDoor001`, hinge X=-0.69m relative to the rear doorway centre. The front entrance and interior openings remain open. No store geometry or site grading change was necessary for the axis correction.
 
-**Placement requirement:** prefab root must be immobile (building/world-local transform), with uniform scaling. The RigidBody3D leaf moves; do not parent the door root to another moving physics body. Door mesh/handle plates are under the correct wall fade group, but nothing attempts to move or overwrite the leaf's physics transform from camera code.
+| Closed clearance from authored source | Distance |
+| --- | --- |
+| 1.52m solid opening minus 1.38m leaf | 70mm each side |
+| Decorative jamb inner edge to leaf edge (trim is visual only) | 15mm each side |
+| 2.90m header minus 2.78m leaf top | 120mm |
+| 0.18m leaf bottom minus 0.12m physical store floor | 60mm (terrain-supported site has at least this gap) |
 
-## Local acceptance
+These are source calculations; the supplied runtime test checks actual overlap. A wide swing can naturally meet the existing wall before reaching the configured limit; the joint is a limit, not a promise of an unobstructed full arc. Root/ancestors must be static, upright and uniformly scaled. Do not move an active physical door by animating its parent.
 
-1. Pull/build C# and F6 `WORLD/World.tscn`; verify the **front entrance is still empty**, and only the single back exterior door has a hinged solid panel and two metal handle plates.
-2. Walk into the rear panel from inside and outside in both top-down and FPS. It should swing about a fixed jamb hinge with limits, gradually slow, settle, and not fall, translate off hinge or clip into walls/terrain.
-3. Verify it swings from either side, retains collision when closed/faded, and stops movement and bullets when physically in their path. Check the rear service walkway and interior connecting passage remain navigable.
-4. Walk behind the rear wall and inspect its grouped fade. Door panel/plates follow wall opacity; no stationary ghost blocker at its original closed pose after opening. Check AIM1 cursor targeting while faded versus actual bullet hits.
-5. Inspect Godot Output for joint warnings, missing resources or invalid physics RIDs. Test repeated scene entry/reload and FPS inheritance. If pushing is too weak/strong, tune `CharacterContactForce`, then `MassKg`/`AngularDamping`; DOOR1 deliberately does not modify general player movement or global physics settings.
+## Actual character contact, fade and aim
 
-This is source/documentation acceptance only. A rendered Godot test, physics simulation and FPS measurement have **not** been performed remotely.
+PlayerMovement still uses its existing MoveAndSlide result only while moving. Its extracted CharacterContactPush adapter examines those contacts, accepts one eligible rigid leaf whose parent implements ICharacterContactPushable, checks that motion points into the surface and passes the **actual world contact point** to TryPushFromCharacter. This is the previous contact algorithm, shared with the physics test; no raycast, overlap scan or input action is added. The door applies the same bounded force×dt impulse at the centre-relative contact point. Handle-side contact yields hinge torque; a hinge-edge contact yields less. No handle grabbing, pull-to-close action or DOOR2 behaviour.
+
+**Hold movement against the leaf and press F10** if it still fails locally. Existing contact paths/normals/points identify Leaf versus wall/jamb. An eligible contact adds `DOOR1`: accepted push count, last point, signed torque impulse around the corrected axis, yaw, upright dot, sleep state and resolved A/B paths. `pushes` should rise and torque should be nonzero near the handle. A wall-only contact means the player did not reach the slab; do not raise force to solve it. All diagnostic work is explicit F10 only; no idle logs or polling.
+
+Panel/plates retain DynamicFadeVisualMeta and structure_camera_blocker=false. Rear-wall grouped opacity remains the presentation owner; no stale closed-door obstruction proxy is introduced. FadeAwareAim.Link still pairs DoorCollision to Panel: cursor targeting can skip a faded panel, while movement, NPCs and bullet rays retain the current real leaf collision. The shape-less anchor is not a target. No collision layer/mask was changed.
+
+## Local acceptance / test status
+
+Source/resource/path/axis/geometry/loop/whitespace checks passed. **No dotnet or Godot executable here: compilation and actual contacts/swing are NOT verified.** The headless actual-contact regression is provided at [DEBUG/Doors](../../../../../../../DEBUG/Doors/README.md); it covers both sides, yaw 0/45°, closed overlap, upright/anchor stability, swing/damping and AIM1/bullet compatibility.
+
+Pull/build, then F6 World and FPS. Walk front entrance → rear service passage; confirm front remains open. Walk into the rear leaf near its handle from **inside and outside**. It should start square/closed, swing smoothly without tilt/detachment/jamming, slow and settle, retain solid bullet/zombie/player collision and respect limits. Repeat camera wall fade and AIM1 targeting. If it fails, return F10 output and the first physics/debugger error. No terrain rebake. DOOR2 and DOOR3 remain unimplemented.

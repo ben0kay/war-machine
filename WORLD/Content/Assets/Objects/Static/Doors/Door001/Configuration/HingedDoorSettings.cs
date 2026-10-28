@@ -10,6 +10,8 @@ public partial class HingedDoorSettings : Resource
     [Export(PropertyHint.Range, "0.035,0.16,0.005")] public float Thickness { get; set; } = 0.075f;
     [Export(PropertyHint.Range, "0.04,0.3,0.01")] public float BottomClearance { get; set; } = 0.18f;
 
+    [Export(PropertyHint.Range, "0.001,0.02,0.001")] public float CollisionMargin { get; set; } = 0.005f;
+
     [ExportGroup("Hinge physics")]
     [Export(PropertyHint.Range, "1,50,1")] public float MassKg { get; set; } = 9f;
     [Export(PropertyHint.Range, "0,12,0.1")] public float AngularDamping { get; set; } = 2.2f;

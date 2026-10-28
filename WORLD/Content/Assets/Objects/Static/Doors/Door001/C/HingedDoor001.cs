@@ -6,6 +6,10 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
 {
     [Export] public HingedDoorSettings Settings { get; set; } = null!;
     private RigidBody3D? _leaf;
+    private HingeJoint3D? _joint;
+    public int CharacterPushCount { get; private set; }
+    public Vector3 LastPushPoint { get; private set; }
+    public float LastHingeTorqueImpulse { get; private set; }
 
     // =========================================================
     // Build one rigid leaf, fixed hinge anchor and physical joint when the prefab enters the world.
@@ -13,7 +17,8 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
     public override void _Ready()
     {
         if (GetNodeOrNull<RigidBody3D>("Leaf") != null) return;
-        var s = Settings ?? new HingedDoorSettings();
+        Settings = (HingedDoorSettings)(Settings ?? new HingedDoorSettings()).Duplicate(true);
+        var s = Settings;
         float width = Mathf.Clamp(s.Width, 0.65f, 2f);
         float height = Mathf.Clamp(s.Height, 1.85f, 2.85f);
         float thickness = Mathf.Clamp(s.Thickness, 0.035f, 0.16f);
@@ -22,7 +27,8 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
 
         // The anchor intentionally has no collision shape: the building wall supplies
         // its real jamb collision. This body simply fixes the joint in world space.
-        AddChild(new StaticBody3D { Name = "HingeAnchor", CollisionLayer = 0, CollisionMask = 0 });
+        var anchor = new StaticBody3D { Name = "HingeAnchor", CollisionLayer = 0, CollisionMask = 0 };
+        AddChild(anchor);
 
         // Leaf origin is at its centre of mass; the hinge remains on the left edge.
         var leaf = new RigidBody3D
@@ -30,7 +36,9 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
             Name = "Leaf", Position = new Vector3(width * 0.5f, middle, 0),
             CollisionLayer = 1, CollisionMask = 1,
             Mass = Mathf.Clamp(s.MassKg, 1f, 50f),
+            AngularDampMode = RigidBody3D.DampMode.Replace,
             AngularDamp = Mathf.Clamp(s.AngularDamping, 0f, 12f),
+            CenterOfMassMode = RigidBody3D.CenterOfMassModeEnum.Custom, CenterOfMass = Vector3.Zero,
             CanSleep = true, ContinuousCd = true
         };
         AddChild(leaf);
@@ -51,7 +59,8 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
         var shape = new CollisionShape3D
         {
             Name = "DoorCollision",
-            Shape = new BoxShape3D { Size = new Vector3(width, height, thickness) }
+            Shape = new BoxShape3D { Size = new Vector3(width, height, thickness),
+                Margin = Mathf.Clamp(s.CollisionMargin, 0.001f, Mathf.Min(0.02f, thickness * 0.2f)) }
         };
         FadeAwareAim.Link(shape, panel);
         leaf.AddChild(shape);
@@ -77,11 +86,13 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
             leaf.AddChild(plate);
         }
 
-        // Hinge's local +Y is the vertical rotation axis. Bidirectional angular limits
-        // allow physical pushing from either side; no motor, lock or scripted auto-close.
+        // Godot/Jolt use the JOINT'S local Z axis, not Y, as the hinge axis.
+        // Rotate only the joint frame so +Z maps to door-local +Y; the closed leaf stays identity/upright.
+        // Do not add rigid-body angular axis locks: the hinge owns all other degrees of freedom.
         var joint = new HingeJoint3D
         {
             Name = "HingeJoint3D", Position = new Vector3(0, middle, 0),
+            Rotation = new Vector3(-Mathf.Pi * 0.5f, 0, 0),
             NodeA = new NodePath("../HingeAnchor"),
             NodeB = new NodePath("../Leaf"),
             ExcludeNodesFromCollision = true
@@ -91,7 +102,9 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
         joint.SetParam(HingeJoint3D.Param.LimitLower, -limit);
         joint.SetParam(HingeJoint3D.Param.LimitUpper, limit);
         joint.SetFlag(HingeJoint3D.Flag.EnableMotor, false);
-        AddChild(joint);
+        AddChild(joint); _joint = joint;
+        if (joint.GetNodeOrNull<StaticBody3D>(joint.NodeA) != anchor || joint.GetNodeOrNull<RigidBody3D>(joint.NodeB) != leaf)
+            GD.PushError($"{GetPath()}: hinge body paths did not resolve to HingeAnchor/Leaf.");
         SetProcess(false); SetPhysicsProcess(false);
     }
     // =========================================================
@@ -100,14 +113,34 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
     // A push near the handle creates natural torque; pushing on the hinge creates very little.
     public bool TryPushFromCharacter(Vector3 direction, Vector3 point, float speed, float delta)
     {
-        if (!IsInstanceValid(_leaf) || _leaf!.Freeze || speed <= 0.1f) return false;
+        if (!IsInstanceValid(_leaf) || !IsInstanceValid(_joint) || _leaf!.Freeze || !direction.IsFinite()
+            || !point.IsFinite() || !float.IsFinite(speed) || !float.IsFinite(delta) || speed <= 0.1f || delta <= 0) return false;
+        direction.Y = 0;
+        if (direction.LengthSquared() < 0.0001f) return false;
         var s = Settings ?? new HingedDoorSettings();
         float force = Mathf.Clamp(s.CharacterContactForce, 0f, 150f);
         if (force <= 0f) return false;
         // Applying a small per-step impulse (force * dt) prevents 60/120 Hz runaway pushes.
         float speedFactor = Mathf.Clamp(speed / 5f, 0.35f, 1.5f);
         Vector3 impulse = direction.Normalized() * (force * speedFactor * Mathf.Clamp(delta, 0f, 0.05f));
+        _leaf.Sleeping = false;
         _leaf.ApplyImpulse(impulse, point - _leaf.GlobalPosition);
+        LastPushPoint = point;
+        LastHingeTorqueImpulse = (point - _joint!.GlobalPosition).Cross(impulse).Dot(_joint.GlobalBasis.Z.Normalized());
+        CharacterPushCount++;
         return true;
     }
+
+    // =========================================================
+    // F10 reads this only after the player's real MoveAndSlide reports the leaf. No idle diagnostics or extra queries.
+    public string GetContactPushDiagnostics()
+    {
+        if (!IsInstanceValid(_leaf) || !IsInstanceValid(_joint)) return "DOOR1: missing leaf/joint.";
+        return $"DOOR1 {GetPath()}: pushes={CharacterPushCount}; hinge-axis={_joint!.GlobalBasis.Z}; "
+            + $"last-point={LastPushPoint}; hinge-torque-impulse={LastHingeTorqueImpulse:0.0000}; "
+            + $"yaw={_leaf!.RotationDegrees.Y:0.00}; up-dot={_leaf.GlobalBasis.Y.Normalized().Dot(GlobalBasis.Y.Normalized()):0.0000}; "
+            + $"sleeping={_leaf.Sleeping}; A={_joint.GetNodeOrNull<Node3D>(_joint.NodeA)?.GetPath()}; "
+            + $"B={_joint.GetNodeOrNull<Node3D>(_joint.NodeB)?.GetPath()}";
+    }
+
 }

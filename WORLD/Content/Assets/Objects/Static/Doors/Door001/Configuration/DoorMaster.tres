@@ -8,6 +8,7 @@ Width = 1.38
 Height = 2.60
 Thickness = 0.075
 BottomClearance = 0.18
+CollisionMargin = 0.005
 MassKg = 9.0
 AngularDamping = 2.2
 SwingLimitDegrees = 110.0

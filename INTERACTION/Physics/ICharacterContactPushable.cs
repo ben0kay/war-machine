@@ -8,4 +8,8 @@ public interface ICharacterContactPushable
     // Apply a small physical push only when a moving player contacts this object's rigid leaf.
     // True means this contact was handled; prevents duplicate impulses from solver contacts.
     bool TryPushFromCharacter(Vector3 movementDirection, Vector3 contactPoint, float speed, float delta);
+
+    // =========================================================
+    // Optional F10 description of the last accepted contact; never polls or changes physics.
+    string GetContactPushDiagnostics() => "Contact-push diagnostics unavailable.";
 }
