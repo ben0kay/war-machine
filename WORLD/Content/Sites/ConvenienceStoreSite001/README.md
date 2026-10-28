@@ -21,3 +21,5 @@ The parent owns layout/positions, **not** child art, light animation, building f
 **PL0A delivered:** the independent parking-lot prefab now has asphalt, bays, curbs and markers. It is intentionally **not** instanced into this site. PL0B will compose the store, lamps, cars and the lot into one reusable scene; PL1 will place that scene in the world. The current-branch, adapted [implementation plan](IMPLEMENTATION_PLAN.md) is now the canonical PL roadmap; the original main-branch version is historical only.
 
 **PL0B progress:** [ConvenienceStore001](../../Structures/ConvenienceStore001/README.md) is now authored independently, with big empty windows, retail shelves, checkout and stockroom/rear exit. Parent site and lamp prefab remain untouched. No world placement has occurred.
+
+**PL0B lamp progress:** [StreetLamp001](../../Placeables/Objects/Lighting/StreetLamp001/README.md) is now a built independent lamp with a real downward spot and soft omni fill, plus a simple on/off method. The parent site is still empty, no cars/lights/store are placed in the world and there is no automatic time-of-day or flicker yet.

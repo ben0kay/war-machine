@@ -4,4 +4,4 @@ Objects are world assets the player cannot physically lift. Some may still opera
 
 Future examples: tables, cupboards, large furniture, generators and cars.
 
-**New empty scaffold:** [Lighting/StreetLamp001/](Lighting/StreetLamp001/README.md) reserves a reusable fixed streetlamp prefab. It is not modeled, lit or placed yet. Existing `WORLD/Content/Objects/Cars/Car001/` remains at its old path, not migrated or copied. See [Placeables foundation](../README.md).
+**Reusable lighting object:** [Lighting/StreetLamp001/](Lighting/StreetLamp001/README.md) now supplies an original fixed lamp post with a downward SpotLight3D and soft OmniLight3D fill, independently configurable and event-toggleable. It is not placed in the world or assembled into the convenience-store site yet. Existing `WORLD/Content/Objects/Cars/Car001/` remains at its old path, not migrated or copied. See [Placeables foundation](../README.md).

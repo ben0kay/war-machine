@@ -33,9 +33,9 @@ The site owns **relative transforms, car/lamp selection, layout and site-wide wo
 | Phase | Deliverable | State |
 | --- | --- | --- |
 | **PL0A — reusable parking foundation** | Independent asphalt/car-park scene; lane, 6–8 marked bays, sidewalk, curb/entrance gap, short driveway, static colliders, `Marker3D` bay/connection positions, typed Inspector master and docs. No cars/store/lamps/site assembly/world placement. | **Implemented; awaiting Godot validation** |
-| **PL0B — reusable prefabs and site composition** | Independent store-only prefab now implemented: actual unglazed storefront windows, tills/shelves and stockroom exit. Street-lamp model and site composition with cars/lot **still pending**. | **Partial: store only** |
+| **PL0B — reusable prefabs and site composition** | Independent store and StreetLamp001 now implemented (lamp includes opt-in steady spot/fill illumination). Parent site assembly with parking lot, cars, lamps/relative positions **still pending**. | **Partial: prefabs complete, assembly pending** |
 | **PL1 — world integration** | Place assembled site on suitable saved Terrain3D near an accessible approach; validate height variation, foundations, total-site foliage/grass/rock clearings and building visibility registration. No terrain rebake. | Planned |
-| **PL2 — nighttime atmosphere** | Local store light and limited street-lamp lights (one optionally flickers), warm shop windows, compare with Sky3D/night and volumetric ground haze. Limit shadowed lights and update work. | Planned |
+| **PL2 — nighttime atmosphere** | StreetLamp001 already supports static spot/fill lighting with night-friendly defaults; **site/Sky3D time-of-day control, store glow, limited active shadowed lamps and one optional flicker remain pending**. | Planned (fixture lighting ready) |
 | **PL3 — optional view comparison** | Compare the **same site** in top-down and existing FPS debug camera with no new player/controller rewrite. Add fixed view markers only if requested. | Planned |
 | **PL4 — polish** | Refine visual wear, sign, props, oil marks, roadside edge transitions, rain response and atmosphere based on in-game screenshots; don't build extra systems by default. | Planned |
 
@@ -74,3 +74,7 @@ PL0A is now implemented in `Infrastructure/ParkingLots/ParkingLot001`, with type
 ### PL0B store-only checkpoint
 
 `WORLD/Content/Structures/ConvenienceStore001/` now has typed configuration, its own flat-roof retail structure, large open side/front window gaps, an accessible till, four low display rows, and a separated stockroom with an inner walk-through and exterior service exit. It reuses the `StructureVisibility` contract. **Not assembled, not placed, no lamps, no car instances or glass.** Continue PL0B by building a separate lamp and composing the parent scene when explicitly requested. C# compile/render and physical walk validation pending.
+
+### PL0B lamp-only checkpoint
+
+`WORLD/Content/Placeables/Objects/Lighting/StreetLamp001/` is now a reusable standalone 5.8m lamp post with a warm directional downward `SpotLight3D`, weaker omnidirectional fill, small emissive LED panel and basic static collision. Typed `StreetLampSettings`/`StreetLampMaster.tres` expose the geometry, spot cone/range/energy, fill and fog. Native shadows are off by default. `SetLampEnabled(bool)` is an event-driven future day/night integration hook; there is no per-frame C# light logic and no flicker yet. The complete site scene is **still empty**; cars, store and lamps are not assembled or placed in the world. PL0B assembly, PL1 placement and PL2 site-level day/night/flicker remain future separately requested work. Godot compile/nighttime appearance/FPS checks pending.
