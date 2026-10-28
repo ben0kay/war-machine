@@ -28,7 +28,7 @@ public partial class FirstPersonCamera : Camera
     // Escape releases mouse control; a click recaptures without firing that same click.
     public override void _UnhandledInput(InputEvent input)
     {
-        if (!_ready) return;
+        if (!_ready || _actor.GameplayInputBlocked) return;
         if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.Escape)
         { ReleaseMouse(); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseButton mouse && mouse.Pressed && mouse.ButtonIndex == MouseButton.Left

@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="InventorySettings" load_steps=13 format=3]
+[ext_resource type="Script" path="res://INVENTORY/InventorySettings.cs" id="settings"]
+[ext_resource type="Script" path="res://INVENTORY/ItemDefinition.cs" id="item"]
+[ext_resource type="Script" path="res://INVENTORY/InventoryStartingItem.cs" id="starter"]
+[ext_resource type="Texture2D" path="res://UI/GameplayHUD/Inventory/Icons/water.svg" id="water_icon"]
+[ext_resource type="Texture2D" path="res://UI/GameplayHUD/Inventory/Icons/bandage.svg" id="bandage_icon"]
+[ext_resource type="Texture2D" path="res://UI/GameplayHUD/Inventory/Icons/ammo.svg" id="ammo_icon"]
+[sub_resource type="Resource" id="Water"]
+script = ExtResource("item")
+ItemId = "water_bottle"
+DisplayName = "Water bottle"
+Description = "A sealed bottle of drinking water."
+Icon = ExtResource("water_icon")
+MaxStack = 5
+UnitWeightKg = 0.55
+[sub_resource type="Resource" id="Bandage"]
+script = ExtResource("item")
+ItemId = "bandage"
+DisplayName = "Bandage"
+Description = "Clean dressings packed for an emergency."
+Icon = ExtResource("bandage_icon")
+MaxStack = 10
+UnitWeightKg = 0.05
+[sub_resource type="Resource" id="Ammo"]
+script = ExtResource("item")
+ItemId = "rifle_rounds"
+DisplayName = "Rifle rounds"
+Description = "A small supply of rifle ammunition."
+Icon = ExtResource("ammo_icon")
+MaxStack = 60
+UnitWeightKg = 0.025
+[sub_resource type="Resource" id="StarterWater"]
+script = ExtResource("starter")
+Item = SubResource("Water")
+Quantity = 2
+[sub_resource type="Resource" id="StarterBandage"]
+script = ExtResource("starter")
+Item = SubResource("Bandage")
+Quantity = 3
+[sub_resource type="Resource" id="StarterAmmo"]
+script = ExtResource("starter")
+Item = SubResource("Ammo")
+Quantity = 20
+[resource]
+script = ExtResource("settings")
+Capacity = 24
+Columns = 6
+StartingItems = Array[Resource]([SubResource("StarterWater"), SubResource("StarterBandage"), SubResource("StarterAmmo")])

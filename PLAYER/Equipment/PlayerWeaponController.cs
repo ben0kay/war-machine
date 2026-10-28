@@ -29,7 +29,7 @@ public partial class PlayerWeaponController : Node
         SwitchWeapon(0);
         if (_weapon == null) return;
         _shove = new PlayerQuickMelee(player);
-        player.SetWeaponPose(true);
+        player.SetWeaponPose(true); player.GameplayInputBlockChanged += OnInputBlocked;
         player.PositionChanged += OnPlayerMoved; player.WeaponPoseChanged += RequestAim;
         camera.ViewChanged += RequestAim;
         _initialized = true; RequestAim();
@@ -57,7 +57,7 @@ public partial class PlayerWeaponController : Node
     // UI gets first refusal on clicks; cursor changes queue one physics-safe aim update.
     public override void _UnhandledInput(InputEvent input)
     {
-        if (!_initialized) return;
+        if (!_initialized || _player.GameplayInputBlocked) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
         if (PlayerQuickMelee.Requested(input))
@@ -89,7 +89,7 @@ public partial class PlayerWeaponController : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!_initialized || !IsInstanceValid(_weapon) || !GetWindow().HasFocus())
+        if (!_initialized || !IsInstanceValid(_weapon) || !GetWindow().HasFocus() || _player.GameplayInputBlocked)
         { CancelTrigger(); _shove?.Cancel(); return; }
         if (GetViewport().GuiGetHoveredControl() != null || GetViewport().GuiGetFocusOwner() != null)
         { CancelTrigger(); _shove?.Cancel(); return; }
@@ -120,6 +120,14 @@ public partial class PlayerWeaponController : Node
     }
 
     // =========================================================
+    // Opening the backpack cancels any held/queued attack immediately, without resetting weapon cooldown.
+    private void OnInputBlocked(bool blocked)
+    {
+        if (!blocked) { RequestAim(); return; }
+        CancelTrigger(); _shove?.Cancel(); _weapon?.CancelFeedback(); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
     // No stuck firing when tabbing away or moving a held click onto the debug sliders.
     private void CancelTrigger() { _held = false; _shotRequested = false; }
 
@@ -137,7 +145,7 @@ public partial class PlayerWeaponController : Node
     {
         CancelTrigger(); _shove?.Cancel();
         if (!_initialized) return;
-        if (IsInstanceValid(_player)) { _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
+        if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
         _initialized = false;

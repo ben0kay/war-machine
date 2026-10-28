@@ -208,6 +208,8 @@ A state transition must be **atomic/rollback-safe**: validate eligibility and de
 
 ## IX5 — Item identity, ownership and tiny inventory backbone
 
+**Storage precursor implemented (BI0–BI1):** `INVENTORY/` now supplies per-player backpack stacks and a live-world interface. See [backpack plan](../UI/GameplayHUD/Inventory/IMPLEMENTATION_PLAN.md). IX5 remains planned: exclusive World/Inventory/Equipped transfers, real rifle identity and equipment integration are not implemented. The folder-layout proposal below predates this storage slice.
+
 **Objective:** One real item has one stable identity and exactly one owner: world, carried (if supported), player inventory or equipped. Store definitions vs runtime instances distinctly; avoid copying firearm scenes as substitutes for items.
 
 **Dependencies:** IX0; live two-slot `WeaponSlots`/firearm adapter audit; current nine-slot visual hotbar must not silently become logic. IX1 only needed if first world item is physics-simulated.

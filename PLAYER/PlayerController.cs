@@ -3,6 +3,19 @@ using Godot;
 
 public partial class PlayerController : CharacterBody3D, IPerceptionTarget
 {
+    public bool GameplayInputBlocked { get; private set; }
+    public event System.Action<bool>? GameplayInputBlockChanged;
+
+    // =========================================================
+    // A live-world menu stops only this actor's controls; gravity and every other world owner keep running.
+    public void SetGameplayInputBlocked(bool blocked)
+    {
+        if (GameplayInputBlocked == blocked) return;
+        GameplayInputBlocked = blocked; _toggleCrouch = false;
+        if (blocked) Velocity = new Vector3(0, Velocity.Y, 0);
+        SetPhysicsProcess(true); GameplayInputBlockChanged?.Invoke(blocked);
+    }
+
     public event System.Action<Vector3>? PositionChanged;
     private PlayerSettings _settings = null!;
     private Node3D _art = null!, _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
@@ -76,7 +89,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     // Keyboard changes wake movement/gravity. No new project-wide actions or explorer controls are introduced.
     public override void _UnhandledInput(InputEvent input)
     {
-        if (!_initialized || input is not InputEventKey key || key.Echo) return;
+        if (!_initialized || GameplayInputBlocked || input is not InputEventKey key || key.Echo) return;
         if (key.PhysicalKeycode == Key.F10 && key.Pressed)
         {
             _reportMovementCollision = true; SetPhysicsProcess(true);
@@ -118,7 +131,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
             _capsule.Height = Mathf.Lerp(1.8f, 1.4f, _crouch);
             _collider.Position = Vector3.Up * (_capsule.Height * 0.5f);
         }
-        Vector2 keys = GetWindow().HasFocus() ? ReadMovementInput().Normalized() : Vector2.Zero;
+        Vector2 keys = !GameplayInputBlocked && GetWindow().HasFocus() ? ReadMovementInput().Normalized() : Vector2.Zero;
         Vector3 direction = GetMovementDirection(keys);
         float speed = Mathf.Max(0.1f, _settings.WalkSpeed) * (IsCrouching ? Mathf.Clamp(_settings.CrouchSpeedMultiplier, 0.1f, 1) : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1, _settings.RunMultiplier) : 1);
         Vector3 horizontal = new(Velocity.X, 0, Velocity.Z);

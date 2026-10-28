@@ -130,6 +130,7 @@ public partial class WorldController : Node3D
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
         InitializeHealthFeedback(player, camera);
+        InitializeBackpack(player);
         // The shared F1 model spawner is debug-only, with no real prop physics or world placement.
         var spawnMenu = GD.Load<PackedScene>("res://DEBUG/PlaceableSpawner/PlaceableSpawnMenu.tscn").Instantiate<PlaceableSpawnMenu>();
         GetNode("DebugUIRoot").AddChild(spawnMenu);
@@ -243,6 +244,16 @@ public partial class WorldController : Node3D
         var hud = GetNode<Control>("GameplayHUD/Screen");
         var overlay = new HealthBarOverlay { Name = "HealthBars" };
         hud.AddChild(overlay); overlay.Initialize(player, camera);
+    }
+
+    // =========================================================
+    // One model on the player, one presentation below the existing shared HUD (also inherited by FPS).
+    private void InitializeBackpack(PlayerController player)
+    {
+        var backpack = new PlayerBackpack { Name = "Backpack" }; player.AddChild(backpack);
+        backpack.Initialize(GD.Load<InventorySettings>("res://INVENTORY/Configuration/InventoryMaster.tres"));
+        var panel = GD.Load<PackedScene>("res://UI/GameplayHUD/Inventory/Inventory.tscn").Instantiate<InventoryPanel>();
+        GetNode<Control>("GameplayHUD/Screen").AddChild(panel); panel.Initialize(player, backpack);
     }
 
     // =========================================================

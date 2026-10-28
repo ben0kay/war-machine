@@ -49,7 +49,7 @@ public partial class Camera : Camera3D
     // Mouse wheel smoothly changes orthographic size within bounded test-only settings.
     public override void _UnhandledInput(InputEvent input)
     {
-        if (!_initialized || input is not InputEventMouseButton mouse || !mouse.Pressed) return;
+        if (!_initialized || _player.GameplayInputBlocked || input is not InputEventMouseButton mouse || !mouse.Pressed) return;
         int direction = mouse.ButtonIndex == MouseButton.WheelUp ? -1 : mouse.ButtonIndex == MouseButton.WheelDown ? 1 : 0;
         if (direction == 0) return;
         SetZoom((_settings.UsePerspective ? _settings.CameraDistance : _zoomTarget) + direction * Mathf.Max(0.1f, _settings.ZoomStep));

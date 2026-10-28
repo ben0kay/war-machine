@@ -25,7 +25,7 @@ public partial class FirstPersonWeapon : Node
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
         _slots.Initialize(equipment, player, camera, camera.TestSettings.WeaponOffset, audio);
         SwitchWeapon(0);
-        if (_weapon != null) _shove = new PlayerQuickMelee(player);
+        if (_weapon != null) { _shove = new PlayerQuickMelee(player); player.GameplayInputBlockChanged += OnInputBlocked; }
     }
 
     // =========================================================
@@ -57,7 +57,7 @@ public partial class FirstPersonWeapon : Node
     // An uncaptured click belongs to the camera and cannot become a shot.
     public override void _UnhandledInput(InputEvent input)
     {
-        if (_weapon == null || Input.MouseMode != Input.MouseModeEnum.Captured) return;
+        if (_weapon == null || _player.GameplayInputBlocked || Input.MouseMode != Input.MouseModeEnum.Captured) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
         if (PlayerQuickMelee.Requested(input))
@@ -80,7 +80,7 @@ public partial class FirstPersonWeapon : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!IsInstanceValid(_weapon) || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured
+        if (!IsInstanceValid(_weapon) || _player.GameplayInputBlocked || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured
             || GetViewport().GuiGetFocusOwner() != null)
         { CancelTrigger(); _shove?.Cancel(); return; }
         Vector2 centre = _camera.GetViewport().GetVisibleRect().Size * 0.5f;
@@ -104,6 +104,10 @@ public partial class FirstPersonWeapon : Node
     }
 
     // =========================================================
+    private void OnInputBlocked(bool blocked)
+    { if (blocked) { CancelTrigger(); _shove?.Cancel(); _weapon?.CancelFeedback(); } }
+
+    // =========================================================
     public override void _Notification(int what)
     { if (what == NotificationApplicationFocusOut) { CancelTrigger(); _shove?.Cancel(); if (IsInstanceValid(_weapon)) _weapon!.CancelFeedback(); } }
 
@@ -111,6 +115,7 @@ public partial class FirstPersonWeapon : Node
     public override void _ExitTree()
     {
         CancelTrigger(); _shove?.Cancel();
+        if (IsInstanceValid(_player)) _player.GameplayInputBlockChanged -= OnInputBlocked;
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; }
     }
 }
