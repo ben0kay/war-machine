@@ -4,7 +4,7 @@
 
 **Current:** integrated in WORLD/World.tscn, enlarged to **56 x 36m asphalt, 14 bays and 7 parked cars**. Local build/visual acceptance pending. See IMPLEMENTATION_PLAN.md and ../../../VILLAGE_IMPLEMENTATION_PLAN.md for phase history; older 40x28m / 8-bay / 3-car descriptions are superseded.
 
-The site is a native PackedScene composition: ParkingLot001, one ConvenienceStore001 beneath Structures/Store, seven existing Car001 instances under ParkedCars, and four StreetLamp001 instances under StreetLighting. All 13 child prefab instances stay independently reusable; no copied car/store meshes or site processing loop. World owns placement/terrain/actors; the site owns relative child transforms.
+The site is a native PackedScene composition: ParkingLot001, one ConvenienceStore001 beneath Structures/Store, seven existing Car001 instances under ParkedCars, four StreetLamp001 instances under StreetLighting, and eight reused Hedge001 scenes under Landscaping/ParkingWalkwayHedges. All 21 child prefab instances stay independently reusable; no copied meshes or site processing loop. World owns placement/terrain/actors; the site owns relative child transforms.
 
 ## Current authored positions (site-local metres)
 
@@ -14,6 +14,7 @@ The site is a native PackedScene composition: ParkingLot001, one ConvenienceStor
 | Store | (0,0,-23.75); front at Z=-17.75 aligns with the new sidewalk/central gap |
 | Parked cars | Bays 01/03/05/08/10/12/14; X=-20.15/-13.95/-7.75/1.55/7.75/13.95/20.15, Y=0.12, Z=-12.03 |
 | Car orientation | Bays 03 and 12 backed in; others face -Z. Doors closed by default |
+| Parking-edge hedge border | Eight Hedge001 instances at X=±4.5/9.4/14.3/19.2, site Y=0.15, Z=-15.7; two runs flanking an open centre. |
 | Store lamps | X=-25/+25, Y=0.12, Z=-12.2; heads face inward |
 | Approach lamps | X=-24/+24, Y=0.12, Z=12.5; heads face inward |
 | FrontEntrance marker | (0,0.12,-17.4) |
@@ -46,3 +47,17 @@ No new per-frame work: art generation, bounds, terrain survey/grading and suppor
 ## Four taller, brighter street lamps — 2026-10-28
 
 The existing four `StreetLamp001.tscn` instances are unchanged in number, site-relative position and inward-facing yaw. Their **shared physical master** now makes each pole 7.0m tall (was 5.8m); the existing `StreetLampMesh` binding also raises the attached light emitter. Their **shared ENVIRONMENT lighting master** now supplies a 20m-range, 63°-half-angle, 4.5-energy downward spotlight and a 12m-range, 0.75-energy shadowless omni fill. This increases both spotlight footprint and surrounding brightness without adding any new light nodes, creating a per-site alternate preset, enabling shadows or changing Sky3D. Test after pulling/recompiling to confirm visual reach across the enlarged 56×36m lot; existing lamps still cannot illuminate every square metre of the large centre apron at once.
+
+## Hedge-row landscaping at the parking-side walkway (2026-10-28)
+
+**Implemented in source; local visual acceptance pending.** The store site now instances **eight canonical `Hedge001.tscn` objects**, four on the west side and four on the east side of the central storefront access. Both lines run parallel to the storefront (X axis), **between the parking bay heads and the raised pedestrian walkway**. These are reusable prefab instances, not baked duplicates or new mesh generators.
+
+- **Placement:** `Landscaping/ParkingWalkwayHedges` is a sibling of the store's `Structures` group and the car/lamp groups. Site-local hedge centres: X=±4.5, ±9.4, ±14.3, ±19.2, Z=-15.70. The site has 14 bay markers from X=-21.7 to +21.7, while the raised sidewalk occupies Z≈-17.75..-15.35. Hedges sit on the sidewalk's **parking-facing edge**, not inside parking stalls or the central 3.2m lowered entrance strip.
+- **Dimensions:** the eight instances share `Configuration/HedgeRowMaster.tres`, a **site-local override** of the standard `PlaceableSizeSettings` with `SizeMultiplier = Vector3(1, 0.45, 0.43)`. The GLB's native 4.805m length becomes 4.805m, **height ~0.96m**, **depth ~0.55m**; each is separated by about 9.5cm. The central opening between end hedges is ~4.2m wide. There's **~1.77m of walking surface** on the store-facing side of the hedge mass.
+- **Elevation:** site `Landscaping` parent Y=-0.12 matches other site roots; each hedge child is Y=0.27, so its actual base lies at **site Y=0.15**, the raised sidewalk top. This is intentional: don't accidentally set hedge roots at asphalt walking Y=0 where they'd be sunk into the raised sidewalk.
+- **Configuration:** edit only `Configuration/HedgeRowMaster.tres` to adjust **all eight site hedges** (shared size); global `Hedge001/Configuration/HedgeMaster.tres` remains unchanged for other uses. Position/count remain explicitly authored in the site `.tscn`, not procedurally generated or randomly respawned.
+
+**Preserved:** 14 marked bays, seven cars, parking lines, raised sidewalk curbs, open central entrance, store/side/rear access, four lamps, terrain support and existing store-only fade. Hedges are in a sibling visual group outside `Structures` and do not get mistaken for store walls/occluders. **Hedge001 currently has no collision**; these are visual boundaries only and don't block actors or bullets. Do not add physics until separately authorized.
+
+**Local validation:** pull dev, Godot .NET import and `dotnet build war-machine.csproj`, F6 `WORLD/World.tscn`. Inspect the planting along the curb from overhead/FPS, ensuring no trees clip into parked vehicle fronts or bay lines, path/central lowered entrance remain legible, hedge feet rest on top of sidewalk, no vegetation floats and no store fade regression. Walk along the ~1.77m path behind the hedge and through the central opening; confirm no unexpected collision. Test around parking bays 1/14 and the two lamp bases. This commit does not add a terrain rebake or new per-frame code.
+

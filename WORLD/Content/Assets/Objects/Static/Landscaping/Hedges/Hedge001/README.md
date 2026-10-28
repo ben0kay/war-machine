@@ -1,6 +1,6 @@
 # Hedge001 — neatly clipped rectangular landscaping hedge (GLB)
 
-**Status:** Original GLB art and canonical reusable visual scene authored. Godot import/appearance validation **pending**. This is a non-pickup **static landscaping object**, not a member of the procedural `VEGETATION/` system or the world chunk vegetation generators. No automatic world/site placement, terrain clearing, collision, interaction or F1 menu entry.
+**Status:** Original GLB art and canonical reusable visual scene authored. Godot import/appearance validation **pending**. This is a non-pickup **static landscaping object**, not a member of the procedural `VEGETATION/` system or the world chunk vegetation generators. No automatic procedural vegetation scatter, terrain clearing, collision, interaction or F1 menu entry. **Eight explicit scene instances are now used by ConvenienceStoreSite001** as decorative parking/walkway landscaping, using a site-specific size override; the canonical GLB and default master are unchanged.
 
 ## Contents and size
 

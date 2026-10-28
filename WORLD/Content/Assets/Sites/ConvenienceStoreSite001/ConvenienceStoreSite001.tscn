@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Infrastructure/ParkingLots/ParkingLot001/ParkingLot001.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Structures/ConvenienceStore001/ConvenienceStore001.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Cars/Car001/Car001.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Lighting/StreetLamp001/StreetLamp001.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Landscaping/Hedges/Hedge001/Hedge001.tscn" id="5"]
+[ext_resource type="Resource" path="res://WORLD/Content/Assets/Sites/ConvenienceStoreSite001/Configuration/HedgeRowMaster.tres" id="6"]
 
 [node name="ConvenienceStoreSite001" type="Node3D"]
 
@@ -43,6 +45,43 @@ rotation = Vector3(0, 3.141593, 0)
 
 [node name="Car_Bay14" parent="ParkedCars" instance=ExtResource("3")]
 position = Vector3(20.15, 0.12, -12.03)
+
+[node name="Landscaping" type="Node3D" parent="."]
+position = Vector3(0, -0.12, 0)
+
+[node name="ParkingWalkwayHedges" type="Node3D" parent="Landscaping"]
+
+[node name="Hedge_West04" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(-19.2, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_West03" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(-14.3, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_West02" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(-9.4, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_West01" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(-4.5, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_East01" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(4.5, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_East02" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(9.4, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_East03" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(14.3, 0.27, -15.7)
+Settings = ExtResource("6")
+
+[node name="Hedge_East04" parent="Landscaping/ParkingWalkwayHedges" instance=ExtResource("5")]
+position = Vector3(19.2, 0.27, -15.7)
+Settings = ExtResource("6")
 
 [node name="StreetLighting" type="Node3D" parent="."]
 position = Vector3(0, -0.12, 0)
