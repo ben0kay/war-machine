@@ -34,7 +34,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private ulong _restUntil;
     private float _phase, _stuck;
     private HitReaction _reaction;
-    private bool _shoveStagger;
+    private bool _shoveStagger, _meleeBackstep;
     private float _recoveryRemaining;
     private Vector3 _reactionPose;
     protected Node3D _leftArm = null!, _rightArm = null!, _leftLeg = null!, _rightLeg = null!;
@@ -174,26 +174,30 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public void ReceiveImpact(in CombatImpact impact)
     {
         if (!IsActive || !_configured || _health.IsDead || IsQueuedForDeletion() || _awaitingSpawnGround) return;
-        if (impact.Kind == CombatImpactKind.Bullet || impact.Kind == CombatImpactKind.Melee)
+        if (impact.Kind == CombatImpactKind.Bullet)
         {
             if (!_config.BulletReactionsEnabled
                 || !_reaction.TryStart(impact, _config.ImpactResistance, _config.FlinchThreshold,
                     _config.MaxStaggerSeconds, _config.MinFlinchInterval, _config.MinRecoverySeconds,
                     Time.GetTicksMsec())) return;
-            _shoveStagger = false;
+            _shoveStagger = _meleeBackstep = false;
             // Weaker weapon impact retains more momentum; strength 1 keeps the original rifle response.
             float power = Mathf.Clamp(_reaction.Strength, 0f, 1f);
             float keep = Mathf.Lerp(1f, Mathf.Clamp(_config.ImpactVelocityRetention, 0f, 1f), power);
             Velocity = new Vector3(Velocity.X * keep, Velocity.Y, Velocity.Z * keep);
         }
-        else if (impact.Kind == CombatImpactKind.Shove)
+        else if (impact.Kind == CombatImpactKind.Shove || impact.Kind == CombatImpactKind.Melee)
         {
+            // Damaging bat swings reuse collision-aware shove travel, but with their own reaction window.
+            bool melee = impact.Kind == CombatImpactKind.Melee;
+            float maxDuration = melee ? Mathf.Clamp(_config.MeleeMaxStaggerSeconds, 0.1f, 1f)
+                : _config.ShoveMaxStaggerSeconds;
             if (!_config.ShoveReactionsEnabled
                 || !_reaction.TryStart(impact, _config.ShoveResistance, _config.ShoveFlinchThreshold,
-                    _config.ShoveMaxStaggerSeconds, _config.MinFlinchInterval, _config.MinRecoverySeconds,
+                    maxDuration, _config.MinFlinchInterval, _config.MinRecoverySeconds,
                     Time.GetTicksMsec())) return;
-            _shoveStagger = true;
-            // Use existing collision-aware CharacterBody3D motion, no teleport or vertical lift.
+            _shoveStagger = true; _meleeBackstep = melee;
+            // The original MoveAndSlide resolves walls and other entities; no teleport or upward lift.
             float pushSpeed = Mathf.Min(SafeShoveSetting(_config.ShoveMaxPushSpeed, 20f),
                 _reaction.Strength * SafeShoveSetting(_config.ShovePushSpeed, 20f));
             Vector3 push = _reaction.Direction * pushSpeed;
@@ -218,14 +222,14 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     private void ClearReaction()
-    { RemoveReactionPose(); _reaction.Reset(); _shoveStagger = false; _recoveryRemaining = 0; }
+    { RemoveReactionPose(); _reaction.Reset(); _shoveStagger = _meleeBackstep = false; _recoveryRemaining = 0; }
 
     // =========================================================
     private void ApplyReactionPose()
     {
-        if (!_reaction.IsActive || _shoveStagger) return; // Shove visuals are deferred; bullet flinch is unchanged.
+        if (!_reaction.IsActive || (_shoveStagger && !_meleeBackstep)) return; // Q unchanged; bat adds torso recoil.
         float pulse = Mathf.Sin(_reaction.Progress * Mathf.Pi) * Mathf.Min(1, _reaction.Strength);
-        float angle = Mathf.DegToRad(Mathf.Clamp(_config.FlinchDegrees, 0, 20)) * pulse;
+        float angle = Mathf.DegToRad(Mathf.Clamp(_config.FlinchDegrees * (_meleeBackstep ? 1.8f : 1f), 0, 25)) * pulse;
         float side = Mathf.Clamp(_reaction.Direction.Dot(VisualRoot.GlobalBasis.X), -1, 1);
         _reactionPose = new Vector3(angle, 0, -side * angle * 0.4f);
         VisualRoot.Rotation += _reactionPose;
@@ -405,7 +409,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             _reaction.Advance(dt, Time.GetTicksMsec());
             if (!_reaction.IsActive)
             {
-                _shoveStagger = false;
+                _shoveStagger = _meleeBackstep = false;
                 _recoveryRemaining = Mathf.Clamp(_config.RecoverySeconds, 0, 1);
             }
         }
@@ -439,8 +443,14 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         {
             if (shovePushing)
             {
-                // Slide backward without turning into the shove or walking in reverse.
-                Pose(0);
+                // Q still slides. Damaging melee has a brief backward stepping gait while recoiling.
+                if (_meleeBackstep)
+                {
+                    _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter) * 1.2f;
+                    float stride = Mathf.Cos(_phase);
+                    Pose(-Mathf.Sin(_phase) * 0.8f, Mathf.Max(0f, stride), Mathf.Max(0f, -stride));
+                }
+                else Pose(0);
             }
             else
             {
