@@ -11,13 +11,17 @@ public static class FirstPersonMeleeSwing
         float windup = SafeTime(settings.WindupSeconds), active = SafeTime(settings.ActiveSeconds);
         float recovery = SafeTime(settings.RecoverySeconds);
         float left = SafeExtent(settings.FirstPersonWindupLeft), right = SafeExtent(settings.FirstPersonFollowRight);
+        float sideways = float.IsFinite(settings.FirstPersonSideTiltDegrees)
+            ? Mathf.Clamp(settings.FirstPersonSideTiltDegrees, 0f, 135f) : 90f;
         Basis start = rest.Basis, wind = Orient(55f, 72f, -22f), finish = Orient(-65f, 48f, 26f);
         Basis rotation;
         Vector3 shift;
+        float tilt;
         if (elapsed < windup)
         {
             float t = Smooth(elapsed / windup);
             rotation = start.Slerp(wind, t);
+            tilt = sideways * t;
             shift = new Vector3(-left * t, 0.13f * t, -0.08f * t);
         }
         else if (elapsed < windup + active)
@@ -25,6 +29,7 @@ public static class FirstPersonMeleeSwing
             // Straight-through, fast active stroke follows the same time range as the contact sweep.
             float t = Mathf.Clamp((elapsed - windup) / active, 0f, 1f);
             rotation = wind.Slerp(finish, t);
+            tilt = sideways;
             shift = new Vector3(Mathf.Lerp(-left, right, t), Mathf.Lerp(0.13f, -0.08f, t),
                 Mathf.Lerp(-0.08f, 0.03f, t));
         }
@@ -32,14 +37,19 @@ public static class FirstPersonMeleeSwing
         {
             float t = Smooth((elapsed - windup - active) / recovery);
             rotation = finish.Slerp(start, t);
+            tilt = sideways * (1f - t);
             shift = new Vector3(Mathf.Lerp(right, 0f, t), Mathf.Lerp(-0.08f, 0f, t),
                 Mathf.Lerp(0.03f, 0f, t));
         }
+        // The bat barrel is along local -Z. The old rightmost "roll" in Orient twists
+        // *around* the barrel, so it cannot lay the barrel sideways on screen.
+        // Apply rotation OUTSIDE the composed basis around camera-forward +Z instead.
+        if (tilt > 0.001f) rotation = new Basis(Vector3.Back, Mathf.DegToRad(tilt)) * rotation;
         weapon.Transform = new Transform3D(rotation, rest.Origin + shift);
     }
 
     // =========================================================
-    // Yaw keeps the barrel on the correct attack side; pitch/roll add a forceful diagonal slash.
+    // Local yaw/pitch shape the swing; this roll only twists the handle. Screen tilt is applied separately.
     private static Basis Orient(float yaw, float pitch, float roll)
         => new Basis(Vector3.Up, Mathf.DegToRad(yaw))
             * new Basis(Vector3.Right, Mathf.DegToRad(pitch))

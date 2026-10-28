@@ -12,6 +12,7 @@ HoldPitchDegrees = 49.0
 HoldYawDegrees = -14.0
 FirstPersonWindupLeft = 0.85
 FirstPersonFollowRight = 0.70
+FirstPersonSideTiltDegrees = 90.0
 HitMask = 21
 WindupSeconds = 0.27
 ActiveSeconds = 0.17
