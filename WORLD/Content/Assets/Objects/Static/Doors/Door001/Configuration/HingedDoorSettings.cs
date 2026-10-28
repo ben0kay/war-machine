@@ -14,6 +14,7 @@ public partial class HingedDoorSettings : Resource
     [Export(PropertyHint.Range, "1,50,1")] public float MassKg { get; set; } = 9f;
     [Export(PropertyHint.Range, "0,12,0.1")] public float AngularDamping { get; set; } = 2.2f;
     [Export(PropertyHint.Range, "25,120,5")] public float SwingLimitDegrees { get; set; } = 110f;
+    [Export(PropertyHint.Range, "0,150,1")] public float CharacterContactForce { get; set; } = 38f;
 
     [ExportGroup("Handle & finish")]
     [Export(PropertyHint.Range, "0.65,1.55,0.05")] public float HandleHeight { get; set; } = 1.15f;

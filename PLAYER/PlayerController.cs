@@ -222,6 +222,9 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             : IsOnFloor() ? -0.1f : Velocity.Y - Mathf.Max(1, _settings.Gravity) * dt;
         Velocity = new Vector3(horizontal.X, vertical, horizontal.Z);
         MoveAndSlide();
+        // DOOR1: reuse MoveAndSlide contact reports. No additional physics query or timer.
+        // A constrained hinged body may not receive enough natural impulse from sliding alone.
+        if (horizontal.LengthSquared() > 0.04f) PushContactBody(horizontal, dt);
         if (_reportMovementCollision) ReportMovementCollision();
         Vector3 travel = GlobalPosition - before; travel.Y = 0;
         float actualSpeed = dt > 0 ? travel.Length() / dt : 0;
@@ -243,6 +246,26 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         if (before.DistanceSquaredTo(GlobalPosition) > 0.0000001f) PositionChanged?.Invoke(GlobalPosition);
         if (IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _crouch == (IsCrouching ? 1f : 0f) && _prone == (IsProne ? 1f : 0f))
         { Velocity = Vector3.Zero; _phase = 0; Pose(0, 0); SetPhysicsProcess(false); }
+    }
+
+    // =========================================================
+    // Reuse existing player slide contacts to gently push a door/cupboard hinge at the actual
+    // impact location. One eligible push per physics step avoids multiplying impulse for
+    // multiple solver contacts; other rigid bodies and all ordinary wall collision are unchanged.
+    private void PushContactBody(Vector3 horizontal, float delta)
+    {
+        Vector3 direction = horizontal.Normalized();
+        int contacts = GetSlideCollisionCount();
+        for (int i = 0; i < contacts; i++)
+        {
+            var hit = GetSlideCollision(i);
+            if (hit.GetCollider() is not RigidBody3D body
+                || body.GetParent() is not ICharacterContactPushable pushable) continue;
+            // Only a character walking *into* the surface should push it.
+            if (direction.Dot(-hit.GetNormal()) < 0.35f) continue;
+            if (pushable.TryPushFromCharacter(direction, hit.GetPosition(), horizontal.Length(), delta))
+                break;
+        }
     }
 
     // =========================================================

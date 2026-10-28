@@ -1,4 +1,4 @@
-> **DOOR1 note (2026-10-28):** the convenience store now has a standalone physics hinge door that opens from player contact; see [Door001](../WORLD/Content/Assets/Objects/Static/Doors/Door001/README.md). Door-pull handles, cupboards and the IX0–IX8 interaction plans remain future work.
+> **DOOR1 note (2026-10-28):** the convenience store now has a standalone physics hinge door with an explicit, reusable character-contact push impulse using existing slide collisions; see [Door001](../WORLD/Content/Assets/Objects/Static/Doors/Door001/README.md). Door-pull handles, cupboards and the IX0–IX8 interaction plans remain future work.
 
 # INTERACTION — shared physical world interactions (planned)
 

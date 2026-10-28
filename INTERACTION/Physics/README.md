@@ -1,0 +1,5 @@
+# Contact pushing for physical hinges
+
+`ICharacterContactPushable` is a tiny, optional physics contact adapter shared by future doors and cupboard hinges. `PlayerController` checks `MoveAndSlide()` contacts **only while moving** and invokes one matching hinged owner's method per physics step. The door applies a real contact-point impulse to its `RigidBody3D`; Godot's `HingeJoint3D` supplies rotation constraints. The contact is directional: walking *into* the leaf from either side pushes it, while grazing past or standing still does not.
+
+This is **not** IX0 targeting, grabbing, inventory or universal prop physics. It does not register global entities, query/raycast the physics world, add a fixed update loop to doors, or override bullet/movement collision. Subsequent cupboard-door interactions may implement the same interface. Test with the rear service door in `ConvenienceStore001`, especially pushing near its handle edge. See `WORLD/Content/Assets/Objects/Static/Doors/Door001/README.md`.

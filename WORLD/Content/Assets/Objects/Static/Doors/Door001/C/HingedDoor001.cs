@@ -2,9 +2,10 @@
 // A rigid leaf swings on Godot's HingeJoint3D; its door handle anchors support future DOOR2 pulling.
 using Godot;
 
-public partial class HingedDoor001 : Node3D
+public partial class HingedDoor001 : Node3D, ICharacterContactPushable
 {
     [Export] public HingedDoorSettings Settings { get; set; } = null!;
+    private RigidBody3D? _leaf;
 
     // =========================================================
     // Build one rigid leaf, fixed hinge anchor and physical joint when the prefab enters the world.
@@ -33,6 +34,7 @@ public partial class HingedDoor001 : Node3D
             CanSleep = true, ContinuousCd = true
         };
         AddChild(leaf);
+        _leaf = leaf;
         var panel = new MeshInstance3D
         {
             Name = "Panel", Mesh = new BoxMesh { Size = new Vector3(width, height, thickness) },
@@ -91,5 +93,21 @@ public partial class HingedDoor001 : Node3D
         joint.SetFlag(HingeJoint3D.Flag.EnableMotor, false);
         AddChild(joint);
         SetProcess(false); SetPhysicsProcess(false);
+    }
+    // =========================================================
+    // The CharacterBody3D's slide contacts give us a one-time force at the point of contact.
+    // The hinge solves the door angle/limits; we never directly set its rotation or move it.
+    // A push near the handle creates natural torque; pushing on the hinge creates very little.
+    public bool TryPushFromCharacter(Vector3 direction, Vector3 point, float speed, float delta)
+    {
+        if (!IsInstanceValid(_leaf) || _leaf!.Freeze || speed <= 0.1f) return false;
+        var s = Settings ?? new HingedDoorSettings();
+        float force = Mathf.Clamp(s.CharacterContactForce, 0f, 150f);
+        if (force <= 0f) return false;
+        // Applying a small per-step impulse (force * dt) prevents 60/120 Hz runaway pushes.
+        float speedFactor = Mathf.Clamp(speed / 5f, 0.35f, 1.5f);
+        Vector3 impulse = direction.Normalized() * (force * speedFactor * Mathf.Clamp(delta, 0f, 0.05f));
+        _leaf.ApplyImpulse(impulse, point - _leaf.GlobalPosition);
+        return true;
     }
 }
