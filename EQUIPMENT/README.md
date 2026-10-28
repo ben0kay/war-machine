@@ -38,6 +38,17 @@ Switching cancels the trigger/pending shot, unsubscribes the old cooldown callba
 
 Local validation pending: Godot/.NET unavailable here. Build, F6 World/FPS, 1/2 repeatedly, shoot/hold then switch, release/focus loss, GUI slider clicks and scene unload. Confirm only selected mesh draws, only selected gun fires, MG tracers/spread work, and both mounts/muzzles look right.
 
+## Planned cumulative weapon recoil (RC0–RC2)
+
+The [weapon recoil implementation plan](Weapons/RECOIL_IMPLEMENTATION_PLAN.md)
+defines a separate **accepted-shot recoil state** that makes the real bullet ray
+climb over sustained automatic fire. RC0 covers shared maths and per-gun settings;
+RC1 adds top-down aim climb and weapon/arm animation; RC2 reuses that mechanic
+in the FPS debug view. This is **not existing random spread** (ACC0) and not
+enemy stagger. Machine-gun bursts are intended to stay more controlled than
+continuous fire; a fully stationary cursor need not mean stationary bullet aim.
+**Planning only — no recoil runtime functionality has been introduced.**
+
 ## Planned melee equipment and hit reactions
 
 The [CM implementation plan](../COMBAT/IMPLEMENTATION_PLAN.md) documents shared bullet flinch, firearm-butt shove, a bat that can strike up to three zombies per swing, a one-target knife, and later zombie attacks. None are implemented yet. Current `WeaponSlots` remain two firearm-only test slots; an item capability extension is **proposed only for CM3**, not part of the current hotbar. Cross-actor impact and stagger ownership is planned under `COMBAT/`; the working damage pipeline stays under `ENTITIES/Shared/Combat/` until any separately authorized move.

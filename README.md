@@ -121,6 +121,7 @@ Start with this README for intent, then read the owning README, relevant plan an
 - [ENTITIES/TYPES/Zombies/README.md](ENTITIES/TYPES/Zombies/README.md) — current zombies and explicit limitations
 - [ENTITIES/Shared/Sensing/README.md](ENTITIES/Shared/Sensing/README.md) — shared visibility, hearing proposal and perception phases
 - [EQUIPMENT/Weapons/README.md](EQUIPMENT/Weapons/README.md) — shared gun systems and accuracy work
+- [EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md) — **RC0–RC2 planned only**: shared gameplay recoil, top-down aim climb and FPS presentation; separate from random spread
 - [COMBAT/IMPLEMENTATION_PLAN.md](COMBAT/IMPLEMENTATION_PLAN.md) — impact and stagger foundation implemented/awaiting validation; remaining quick melee, bat, knife and zombie outgoing attacks tracked there
 - [INTERACTION/IMPLEMENTATION_PLAN.md](INTERACTION/IMPLEMENTATION_PLAN.md) — **new master plan (IX0–IX8; nothing implemented):** physical props and carrying/throwing, cupboards, destructible planks, item identity, rifle placement and scavenging; see [INTERACTION overview](INTERACTION/README.md)
 - [WORLD/Content/Placeables/README.md](WORLD/Content/Placeables/README.md) — **new model library:** fixed Objects versus pickup-able Props, Bookcase001 and Book001 original GLBs, future furnishing catalogue

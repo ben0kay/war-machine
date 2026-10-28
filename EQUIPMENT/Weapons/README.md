@@ -10,6 +10,10 @@ tracer pool. The rifle remains the configured starter gun; weapon switching is
 Other firearm scenes can reuse the same mechanics and typed Resource.
 [ACCURACY_IMPLEMENTATION_PLAN.md](ACCURACY_IMPLEMENTATION_PLAN.md) tracks the shot-spread
 foundation (ACC0) and proposed player-specific stance/movement accuracy (ACC1).
+[RECOIL_IMPLEMENTATION_PLAN.md](RECOIL_IMPLEMENTATION_PLAN.md) separately plans **RC0 shared
+recoil, RC1 top-down aim climb + animation, RC2 FPS recoil**, with deterministic
+shot-to-shot displacement and burst/recovery. **Recoil is not random spread**;
+RC0–RC2 remain plans only, with no current recoil mechanics.
 Projectile weapons, melee, ammo/reload and inventory remain future tasks.
 
 ## Moving bullet-tracer visuals — Godot validation pending

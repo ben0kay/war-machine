@@ -58,6 +58,17 @@ Add a small stateless (unless smoothing is needed) `PLAYER/Equipment/Accuracy/Pl
 - Combine values only once per shot and clamp extreme spread to a sensible cap. Preserve old call sites and avoid requiring changes for NPCs.
 - No extra physics tick or new signal needed to know accuracy; calculate from current movement when a shot passes its gate, and preserve current projectile/obstruction/hit logic.
 
+## Recoil is a separate plan (2026-10-28)
+
+**Do not merge ACC0 spread with cumulative recoil.** Random dispersion remains
+`ShotSpread.Apply` / `BaseSpreadDegrees`. The owner separately requests **persistent,
+per-shot aim climb** that changes actual hit rays and rewards burst firing, plus
+top-down and FPS weapon movement. This is tracked under
+[RECOIL_IMPLEMENTATION_PLAN.md](RECOIL_IMPLEMENTATION_PLAN.md) as RC0–RC2;
+those phases are planned only. ACC1 continues to mean stance/movement-based
+random accuracy multipliers. ACC2's possible *recoil-induced bloom* below is
+additional optional random spread, **not** the gameplay recoil system.
+
 ## ACC2 — optional feel/polish — FUTURE / NOT STARTED
 
 Only if requested: transient recoil-induced bloom for sustained automatic fire, gradual accuracy recovery, dynamic crosshair expansion, aiming/weapon attachments and/or debug aim cone visualization. Any smoothing must wake only while needed and sleep when settled. No automatic scope creep into ammo/reload/projectiles.

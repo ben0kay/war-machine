@@ -38,6 +38,10 @@ adapters automatically share this firearm logic.
 
 See [../ACCURACY_IMPLEMENTATION_PLAN.md](../ACCURACY_IMPLEMENTATION_PLAN.md)
 for planned ACC1 player crouch/movement multipliers and optional ACC2 polish.
+See [../RECOIL_IMPLEMENTATION_PLAN.md](../RECOIL_IMPLEMENTATION_PLAN.md)
+for the **separate, not-yet-implemented** RC0/RC1/RC2 cumulative gameplay recoil
+and visual weapon kick. The existing `ShotSpread.Apply` continues to supply only
+random dispersion, not accumulated aim climb.
 
 ## Ownership cleanup
 
