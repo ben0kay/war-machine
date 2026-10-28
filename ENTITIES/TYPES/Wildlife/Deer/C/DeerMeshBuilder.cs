@@ -27,8 +27,8 @@ public partial class DeerMeshBuilder : Node3D
     {
         var s = Settings ?? new DeerSettings();
         var art = new Node3D { Name = "Generated" }; AddChild(art);
-        var coat = Paint(s.CoatColor), pale = Paint(s.BellyColor), hoof = Paint(s.HoofColor);
-        var antler = Paint(s.AntlerColor), eye = Paint(new Color(0.085f, 0.069f, 0.053f));
+        Material coat = Paint(s.CoatColor), pale = Paint(s.BellyColor), hoof = Paint(s.HoofColor);
+        Material antler = Paint(s.AntlerColor), eye = Paint(new Color(0.085f, 0.069f, 0.053f));
 
         // Compact, level-backed torso and lighter belly; shoulder approximately 1.35m above the feet.
         Part(art, "Barrel", new(0, 1.14f, 0.10f), new(0.60f, 0.61f, 1.58f), Rounded, coat);
