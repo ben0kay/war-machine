@@ -1,3 +1,3 @@
-# Store artwork (reserved)
+# Store artwork — reserved
 
-Potential imported sign, storefront glass or interior art. Keep geometry and its collision independent so the entire building can use the existing top-down floor/whole-building camera fading contract.
+No GLB, textures, decals, signage graphics or glass have been imported. All current geometry is procedurally generated once in `../C/ConvenienceStoreMesh.cs`. Any future asset replacement must preserve real door/window apertures, the original collision, and the metadata/role groups required by `StructureVisibility`.

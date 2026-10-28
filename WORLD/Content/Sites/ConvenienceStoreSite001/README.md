@@ -19,3 +19,5 @@ The parent owns layout/positions, **not** child art, light animation, building f
 `Configuration/SiteMaster.tres` is a valid but empty generic Godot Resource. `Configuration/ConvenienceStoreSiteSettings.cs` is intentionally empty; neither is attached or used by the scene yet. Replace with typed configurable dimensions/relative prefab positions when the site assembly is authorized, and duplicate authoring resources before runtime tuning.
 
 **PL0A delivered:** the independent parking-lot prefab now has asphalt, bays, curbs and markers. It is intentionally **not** instanced into this site. PL0B will compose the store, lamps, cars and the lot into one reusable scene; PL1 will place that scene in the world. The current-branch, adapted [implementation plan](IMPLEMENTATION_PLAN.md) is now the canonical PL roadmap; the original main-branch version is historical only.
+
+**PL0B progress:** [ConvenienceStore001](../../Structures/ConvenienceStore001/README.md) is now authored independently, with big empty windows, retail shelves, checkout and stockroom/rear exit. Parent site and lamp prefab remain untouched. No world placement has occurred.

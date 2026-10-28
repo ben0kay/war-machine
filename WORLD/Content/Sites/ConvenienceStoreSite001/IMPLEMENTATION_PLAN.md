@@ -33,7 +33,7 @@ The site owns **relative transforms, car/lamp selection, layout and site-wide wo
 | Phase | Deliverable | State |
 | --- | --- | --- |
 | **PL0A — reusable parking foundation** | Independent asphalt/car-park scene; lane, 6–8 marked bays, sidewalk, curb/entrance gap, short driveway, static colliders, `Marker3D` bay/connection positions, typed Inspector master and docs. No cars/store/lamps/site assembly/world placement. | **Implemented; awaiting Godot validation** |
-| **PL0B — reusable prefabs and site composition** | Author independent convenience-store shell and streetlamp (geometry first), instance them plus existing Car001 prefabs into the parent site. Adjustable parent transforms; no night lighting yet. | Planned |
+| **PL0B — reusable prefabs and site composition** | Independent store-only prefab now implemented: actual unglazed storefront windows, tills/shelves and stockroom exit. Street-lamp model and site composition with cars/lot **still pending**. | **Partial: store only** |
 | **PL1 — world integration** | Place assembled site on suitable saved Terrain3D near an accessible approach; validate height variation, foundations, total-site foliage/grass/rock clearings and building visibility registration. No terrain rebake. | Planned |
 | **PL2 — nighttime atmosphere** | Local store light and limited street-lamp lights (one optionally flickers), warm shop windows, compare with Sky3D/night and volumetric ground haze. Limit shadowed lights and update work. | Planned |
 | **PL3 — optional view comparison** | Compare the **same site** in top-down and existing FPS debug camera with no new player/controller rewrite. Add fixed view markers only if requested. | Planned |
@@ -70,3 +70,7 @@ Read current branch, inspect modified sources, perform a brief C# build if tools
 ### PL0A delivery note
 
 PL0A is now implemented in `Infrastructure/ParkingLots/ParkingLot001`, with typed `ParkingLotSettings.cs`, an authored master, a standalone `[Tool]` scene, one-time generated collidable asphalt/sidewalk/curb, non-colliding painted bays/road dashes, and stable slot/site markers. It deliberately does **not** instantiate anything in `ConvenienceStoreSite001`, modify WorldController, alter Terrain3D, or add store/lamp/car models. **PL0B is next** once the user approves the standalone scale. Local C# compile, Godot preview and physical walk testing remain pending.
+
+### PL0B store-only checkpoint
+
+`WORLD/Content/Structures/ConvenienceStore001/` now has typed configuration, its own flat-roof retail structure, large open side/front window gaps, an accessible till, four low display rows, and a separated stockroom with an inner walk-through and exterior service exit. It reuses the `StructureVisibility` contract. **Not assembled, not placed, no lamps, no car instances or glass.** Continue PL0B by building a separate lamp and composing the parent scene when explicitly requested. C# compile/render and physical walk validation pending.
