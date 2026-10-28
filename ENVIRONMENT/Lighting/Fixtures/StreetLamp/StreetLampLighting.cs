@@ -94,7 +94,7 @@ public partial class StreetLampLighting : Node3D
     private void CreateVisibleCone(StreetLampLightingSettings s)
     {
         if (!s.VisibleConeEnabled || s.VisibleConeOpacity <= 0f) return;
-        float length = Mathf.Clamp(s.VisibleConeLength, 1f, 10f);
+        float length = Mathf.Clamp(s.VisibleConeLength, 1f, 12f);
         float radius = Mathf.Clamp(s.VisibleConeBaseRadius, 0.5f, 7f);
         var shader = GD.Load<Shader>("res://ENVIRONMENT/Lighting/Fixtures/StreetLamp/VisibleCone.gdshader");
         if (shader == null) { GD.PushWarning("StreetLampLighting: missing visible-cone shader."); return; }
@@ -110,6 +110,22 @@ public partial class StreetLampLighting : Node3D
             Visible = false
         };
         AddChild(_visibleCone);
+    }
+
+    // =========================================================
+    // Physical fixtures can report their head height once after placement.
+    // Extend the cone slightly below the fixture's ground pivot, so the actual
+    // terrain occludes the open end rather than exposing a floating light cutoff.
+    // Standalone fixtures retain VisibleConeLength as their default length.
+    public void FitVisibleConeToGround(float headHeightAboveBase)
+    {
+        if (!GodotObject.IsInstanceValid(_visibleCone) || !float.IsFinite(headHeightAboveBase)) return;
+        var s = Settings ?? new StreetLampLightingSettings();
+        float overlap = Mathf.Clamp(s.VisibleConeGroundOverlap, 0.1f, 2f);
+        float length = Mathf.Clamp(Mathf.Max(0f, headHeightAboveBase) + overlap, 1f, 12f);
+        float diameter = Mathf.Clamp(s.VisibleConeBaseRadius, 0.5f, 7f) * 2f;
+        _visibleCone!.Position = new Vector3(0, -length * 0.5f, 0);
+        _visibleCone.Scale = new Vector3(diameter, length, diameter);
     }
 
     // =========================================================

@@ -32,6 +32,8 @@ public partial class StreetLampMesh : Node3D
         var s = Settings ?? new StreetLampSettings();
         _lighting.Position = new Vector3(0, Mathf.Clamp(s.PoleHeight, 4f, 8f) - 0.48f,
             Mathf.Clamp(s.ArmReach, 0.6f, 1.7f));
+        // The fixture knows its real head height; hide the beam's open end below the ground pivot.
+        _lighting.FitVisibleConeToGround(_lighting.Position.Y);
         if (_bulbMaterial != null) _lighting.BindLedPanel(_bulbMaterial);
         SetProcess(false); SetPhysicsProcess(false);
     }

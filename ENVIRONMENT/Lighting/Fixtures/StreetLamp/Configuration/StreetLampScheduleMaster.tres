@@ -4,5 +4,5 @@
 [resource]
 script = ExtResource("1")
 AutomaticTimeSwitching = true
-TurnOnHour = 18.5
+TurnOnHour = 17.25
 TurnOffHour = 6.5

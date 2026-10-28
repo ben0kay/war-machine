@@ -24,7 +24,9 @@ public partial class StreetLampLightingSettings : Resource
     [ExportGroup("Soft visible light cone")]
     [Export] public bool VisibleConeEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "0,0.12,0.005")] public float VisibleConeOpacity { get; set; } = 0.035f;
-    [Export(PropertyHint.Range, "1,10,0.1,suffix:m")] public float VisibleConeLength { get; set; } = 5.8f;
+    // Standalone fixture fallback; StreetLamp001 automatically fits the beam to its pole height.
+    [Export(PropertyHint.Range, "1,12,0.1,suffix:m")] public float VisibleConeLength { get; set; } = 7.4f;
+    [Export(PropertyHint.Range, "0.1,2,0.05,suffix:m")] public float VisibleConeGroundOverlap { get; set; } = 0.85f;
     [Export(PropertyHint.Range, "0.5,7,0.1,suffix:m")] public float VisibleConeBaseRadius { get; set; } = 3.0f;
 
     [ExportGroup("Fog")]
