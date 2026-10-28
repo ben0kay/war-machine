@@ -69,3 +69,9 @@ COMBAT/Shared now provides a separate optional impact contract and one contact d
 ## Wildlife consumer
 
 The new `ENTITIES/TYPES/Wildlife/Deer/DeerController.cs` forwards `IDamageReceiver.ReceiveHit` to a normal `HealthComponent` using `DeerMaster.tres`'s embedded 120-HP profile. Health bars use the shared `HealthChanged` event; the species only decides how death removes the actor. No new damage formulas or target-specific firearm code.
+
+## Planned player anatomy integration — PH0 (no code yet)
+
+The generic `HealthComponent` remains the **hidden player Vitality/death owner** while `PLAYER/Stats/BodyCondition` tracks six independent body regions. Apply shared mitigation exactly once, reduce the selected region, and for head/torso hits apply critical Vitality loss without running the resolver a second time. A narrow `ApplyResolvedDamage` method may be added if required, preserving `ApplyDamage`, `Damaged`, `Died` and the already-existing `HealthChanged` API for zombies/deer. Arm/leg injury does not directly kill in PH0. Unknown existing capsule hits map to Torso until precision hitboxes are separately authorized. Hunger/weather later route explicit non-anatomical Vitality hazards instead of fake torso wounds.
+
+[Player plan](../../../PLAYER/IMPLEMENTATION_PLAN.md) · [BodyCondition design](../../../PLAYER/Stats/BODY_CONDITION_DESIGN.md).

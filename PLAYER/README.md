@@ -35,3 +35,7 @@ F10 is an on-demand movement collision probe for both shared-player views: hold 
 ## RC1 top-down recoil (2026-10-28)
 
 `Equipment/TopDownWeaponRecoil.cs` adds recoil animation to **Visual** only; `Equipment/PlayerWeaponController.cs` supplies the top-down camera's up axis to shared accepted-shot recoil and handles `ShotAccepted`. `PlayerController.SetWeaponRecoilPose` adds a small shoulder/arm response to the rig without changing `WeaponMount` or capsule. Both views still share actual firearm mechanics but FPS integration is RC2. The visual pose cancels on Q shove, swap, backpack and focus loss. No constantly running player animation callback; actual build/visual QA is pending.
+
+## PH0/PH1 health-plan revision — anatomical survival (2026-10-28)
+
+The authoritative [implementation plan](IMPLEMENTATION_PLAN.md) now rejects a conventional player 100-HP HUD bar. Future PH0 uses a hidden 100-point **Vitality** reserve for death/critical damage **plus six individual body-region conditions** (head, torso, left/right arms, left/right legs). Injured arms/legs must not directly deplete Vitality just because of ordinary damage. PH1 renders a small six-part coloured silhouette near the hotbar and leaves existing NPC health bars intact. A detailed Health tab, realistic wounds/bleeding/fractures, exact region hurtboxes and their movement/aim penalties are separately gated work. [Design detail](Stats/BODY_CONDITION_DESIGN.md). **Plan only; no player health scripts, collision shapes or UI were created.**

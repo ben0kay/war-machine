@@ -1,23 +1,23 @@
 # FB — Status and combat feedback implementation plan
 
-> **Current status (2026-10-28; overrides older phase-table text below):** FB0 complete. **FB1 reusable HealthBar core implemented; future player HP connection pending PH0. FB2 generic actor health overlay implemented in source, awaiting local build/visual acceptance.** FB3 defence/shield and FB4 effect systems remain planned. Explicit owner requirement overrides the older 2.5-second damage bar timeout: bars remain visible whenever the actor is alive and below full HP. No gameplay health has been added to the player.
+> **Current status (2026-10-28):** Reusable numeric HealthBar and shared NPC overlay already exist in source (local runtime validation pending); PH0 player vitality/body-region state is still planned. **New owner decision:** PH1/FB1 player UI will be a six-region body silhouette, NOT a player HP bar. When PH0 arrives, exclude player HealthComponent from the current overlay's bottom-left numeric bar branch, leaving NPC bars as-is. FB3 defence and FB4 effects remain separately planned.
 
 ### Implemented generic health bar — integration and validation
 
-A reusable `Bars/Health/HealthBar.tscn`/`.cs` draws current/max HP. `HealthComponent` now emits `HealthChanged(HealthComponent)` after successful damage and configuration and registers in the `health_components` group. `Bars/EnemyBars/HealthBarOverlay.cs` observes this group and SceneTree additions/removals, handles any shared-health actor, and projects its bar only while `CurrentHealth < MaxHealth`; dead/unloaded/fully healed actors lose their bar. Future player health is automatically presented at lower-left in the existing GameplayHUD while injured (there is still no actual player HP). One controller initializes it once for overhead and inherited FPS; no per-zombie UI nodes.
+A reusable `Bars/Health/HealthBar.tscn`/`.cs` draws current/max HP. `HealthComponent` now emits `HealthChanged(HealthComponent)` after successful damage and configuration and registers in the `health_components` group. `Bars/EnemyBars/HealthBarOverlay.cs` observes this group and SceneTree additions/removals, handles any shared-health actor, and projects its bar only while `CurrentHealth < MaxHealth`; dead/unloaded/fully healed actors lose their bar. Current overlay code contains a bottom-left numeric player bar path, but **PH0 must disable/exclude the player's registration** as part of the revised BodyCondition design. Only NPC bars should remain; there is still no actual player health. One controller initializes it once for overhead and inherited FPS; no per-zombie UI nodes.
 
 The shared presenter processes only while at least one actor is injured, at an Inspector-tunable max 30Hz with 48 pooled visible bar controls by default. Offscreen bars hide and return on screen reentry; wounded actors offscreen still incur the throttled shared projection check. **No occlusion ray:** visibility through world walls/roofs is a known limitation for later tuning. Bar settings in `Configuration/FeedbackMaster.tres`, visual colours/style in `HealthBar.tscn`.
 
-**Run locally:** `dotnet build war-machine.csproj`. F6 `WORLD/World.tscn` and the FPS test. Confirm fresh zombies (100/100) have no bars; first rifle hit (5/100 remaining) shows a thin red bar; lethal second shot removes it. Confirm runner, 48+ wounded, camera panning/zoom, offscreen return, full-health configure/reset, scene unload and mouse/UI input. Once PH0 is authorized later, verify player full health hides HUD bar, damage shows and healing to full hides it. This change was only statically reviewed; build/Godot visuals remain **awaiting validation**.
+**Run locally:** `dotnet build war-machine.csproj`. F6 `WORLD/World.tscn` and the FPS test. Confirm fresh zombies (100/100) have no bars; first rifle hit (5/100 remaining) shows a thin red bar; lethal second shot removes it. Confirm runner, 48+ wounded, camera panning/zoom, offscreen return, full-health configure/reset, scene unload and mouse/UI input. Once PH0 is authorized later, verify the player is excluded from the numeric overlay even when injured, while NPC bars still behave normally. PH1 then adds the six-region body silhouette. This change was only statically reviewed; build/Godot visuals remain **awaiting validation**.
 
-> **Status:** **FB0 Implemented (directory + docs only)**; **FB1–FB4 Planned**. No HUD bars or effects are currently functional as a result of this scaffold. Implement only a phase explicitly authorized by the owner. Work on `implement-td0-td1`.
+> **Implementation state:** FB0 scaffold complete; generic shared HealthBar plus FB2 overlay implemented in source (Godot validation pending), PH1/FB1 **player silhouette not implemented**, FB3/FB4 planned. Follow the authoritative 2026-10-28 revision above; older scaffold-only statements are historical. Work on `implement-td0-td1`.
 
 ## Phase overview
 
 | Phase | Objective | Suggested assistant | Status |
 | --- | --- | --- | --- |
 | **FB0** | Create reusable FEEDBACK folders, owning READMEs, phase plan and cross-links | Regular Chat | **Implemented — docs only** |
-| **FB1** | Reusable health bar + player health HUD widget | Regular Chat layout; Codex/Work integration | **Planned — requires PH0** |
+| **FB1** | Six-region player BodyCondition silhouette; reuse existing NPC bar separately | UI design + Codex/Work | **Planned — requires PH0** |
 | **FB2** | Damage-triggered enemy bars for zombies and future entities | Codex/Work integration; Regular Chat tuning | **Planned — health events already available for zombies** |
 | **FB3** | Optional defence/shield bar for actors with **actual depletable shield state** | Codex/Work | **Planned — dependent on a future shield resource** |
 | **FB4** | Damage numbers, hit indicators and later status icons | Regular Chat visual plan; Codex/Work for integration | **Planned** |
@@ -26,30 +26,23 @@ Each phase is a separate authorization gate. Do not implement another because it
 
 ## Confirmed baseline
 
-- Zombie/runner health and death use `ENTITIES/Shared/Combat/HealthComponent.cs`, configured by `ZombieSettings.HealthProfile`. `HealthComponent` has `Damaged` and `Died` events, `CurrentHealth`, `MaxHealth` and `IsDead`. Its `Damaged` payload reports resolved incoming damage, **not actual HP delta on overkill**; read current health for bar values.
+- Zombie/runner health and death use `ENTITIES/Shared/Combat/HealthComponent.cs`, configured by `ZombieSettings.HealthProfile`. `HealthComponent` has `Damaged`, `Died` and already-existing `HealthChanged` events, `CurrentHealth`, `MaxHealth` and `IsDead`. Its `Damaged` payload reports resolved incoming damage, **not actual HP delta on overkill**; read current health for bar values.
 - `PLAYER/PlayerController.cs` currently has **no health receiver**. The existing [PLAYER plan](../PLAYER/IMPLEMENTATION_PLAN.md) defines PH0 player health, healing, hit reception and death; keep player stats in PLAYER, not here.
 - `UI/GameplayHUD/Hotbar/Hotbar.tscn` is a static screen-space hotbar in `WORLD/World.tscn`; the FPS test inherits it. Don't edit/replace the hotbar as part of FB0.
 - Existing flat armour/resistances in `HealthSettings` mitigate incoming damage; neither is a currently depleting defence pool.
 - FB0 adds only `.md` files. There is **no FeedbackMaster.tres yet**, since an exported settings class and corresponding consuming widget do not exist.
 
-## FB1 — player health bar and reusable core
+## FB1 — player body-condition silhouette (with PH1)
 
-**Objective:** After PH0 supplies real player HP events, display a small, clean screen-space health bar in the gameplay HUD; provide a reusable health-bar scene/style for future other actors.
+**Objective:** PH1/FB1 presentation of the player's **six-region BodyCondition** instead of a numeric vitality/HP bar. PH0 must supply region values and events before this player-facing UI can be implemented. The generic `HealthBar.tscn` and NPC overlay are already implemented separately and remain NPC-specific.
 
-**Dependencies:** PH0 implemented and locally validated; existing `UI/GameplayHUD` composition, player health current/max and change/death events. **PH0's minimal diagnostic text readout is temporary and not an FB1 bar.**
+**Ownership:** `FEEDBACK/Bars/PlayerStatus/BodyConditionWidget.tscn` and visual-only script consume `BodyCondition` read-only snapshots, with presentational colours/size under `FEEDBACK/Configuration/FeedbackMaster.tres`. Compose a single noninteractive widget under `UI/GameplayHUD/Screen` beside hotbar/backpack for both overhead and inherited FPS; no new HP arithmetic in FEEDBACK.
 
-**Ownership/files (proposed, confirm against actual scene):**
-- `FEEDBACK/Bars/Health/`: `HealthBar.tscn` / `HealthBar.cs`, visual-only value binding, no HP arithmetic.
-- `FEEDBACK/Bars/PlayerStatus/`: player-facing status presentation, optional script that binds to player health at startup and disconnects on exit.
-- `FEEDBACK/Configuration/`: a proper `FeedbackSettings.cs` exported class and `FeedbackMaster.tres` only when tuning fields are actually consumed; e.g. colours, thickness, labels, hit flash/animation duration.
-- `UI/GameplayHUD/` and `WORLD/World.tscn` or `WorldController` only for **one** correct instance/binding shared by top-down + inherited FPS.
-- Update owning READMEs, not the damage pipeline except if a narrow missing event API is confirmed.
+**Initial style:** six-shaped anatomy silhouette, left/right from player's own perspective; healthy muted/neutral, injured amber, severe red, incapacitated dark red and a simple non-colour indicator for accessibility. Full health remains unobtrusive; recent damage can briefly pulse. Real bleeding/fracture icons require implemented conditions, not fake placeholders. No 100/100 bar and no six literal shrinking bars. Future inventory Health tab is separately authorized.
 
-**Implementation:** Bind after player's PH0 initialization; set initial current/max once; subscribe to health change and death; clamp displayed percentage, handle zero/max/overheal safely. Preserve hotbar. Noninteractive Control mouse filter Ignore. A hit pulse tween may run only while active and stop afterwards. Rebind/scene exit must unsubscribe.
+**Integration:** PH0 must exclude the player-owned `HealthComponent` from the existing generic `HealthBarOverlay` player bottom-left branch while preserving automatically registered zombie/deer bars. PH1 binds `ConditionChanged`/death events once, reads all six initial values immediately, updates only on changes and unsubscribes cleanly. `Control.MouseFilter=Ignore`, no persistent polling or overlapping hotbar.
 
-**Out of scope:** Damage/healing logic, enemy bars, actual shield mechanics, armour formula, inventory, respawn.
-
-**Performance/pass:** Zero idle updates, no per-frame health polling, one shared world HUD instance; on F6 world and FPS (inheritance) see player bar 100/100, one update per applied hit/heal, clamped full/empty, no ghost subscriptions after reload, no input obstruction or hotbar overlap. `dotnet build war-machine.csproj`, both F6 views, proportional visual check.
+**Pass:** inspect all six individually, healed states, 0 condition, vitality death, compact layout at top-down/FPS resolutions, no duplicate player bar, no interference with NPC health bars, inventory or mouse shooting. Compile and visually verify in Godot. No new health gameplay is authorized by FB1.
 
 ## FB2 — temporary overhead enemy bars
 

@@ -1,7 +1,11 @@
-# PLAYER/Stats — planned player-owned health and vitals
+# PLAYER/Stats — planned vitality and anatomy foundation
 
-**PH0 Planned; no stats scripts, components or runtime player HP implemented in this folder.** This directory reserves the home for `PlayerVitals.cs` and `PlayerVitalsSettings.cs` proposed by the existing [PLAYER implementation plan](../IMPLEMENTATION_PLAN.md).
+**PH0 and PH1 are PLANNED. No new stats or visual scripts exist yet.** [Player plan](../IMPLEMENTATION_PLAN.md) and [BodyCondition design](BODY_CONDITION_DESIGN.md) are the authoritative Codex contracts.
 
-Reuse `ENTITIES/Shared/Combat/HealthComponent.cs` and `HealthSettings.cs` for actual HP, armour/resistance damage calculations and death; do not create another resolver. `PlayerController` will implement `IDamageReceiver` and forward to a small player-owned stats adapter during PH0. Stats own values/events; `FEEDBACK/` is presentation-only and `UI/GameplayHUD/` owns screen-space layout.
+- **PH0:** one `PlayerVitals` coordinator wraps the existing generic `HealthComponent` for hidden 100-point Vitality/death and one `BodyCondition` for **six independent regions**: Head, Torso, LeftArm, RightArm, LeftLeg, RightLeg. A body hit is mitigated once by the existing `DamageResolver`. Head/torso damage can harm hidden vitality; arms/legs lose condition without directly killing. Unknown capsule hit -> Torso. No per-region health nodes or loops.
+- **PH0 source:** new `PlayerVitals.cs`, `PlayerVitalsSettings.cs`, `BodyCondition.cs` and `BodyRegion.cs`, with an exported profile in `PLAYER/Configuration/PlayerMaster.tres` and `Vitals/Health/BodyCondition` scene wiring. Use the existing `HealthComponent.HealthChanged`, never duplicate it.
+- **PH1:** read-only six-part silhouette/condition widget belongs to `FEEDBACK/Bars/PlayerStatus/` and is composed once via `UI/GameplayHUD`. No numeric player HP bar; enemy generic health bars stay.
+- **PH-HIT:** actual precise anatomical weapon hitboxes are separate future work. PH0 injects test region data through an explicit compatible route; current player capsule falls back to Torso. No pretending that the movement capsule detects limbs.
+- **PH5 later:** limb movement/aim penalties, bleeding, fractures, pain, healing items/medicine and environmental hazards; not implied by PH0.
 
-Add code, scene nodes and player master health subresources **only when PH0 is explicitly authorized**. Stop all stats work when idle; later stamina/survival phases have independent gates.
+Keep authored initial conditions in typed `.tres` defaults, never store live HP in a shared resource. No stats polling during idle; event-driven damage, healing and subscriptions, clean exit/unbind. PH2 stamina, PH3 needs and PH4 fatigue remain separately authorized.

@@ -1,10 +1,12 @@
-# FEEDBACK/Bars — reusable visual meters
+# FEEDBACK/Bars — visual status presentation
 
-**Folder foundation only; no bar scenes/scripts currently implemented.** The bar system presents actor-owned values and never owns damage, health, healing or shield simulation.
+**Implemented in source:** `Health/HealthBar.tscn` and `EnemyBars/HealthBarOverlay.cs` provide pooled numeric health bars for injured shared-health actors (Godot acceptance pending). The overlay currently contains a special bottom-left numeric player bar path, which future **PH0 must exclude** while preserving NPC bars.
 
-- [Health/](Health/README.md) — generic current/max health visual (FB1).
-- [PlayerStatus/](PlayerStatus/README.md) — screen-space health/status widgets assembled under existing `UI/GameplayHUD` (FB1).
-- [EnemyBars/](EnemyBars/README.md) — temporary world-positioned bars for relevant damaged actors (FB2).
-- [Defence/](Defence/README.md) — reserved depletable shield/guard meter (FB3), **not** static armour or resistances.
+**Planned PH1 / FB1:** `PlayerStatus/` will own a **six-region anatomical silhouette** for Head, Torso, LeftArm, RightArm, LeftLeg and RightLeg condition. Player vitality remains hidden, not a numeric HUD bar. The widget reads events only; it must not calculate damage, interfere with the hotbar or capture mouse input.
 
-The primary top-down view drives presentation decisions; inherited FPS may reuse the same widget without duplicating HUD state. Read [FB plan](../IMPLEMENTATION_PLAN.md) before adding files.
+- [Health](Health/README.md) — numeric bar reused for NPCs
+- [EnemyBars](EnemyBars/README.md) — existing pooled overlay, player exclusion required in PH0
+- [PlayerStatus](PlayerStatus/README.md) — planned body-condition silhouette
+- [Defence](Defence/README.md) — future consumable shield/guard, not static armour
+
+[FEEDBACK plan](../IMPLEMENTATION_PLAN.md) · [BodyCondition design](../../PLAYER/Stats/BODY_CONDITION_DESIGN.md).

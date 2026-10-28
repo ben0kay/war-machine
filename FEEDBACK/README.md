@@ -1,8 +1,10 @@
+> **Player HUD design update (2026-10-28):** PH0 is now planned as hidden Vitality plus six BodyCondition regions; PH1/FB1 will show a small anatomy silhouette rather than a player 100 HP bar. `HealthBar.tscn` and the generic `HealthBarOverlay` remain for NPCs. The overlay currently has a player bar branch; PH0 will exclude player health from that path without affecting NPC registration. [Player plan](../PLAYER/IMPLEMENTATION_PLAN.md) and [anatomy design](../PLAYER/Stats/BODY_CONDITION_DESIGN.md). No UI/gameplay code has been changed by this planning revision.
+
 # FEEDBACK — visual combat and status feedback
 
 > **Current implementation update (2026-10-28, supersedes earlier foundation-only notes):** Generic health-bar widget and one shared automatic entity presenter have now been implemented in source, awaiting local validation. **Visibility rule: an alive entity shows a bar only when `CurrentHealth < MaxHealth`; full-health bars are hidden, with no timeout for injured actors.** Player health PH0 is still planned. The existing shield/defence and effect folders remain proposals.
 
-See `FEEDBACK/Bars/Health/HealthBar.tscn`, `FEEDBACK/Bars/EnemyBars/HealthBarOverlay.cs` and `FEEDBACK/Configuration/FeedbackMaster.tres`. The overlay registers any actor using the shared `HealthComponent`, including future player health, rather than checking entity classes. The active WorldController mounts it once inside `GameplayHUD/Screen`, inherited by FPS. No actor HP rules are duplicated here.
+See `FEEDBACK/Bars/Health/HealthBar.tscn`, `FEEDBACK/Bars/EnemyBars/HealthBarOverlay.cs` and `FEEDBACK/Configuration/FeedbackMaster.tres`. The current overlay registers actors using shared `HealthComponent` and contains a prospective player branch; **PH0 must exclude the player** so it serves NPCs only once PlayerVitals exists. The active WorldController mounts it once inside `GameplayHUD/Screen`, inherited by FPS. No actor HP rules are duplicated here.
 
 **Known limit:** the first pass checks on-screen position and behind-camera visibility, but no physical occlusion ray yet; injured enemies behind walls may expose a bar until this is added in a focused follow-up. Healthy entities impose no projection tick. Controls are pooled/capped; see the new FB plan handoff below.
 

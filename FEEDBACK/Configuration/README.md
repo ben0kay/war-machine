@@ -1,7 +1,7 @@
-# FEEDBACK/Configuration — planned master tuning
+# FEEDBACK/Configuration — Inspector presentation master
 
-> **Now implemented:** `FeedbackSettings.cs` and `FeedbackMaster.tres` are consumed by HealthBarOverlay. Tune world/player bar sizes, world anchor elevation, player margin, 48-control maximum and 30Hz wounded-only projection. HP/damage state is never stored here. The scaffold-only text below is historical.
+`FeedbackSettings.cs` and `FeedbackMaster.tres` are already consumed by the pooled numeric health overlay for NPCs. Existing player bar width/height/margin fields are **legacy prospective numeric UI controls**; PH0 must exclude the player's HealthComponent from that overlay. Do not delete these existing settings as part of a documentation task or alter NPC bar defaults.
 
-Reserved for `FeedbackSettings.cs` (a valid exported Godot resource class) and `FeedbackMaster.tres` **when FB1/FB2 introduces real widgets and settings consumers**. Use a single primary Feedback master with grouped Inspector values for health, temporary enemy bars, optional defence styling and future effect presentation. Do not put current/max HP, damage amounts, player state or zombie values in this configuration.
+When PH1 starts, add only settings actually used by the **six-region silhouette**: position/size, healthy/amber/severe/incapacitated colours and brief change-pulse duration. Those are presentation settings, never authoritative body condition or Vitality values; game state belongs in `PLAYER/Stats/` and the player master.
 
-**FB0 does not create an inert/invalid .tres** or exported C# class without a consumer. This folder exists and is documented for Codex's next authorized UI phase. [Plan](../IMPLEMENTATION_PLAN.md).
+[FB plan](../IMPLEMENTATION_PLAN.md) · [BodyCondition design](../../PLAYER/Stats/BODY_CONDITION_DESIGN.md). No PH0/PH1 code has yet been added.

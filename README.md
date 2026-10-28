@@ -1,3 +1,5 @@
+> **Player-health plan revised (2026-10-28):** PH0 will use hidden Vitality plus six independent player body-region conditions; PH1 will show a compact anatomical silhouette instead of a conventional 100 HP bar. Existing NPC bars remain unchanged. Limb penalties, bleeding, fractures, precision hitboxes and a medical Inventory tab are deferred. **Plan only; no PH0/PH1 code exists.** [PLAYER plan](PLAYER/IMPLEMENTATION_PLAN.md) · [body-condition design](PLAYER/Stats/BODY_CONDITION_DESIGN.md).
+
 # WAR MACHINE
 
 > **Weapons update 2026-10-28:** RC0 shared per-weapon accumulated recoil and recovery are implemented in source (awaiting local validation); **RC1 top-down and RC2 FPS 3D ballistic aim climb and visual gun recoil implemented in source (awaiting local validation)**. [RC plan](EQUIPMENT/Weapons/RECOIL_IMPLEMENTATION_PLAN.md). Existing shot spread and damage are unchanged. **FPS recoil update:** each accepted rifle/machine-gun shot pushes the real first-person camera upward, without automatic downward return. MG FPS-only burst climb now reaches up to 25°; rifle also kicks each slower shot. Top-down RC1 camera and recoil cap remain unchanged.
