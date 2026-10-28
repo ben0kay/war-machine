@@ -30,11 +30,14 @@ public static class StructureGeometry
         Vector3 center, Vector3 size, Material material, float pitch = 0f)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0) return;
-        visual.AddChild(new MeshInstance3D { Name = name, Mesh = Cube, Position = center, Scale = size,
-            Rotation = new Vector3(pitch, 0, 0), MaterialOverride = material });
+        var mesh = new MeshInstance3D { Name = name, Mesh = Cube, Position = center, Scale = size,
+            Rotation = new Vector3(pitch, 0, 0), MaterialOverride = material };
+        visual.AddChild(mesh);
         if (collision == null) return;
-        collision.AddChild(new CollisionShape3D { Name = name + "Shape", Position = center,
-            Rotation = new Vector3(pitch, 0, 0), Shape = new BoxShape3D { Size = size } });
+        var shape = new CollisionShape3D { Name = name + "Shape", Position = center,
+            Rotation = new Vector3(pitch, 0, 0), Shape = new BoxShape3D { Size = size } };
+        FadeAwareAim.Link(shape, mesh); // Per-shape association; never suppress the shared StaticBody3D.
+        collision.AddChild(shape);
     }
 
     // =========================================================

@@ -6,6 +6,8 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
 {
     public const uint ObstructionLayer = 1u << 7; // Physics layer 8; independent of solid/weapon layers.
     public static event System.Action? RegistryChanged;
+    // AIM1: waking top-down cursor aim only when a section crosses faded/opaque state.
+    public static event System.Action? AimFadeChanged;
     [Export] public Node3D ObjectRoot { get; set; } = null!;
     private readonly List<MeshInstance3D> _meshes = new();
     private readonly List<float> _originalTransparency = new();
@@ -128,20 +130,33 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
 
     // =========================================================
     private void ApplyOpacity()
-    { for (int i = 0; i < _meshes.Count; i++) ApplyMeshOpacity(i); }
+    {
+        bool changed = false;
+        for (int i = 0; i < _meshes.Count; i++) changed |= ApplyMeshOpacity(i);
+        if (changed) AimFadeChanged?.Invoke(); // A whole-building reveal produces one notification per owner.
+    }
 
     // =========================================================
     // Camera interpolation touches only the obstructing wall mesh, preserving other walls and floor presentation.
     public void SetMeshCameraOpacity(int index, float opacity)
-    { _meshCameraOpacity[index] = Mathf.Clamp(opacity, 0, 1); ApplyMeshOpacity(index); }
+    {
+        _meshCameraOpacity[index] = Mathf.Clamp(opacity, 0, 1);
+        if (ApplyMeshOpacity(index)) AimFadeChanged?.Invoke();
+    }
 
     // =========================================================
-    private void ApplyMeshOpacity(int index)
+    private bool ApplyMeshOpacity(int index)
     {
-        if (!IsInstanceValid(_meshes[index])) return;
+        if (!IsInstanceValid(_meshes[index])) return false;
         float camera = FadeIndividualMeshes ? _meshCameraOpacity[index] : _cameraOpacity;
         float opacity = _buildingOpacity * _presentationOpacity * (_cameraFadeEnabled && !_wholeBuildingMode ? camera : 1);
-        _meshes[index].Transparency = 1 - (1 - _originalTransparency[index]) * opacity;
+        var mesh = _meshes[index];
+        mesh.Transparency = 1 - (1 - _originalTransparency[index]) * opacity;
+        // AIM1: use composed camera+floor+whole-building fade, not authored glass transparency.
+        bool faded = opacity < 0.999f;
+        bool wasFaded = mesh.HasMeta(FadeAwareAim.FadedMeta) && mesh.GetMeta(FadeAwareAim.FadedMeta).AsBool();
+        if (faded != wasFaded) mesh.SetMeta(FadeAwareAim.FadedMeta, faded);
+        return faded != wasFaded;
     }
 
     // =========================================================

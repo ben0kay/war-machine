@@ -195,9 +195,11 @@ public partial class Building001Mesh : Node3D
             Position = position, Rotation = new Vector3(pitch, 0, 0), Scale = size };
         visuals.AddChild(mesh);
         if (body == null) return;
-        body.AddChild(new CollisionShape3D { Name = name + "Shape",
+        var shape = new CollisionShape3D { Name = name + "Shape",
             Shape = new BoxShape3D { Size = size }, Position = position,
-            Rotation = new Vector3(pitch, 0, 0) });
+            Rotation = new Vector3(pitch, 0, 0) };
+        FadeAwareAim.Link(shape, mesh); // Matches the shared structure authoring helper.
+        body.AddChild(shape);
     }
 
     // =========================================================

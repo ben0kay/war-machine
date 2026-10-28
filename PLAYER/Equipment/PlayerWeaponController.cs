@@ -33,6 +33,7 @@ public partial class PlayerWeaponController : Node
         player.SetWeaponPose(true); player.GameplayInputBlockChanged += OnInputBlocked;
         player.PositionChanged += OnPlayerMoved; player.WeaponPoseChanged += RequestAim;
         camera.ViewChanged += RequestAim;
+        CameraOccluder.AimFadeChanged += RequestAim;
         _initialized = true; RequestAim();
     }
 
@@ -136,9 +137,10 @@ public partial class PlayerWeaponController : Node
             Vector2 cursor = GetViewport().GetMousePosition();
             Vector3 origin = _camera.ProjectRayOrigin(cursor), direction = _camera.ProjectRayNormal(cursor);
             _aimQuery.From = origin; _aimQuery.To = origin + direction * _camera.Far;
-            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_aimQuery);
+            // AIM1: only the cursor passes through known faded building shapes; bullet rays stay solid.
+            bool hasHit = FadeAwareAim.TryHit(_player.GetWorld3D().DirectSpaceState, _aimQuery, out Vector3 point);
             // Empty sky/off-terrain uses a plane at the hands' height instead of aiming off to infinity.
-            if (hit.Count > 0) _aimPoint = hit["position"].AsVector3();
+            if (hasHit) _aimPoint = point;
             else
             {
                 float distance = Mathf.Abs(direction.Y) > 0.0001f ? (_player.WeaponMount.GlobalPosition.Y - origin.Y) / direction.Y : -1;
@@ -190,6 +192,7 @@ public partial class PlayerWeaponController : Node
         if (!_initialized) return;
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;
+        CameraOccluder.AimFadeChanged -= RequestAim;
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
         _initialized = false;
     }
