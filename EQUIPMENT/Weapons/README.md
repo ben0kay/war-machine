@@ -1,3 +1,5 @@
+> **ELD0 source implementation (2026-10-28):** [Shared region detection](../../ENTITIES/Shared/Anatomy/README.md) now routes firearm shape hits for both zombie variants in both views. BodyRegion moved to ENTITIES/Shared/Anatomy with values unchanged. Existing damage balance/player rules and melee stay unchanged; no injuries, severing or new attacks. Local build/runtime validation pending.
+
 > **FPS ownership:** Active FPS presentation is promoted out of DEBUG/TEST. See the [FPS ownership guide](../../WORLD/FirstPerson/README.md). Shared gameplay and current tuning are unchanged; local validation pending.
 
 # Weapons

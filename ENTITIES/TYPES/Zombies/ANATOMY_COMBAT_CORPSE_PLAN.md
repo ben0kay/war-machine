@@ -1,3 +1,5 @@
+> **ELD0 implemented in source (2026-10-28), awaiting local validation.** [Implementation, configuration and World acceptance](../../Shared/Anatomy/README.md). Both zombie variants use precise firearm region shapes; current damage remains unchanged. ELD1–ELD5 remain Planned. Owner prefers testing in World/FPS; no dedicated anatomy test scenes required. Top-down probability remains a separately tunable future option, not part of ELD0. This status supersedes the original all-Planned wording below.
+
 # War Machine — Unified Entity Combat, Anatomy, Locomotion and Corpse Architecture
 
 **Status:** Approved overall planning direction (2026-10-28). ELD0–ELD5 remain **Planned**; no production implementation authorized by this document. Existing PH0/PH1 and ZD0 remain source implemented, awaiting local validation.
@@ -49,9 +51,9 @@ ENTITIES/
       IDamageReceiver.cs        [EXISTING]
 
     Anatomy/
-      BodyRegion.cs             [MOVE EXISTING ENUM]
+      BodyRegion.cs             [EXISTING, MOVED IN ELD0]
       AnatomyComponent.cs       [NEW]
-      AnatomyHitboxes.cs        [NEW]
+      AnatomyHitboxes.cs        [ELD0 SOURCE IMPLEMENTED]
       AnatomyDamage.cs          [NEW]
       IAnatomyVisualAdapter.cs  [NEW]
       Configuration/

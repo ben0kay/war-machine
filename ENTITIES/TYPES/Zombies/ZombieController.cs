@@ -6,6 +6,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public CorpseManager? CorpseOwner { get; set; }
     private uint _corpseSeed;
     private bool _deathHandled;
+    private AnatomyHitboxes _anatomy = null!;
+    public BodyRegion LastHitRegion { get; private set; } = BodyRegion.Unknown;
+    public uint AnatomicalHitCount { get; private set; }
     public float Health => _health == null ? 0 : _health.CurrentHealth;
     private HealthComponent _health = null!;
     public bool IsChasing { get; private set; }
@@ -40,7 +43,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (_brain == null)
         {
             BuildArt();
-            Pose(0);
+            UpdatePose(0);
+            BuildAnatomy();
             _health = new HealthComponent { Name = "Health" }; AddChild(_health);
             _health.Died += OnKilled;
             _brain = new Timer { OneShot = true, ProcessCallback = Timer.TimerProcessCallback.Physics };
@@ -58,6 +62,26 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
     }
+
+    // =========================================================
+    // Cache eight pose-following boxes: torso/head, arms, thighs and knee/shins (six labelled regions).
+    private void BuildAnatomy()
+    {
+        _anatomy = new AnatomyHitboxes { Name = "AnatomyHitboxes" }; AddChild(_anatomy);
+        _anatomy.Initialize(this, GD.Load<AnatomySettings>("res://ENTITIES/Shared/Anatomy/Configuration/AnatomyMaster.tres"));
+        Node3D head = VisualRoot.GetNode<Node3D>("Head");
+        var pivots = new[] { VisualRoot, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
+        var regions = new[] { BodyRegion.Torso, BodyRegion.Head, BodyRegion.LeftArm, BodyRegion.RightArm,
+            BodyRegion.LeftLeg, BodyRegion.RightLeg, BodyRegion.LeftLeg, BodyRegion.RightLeg };
+        var boundaries = new System.Collections.Generic.HashSet<Node3D>(pivots);
+        for (int i = 0; i < pivots.Length; i++) _anatomy.AddRegion(pivots[i], regions[i], boundaries);
+        _anatomy.SyncPose();
+    }
+
+    // =========================================================
+    // Preserve virtual species pose hooks; synchronize even when AI changes pose outside the movement tick.
+    private void UpdatePose(float step, float leftLift = 0, float rightLift = 0)
+    { Pose(step, leftLift, rightLift); _anatomy?.SyncPose(); }
 
     // =========================================================
     // Subtypes only supply art and optional motion tuning; detection, health and AI stay shared.
@@ -102,7 +126,17 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // =========================================================
     // Shared health owns all damage maths. Species code only decides whether hits are accepted and how death looks.
     public void ReceiveHit(DamagePacket hit)
-    { if (IsActive && _configured) _health.ApplyDamage(hit); }
+    {
+        if (!IsActive || !_configured) return;
+        LastHitRegion = hit.Region;
+        if (hit.Region != BodyRegion.Unknown)
+        {
+            AnatomicalHitCount++;
+            if (_anatomy.RuntimeSettings.LogRegionHits)
+                GD.Print($"[ELD0] {GetPath()} region={hit.Region} incoming={hit.Amount:0.##} point={hit.Position}");
+        }
+        _health.ApplyDamage(hit);
+    }
 
     // =========================================================
     // Damage has already resolved when dispatched together. CM2-B2 shoves add collision-aware backward movement,
@@ -173,6 +207,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     {
         if (_deathHandled) return;
         _deathHandled = true;
+        _anatomy.Disable();
         Node3D visual = VisualRoot;
         Transform3D at = visual.GlobalTransform;
         Vector3 velocity = Velocity;
@@ -201,7 +236,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     protected override void OnDeactivated()
-    { ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) Pose(0); UpdateVisionDebug(); }
+    { ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
 
     // =========================================================
     // Cheap range and visual-facing gates precede bounded head/torso LOS. No hidden live-position pursuit.
@@ -225,7 +260,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
                     GlobalPosition + Vector3.Up * _config.EyeHeight, _sightTarget);
         }
         if (chasing != IsChasing)
-        { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); Pose(0); } }
+        { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); UpdatePose(0); } }
         ulong now = Time.GetTicksMsec();
         UpdateInvestigation(wasChasing, now, targetValid);
         if (!IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)
@@ -377,6 +412,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         }
         else { Pose(0); if (walking && !reacting && !recovering) _stuck += dt; }
         ApplyReactionPose();
+        _anatomy.SyncPose();
         if (_stuck > 2)
         { if (IsInvestigating) FinishInvestigation(); else Rest(); _stuck = 0; }
         if (!reacting && !recovering && (!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())

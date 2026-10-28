@@ -1,3 +1,5 @@
+> **ELD0 source implementation (2026-10-28):** [Shared region detection](../ENTITIES/Shared/Anatomy/README.md) now routes firearm shape hits for both zombie variants in both views. BodyRegion moved to ENTITIES/Shared/Anatomy with values unchanged. Existing damage balance/player rules and melee stay unchanged; no injuries, severing or new attacks. Local build/runtime validation pending.
+
 > **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](../ENTITIES/TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). Combat keeps hit/damage delivery and CM5 attack scheduling. ELD0 adds compatible region routing; ELD3 supplies anatomy-based attack eligibility only after separately authorized CM5. Existing combat phase states and weapon balance remain unchanged.
 
 # CM — Melee, shove and hit-reaction implementation plan

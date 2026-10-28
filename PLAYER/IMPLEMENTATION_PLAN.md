@@ -1,3 +1,5 @@
+> **ELD0 source implementation (2026-10-28):** [Shared region detection](../ENTITIES/Shared/Anatomy/README.md) now routes firearm shape hits for both zombie variants in both views. BodyRegion moved to ENTITIES/Shared/Anatomy with values unchanged. Existing damage balance/player rules and melee stay unchanged; no injuries, severing or new attacks. Local build/runtime validation pending.
+
 > **Anatomy/combat/corpse direction (2026-10-28):** [Overall master plan](../ENTITIES/TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md). PH0/PH1 and player vitality/healing rules remain intact. Future PH-HIT should reuse the ELD0 region-detection foundation when separately authorized; no player injury penalties, severing or state migration are authorized by this link.
 
 # PLAYER — Health, Body Condition, Vitals and Survival Implementation Plan

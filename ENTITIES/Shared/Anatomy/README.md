@@ -1,0 +1,19 @@
+# Shared anatomy — ELD0
+
+ELD0 is implemented in source, awaiting local build and in-world validation. ELD1–ELD5 remain Planned. [Master direction](../../TYPES/Zombies/ANATOMY_COMBAT_CORPSE_PLAN.md).
+
+`BodyRegion` is the original player enum moved here (Unknown=-1, Head=0 through RightLeg=5). Existing player region storage, critical vitality policy, HUD and healing are unchanged. DamagePacket adds optional Region=Unknown; old constructors and IDamageReceiver remain compatible.
+
+`AnatomyHitboxes` is one non-monitoring/non-monitorable Area3D per participating actor, with native shape owners rather than per-limb nodes/scripts. Standard and runner zombies build eight boxes from cached mesh bounds: head, torso, each arm, each thigh, each knee/shin. Both leg segments map to the same leg region. These are conservative box approximations of the procedural artwork, not triangle-accurate skin collision. Labels are the actor's own left/right. Shapes follow the existing physics gait and reaction pose; stationary actors add no polling. The constructor scans art once; no per-shot scene searches.
+
+The living movement capsule remains unchanged for player movement, zombie collisions, melee/shove, sight and cursor AIM1 targeting. Firearm queries exclude registered anatomy capsules and include their region areas on the same actor layer. The exclusion cache refreshes only on registration/version changes or equip. Deer/robot/player capsules are not registered and remain ordinary targets. This adds no raycasts: existing shoulder-to-muzzle cover probe and ballistic query remain. Cover layers, damage/armour, ammo, spread and recoil are unchanged. Precise firearm rays can now miss the gaps outside the artwork boxes even when a capsule would have been hit. Cursor targeting still uses the broad capsule; it does not guarantee a ballistic hit.
+
+Region is read from the actual ray shape index by HitTargetResolver before its existing single receiver dispatch. ZombieController records LastHitRegion and AnatomicalHitCount, then calls existing health once with unmodified damage. No region multipliers, condition loss, severing, limb penalties, attacks, random region substitution or player precision hurtboxes are implemented. Existing melee remains Unknown. Region areas disable on death and stay under the freed actor, never transfer with corpse visuals. Registry cleanup runs on exit; re-entry restores registration.
+
+## Configuration and World acceptance
+
+`Configuration/AnatomyMaster.tres` is duplicated per actor. Padding=0.005m expands fitted boxes slightly. LogRegionHits=true emits `[ELD0] ... region=LeftArm incoming=... point=...` on actual anatomical damage dispatch. Set false to disable logs (especially for profiling). Unknown hits do not print. No standalone test scenes were added.
+
+Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `WORLD/FirstPerson/FirstPersonWorld.tscn`. Shoot both zombie variants at head, torso and each limb; inspect logs/collision shapes while they move, turn and react. An arm directly in front of the torso should receive the first hit. Verify walls and closed rear door stop bullets, gaps can miss, Q shove still works, health/death remains unchanged, corpses have no living hit area, and deer/robot/player systems remain functional. Reload both scenes repeatedly and check for stale RID/errors. Use existing world zombies, not a new fixture.
+
+Source/resource/whitespace checks only here: Godot/.NET are unavailable, so compilation, physics-server pose timing, actual region hits, cover, both views and performance are unverified. Native area shapes may have normal physics broadphase cost while moving; no measured performance claim. No new engine frame callbacks or timers, no per-limb scripts/rigid bodies. Active zombies update eight cached transforms once per physics tick; dormant shapes stay queryable without polling; unload releases area and registry entries.

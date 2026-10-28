@@ -6,14 +6,15 @@ public enum DamageType { Physical, Energy, Explosive, Fire }
 public readonly struct DamagePacket
 {
     public readonly float Amount;
+    public readonly BodyRegion Region;
     public readonly DamageType Type;
     public readonly Node3D? Source;
     public readonly Vector3 Position, Direction;
 
     // =========================================================
     // Detection supplies hit context; the resolver owns damage rules, never raycasts or target searches.
-    public DamagePacket(float amount, DamageType type, Node3D? source, Vector3 position, Vector3 direction)
-    { Amount = amount; Type = type; Source = source; Position = position; Direction = direction; }
+    public DamagePacket(float amount, DamageType type, Node3D? source, Vector3 position, Vector3 direction, BodyRegion region = BodyRegion.Unknown)
+    { Region = region; Amount = amount; Type = type; Source = source; Position = position; Direction = direction; }
 }
 
 public readonly struct DamageResult

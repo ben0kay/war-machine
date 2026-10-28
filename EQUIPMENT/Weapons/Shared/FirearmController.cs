@@ -26,6 +26,7 @@ public partial class FirearmController : Node3D
     private CollisionObject3D? _holder;
     private readonly RandomNumberGenerator _shotRandom = new();
     private bool _equipped;
+    private ulong _anatomyVersion = ulong.MaxValue;
     private FirearmRecoil _recoil;
     public Vector2 RecoilOffsetDegrees => _recoil.OffsetDegrees;
 
@@ -54,7 +55,7 @@ public partial class FirearmController : Node3D
     // =========================================================
     // Any actor can equip this scene; its own collider is excluded from the cached query.
     public void Equip(CollisionObject3D holder, WorldAudio? audio = null)
-    { ResetRecoil(); _audioService = audio; _holder = holder; _query.Exclude = new Godot.Collections.Array<Rid> { holder.GetRid() }; _equipped = true; }
+    { ResetRecoil(); _audioService = audio; _holder = holder; _query.Exclude = new Godot.Collections.Array<Rid> { holder.GetRid() }; _equipped = true; _anatomyVersion = ulong.MaxValue; }
 
     // =========================================================
     // Caller supplies aim and shoulder/probe origin during physics, independent of movement/input implementation.
@@ -79,6 +80,11 @@ public partial class FirearmController : Node3D
         // Both top-down and FPS supply view-up to preserve true world-space bullet intersection.
         direction = _recoil.Apply(direction, recoilScreenUp);
         direction = ShotSpread.Apply(direction, RuntimeSettings.BaseSpreadDegrees, _shotRandom);
+        if (_anatomyVersion != AnatomyHitboxes.RegistryVersion)
+        {
+            AnatomyHitboxes.ConfigureShotQuery(_query, _holder!);
+            _anatomyVersion = AnatomyHitboxes.RegistryVersion;
+        }
         _query.CollisionMask = RuntimeSettings.HitMask;
         // Prevent a barrel sticking through cover from firing out of the other side.
         _query.From = probeOrigin; _query.To = start;
@@ -96,7 +102,7 @@ public partial class FirearmController : Node3D
             var packet = new DamagePacket(RuntimeSettings.Damage, RuntimeSettings.DamageKind, _holder, end, direction);
             var impact = new CombatImpact(_holder, end, end - _holder!.GlobalPosition,
                 CombatImpactKind.Bullet, RuntimeSettings.BulletImpactStrength, RuntimeSettings.BulletStaggerSeconds);
-            HitTargetResolver.Dispatch(hit["collider"].AsGodotObject() as Node, _holder, packet, impact);
+            HitTargetResolver.Dispatch(hit["collider"].AsGodotObject() as Node, _holder, packet, impact, hit["shape"].AsInt32());
         }
         _effects.ShowShot(start, end);
         // Close the acceptance gate before notifying sound/recoil observers; recursive requests cannot double-fire.

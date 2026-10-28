@@ -5,10 +5,16 @@ public static class HitTargetResolver
 {
     // =========================================================
     // Null/nonpositive damage is omitted. Stop at the first eligible actor; scenery never causes another ray.
-    public static bool Dispatch(Node? collider, Node3D? source, DamagePacket? damage, CombatImpact? impact)
+    public static bool Dispatch(Node? collider, Node3D? source, DamagePacket? damage, CombatImpact? impact, int shapeIndex = -1)
     {
         if (GodotObject.IsInstanceValid(source) && GodotObject.IsInstanceValid(collider)
             && (source == collider || source!.IsAncestorOf(collider!))) return false;
+        if (damage.HasValue && collider is AnatomyHitboxes anatomy)
+        {
+            DamagePacket hit = damage.Value;
+            damage = new DamagePacket(hit.Amount, hit.Type, hit.Source, hit.Position, hit.Direction,
+                anatomy.RegionForShape(shapeIndex));
+        }
         int depth = 0;
         for (Node? node = collider; node != null && depth < 32; node = node.GetParent(), depth++)
         {
