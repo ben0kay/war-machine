@@ -69,6 +69,7 @@ Apply **specific mappings before generic mappings**; check for path collisions b
 | `WORLD/Content/Placeables/Props/` | `WORLD/Content/Assets/Objects/Props/` | Includes Book001 scene, master, GLB, docs. |
 | `WORLD/Content/Placeables/Shared/` | `WORLD/Content/Assets/Objects/Shared/` | Keep shared PlaceableVisual and PlaceableSizeSettings; all scenes still use them. |
 | `WORLD/Content/Placeables/PLACEABLE_CATALOG.md` | `WORLD/Content/Assets/Objects/PLACEABLE_CATALOG.md` | Update every catalogue entry/path. |
+| `WORLD/Content/Placeables/OBJECT_AUTHORING_GUIDE.md` | `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md` | Move the new GLB-first visual authoring guide unchanged except for paths/links; preserve its collision/physics-deferred scope. |
 | `WORLD/Content/Placeables/README.md` | `WORLD/Content/Assets/Objects/README.md` | Rewrite as canonical Objects guide, including both Static and Props, remove obsolete legacy car note. |
 | `WORLD/Content/Objects/README.md`, `WORLD/Content/Objects/Cars/README.md` | Merge guidance into new `Assets/Objects/README.md`, `Assets/Objects/Static/README.md`, and new Cars README location | Do not leave misleading legacy docs in a now-empty old directory. |
 

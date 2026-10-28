@@ -21,6 +21,8 @@ See [PLACEABLE_CATALOG.md](PLACEABLE_CATALOG.md) for canonical paths, dimensions
 
 ## Authoring guidance for future AI chats
 
+**Start with [OBJECT_AUTHORING_GUIDE.md](OBJECT_AUTHORING_GUIDE.md)** for the reusable GLB-first visual asset workflow, scene/pivot/material conventions, per-asset masters, catalogue/F1 registration and deferred collision boundary. The guide lives here until the planned AM0 migration; AM0 moves it to `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md`.
+
 1. Prefer optimized imported GLBs under `Artwork/` for furniture, small props and appliances. Use a stable scene wrapper and a `.tres` per asset for frequently tweaked sizes; do not duplicate GLB source files merely for colour variants.
 2. Use `C/` only when generating visible geometry in C#. A small interaction/colour-setting script belongs alongside its scene or `Shared/`. Preserve pivot, dimensions and material surface naming/order on re-export.
 3. Share meshes/materials across instances; avoid per-frame work or physics on decorative clutter. The size helper is event/ready-driven and dormant at rest.
