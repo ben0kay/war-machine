@@ -25,7 +25,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     private Vector3 _screenRight, _screenForward;
     private Camera3D? _movementCamera;
     private float _phase;
-    private bool _initialized;
+    private bool _initialized, _reportMovementCollision;
 
     // =========================================================
     // The test world places the player before enabling physics; no spawn-time fall without terrain data.
@@ -77,6 +77,11 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
     public override void _UnhandledInput(InputEvent input)
     {
         if (!_initialized || input is not InputEventKey key || key.Echo) return;
+        if (key.PhysicalKeycode == Key.F10 && key.Pressed)
+        {
+            _reportMovementCollision = true; SetPhysicsProcess(true);
+            GetViewport().SetInputAsHandled(); return;
+        }
         if (key.PhysicalKeycode == Key.Ctrl && key.Location == KeyLocation.Right && key.Pressed)
         {
             _toggleCrouch = !_toggleCrouch;
@@ -121,6 +126,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - Mathf.Max(1, _settings.Gravity) * dt, horizontal.Z);
         MoveAndSlide();
+        if (_reportMovementCollision) ReportMovementCollision();
         Vector3 travel = GlobalPosition - before; travel.Y = 0;
         float actualSpeed = dt > 0 ? travel.Length() / dt : 0;
         if (actualSpeed > 0.05f)
@@ -139,6 +145,21 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget
         if (before.DistanceSquaredTo(GlobalPosition) > 0.0000001f) PositionChanged?.Invoke(GlobalPosition);
         if (IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _crouch == (IsCrouching ? 1 : 0))
         { Velocity = Vector3.Zero; _phase = 0; Pose(0, 0); SetPhysicsProcess(false); }
+    }
+
+    // =========================================================
+    // F10 only: read the last MoveAndSlide contacts, no extra ray/shape queries or repeated logging.
+    private void ReportMovementCollision()
+    {
+        _reportMovementCollision = false;
+        int count = GetSlideCollisionCount();
+        GD.Print($"Movement probe: player={GlobalPosition}, floor={IsOnFloor()}, contacts={count}. Hold movement against the blocker while pressing F10.");
+        for (int i = 0; i < count; i++)
+        {
+            var hit = GetSlideCollision(i);
+            string path = hit.GetCollider() is Node node ? node.GetPath().ToString() : "native/non-node collider";
+            GD.Print($"Movement blocker: {path}; normal={hit.GetNormal()}; point={hit.GetPosition()}");
+        }
     }
 
     // =========================================================

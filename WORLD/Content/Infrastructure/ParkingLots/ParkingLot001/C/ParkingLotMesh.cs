@@ -150,21 +150,27 @@ public partial class ParkingLotMesh : Node3D
         {
             int next = (i + 1) % edge.Length;
             Vector3 a = new(edge[i].X, top, edge[i].Y), b = new(edge[next].X, top, edge[next].Y);
-            Vector3 c = new(outer[next].X, 0, outer[next].Y), d = new(outer[i].X, 0, outer[i].Y);
+            Vector3 c = new(outer[next].X, -0.02f, outer[next].Y), d = new(outer[i].X, -0.02f, outer[i].Y);
             foreach (var face in new[] { (a, b, c), (a, c, d) })
             {
-                Vector3 normal = (face.Item2 - face.Item1).Cross(face.Item3 - face.Item1).Normalized();
+                // Godot front faces are clockwise: use the reversed cross product.
+                Vector3 normal = (face.Item3 - face.Item1).Cross(face.Item2 - face.Item1).Normalized();
                 bool reverse = normal.Y < 0; if (reverse) normal = -normal;
                 foreach (Vector3 vertex in new[] { face.Item1, reverse ? face.Item3 : face.Item2,
                     reverse ? face.Item2 : face.Item3 })
                 { surface.SetNormal(normal); surface.AddVertex(vertex); }
             }
+            // Solid volume rather than one-way triangle collision. Bury bottom/toe in the ground;
+            // the top edge meets the slab exactly, with a small collision margin at shared seams.
+            collision.AddChild(new CollisionShape3D { Name = $"WalkableAsphaltShoulder{i + 1:00}",
+                Shape = new ConvexPolygonShape3D { Margin = 0.001f, Points = new[] {
+                    a, b, c, d, new Vector3(a.X, -0.10f, a.Z), new Vector3(b.X, -0.10f, b.Z),
+                    new Vector3(c.X, -0.10f, c.Z), new Vector3(d.X, -0.10f, d.Z) } } });
         }
         var mesh = surface.Commit();
         var shoulderMaterial = (StandardMaterial3D)material.Duplicate();
         shoulderMaterial.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
         visuals.AddChild(new MeshInstance3D { Name = "SlopedAsphaltShoulders", Mesh = mesh, MaterialOverride = shoulderMaterial });
-        collision.AddChild(new CollisionShape3D { Name = "WalkableAsphaltShoulders", Shape = mesh.CreateTrimeshShape() });
     }
 
     // =========================================================

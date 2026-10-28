@@ -29,7 +29,7 @@ public static class VillageRoadMesh
     {
         Vector3 rear = site.GetNode<Node3D>("SiteMarkers/RearServiceExit").GlobalPosition;
         // Marker is 0.55m outside the slab edge; bridge from that edge to the surrounding grade.
-        Ramp(parent, rear + Vector3.Back * 0.55f, 2.2f, -2.55f, 0.12f, 0.015f, level, "RearExitRamp");
+        Ramp(parent, rear + Vector3.Back * 0.55f, 2.2f, -2.55f, 0.12f, -0.015f, level, "RearExitRamp");
     }
 
     // =========================================================
@@ -43,7 +43,8 @@ public static class VillageRoadMesh
         using var surface = new SurfaceTool(); surface.Begin(Mesh.PrimitiveType.Triangles);
         foreach (var face in new[] { (a, b, c), (a, c, d) })
         {
-            Vector3 normal = (face.Item2 - face.Item1).Cross(face.Item3 - face.Item1).Normalized();
+            // Match Godot clockwise front-face winding, independent of the solid collider.
+            Vector3 normal = (face.Item3 - face.Item1).Cross(face.Item2 - face.Item1).Normalized();
             bool reverse = normal.Y < 0; if (reverse) normal = -normal;
             foreach (Vector3 p in new[] { face.Item1, reverse ? face.Item3 : face.Item2, reverse ? face.Item2 : face.Item3 })
             { surface.SetNormal(normal); surface.AddVertex(p); }
@@ -53,7 +54,11 @@ public static class VillageRoadMesh
         body.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = new StandardMaterial3D {
             AlbedoColor = new Color(0.32f, 0.31f, 0.28f), Roughness = 1,
             CullMode = BaseMaterial3D.CullModeEnum.Disabled } });
-        body.AddChild(new CollisionShape3D { Shape = mesh.CreateTrimeshShape() });
+        float bottom = level - 0.10f;
+        body.AddChild(new CollisionShape3D { Name = "SolidAccessWedge", Shape = new ConvexPolygonShape3D {
+            Margin = 0.001f, Points = new[] { a, b, c, d,
+                new Vector3(a.X, bottom, a.Z), new Vector3(b.X, bottom, b.Z),
+                new Vector3(c.X, bottom, c.Z), new Vector3(d.X, bottom, d.Z) } } });
     }
 
 }
