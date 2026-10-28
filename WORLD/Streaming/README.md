@@ -1,6 +1,6 @@
-# WS0 — World sections and placement description
+# World sections, placement descriptions and static streaming
 
-**Implemented; awaiting local build/runtime validation. No scene streaming or gameplay save system yet.** [Roadmap](../WORLD_STREAMING_IMPLEMENTATION_PLAN.md).
+**WS0/WS1 implemented; WS2 isolated static proof implemented, awaiting local build/runtime validation. No gameplay save system yet.** [Roadmap](../WORLD_STREAMING_IMPLEMENTATION_PLAN.md).
 
 - `WorldSectionSettings` is nested in `WORLD/Configuration/WorldMaster.tres`: world ID, grid origin, 128m section size, finite logical bounds (current prototype 0–1024m X/Z), heading and initial grid visibility. These bounds describe the current test area, not a promised final world size. No terrain allocation/bake follows from increasing logical bounds.
 - `SectionCoordinate` uses floor division, including negative coordinates. World and footprint bounds are half-open. The player can leave logical bounds without changing gameplay; the heading reports that explicitly.
@@ -28,4 +28,20 @@ The normal world and inherited FPS show **Section (X, Z)** at top centre; defaul
 
 No process/physics callback is introduced. Existing player PositionChanged signals perform constant-time section lookup; labels/map redraw only at cell/bounds changes or explicit toggles. With both heading and grid off, movement subscriptions are removed; F3 input remains available. Grid nodes hold data only, never own gameplay entities. Exit detaches subscriptions. Startup's bounded five-prefab bounds capture/JSON validation is not repeated during motion.
 
-Source/resource/whitespace checks ran; neither Godot nor dotnet is available here. Build, the actual C# contract test, F6 heading/grid, FPS, disabled diagnostics and object-count checks remain pending. WS1–WS7 remain unimplemented.
+Source/resource/whitespace checks ran; neither Godot nor dotnet is available here. Build and runtime checks remain pending. WS3–WS7 remain planned.
+
+## WS2 — isolated static residency proof
+
+Run `DEBUG/WorldStreaming/StaticStreamingProof.tscn` with **F6**. This is deliberately separate from World.tscn: no village reparenting, terrain streaming/rebake, actor changes, mutable save data or automatic active-world opt-in. WASD moves the collision walker; D walks east along five 128m-spaced pairs of a procedural C# Car001 and imported GLB Hedge001. A returns; Shift speeds up. Cars straddle four section footprints but retain one placement ID/scene. The labels and flat test ground remain persistent diagnostics. Cars have collision; hedges retain their visual-only prefab contract.
+
+`StaticSectionStreamer` consumes a validated, cloned WS0 manifest. One identity dictionary owns live instances; actual X/Z footprint distance handles cross-section dependencies without creating a scene per overlap. It does **not** stream whole terrain cells or scan the scene tree. A small capped manifest is inspected on movement notifications (8m default), with 180m preload / 240m unload hysteresis. The isolated camera follows the walker, has a fixed 120m far clip and no zoom, so the load envelope covers its reach plus follow offset and movement band. These test distances are not a production vehicle/zoom readiness guarantee.
+
+`DEBUG/WorldStreaming/Configuration/StreamingProof.tres` owns the proof configuration, using `WorldStreamingSettings`. MaxPlacements=128 caps input; MaxResident=16 caps live scene roots; MaxInFlight=2 caps retained path requests; OperationsPerFrame=1 caps scene attachments/removals. Settings are copied at initialization. Request bookkeeping is bounded by the manifest/caps. Resident counts include immediately attached scenes; an explicit two-physics-frame readiness marker lets the test walker refuse entry into unready footprints. This is a harness safety check, **not** a production physics barrier or a replacement for actual collision tests.
+
+Main-thread work wakes on moved anchor/initial request. Resource reads use ResourceLoader threaded APIs; scene Instantiate/AddChild/_Ready and Free remain on the main thread. One large procedural prefab can still hitch inside its indivisible Ready callback: count budgets are not millisecond guarantees. Do not use this proof as evidence that loading a whole shop is already stall-free. Ordinary frames only poll capped jobs and inspect the bounded placement list while work remains; settled/empty/capacity-blocked schedulers disable processing. No scheduler timers, idle physics callbacks or per-object distance scripts. At capacity, later desired placements wait until slots become available; this prototype does not implement priority eviction or production readiness guarantees under overload. Keep the test demand below its resident cap.
+
+Obsolete queued intent is removed on movement. Godot has no threaded-request cancel API: started obsolete reads finish, their result is drained and references released without attachment. `StaticSectionLoadDrain` temporarily finishes pending reads after a scene switch and frees itself; normal settled play has no drain node. Failed assets are warned and suppressed for that streamer lifetime (restart scene to retry); source descriptions are not deleted. Engine import/resource caching may retain shared data, so unloading nodes is not a measured memory reduction.
+
+Overrides are explicitly rejected: this phase instantiates canonical static defaults only. Authoring seed/identity remain stored in the manifest; no new seeded generation is performed. Do not opt mutable props or encounters into this streamer before WS3/WS4. The test does not alter WS1 ranges; actual GLB/procedural scene nodes retain native renderer behaviour. Active-world WS1 registration/unregistration remains compatible via existing node-added/removed hooks, but active-world migration requires a separately validated integration.
+
+Local tests and expected results: [WS2 handoff](../../DEBUG/WorldStreaming/README.md#ws2-static-streaming-proof). Implemented in source, awaiting compilation/F6/performance acceptance. No measured frame-time or memory claims.

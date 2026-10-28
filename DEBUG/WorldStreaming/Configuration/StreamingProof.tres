@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WorldStreamingSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Streaming/WorldStreamingSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+LoadDistance = 180.0
+UnloadDistance = 240.0
+MovementStep = 8.0
+MaxPlacements = 128
+MaxResident = 16
+MaxInFlight = 2
+OperationsPerFrame = 1

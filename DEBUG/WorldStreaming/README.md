@@ -31,3 +31,18 @@ Expected `[WS1] PASS` / exit 0. This actual-code test is supplied but **not exec
 F6 World and FPS. Use the debug panel's Fog-aware rendering (WS1) A/B toggle. F1 spawn PineTree001 and ordinary GLB furniture, then walk/zoom away and back; check shapes remain full-detail nearby, native LOD where generated, and no early disappearance. Inspect Native VisibilityRangeEnd / light fade values in the Remote tree; geometry/physics nodes must remain resident. In FPS, the default clear sky preserves its existing far clip/authored geometry ranges; new geometry caps require FpsSkyFogOpacity=1, while local light fades still apply. Test fog disabled, opacity below 1, edge/end sliders, perspective/orthographic, crouch/jump, night lamps, dawn/dusk shadows, repeated F1 spawn/clear, pine density rebuild and scene reload. Fixture OFF must stay OFF; no new shadow flags. Check imported models and generated tree near/far levels do not compete.
 
 Profile the same view with WS1 ON/OFF after imports/shaders settle; record draw calls, triangles, frame timing and registered instance count via FogRenderPolicy.RegisteredCount. Do not compare different camera views or claim memory-unloading improvements. Tall/shadowed geometry may remain farther for safety. GPU grass/native terrain and actor relevance retain their existing owners; this test does not prove those stream. See [policy details](../../WORLD/Rendering/README.md).
+
+## WS2 static streaming proof
+
+Open **StaticStreamingProof.tscn → F6** (no terrain bake needed). WASD moves; D east / A west; Shift faster. Top-centre text shows current section, resident/desired counts, retained requests, cumulative loads/unloads and working/asleep. Walk from X=32 past the five paired markers up to X=640, then return. The car is procedural C# with solid collision; the hedge is the canonical imported GLB with its existing visual-only contract. Walk around cars with W/S.
+
+Expected: upcoming pairs load before they enter the fixed camera reach; distant pairs leave StreamedStaticRoot, returning recreates one instance per stable ID. A car crossing section lines does not duplicate. The scheduler reads asleep at rest after work finishes, including empty areas; requests <=2, resident roots <=16, <=1 attachment/removal per process frame. Inspect Remote tree for actual disappearance, not just culling. Ground/marker labels are persistent test helpers. No active-world village migration, actor streaming, terrain streaming, persistence, fog change or WS3 behaviour is included.
+
+```sh
+dotnet build war-machine.csproj
+godot --headless --path . res://DEBUG/WorldStreaming/StaticStreamingProof.tscn -- --ws2-test
+```
+
+Supplied but **not run here**: no Godot/.NET executable. Expected `[WS2] PASS` / exit 0. Automated checks cover procedural + GLB loading, four footprint cells/one ID, boundary crossings, hysteresis, unload/return, obsolete request draining, caps/sleep, and a physics ray against the returned car. Stop/restart the F6 scene during loading and when settled; verify no orphan proof scenes or permanently active StaticSectionLoadDrain nodes. Repeat a few loops and inspect car collision. Compile/import before treating this as accepted.
+
+Profile first visit and warm return separately for frame-time spikes and memory; resource import/shaders/physics and procedural Ready can still stall. Threaded resource reading is not threaded scene instantiation. Briefly open World.tscn/FPS afterward: neither should gain a streamer or lose existing scenery. Share build errors, visible pop-in, count growth, or collision failures before active-world opt-in. WS3 remains unimplemented.

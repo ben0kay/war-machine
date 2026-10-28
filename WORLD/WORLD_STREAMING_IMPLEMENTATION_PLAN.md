@@ -1,6 +1,6 @@
 # WS — Finite world, streaming and town authoring
 
-**Status (2026-10-28): WS0/WS1 implemented in source, awaiting local validation. WS2–WS7 remain Planned.** Owner explicitly authorized WS0 with a top-centre current-section heading/grid, then WS1 fog-aware rendering. Branch: `implement-td0-td1`; one commit per subsequently authorized job. Read root README, CodePreferences, this plan, WORLD README and current owning sources before each phase. Do not resume the parked wilderness roadmap or generate a giant map automatically.
+**Status (2026-10-28): WS0/WS1 implemented in source, awaiting local validation. WS2 isolated proof implemented, awaiting local validation; WS3–WS7 remain Planned.** Owner explicitly authorized WS0 with a top-centre current-section heading/grid, then WS1 fog-aware rendering. Branch: `implement-td0-td1`; one commit per subsequently authorized job. Read root README, CodePreferences, this plan, WORLD README and current owning sources before each phase. Do not resume the parked wilderness roadmap or generate a giant map automatically.
 
 ## Direction
 
@@ -14,7 +14,7 @@ Use deliberate town layout plus constrained procedural assistance. The owner pla
 | --- | --- | --- | --- | --- |
 | **WS0** | Section/identity/placement contract and read-only boundary/ownership proof | Current active world/asset audit | Codex; Regular Chat design review | Implemented; Awaiting Validation |
 | **WS1** | Shared fog-aware render/relevance policy for procedural and imported assets | WS0; current fog/vegetation audit | Codex; owner visual check | Implemented; Awaiting Validation |
-| **WS2** | Bounded loading/unloading of a few static test sections | WS0; WS1 compatible visibility | Codex | Planned |
+| **WS2** | Bounded loading/unloading of a few static test sections | WS0; WS1 compatible visibility | Codex | Implemented; Awaiting Validation |
 | **WS3** | Persistent state round-trip and safe unload/save lifecycle | WS2; coordinate existing IX8/BI4 plans | Codex; Copilot local checks | Planned |
 | **WS4** | Nearby encounter activation and persistent actor ownership | WS3; actor lifecycle audit | Codex | Planned |
 | **WS5** | Roaming placement/edit/save workflow using section records | WS0 schema; WS3 storage | Codex; Regular Chat catalogue/UI work | Planned |
@@ -184,3 +184,7 @@ Read [Rendering/README.md](Rendering/README.md) for precise coverage, dynamic ed
 ### WS1 zoom regression follow-up — 2026-10-28
 
 Owner reports scrolling hitches disappear with WS1 disabled. Removed full scenery refreshes from ordinary zoom/settings events, using a conservative maximum-orbit envelope instead. Added a refresh-count regression assertion. Source checks only; compilation, repeated-scroll A/B and steady FPS remain awaiting local validation. WS2 remains deferred.
+
+### WS2 isolated proof handoff — 2026-10-28
+
+Implemented StaticSectionStreamer with bounded manifest/requests/resident roots, threaded resource reads, per-frame scene-operation budget, footprint-based hysteresis, stable-ID deduplication, obsolete-request draining and idle sleep. StaticStreamingProof.tscn provides five section-boundary pairs (procedural C# car + GLB hedge), collision walker and live counts. Config lives in DEBUG/WorldStreaming/Configuration/StreamingProof.tres. No active-world opt-in until the isolated proof is locally validated; World.tscn, village ownership, terrain, AI and WS3 persistence remain untouched. Scope and limitations are in Streaming/README.md; executable checks/handoff are in DEBUG/WorldStreaming/README.md. Source/reference/whitespace review only; compilation, runtime collision, first-use stalls and memory remain unverified here. Delivery SHA is in the job response.

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 public static class WorldAssetCatalog
 {
     private static readonly Dictionary<string, string> Paths = new() {
+        ["object.car.001"] = "res://WORLD/Content/Assets/Objects/Static/Cars/Car001/Car001.tscn",
+        ["object.hedge.001"] = "res://WORLD/Content/Assets/Objects/Static/Landscaping/Hedges/Hedge001/Hedge001.tscn",
         ["site.convenience-store.001"] = "res://WORLD/Content/Assets/Sites/ConvenienceStoreSite001/ConvenienceStoreSite001.tscn",
         ["structure.building.001"] = "res://WORLD/Content/Assets/Structures/Building001/Building001.tscn",
         ["structure.building.002"] = "res://WORLD/Content/Assets/Structures/Building002/Building002.tscn",
