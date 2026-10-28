@@ -24,3 +24,9 @@ The configured `BayCount` is capped to available asphalt width (2m side margins)
 4. Confirm `ConvenienceStoreSite001.tscn`, `ConvenienceStore001.tscn` and `StreetLamp001.tscn` remain empty/unplaced. Report any rendering or collision mismatch before PL0B.
 
 See [site-owned PL plan](../../../Sites/ConvenienceStoreSite001/IMPLEMENTATION_PLAN.md) for PL0B–PL4 and integration constraints.
+
+## Asphalt access correction
+
+The 12cm solid apron/driveway had vertical side faces. Godot CharacterBody3D does not provide general automatic stair stepping, so entering from a side could catch the capsule even though a village-only ramp existed at the driveway end. ParkingLotMesh now generates one continuous sloped asphalt shoulder along the full apron+driveway outline (including both concave joins), with matching upward-facing collision triangles. EdgeRampWidth is 0.8m by default (about 8.5 degrees at 12cm thickness); native top slab and bay markers remain unchanged. Generated bounds automatically include shoulders for village grading and scatter exclusions. The central entrance access strip now has a 2mm visual lip rather than a 52mm step; raised sidewalk curbs remain intentional. The redundant village-only driveway ramp is removed, while the store rear-exit ramp remains.
+
+Built once with the prefab; no player-controller step logic, extra timer or per-frame query. Numeric outline/concave-join/slope checks and diff review passed; Godot/.NET unavailable, so compilation and physical traversal remain unverified. After pull/rebuild, reload the scene and F6 WORLD/World.tscn. Walk from dirt/grass onto both driveway sides, its end, both lot sides and front edges; test back off, corners, central store entrance, zombies and FPS. Saved terrain need not be rebaked.

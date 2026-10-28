@@ -61,6 +61,8 @@ public partial class ParkingLotMesh : Node3D
         StructureGeometry.Box(surfaces, collision, "DrivewayStub",
             new(0, thickness * 0.5f, halfDepth + driveLength * 0.5f),
             new(driveWidth, thickness, driveLength), asphalt);
+        BuildEdgeRamps(surfaces, collision, halfWidth, halfDepth, driveWidth * 0.5f,
+            driveLength, topY, Mathf.Clamp(s.EdgeRampWidth, 0.25f, 2), asphalt);
         // A small subdued asphalt patch, with no additional collider, breaks the uniform colour.
         StructureGeometry.Box(surfaces, null, "OldAsphaltPatch",
             new(-halfWidth * 0.32f, topY + 0.002f, 0.9f),
@@ -85,8 +87,8 @@ public partial class ParkingLotMesh : Node3D
         }
         // A low central access strip that aligns with the future convenience-store entrance.
         StructureGeometry.Box(sidewalk, collision, "EntranceAccess",
-            new(0, topY + 0.026f, walkwayCenterZ),
-            new(gap, 0.052f, sidewalkDepth), concrete);
+            new(0, topY - 0.008f, walkwayCenterZ),
+            new(gap, 0.020f, sidewalkDepth), concrete);
 
         // The front of the bays is near the sidewalk; their southern ends open into the driving aisle.
         float headZ = curbZ + 0.52f;
@@ -124,6 +126,45 @@ public partial class ParkingLotMesh : Node3D
         AddMarker(markers, "Entrance", new(0, topY, curbZ + 0.9f));
         AddMarker(markers, "Storefront", new(0, topY, -halfDepth - 0.35f));
         AddMarker(markers, "RoadConnection", new(0, topY, halfDepth + driveLength));
+    }
+
+    // =========================================================
+    // Follow the complete apron+driveway outline, including its two concave joins. Flat slab colliders
+    // stay authoritative on top; these outward shoulders replace the abrupt 12cm step from any side.
+    private static void BuildEdgeRamps(Node3D visuals, StaticBody3D collision, float halfWidth,
+        float halfDepth, float driveHalf, float driveLength, float top, float width, Material material)
+    {
+        Vector2[] edge = { new(-halfWidth, -halfDepth), new(halfWidth, -halfDepth),
+            new(halfWidth, halfDepth), new(driveHalf, halfDepth), new(driveHalf, halfDepth + driveLength),
+            new(-driveHalf, halfDepth + driveLength), new(-driveHalf, halfDepth), new(-halfWidth, halfDepth) };
+        var outer = new Vector2[edge.Length];
+        for (int i = 0; i < edge.Length; i++)
+        {
+            Vector2 incoming = (edge[i] - edge[(i + edge.Length - 1) % edge.Length]).Normalized();
+            Vector2 outgoing = (edge[(i + 1) % edge.Length] - edge[i]).Normalized();
+            // All edges are axis-aligned/right-angle: summed outward normals form an exact miter.
+            outer[i] = edge[i] + new Vector2(incoming.Y + outgoing.Y, -incoming.X - outgoing.X) * width;
+        }
+        using var surface = new SurfaceTool(); surface.Begin(Mesh.PrimitiveType.Triangles);
+        for (int i = 0; i < edge.Length; i++)
+        {
+            int next = (i + 1) % edge.Length;
+            Vector3 a = new(edge[i].X, top, edge[i].Y), b = new(edge[next].X, top, edge[next].Y);
+            Vector3 c = new(outer[next].X, 0, outer[next].Y), d = new(outer[i].X, 0, outer[i].Y);
+            foreach (var face in new[] { (a, b, c), (a, c, d) })
+            {
+                Vector3 normal = (face.Item2 - face.Item1).Cross(face.Item3 - face.Item1).Normalized();
+                bool reverse = normal.Y < 0; if (reverse) normal = -normal;
+                foreach (Vector3 vertex in new[] { face.Item1, reverse ? face.Item3 : face.Item2,
+                    reverse ? face.Item2 : face.Item3 })
+                { surface.SetNormal(normal); surface.AddVertex(vertex); }
+            }
+        }
+        var mesh = surface.Commit();
+        var shoulderMaterial = (StandardMaterial3D)material.Duplicate();
+        shoulderMaterial.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
+        visuals.AddChild(new MeshInstance3D { Name = "SlopedAsphaltShoulders", Mesh = mesh, MaterialOverride = shoulderMaterial });
+        collision.AddChild(new CollisionShape3D { Name = "WalkableAsphaltShoulders", Shape = mesh.CreateTrimeshShape() });
     }
 
     // =========================================================

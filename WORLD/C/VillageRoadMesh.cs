@@ -27,7 +27,6 @@ public static class VillageRoadMesh
     // Small walkable ramps bridge the prefab's 12cm slab edges, without changing its reusable geometry.
     public static void BuildSiteAccess(Node3D parent, Node3D site, float level)
     {
-        Ramp(parent, site.ToGlobal(new Vector3(0, 0, 20)), 6, 2, 0.12f, 0.015f, level, "DrivewayRamp");
         Ramp(parent, site.ToGlobal(new Vector3(5.7f, 0, -25.65f)), 2.2f, -2.55f, 0.12f, 0.015f, level, "RearExitRamp");
     }
 
