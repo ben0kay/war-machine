@@ -7,6 +7,7 @@ public partial class FirstPersonFog : Node, IDebugOverlayView
     private FirstPersonCamera _camera = null!;
     private FirstPersonSettings _settings = null!;
     private EnvironmentConfig _fogSettings = null!;
+    public PlayerDistanceFog Fog => _fog;
     private PlayerDistanceFog _fog = null!;
     private Label _readout = null!;
     private float _originalFar;

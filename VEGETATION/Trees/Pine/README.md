@@ -37,3 +37,7 @@ Trunks now have collision on physics layer 5 (bit 16), with one StaticBody3D per
 ## Imported-GLB art comparison (not a runtime replacement)
 
 A separate [PineTree001 authored GLB](../../../WORLD/Content/Assets/Objects/Static/Vegetation/Trees/PineTree001/README.md) is available as a **standalone visual-only F1 preview**. It lives in the canonical authored Objects catalogue and has its own size master. It does **not** change PinePlacement, PineMeshBuilder, PineMaster, the current MultiMesh renderer, wind, LOD, foliage fading or trunk collision. This higher-detail GLB (7,679 triangles) should be visually assessed and optimized/LOD'd before trying it as an instanced forest replacement. Do not copy or duplicate the model into this folder in the meantime.
+
+## WS1 shared native range cap
+
+The active world's render policy now covers existing tree MultiMeshes (procedural or configured ImportedMeshes) without changing placement, near/far mesh selection, wind, material sharing, trunk collision or chunk lifetime. PinePlacement stamps its intended VisibilityRangeEnd in `world_authored_range_end` metadata on creation/view edits; the policy composes a conservative fog cap and restores the latest intended end when OFF. No per-tree polling or GLB scene instancing is added. Native imported mesh LOD remains usable. PineTree001 F1 previews are also covered, but replacing this forest's source art is not part of WS1. See [policy](../../../WORLD/Rendering/README.md); build/visual/profiling acceptance pending.

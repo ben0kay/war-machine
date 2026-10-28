@@ -1,6 +1,16 @@
-[gd_resource type="Resource" script_class="WorldSettings" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WorldSettings" load_steps=6 format=3]
 [ext_resource type="Script" path="res://WORLD/WorldSettings.cs" id="1"]
 [ext_resource type="Script" path="res://WORLD/Streaming/WorldSectionSettings.cs" id="sections_script"]
+[ext_resource type="Script" path="res://WORLD/Rendering/WorldRenderSettings.cs" id="render_script"]
+[sub_resource type="Resource" id="render_policy"]
+script = ExtResource("render_script")
+Enabled = true
+HiddenBuffer = 8.0
+CameraRefreshStep = 2.0
+ShadowBuffer = 48.0
+DeformationPadding = 2.0
+FadeLocalLights = true
+LightFadeLength = 8.0
 [sub_resource type="Resource" id="sections"]
 script = ExtResource("sections_script")
 WorldId = "war-machine-main"
@@ -12,6 +22,7 @@ ShowGrid = false
 [resource]
 script = ExtResource("1")
 Sections = SubResource("sections")
+RenderPolicy = SubResource("render_policy")
 Seed = 48193
 SpawnXZ = Vector2(512, 550)
 GroundHeight = 4.0

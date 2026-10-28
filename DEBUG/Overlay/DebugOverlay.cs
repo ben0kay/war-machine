@@ -7,6 +7,7 @@ using System.Text.Json;
 public partial class DebugOverlay : PanelContainer
 {
     private IDebugOverlayView? _view;
+    private WorldRenderCulling? _renderCulling;
     private Camera _camera = null!;
     private CameraSettings _settings = null!;
     private HSlider _pitch = null!, _yaw = null!, _zoom = null!, _fov = null!;
@@ -27,9 +28,9 @@ public partial class DebugOverlay : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null)
     {
-        _view = view;
+        _view = view; _renderCulling = renderCulling;
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
         SetProcess(false); SetPhysicsProcess(false);
         _copy = GetNode<Button>("Margin/Outer/Copy");
@@ -158,6 +159,17 @@ public partial class DebugOverlay : PanelContainer
             value => { _environment.WeatherQuality = value; weather.ApplySettings(); });
         if (groundHaze != null)
             GroundHazeControls.Build(environmentRows, _environment, groundHaze, () => _copy.Text = "Copy settings");
+        if (renderCulling != null)
+        {
+            var renderRows = AddSection(rootRows, "Fog-aware rendering (WS1)");
+            var toggle = new CheckButton { Text = "Cull scenery behind opaque fog", ButtonPressed = renderCulling.Settings.Enabled, FocusMode = FocusModeEnum.None };
+            renderRows.AddChild(toggle);
+            toggle.Toggled += value => { renderCulling.Settings.Enabled = value; renderCulling.ApplySettings(); _copy.Text = "Copy settings"; };
+            AddBoundSlider(renderRows, "Hidden buffer (m)", 4, 64, 1, renderCulling.Settings.HiddenBuffer,
+                value => { renderCulling.Settings.HiddenBuffer = value; renderCulling.ApplySettings(); });
+            AddBoundSlider(renderRows, "Shadow buffer (m)", 0, 160, 1, renderCulling.Settings.ShadowBuffer,
+                value => { renderCulling.Settings.ShadowBuffer = value; renderCulling.ApplySettings(); });
+        }
         var foliageRows = AddSection(rootRows, "Foliage");
         rows = AddSection(foliageRows, "Grass");
         rows.AddChild(new Label { Text = "Release density/height to apply" });
@@ -366,6 +378,12 @@ public partial class DebugOverlay : PanelContainer
             [nameof(_environment.WeatherFallSpeed)] = _environment.WeatherFallSpeed,
             [nameof(_environment.WeatherQuality)] = _environment.WeatherQuality
         };
+        if (_renderCulling != null)
+        {
+            values["WS1Enabled"] = _renderCulling.Settings.Enabled;
+            values["WS1HiddenBuffer"] = _renderCulling.Settings.HiddenBuffer;
+            values["WS1ShadowBuffer"] = _renderCulling.Settings.ShadowBuffer;
+        }
         _view?.WriteSnapshot(values);
         DisplayServer.ClipboardSet("War Machine · World camera and environment settings\n"
             + JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true }));

@@ -128,6 +128,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 bool hasLod = _farMeshes.Length == _meshes.Length;
                 node.VisibilityRangeBegin = far ? lod : 0;
                 node.VisibilityRangeEnd = far || !hasLod ? end : lod;
+                node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, node.VisibilityRangeEnd);
             }
     }
 
@@ -285,6 +286,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
             VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Disabled,
             CastShadow = shadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off
         };
+        node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, end);
         AddChild(node);
         return node;
     }

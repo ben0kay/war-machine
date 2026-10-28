@@ -9,3 +9,7 @@ Bed001 uses `BedVisual.cs`, which derives from the shared scale adapter and sepa
 **Physics caveat:** These three scenes have no collision yet. If physics bodies are added later, plan appropriately sized colliders; nonuniform physics scaling may require explicitly rebuilt collision rather than reusing the visual-only transform.
 
 **Performance:** These components do their work in `_Ready` (or intentional explicit palette changes), call `SetProcess(false)` and `SetPhysicsProcess(false)`, and do not create timers, new GLB meshes, awake physics bodies or per-object polling.
+
+## WS1 world rendering
+
+Active-world static GLB wrappers inherit fog-aware native ranges from WORLD/Rendering via scene lifecycle registration under PersistentPropsRoot. PlaceableVisual remains a ready-only size adapter; it does not create a per-object distance loop. Final model scale/spawn transform is captured after Ready, so size masters and bed variants remain intact. Later explicit transform edits must notify FogRenderPolicy.Refresh; visibility/ownership/physics stay separate.

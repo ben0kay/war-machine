@@ -30,6 +30,7 @@ public partial class FirstPersonWorld : WorldController
         _fpsFog = new FirstPersonFog { Name = "FirstPersonFog" };
         GetNode("SystemsRoot/EnvironmentRoot").AddChild(_fpsFog);
         _fpsFog.Initialize((FirstPersonCamera)camera, player, EnvironmentSettings);
+        InitializeRenderPolicy(_fpsFog.Fog, camera, player);
     }
 
     // =========================================================

@@ -18,3 +18,16 @@ godot --headless --path . res://DEBUG/WorldStreaming/SectionManifestTest.tscn
 Use your installed Godot .NET executable path/name. Expected `[WS0] PASS` and exit 0; exceptions produce FAIL and exit 1. Tests cover negative/exact-edge/offset coordinates, half-open finite bounds, four dependency references with one owned placement, schema/world identity, transforms/seeds/overrides round-trip, duplicate IDs, unknown assets and invalid owner/version. No terrain or reusable asset scene is loaded by this test.
 
 F6 World and FPS: heading shows (4,4) at default spawn; cross X=512 or Z=512 to see cell changes; F3 shows five records in village mode and closes cleanly. Confirm buildings/store stay present and retain collision/fading. No duplicate cars/lamps or changed actor activity. Inspect a footprint crossing a line: gold spans cells but owner count is one. Resize a normal desktop viewport (e.g. 1280x720 and 640x360), verify top heading/help, then run with both display flags false. The optional map scales down on viewport resize; the heading remains anchored. Stop/restart and check IDs/record count are stable. There is no disk save, async loading, fog change, actor lifecycle change or WS1 implementation in this job.
+
+## WS1 native render policy tests and local A/B
+
+```sh
+dotnet build war-machine.csproj
+godot --headless --path . res://DEBUG/WorldStreaming/RenderPolicyTest.tscn
+```
+
+Expected `[WS1] PASS` / exit 0. This actual-code test is supplied but **not executed here** (no Godot/dotnet). It checks conservative bounds, authored LOD ends/begins, applied fog edge, exemption, local-light Visible independence, translucent/OFF restoration, reactivation and scope removal. Build/import is mandatory before trusting source completion.
+
+F6 World and FPS. Use the debug panel's Fog-aware rendering (WS1) A/B toggle. F1 spawn PineTree001 and ordinary GLB furniture, then walk/zoom away and back; check shapes remain full-detail nearby, native LOD where generated, and no early disappearance. Inspect Native VisibilityRangeEnd / light fade values in the Remote tree; geometry/physics nodes must remain resident. In FPS, the default clear sky preserves its existing far clip/authored geometry ranges; new geometry caps require FpsSkyFogOpacity=1, while local light fades still apply. Test fog disabled, opacity below 1, edge/end sliders, perspective/orthographic, crouch/jump, night lamps, dawn/dusk shadows, repeated F1 spawn/clear, pine density rebuild and scene reload. Fixture OFF must stay OFF; no new shadow flags. Check imported models and generated tree near/far levels do not compete.
+
+Profile the same view with WS1 ON/OFF after imports/shaders settle; record draw calls, triangles, frame timing and registered instance count via FogRenderPolicy.RegisteredCount. Do not compare different camera views or claim memory-unloading improvements. Tall/shadowed geometry may remain farther for safety. GPU grass/native terrain and actor relevance retain their existing owners; this test does not prove those stream. See [policy details](../../WORLD/Rendering/README.md).

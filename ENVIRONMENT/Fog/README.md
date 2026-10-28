@@ -19,3 +19,7 @@ Initialize(..., cameraDistance: true) selects spherical 3D distance from the ren
 DEBUG/TEST/FirstPerson/ENVIRONMENT/FirstPersonFog owns the profile/UI and linked camera Far; shared top-down fog does not change camera Far. The shared left-side overlay exposes start/end, cull buffer, enabled and colour plus copy. Changing end adjusts Far = effective end + buffer (minimum 8m). Disabling fog restores the prior camera Far. Frustum culling clips distant geometry; existing MultiMesh chunk bounds can still straddle the cutoff and submit some hidden instances. This does not unload chunks, stop AI, adjust physics, or guarantee shadow costs disappear. No measured performance claim. Local build/shader/visual checks pending.
 
 See [shared solar atmosphere guide](../SHARED_ENVIRONMENT_README.md#day--night-lighting-and-rays--awaiting-local-validation) for lighting controls, performance and pending local validation.
+
+## WS1 applied render envelope
+
+PlayerDistanceFog exposes FullyOpaque, OpaqueRadius (effective end plus edge variation), CameraMetric and SettingsApplied. WORLD/Rendering uses that actual view-specific snapshot; it does not infer geometry culling from Sky3D mist or globally alter fog. Disabled/translucent distance fog restores WS1 native settings. Atmosphere tint updates do not trigger repeated range work. Existing valid shader appearance is preserved; nonfinite distance/opacity inputs are sanitized.

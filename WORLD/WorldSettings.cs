@@ -8,6 +8,8 @@ public partial class WorldSettings : Resource
     public const int TerrainSize = 1024;
     [ExportGroup("World sections (WS0 diagnostics)")]
     [Export] public WorldSectionSettings Sections { get; set; } = new();
+    [ExportGroup("Fog-aware rendering (WS1)")]
+    [Export] public WorldRenderSettings RenderPolicy { get; set; } = new();
     [ExportGroup("Village layout")]
     [Export] public bool VillageEnabled { get; set; } = true;
     [Export] public Vector2 VillageOriginXZ { get; set; } = new(512, 512);

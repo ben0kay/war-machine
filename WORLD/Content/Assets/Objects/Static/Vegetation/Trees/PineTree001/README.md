@@ -23,3 +23,7 @@ Previewed tree is visual-only and noncollidable. This has **no effect** on `VEGE
 The current active pines use seeded `MultiMesh` batches, shader wind, low-detail far LOD, view fading and chunk-level trunk physics. **None of those mechanics is wired to this GLB yet**. This 7.7K-triangle model is for side-by-side art inspection; exporting a low/medium LOD, checking needle silhouette in top-down/FPS, attaching compatible foliage wind/fade shading and testing instanced draw costs would be required before world-scale replacement. Avoid creating individual Node3D trees in forest placement.
 
 **Local validation pending:** `dotnet build war-machine.csproj`, Godot GLB import, open `PineTree001.tscn`, F6 World + F1 preview; check normals, trunk, branches, green colours, height, terrain grounding, no collision and current procedural pines unchanged. GLB header/mesh/surface/index structure was validated while authoring, not tested inside Godot.
+
+## WS1 distance policy (2026-10-28)
+
+F1 instances under PersistentPropsRoot now automatically receive the shared conservative fog-aware native visibility range, like other GLB/procedural static objects. Imported mesh LOD remains enabled by normal Godot import defaults; inspect actual generated LODs locally. This does not replace the active forest, add wind/collision to this visual-only prefab or create manual far-tree artwork. All earlier forest-replacement constraints still apply. See WORLD/Rendering/README.md for coverage and validation limits.

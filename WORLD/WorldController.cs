@@ -18,6 +18,7 @@ public partial class WorldController : Node3D
     protected WeatherBridge _weather = null!;
     protected Camera _camera = null!;
     private PlayerDistanceFog? _distanceFog;
+    private WorldRenderCulling _renderCulling = null!;
     protected GroundHaze? _groundHaze;
     protected GameEnvironment _environmentScene = null!;
     private ZombieVisionDebug _visionDebug = null!;
@@ -227,6 +228,16 @@ public partial class WorldController : Node3D
         _distanceFog = new PlayerDistanceFog { Name = "PlayerDistanceFog" };
         GetNode("SystemsRoot/EnvironmentRoot").AddChild(_distanceFog);
         _distanceFog.Initialize(camera, player, EnvironmentSettings);
+        InitializeRenderPolicy(_distanceFog, camera, player);
+    }
+
+    // =========================================================
+    // Only static props and existing vegetation batches participate; actors/terrain/global effects keep their owners.
+    protected void InitializeRenderPolicy(PlayerDistanceFog fog, Camera camera, PlayerController player)
+    {
+        _renderCulling = new WorldRenderCulling { Name = "FogRenderPolicy" }; GetNode("SystemsRoot").AddChild(_renderCulling);
+        _renderCulling.Initialize(fog, camera, player, Settings.RenderPolicy,
+            GetNode("WorldActorsRoot/PersistentPropsRoot"), GetNode("SystemsRoot/VegetationRoot"));
     }
 
     // =========================================================
@@ -236,7 +247,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling);
     }
 
     // =========================================================
