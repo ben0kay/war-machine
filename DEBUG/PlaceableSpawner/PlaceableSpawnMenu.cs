@@ -1,10 +1,11 @@
-// F1 placeable preview: import two GLB models on demand; all preview instances remain static and noncolliding.
+// F1 placeable preview: imported GLBs and Bed001 palette variants; all previews are static and noncolliding.
 using Godot;
 
 public partial class PlaceableSpawnMenu : CanvasLayer
 {
     private const string BookcasePath = "res://WORLD/Content/Placeables/Objects/Furniture/Bookcases/Bookcase001/Artwork/Bookcase001.glb";
     private const string BookPath = "res://WORLD/Content/Placeables/Props/Books/Book001/Artwork/Book001.glb";
+    private const string BedPath = "res://WORLD/Content/Placeables/Objects/Furniture/Beds/Bed001/Bed001.tscn";
     private const int MaxInstances = 24;
     private PlayerController? _player;
     private Camera3D? _camera;
@@ -27,6 +28,10 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         _backdrop.Hide();
         _selection.AddItem("OBJECT · Bookcase001");
         _selection.AddItem("PROP · Book001");
+        _selection.AddItem("OBJECT · Bed001 · Slate Blue");
+        _selection.AddItem("OBJECT · Bed001 · Moss Green");
+        _selection.AddItem("OBJECT · Bed001 · Warm Sand");
+        _selection.AddItem("OBJECT · Bed001 · Dusty Rose");
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Spawn").Pressed += SpawnSelected;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Clear").Pressed += ClearSpawned;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Close").Pressed += () => CloseMenu(true);
@@ -86,10 +91,15 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         { _status.Text = "Preview limit reached. Clear models."; return; }
 
         bool isBook = _selection.Selected == 1;
-        var source = ResourceLoader.Load<PackedScene>(isBook ? BookPath : BookcasePath);
-        if (source == null) { _status.Text = "GLB import failed; see Godot Output."; return; }
+        bool isBed = _selection.Selected >= 2 && _selection.Selected <= 5;
+        string path = isBed ? BedPath : isBook ? BookPath : BookcasePath;
+        var source = ResourceLoader.Load<PackedScene>(path);
+        if (source == null) { _status.Text = "Could not load model/scene; see Godot Output."; return; }
         if (source.Instantiate() is not Node3D instance)
-        { _status.Text = "Imported GLB does not have a Node3D root."; return; }
+        { _status.Text = "Placeable does not have a Node3D root."; return; }
+        // Select the palette before AddChild/_Ready so the same scene builds just one variant.
+        if (isBed && instance is BedMesh bed)
+            bed.BeddingVariant = (BedMesh.BeddingPalette)(_selection.Selected - 2);
 
         Vector3 direction = -_camera.GlobalBasis.Z;
         direction.Y = 0;
@@ -102,7 +112,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
             float height = data.Call("get_height", new Vector3(at.X, 0, at.Z)).AsSingle();
             if (float.IsFinite(height)) ground = Mathf.Max(ground, height);
         }
-        instance.Name = isBook ? "Preview_Book001" : "Preview_Bookcase001";
+        instance.Name = isBed ? $"Preview_Bed001_{_selection.Selected - 2}" : isBook ? "Preview_Book001" : "Preview_Bookcase001";
         _spawned.AddChild(instance);
         instance.GlobalPosition = new Vector3(at.X, ground + (isBook ? _settings.BookHoverHeight : 0), at.Z);
         instance.Rotation = new Vector3(0, Mathf.Atan2(-direction.X, -direction.Z), 0);
