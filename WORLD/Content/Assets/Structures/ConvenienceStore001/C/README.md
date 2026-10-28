@@ -1,3 +1,5 @@
+> **DOOR1 rear exit:** one `Door001.tscn` physical hinged metal service door added to the grouped RearWall at runtime. Opening narrowed to 1.52m but central passage remains 2.6m; front entrance and rear room openings remain empty. Leaf/handles inherit fade, collider remains live and solid. See [reusable Door001](../../../Objects/Static/Doors/Door001/README.md) and local test checklist. Not Godot-tested.
+
 > **CS2 current source:** 24×16m building, six retail aisles, front till, two separately partitioned rear rooms and a central front-to-back emergency/service route; 14 clearance reservations. The older four-aisle/single-stockroom summary below is historical.
 
 # ConvenienceStoreMesh.cs — store-only implementation

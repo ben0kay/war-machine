@@ -1,6 +1,8 @@
+> **DOOR1 note (2026-10-28):** the convenience store now has a standalone physics hinge door that opens from player contact; see [Door001](../WORLD/Content/Assets/Objects/Static/Doors/Door001/README.md). Door-pull handles, cupboards and the IX0–IX8 interaction plans remain future work.
+
 # INTERACTION — shared physical world interactions (planned)
 
-> **Status: design/roadmap only. No runtime interaction feature added.** Start with [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) (**IX0–IX8**, each independently authorized). Plan reflects the owner's 2026-10-27 discussion of physics props, Half-Life-style floating object carry, cupboards, boarded doors, hidden scavenging and rifle placement.
+> **Status: IX0–IX8 still planned; separate DOOR1 rigid hinge physics implemented, with no common interaction targeting/grabbing.** Start with [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) (**IX0–IX8**, each independently authorized). Plan reflects the owner's 2026-10-27 discussion of physics props, Half-Life-style floating object carry, cupboards, boarded doors, hidden scavenging and rifle placement.
 
 ## Principle: one world, different input adapters
 

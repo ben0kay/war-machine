@@ -90,11 +90,29 @@ public partial class ConvenienceStoreMesh : Node3D
         // Both exterior doors remain real, clear apertures: main entrance at +Z, rear exit at -Z.
         // The rear rooms sit on either side of a direct 2.7m central service corridor.
         const float serviceHalf = 1.30f, serviceHead = 2.90f;
-        float serviceLeft = -serviceHalf, serviceRight = serviceHalf;
+        // DOOR1: leave the generous 2.6m corridor, but use a real 1.52m service-door opening.
+        // One full-width single hinged leaf is much more believable than a 2.6m swinging slab.
+        const float rearDoorHalf = 0.76f;
+        float serviceLeft = -rearDoorHalf, serviceRight = rearDoorHalf;
         StructureGeometry.WallX(rearWall, body, "RearWest", -hx, serviceLeft, rear, 0, h, stucco);
         StructureGeometry.WallX(rearWall, body, "RearExitHead", serviceLeft, serviceRight, rear, serviceHead, h, stucco);
         StructureGeometry.WallX(rearWall, body, "RearEast", serviceRight, hx, rear, 0, h, stucco);
-        FrameDoor(rearWall, "RearServiceExit", 0, rear - 0.13f, 2 * serviceHalf, serviceHead, metal);
+        FrameDoor(rearWall, "RearServiceExit", 0, rear - 0.13f, 2 * rearDoorHalf, serviceHead, metal);
+        // The reusable Door001 owns a real HingeJoint3D + RigidBody3D leaf. Hinge rests beside
+        // the left jamb; the doorway/camera fade remains owned by the rear wall group.
+        if (!Engine.IsEditorHint())
+        {
+            const string doorPath = "res://WORLD/Content/Assets/Objects/Static/Doors/Door001/Door001.tscn";
+            var doorScene = GD.Load<PackedScene>(doorPath);
+            if (doorScene == null) GD.PushError($"ConvenienceStore001: door prefab missing: {doorPath}");
+            else
+            {
+                var rearDoor = doorScene.Instantiate<Node3D>();
+                rearDoor.Name = "RearServiceDoor001";
+                rearDoor.Position = new Vector3(-0.69f, 0, rear);
+                rearWall.AddChild(rearDoor);
+            }
+        }
 
         // Long, physically empty shop windows occupy most of BOTH retail side walls.
         // Back-room side walls remain solid for storage and privacy.
@@ -162,7 +180,7 @@ public partial class ConvenienceStoreMesh : Node3D
         // These are nonphysical, cached authoring volumes that future GLB passes can also query.
         var clearance = new StructureClearance(generated);
         clearance.Reserve("FrontEntrance", new(0, 1.18f, front - 0.20f), new(2.30f, 2.36f, 2.35f));
-        clearance.Reserve("RearServiceExit", new(0, 1.18f, rear + 0.18f), new(2.30f, 2.36f, 2.2f));
+        clearance.Reserve("RearServiceExit", new(0, 1.18f, rear + 0.18f), new(1.32f, 2.36f, 2.2f));
         clearance.Reserve("CentralServiceEntry", new(0, 1.18f, divider), new(2.30f, 2.36f, 2.5f));
         clearance.Reserve("WestStorageEntry", new(-roomDoorX, 1.18f, divider), new(2.30f, 2.36f, 2.4f));
         clearance.Reserve("EastUtilityEntry", new(roomDoorX, 1.18f, divider), new(2.30f, 2.36f, 2.4f));

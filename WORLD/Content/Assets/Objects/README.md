@@ -2,6 +2,8 @@
 
 **Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. The F1 menu now discovers eligible canonical visual-wrapper scenes automatically (source implemented; local validation pending). Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
 
+> **DOOR1 exception:** Non-pickup architectural doors can include a hinged RigidBody3D leaf. `Static/` describes item *ownership/pickup classification*, not the physics body type. See [Door001](Static/Doors/Door001/README.md). No loose-props physics system is active.
+
 ## Object versus Prop
 
 - `Static/` are not pickup-able: Bookcase001 and Bed001 are fixed furniture; they can later be interactive without being carried.

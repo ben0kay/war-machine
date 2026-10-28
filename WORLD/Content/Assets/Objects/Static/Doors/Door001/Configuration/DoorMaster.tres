@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="HingedDoorSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Objects/Static/Doors/Door001/Configuration/HingedDoorSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Width = 1.38
+Height = 2.60
+Thickness = 0.075
+BottomClearance = 0.18
+MassKg = 9.0
+AngularDamping = 2.2
+SwingLimitDegrees = 110.0
+HandleHeight = 1.15
+PanelColor = Color(0.26, 0.33, 0.36, 1)
+HandleColor = Color(0.58, 0.59, 0.54, 1)

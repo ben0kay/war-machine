@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public partial class CameraOccluder : Node3D, ICameraFadeTarget
 {
     public const uint ObstructionLayer = 1u << 7; // Physics layer 8; independent of solid/weapon layers.
+    // DOOR1: moving RigidBody3D visuals inherit wall fade but must never create stationary proxies.
+    public const string DynamicFadeVisualMeta = "camera_dynamic_fade_visual";
     public static event System.Action? RegistryChanged;
     // AIM1: waking top-down cursor aim only when a section crosses faded/opaque state.
     public static event System.Action? AimFadeChanged;
@@ -73,7 +75,11 @@ public partial class CameraOccluder : Node3D, ICameraFadeTarget
                         target = handle;
                     }
                     else target = new CameraMeshFadeTarget { Owner = this, MeshIndex = i };
-                    AddProxy(meshBounds, target);
+                    // The mesh is still in the group opacity list; only its *static*
+                    // camera obstruction proxy is omitted. A hinged leaf moves after setup.
+                    if (!_meshes[i].HasMeta(DynamicFadeVisualMeta)
+                        || !_meshes[i].GetMeta(DynamicFadeVisualMeta).AsBool())
+                        AddProxy(meshBounds, target);
                 }
             }
             else AddProxy(bounds, this);

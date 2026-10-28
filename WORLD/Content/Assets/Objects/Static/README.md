@@ -1,7 +1,8 @@
 # Static objects — cannot be picked up
 
-Fixed objects may still be interactive in a later feature. Folder membership does not automatically create a StaticBody3D.
+Non-pickup architectural objects may be interactive or physically moving (a door leaf may be a RigidBody3D). Folder membership does not automatically create a StaticBody3D.
 
+- [Doors/Door001](Doors/Door001/README.md): DOOR1 reusable hinged rigid-body service door with a fixed hinge and DOOR2 handle anchors; installed only at the convenience store rear exit.
 - [Cars/Car001](Cars/Car001/README.md): original stationary procedural car with existing collision and configuration, now at its single canonical Assets path.
 - [Furniture/Bookcases/Bookcase001](Furniture/Bookcases/Bookcase001/README.md): visual-only GLB bookcase with size master.
 - [Furniture/Beds/Bed001](Furniture/Beds/Bed001/README.md): one visual-only GLB and four bedding palettes.

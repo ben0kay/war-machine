@@ -1,0 +1,3 @@
+# Door001 master
+
+`DoorMaster.tres` and `HingedDoorSettings.cs` configure width/height/thickness, floor clearance, rigid-body mass, angular damping, bidirectional hinge swing limits, handle height and panel/metal colours. Edit the master before re-instancing the door. The default service slab fits the convenience store's narrowed 1.52m rear aperture with approximately 7cm side clearance. If a future building changes the opening, adjust both the authored opening and door dimensions/hinge-root placement; never scale a live RigidBody3D to fit a doorway. DOOR2 handle dragging and IX3 cupboard hinges may reuse this physics/handle pattern but must implement their own interaction contract.

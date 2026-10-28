@@ -1,5 +1,7 @@
 # IX — Physical interactions, persistent items and scavenging
 
+> **DOOR1 external dependency implemented in source (2026-10-28; local Godot acceptance pending):** a reusable, manually pushable `RigidBody3D` leaf and `HingeJoint3D` were added at the convenience store's rear exit under `WORLD/Content/Assets/Objects/Static/Doors/Door001/`. It is *not* IX1 loose-prop physics, IX0 targeting, or IX3 cupboard interaction: those phases remain planned. The door has `HandleInside` and `HandleOutside` marker anchors ready for future DOOR2 pull-to-close or cupboard doors; no grabbing/click input implemented. Reuse the hinge physics as a reference in IX3 without assuming the whole IX roadmap is complete.
+
 > **Status: IX0–IX8 Planned; DOCUMENTATION ONLY (2026-10-27).** This is a **Codex-ready master plan and design record**, not an instruction to implement every phase. No gameplay logic, scene, item system, collision settings or master resources change with this document. Explicitly authorize one bounded phase/job at a time. Work on `implement-td0-td1` unless instructed otherwise; **one GitHub commit per authorized job**, and brief proportional validation per `CodePreferences.md`.
 
 ## Phases at a glance
