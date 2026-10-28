@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="AudioCue" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AudioCue" load_steps=3 format=3]
 [ext_resource type="Script" path="res://AUDIO/Shared/AudioCue.cs" id="1"]
+[ext_resource type="AudioStream" path="res://AUDIO/OneShots/Weapons/RifleShot_Original.wav" id="2"]
 
 [resource]
 script = ExtResource("1")
 CueId = "rifle_shot"
+Stream = ExtResource("2")
 Category = 0
 Spatial = true
 Priority = 90

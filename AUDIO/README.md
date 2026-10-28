@@ -1,16 +1,16 @@
 # AUDIO — shared bounded playback
 
-**AU0 implemented, awaiting local validation. AU1 rifle playback hook implemented; sound asset intentionally unassigned.** HE0 shared action emission is implemented in source; AU2 sources and HE1/AU3 AI responses remain future work.
+**AU0 implemented, awaiting local validation. AU1 rifle playback hook now has an original synthesized WAV wired into RifleShot.tres (audible in source; local Godot validation pending).** HE0 shared action emission is implemented in source; AU2 and HE1/AU3 AI responses remain future work.
 
 World instances `AUDIO/WorldAudio.tscn` once under SystemsRoot/Audio; FPS inherits it. Settings come from Configuration/AudioMaster.tres, duplicated at startup. Shared/WorldAudio.cs owns the pool; Shared/AudioCue.cs describes an independent stream/category/priority/spatial/range/gain/pitch cue.
 
-## Plug in the rifle sound
+## Rifle shot audio (now assigned)
 
-1. Import the desired short non-looping WAV/OGG under AUDIO/OneShots/Weapons/.
-2. Open **AUDIO/OneShots/Weapons/RifleShot.tres**, assign **Stream** in the Inspector and save.
-3. RifleMaster already references that cue through ShotCue. Its ShotVolumeDb remains -12; tune cue VolumeDb and AudioMaster.WeaponsVolumeDb as needed.
+**RifleShot_Original.wav** is an original 0.82s 44.1kHz mono PCM16 procedural rifle report, generated and committed directly in `AUDIO/OneShots/Weapons/`. `RifleShot.tres` references it through `Stream`; `RifleMaster.tres` already references that cue. No weapon/audio C# changes were required. The source file is small (~72KB), contains no third-party audio and is reusable in both top-down and FPS.
 
-There is no generated/bundled sound in this change. Empty Stream silently skips playback without spending a voice. MachineGunMaster has no ShotCue or ShotSound and remains silent; later create its own cue/stream. Both guns use the same optional API without copying playback code. Legacy ShotSound fallback remains only for unmigrated weapons and is never played alongside ShotCue. RobotAudio and existing addon audio are not migrated and are outside this pool's budgets.
+The existing `RifleMaster.ShotVolumeDb=-12` and cue `PitchVariation=0.025` were preserved; adjust the weapon gain after listening locally. It is a synthesized prototype (dry crack, low report and short reflected tail), not a studio or field-recorded effect. To swap it later, point the same cue `Stream` at another imported WAV/OGG without changing firing or AI noise systems.
+
+MachineGunMaster has no ShotCue or ShotSound and remains silent; later create its own cue/stream. Both guns use the same optional API without copying playback code. Legacy ShotSound fallback remains only for unmigrated weapons and is never played alongside ShotCue. RobotAudio and existing addon audio are not migrated and are outside this pool's budgets.
 
 ## Budgets and API
 
@@ -32,7 +32,7 @@ Source/loop/resource wiring and a numeric nested-budget model were checked. **Co
 
 ## HE0 — shared action sounds (2026-10-28)
 
-Use `WorldAudio.SoundEvents.Emit` to feed the existing pooled playback and an independent gameplay dispatcher from one action. [Shared API and loudness rules](Shared/README.md). Gunshots from both current weapon masters opt in through ShotEmission: rifle base hearing radius 80m, machine gun 70m, Loudness 1. Existing rifle ShotCue and empty Stream remain unchanged; MG remains audibly silent. Assign playback streams later without changing hearing.
+Use `WorldAudio.SoundEvents.Emit` to feed the existing pooled playback and an independent gameplay dispatcher from one action. [Shared API and loudness rules](Shared/README.md). Gunshots from both current weapon masters opt in through ShotEmission: rifle base hearing radius 80m, machine gun 70m, Loudness 1. Existing rifle ShotCue now references a synthesized WAV; MG remains audibly silent. HE0 still dispatches the same gunshot gameplay noise independently of playback.
 
 Playback caps are unchanged (including 20 total / 14 one-shots / 6 loops). One accepted shot makes one gameplay event and at most one playback request, even with cover blocking the muzzle. Audio Enabled/mute/capping never disables the hearing dispatcher. Loudness 0 suppresses both outputs; radius 0 suppresses only hearing. Invalid positions/loudness are rejected. Personal volume controls affect playback only. Unmigrated legacy ShotSound remains outside the pool as before; no duplicate pooled/legacy sound plays.
 

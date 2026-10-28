@@ -96,3 +96,7 @@ The rifle also kicks the actual FPS camera upward **2° for every accepted shot*
 ## AM0 magazine & reload (2026-10-28)
 
 `RifleMaster.tres`: `MagazineCapacity=30`, `ReloadSeconds=2.2`, `AutoReloadWhenEmpty=true`, `DebugUnlimitedReserveAmmo=true`, `InitialReserveRounds=0`. Magazine is always finite; the debug flag makes only the reserve unlimited. R starts a manual reload if partly empty. Empty magazine starts auto reload and cannot fire until completion. Existing spread/recoil/hitscan/damage unchanged. No ammo HUD or animation yet; local build/shot tests pending.
+
+## Rifle shot audio asset (2026-10-28)
+
+`RifleMaster.tres` already connects `ShotCue` to `AUDIO/OneShots/Weapons/RifleShot.tres`; the cue now references an original synthesized `RifleShot_Original.wav` (0.82s, mono PCM16, 44.1kHz, ~72KB). No firearm C# / spawn / world scene changes. The same positional sound is used in top-down and FPS, through the existing 20-voice shared audio manager. `ShotVolumeDb=-12` remains unchanged to avoid unexpectedly loud playback; raise it gradually if needed. The gameplay gunshot HE0 stimulus is already independent and still does not trigger zombies until HE1 hearing is implemented. Let Godot import and check playback in-world; remote audio quality/runtime is untested.
