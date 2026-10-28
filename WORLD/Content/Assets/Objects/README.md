@@ -1,6 +1,6 @@
 # Objects — reusable world asset library
 
-**Current status (2026-10-28):** Bookcase001, Book001 and Bed001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. Bed001 has four duvet colours but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
+**Current status (2026-10-28):** Bookcase001, Book001, Bed001 and Table001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.
 
 ## Object versus Prop
 
@@ -16,6 +16,7 @@ AM0 consolidated the former libraries here. [Static](Static/README.md) includes 
 - [Bookcase001](Static/Furniture/Bookcases/Bookcase001/README.md): original GLB, a new visual `Bookcase001.tscn`, plus `Configuration/BookcaseMaster.tres`.
 - [Book001](Props/Books/Book001/README.md): original GLB, a new visual `Book001.tscn`, plus `Configuration/BookMaster.tres`.
 - [Bed001](Static/Furniture/Beds/Bed001/README.md): **converted the original C# geometry to `Artwork/Bed001.glb`**, kept a stable visual `Bed001.tscn` and `Configuration/BedMaster.tres`, plus 4 selectable cloth palettes.
+- [Table001](Static/Furniture/Tables/Table001/README.md): 1.82m rectangular wooden dining table GLB, `Table001.tscn`, `TableMaster.tres` and three shared wood finishes. Visual only, no physics.
 
 The common [Shared/PlaceableSizeSettings.cs](Shared/PlaceableSizeSettings.cs) exposes `SizeMultiplier = Vector3(1, 1, 1)`: X=width, Y=height/thickness, Z=depth/length, **relative to the GLB's native dimensions**. Change each asset's own master and respawn/reload to update all default instances. Use a duplicated/overridden master for individually sized copies. The common [PlaceableVisual.cs](Shared/PlaceableVisual.cs) applies size once on `_Ready`. The bed's [BedVisual.cs](Static/Furniture/Beds/Bed001/BedVisual.cs) changes materials only, **never rebuilds meshes**.
 
@@ -34,4 +35,4 @@ See [PLACEABLE_CATALOG.md](PLACEABLE_CATALOG.md) for canonical paths, dimensions
 
 ## F1 visual previews
 
-Run `WORLD/World.tscn` or the FPS debug scene with F6, press **F1**, then spawn Bookcase001, Book001 or any of the four Bed001 palettes using the [Placeable Spawner](../../../../DEBUG/PlaceableSpawner/README.md). All previews use the **canonical scene and corresponding `.tres`**. Bed and bookcase are grounded by their Y=0 source pivot; book hovers to allow close inspection. These are temporary previews without collision, gravity, pickup or saved placement. Godot import/build/visual acceptance remains pending locally.
+Run `WORLD/World.tscn` or the FPS debug scene with F6, press **F1**, then spawn Bookcase001, Book001 or any of the four Bed001 palettes or three Table001 wood finishes using the [Placeable Spawner](../../../../DEBUG/PlaceableSpawner/README.md). All previews use the **canonical scene and corresponding `.tres`**. Bed and bookcase are grounded by their Y=0 source pivot; book hovers to allow close inspection. These are temporary previews without collision, gravity, pickup or saved placement. Godot import/build/visual acceptance remains pending locally.

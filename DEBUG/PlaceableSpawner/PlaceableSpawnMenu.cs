@@ -6,6 +6,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
     private const string BookcasePath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Bookcases/Bookcase001/Bookcase001.tscn";
     private const string BookPath = "res://WORLD/Content/Assets/Objects/Props/Books/Book001/Book001.tscn";
     private const string BedPath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Beds/Bed001/Bed001.tscn";
+    private const string TablePath = "res://WORLD/Content/Assets/Objects/Static/Furniture/Tables/Table001/Table001.tscn";
     private const int MaxInstances = 24;
     private PlayerController? _player;
     private Camera3D? _camera;
@@ -32,6 +33,9 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         _selection.AddItem("OBJECT · Bed001 · Moss Green");
         _selection.AddItem("OBJECT · Bed001 · Warm Sand");
         _selection.AddItem("OBJECT · Bed001 · Dusty Rose");
+        _selection.AddItem("OBJECT · Table001 · Weathered Oak");
+        _selection.AddItem("OBJECT · Table001 · Dark Walnut");
+        _selection.AddItem("OBJECT · Table001 · Faded Grey");
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Spawn").Pressed += SpawnSelected;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Clear").Pressed += ClearSpawned;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Close").Pressed += () => CloseMenu(true);
@@ -92,7 +96,8 @@ public partial class PlaceableSpawnMenu : CanvasLayer
 
         bool isBook = _selection.Selected == 1;
         bool isBed = _selection.Selected >= 2 && _selection.Selected <= 5;
-        string path = isBed ? BedPath : isBook ? BookPath : BookcasePath;
+        bool isTable = _selection.Selected >= 6 && _selection.Selected <= 8;
+        string path = isTable ? TablePath : isBed ? BedPath : isBook ? BookPath : BookcasePath;
         var source = ResourceLoader.Load<PackedScene>(path);
         if (source == null) { _status.Text = "Could not load model/scene; see Godot Output."; return; }
         if (source.Instantiate() is not Node3D instance)
@@ -100,6 +105,8 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         // Select the palette before AddChild/_Ready; Bed001 swaps materials without rebuilding geometry.
         if (isBed && instance is BedVisual bed)
             bed.BeddingVariant = (BedVisual.BeddingPalette)(_selection.Selected - 2);
+        if (isTable && instance is TableVisual table)
+            table.FinishVariant = (TableVisual.WoodFinish)(_selection.Selected - 6);
 
         Vector3 direction = -_camera.GlobalBasis.Z;
         direction.Y = 0;
@@ -112,7 +119,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
             float height = data.Call("get_height", new Vector3(at.X, 0, at.Z)).AsSingle();
             if (float.IsFinite(height)) ground = Mathf.Max(ground, height);
         }
-        instance.Name = isBed ? $"Preview_Bed001_{_selection.Selected - 2}" : isBook ? "Preview_Book001" : "Preview_Bookcase001";
+        instance.Name = isTable ? $"Preview_Table001_{_selection.Selected - 6}" : isBed ? $"Preview_Bed001_{_selection.Selected - 2}" : isBook ? "Preview_Book001" : "Preview_Bookcase001";
         _spawned.AddChild(instance);
         instance.GlobalPosition = new Vector3(at.X, ground + (isBook ? _settings.BookHoverHeight : 0), at.Z);
         instance.Rotation = new Vector3(0, Mathf.Atan2(-direction.X, -direction.Z), 0);
