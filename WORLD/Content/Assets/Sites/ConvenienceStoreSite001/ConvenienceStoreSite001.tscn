@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Infrastructure/ParkingLots/ParkingLot001/ParkingLot001.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Structures/ConvenienceStore001/ConvenienceStore001.tscn" id="2"]
@@ -6,9 +6,17 @@
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Lighting/StreetLamp001/StreetLamp001.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Landscaping/Hedges/Hedge001/Hedge001.tscn" id="5"]
 [ext_resource type="Resource" path="res://WORLD/Content/Assets/Sites/ConvenienceStoreSite001/Configuration/HedgeRowMaster.tres" id="6"]
+[ext_resource type="Resource" path="res://WORLD/Content/Assets/Sites/ConvenienceStoreSite001/Configuration/SiteParkingLotMaster.tres" id="7"]
 
 [sub_resource type="BoxMesh" id="StoreFrontApproachMesh"]
 size = Vector3(3.6, 0.018, 3.62)
+
+[sub_resource type="BoxMesh" id="CentralLampIslandMesh"]
+size = Vector3(1.0, 0.08, 1.8)
+
+[sub_resource type="StandardMaterial3D" id="CentralLampIslandMaterial"]
+albedo_color = Color(0.42, 0.43, 0.40, 1)
+roughness = 0.93
 
 [sub_resource type="StandardMaterial3D" id="StoreFrontApproachMaterial"]
 albedo_color = Color(0.42, 0.43, 0.40, 1)
@@ -23,6 +31,7 @@ material_override = SubResource("StoreFrontApproachMaterial")
 
 [node name="ParkingLot" parent="." instance=ExtResource("1")]
 position = Vector3(0, -0.12, 0)
+Settings = ExtResource("7")
 UseTerrainSupport = true
 
 [node name="Structures" type="Node3D" parent="."]
@@ -107,12 +116,51 @@ position = Vector3(25, 0.12, -12.2)
 rotation = Vector3(0, -1.570796, 0)
 
 [node name="Lamp_WestApproach" parent="StreetLighting" instance=ExtResource("4")]
-position = Vector3(-24, 0.12, 12.5)
+position = Vector3(-27.15, 0.12, 12.5)
 rotation = Vector3(0, 1.570796, 0)
 
 [node name="Lamp_EastApproach" parent="StreetLighting" instance=ExtResource("4")]
-position = Vector3(24, 0.12, 12.5)
+position = Vector3(27.15, 0.12, 12.5)
 rotation = Vector3(0, -1.570796, 0)
+
+[node name="InteriorLampIslands" type="Node3D" parent="."]
+; Small noncolliding concrete safety pads; the prefab lamp pole retains its collision.
+
+[node name="Island_WestNorth" type="MeshInstance3D" parent="InteriorLampIslands"]
+position = Vector3(-4, 0.05, -6.23)
+mesh = SubResource("CentralLampIslandMesh")
+material_override = SubResource("CentralLampIslandMaterial")
+
+[node name="Island_EastNorth" type="MeshInstance3D" parent="InteriorLampIslands"]
+position = Vector3(4, 0.05, -6.23)
+mesh = SubResource("CentralLampIslandMesh")
+material_override = SubResource("CentralLampIslandMaterial")
+
+[node name="Island_WestSouth" type="MeshInstance3D" parent="InteriorLampIslands"]
+position = Vector3(-4, 0.05, 5.37)
+mesh = SubResource("CentralLampIslandMesh")
+material_override = SubResource("CentralLampIslandMaterial")
+
+[node name="Island_EastSouth" type="MeshInstance3D" parent="InteriorLampIslands"]
+position = Vector3(4, 0.05, 5.37)
+mesh = SubResource("CentralLampIslandMesh")
+material_override = SubResource("CentralLampIslandMaterial")
+
+[node name="Lamp_WestNorthAisle" parent="StreetLighting" instance=ExtResource("4")]
+position = Vector3(-4, 0.12, -6.23)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="Lamp_EastNorthAisle" parent="StreetLighting" instance=ExtResource("4")]
+position = Vector3(4, 0.12, -6.23)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="Lamp_WestSouthAisle" parent="StreetLighting" instance=ExtResource("4")]
+position = Vector3(-4, 0.12, 5.37)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="Lamp_EastSouthAisle" parent="StreetLighting" instance=ExtResource("4")]
+position = Vector3(4, 0.12, 5.37)
+rotation = Vector3(0, 1.570796, 0)
 
 [node name="SiteMarkers" type="Node3D" parent="."]
 position = Vector3(0, -0.12, 0)

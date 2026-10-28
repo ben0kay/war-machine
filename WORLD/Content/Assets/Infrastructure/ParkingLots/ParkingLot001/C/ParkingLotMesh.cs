@@ -33,6 +33,8 @@ public partial class ParkingLotMesh : Node3D
         float gap = Mathf.Clamp(s.EntranceGapWidth, 2f, 4.5f);
         float bayWidth = Mathf.Clamp(s.BayWidth, 2.6f, 3.6f);
         float bayDepth = Mathf.Clamp(s.BayDepth, 4.8f, 6.5f);
+        float accessGap = Mathf.Clamp(s.CentralDriveGap, 6f, 12f);
+        float interiorAisle = Mathf.Clamp(s.InteriorAisleWidth, 5.5f, 8f);
         float markingWidth = Mathf.Clamp(s.LineWidth, 0.04f, 0.15f);
         float driveWidth = Mathf.Clamp(s.DrivewayWidth, 5.5f, 12f);
         float driveLength = Mathf.Clamp(s.DrivewayLength, 3f, 12f);
@@ -111,6 +113,52 @@ public partial class ParkingLotMesh : Node3D
         {
             float x = rowLeft + (i + 0.5f) * bayWidth;
             AddMarker(bays, $"Bay_{i + 1:00}", new(x, topY, (headZ + bayEndZ) * 0.5f));
+        }
+
+        // Add optional central and road-facing rows, with an open crossing from the driveway to
+        // the original storefront aisle. Banked stalls never overlap the central through-route.
+        int rows = Mathf.Clamp(s.ParkingRows, 1, 3);
+        int sideBays = Mathf.Max(0, Mathf.FloorToInt((width * 0.5f - 1.5f - accessGap * 0.5f) / bayWidth));
+        float nextStartZ = bayEndZ + interiorAisle;
+        int markerNumber = bayCount + 1;
+        for (int row = 1; row < rows; row++)
+        {
+            float rowEndZ = nextStartZ + bayDepth;
+            if (sideBays == 0 || rowEndZ > halfDepth - 1.4f)
+            {
+                GD.PushWarning($"ParkingLot001: extra row {row + 1} does not fit within asphalt.");
+                break;
+            }
+            // Outer row heads face south; the middle row heads north. Both share the
+            // second 6m driving aisle and leave the main 9.3m central approach unobstructed.
+            bool faceSouth = row == 2;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float left = side < 0
+                    ? -accessGap * 0.5f - sideBays * bayWidth : accessGap * 0.5f;
+                for (int i = 0; i <= sideBays; i++)
+                {
+                    float x = left + i * bayWidth;
+                    StructureGeometry.Box(painted, null, "ExtraBayDivider",
+                        new(x, paintY, (nextStartZ + rowEndZ) * 0.5f),
+                        new(markingWidth, 0.012f, bayDepth), paint);
+                }
+                StructureGeometry.Box(painted, null, "ExtraBayHeadStripe",
+                    new(left + sideBays * bayWidth * 0.5f, paintY,
+                        faceSouth ? rowEndZ : nextStartZ),
+                    new(sideBays * bayWidth, 0.012f, markingWidth), paint);
+                for (int i = 0; i < sideBays; i++)
+                {
+                    float x = left + (i + 0.5f) * bayWidth;
+                    bays.AddChild(new Marker3D
+                    {
+                        Name = $"Bay_{markerNumber++:00}",
+                        Position = new Vector3(x, topY, (nextStartZ + rowEndZ) * 0.5f),
+                        Rotation = new Vector3(0, faceSouth ? Mathf.Pi : 0, 0)
+                    });
+                }
+            }
+            nextStartZ = rowEndZ + interiorAisle;
         }
 
         // Short access-road markings are part of the lot only, not a world-wide road manager.

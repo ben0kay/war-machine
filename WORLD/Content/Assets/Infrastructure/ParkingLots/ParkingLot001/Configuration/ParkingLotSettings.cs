@@ -16,6 +16,13 @@ public partial class ParkingLotSettings : Resource
     [Export(PropertyHint.Range, "4.8,6.5,0.1")] public float BayDepth { get; set; } = 5.6f;
     [Export(PropertyHint.Range, "0.04,0.15,0.01")] public float LineWidth { get; set; } = 0.08f;
 
+    [ExportGroup("Optional extra bay rows")]
+    // Default reusable parking lots keep their single storefront row.
+    // A site can override its own master to add two separated banks of additional bays.
+    [Export(PropertyHint.Range, "1,3,1")] public int ParkingRows { get; set; } = 1;
+    [Export(PropertyHint.Range, "6,12,0.1,suffix:m")] public float CentralDriveGap { get; set; } = 9.3f;
+    [Export(PropertyHint.Range, "5.5,8,0.1,suffix:m")] public float InteriorAisleWidth { get; set; } = 6f;
+
     [ExportGroup("Walkway and curbs")]
     [Export(PropertyHint.Range, "1.6,3.5,0.1")] public float SidewalkDepth { get; set; } = 2.4f;
     [Export(PropertyHint.Range, "0.1,0.24,0.01")] public float SidewalkHeight { get; set; } = 0.15f;
