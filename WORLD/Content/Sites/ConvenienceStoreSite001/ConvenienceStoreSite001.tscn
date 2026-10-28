@@ -8,13 +8,18 @@
 [node name="ConvenienceStoreSite001" type="Node3D"]
 
 [node name="ParkingLot" parent="." instance=ExtResource("1")]
+position = Vector3(0, -0.12, 0)
+UseTerrainSupport = true
 
 [node name="Structures" type="Node3D" parent="."]
+position = Vector3(0, -0.12, 0)
 
 [node name="Store" parent="Structures" instance=ExtResource("2")]
 position = Vector3(0, 0, -23.75)
+UseTerrainSupport = true
 
 [node name="ParkedCars" type="Node3D" parent="."]
+position = Vector3(0, -0.12, 0)
 
 [node name="Car_Bay01" parent="ParkedCars" instance=ExtResource("3")]
 position = Vector3(-20.15, 0.12, -12.03)
@@ -40,6 +45,7 @@ rotation = Vector3(0, 3.141593, 0)
 position = Vector3(20.15, 0.12, -12.03)
 
 [node name="StreetLighting" type="Node3D" parent="."]
+position = Vector3(0, -0.12, 0)
 
 [node name="Lamp_WestStore" parent="StreetLighting" instance=ExtResource("4")]
 position = Vector3(-25, 0.12, -12.2)
@@ -58,6 +64,7 @@ position = Vector3(24, 0.12, 12.5)
 rotation = Vector3(0, -1.570796, 0)
 
 [node name="SiteMarkers" type="Node3D" parent="."]
+position = Vector3(0, -0.12, 0)
 
 [node name="FrontEntrance" type="Marker3D" parent="SiteMarkers"]
 position = Vector3(0, 0.12, -17.4)

@@ -1,5 +1,3 @@
 # World procedural artwork
 
-VillageRoadMesh.cs builds the village's simple dirt connection strips and two collidable store-site access ramps once. C/ is geometry only; layout/reservations remain in WORLD/VillageLayout.cs and terrain editing in WORLD/Generation/VillageTerrain.cs. No geometry helper has a process loop or owns actors, camera, weather or materials outside its own art.
-
-The rear-exit access ramp now uses a solid convex wedge with a buried toe instead of one-sided trimesh collision. Asphalt perimeter ramps are owned by ParkingLotMesh; their convex wedges and clockwise art faces are built there. No player step/teleport behavior is introduced.
+VillageRoadMesh.cs builds simple dirt-road visuals above the graded native ground, once at startup. It creates no collision, ramps, wedges or processing callbacks. C/ is geometry only; layout/reservations live in WORLD/VillageLayout.cs and native terrain editing lives in WORLD/Generation/VillageTerrain.cs. Terrain3D owns walking support. Other physical props/building walls keep their own native collision.

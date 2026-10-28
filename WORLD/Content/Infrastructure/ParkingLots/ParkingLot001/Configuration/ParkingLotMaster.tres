@@ -20,4 +20,3 @@ AsphaltWearColor = Color(0.21, 0.22, 0.22, 1)
 ConcreteColor = Color(0.52, 0.52, 0.48, 1)
 CurbColor = Color(0.36, 0.38, 0.36, 1)
 LineColor = Color(0.72, 0.70, 0.55, 1)
-EdgeRampWidth = 0.8

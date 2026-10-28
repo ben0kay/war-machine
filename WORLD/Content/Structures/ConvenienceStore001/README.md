@@ -22,3 +22,7 @@
 Open `ConvenienceStore001.tscn` directly in Godot after C# compilation. Observe the big open windows and roof. For a temporary collision test, walk from front entrance through the central aisle, into stockroom and out the rear exit; check that no wall/glass colliders block windows or doors, and counters/shelves block correctly. Check the shared roof fade by temporarily instancing under the normal top-down structure root. The mesh is built at `_Ready`, so re-instance to apply master changes (no polling rebuild).
 
 Future: add optional glass, detailed product materials, real swinging doors and interactions, sign art, shopping mechanics and light/audio **only when requested**. This pass deliberately includes no new texture/material system.
+
+## Terrain-backed floor option
+
+UseTerrainSupport defaults false, retaining standalone physical floor support. The village convenience-store site explicitly enables it and lowers the Structures group by 0.12m so its floor walking plane matches the surrounding graded Terrain3D. That instance omits the duplicate floor box, while walls/roof/shelves retain collision. Floor art is raised 1cm above its nominal physical plane to avoid z-fighting; no extra physical step or access wedge. Only enable this option over verified solid terrain covering the whole interior. Ground/occupancy metadata and store-only visibility remain unchanged. Local build/traversal check pending.

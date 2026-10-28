@@ -145,7 +145,7 @@ public sealed class VillageLayout
         foreach (Rect2 area in Platforms)
         {
             var heights = new List<float>(); if (!Survey(data, area, heights)) return false;
-            foreach (float height in heights) if (Mathf.Abs(height - Level) > 0.035f)
+            foreach (float height in heights) if (Mathf.Abs(height - Level) > 0.002f)
             { GD.PushError("Village platform support tolerance failed; actors will remain dormant."); return false; }
         }
         return true;

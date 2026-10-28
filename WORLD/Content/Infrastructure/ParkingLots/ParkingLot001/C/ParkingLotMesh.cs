@@ -6,6 +6,8 @@ using Godot;
 public partial class ParkingLotMesh : Node3D
 {
     [Export] public ParkingLotSettings Settings { get; set; } = null!;
+    // Site mode: native graded terrain owns the walking surface; retain only raised curb collision.
+    [Export] public bool UseTerrainSupport { get; set; }
 
     // =========================================================
     // The entire prefab is generated exactly once per instance; never polls the terrain or player.
@@ -43,6 +45,7 @@ public partial class ParkingLotMesh : Node3D
 
         var generated = StructureGeometry.Group(this, "Generated");
         var surfaces = StructureGeometry.Group(generated, "Surfaces");
+        surfaces.Position = Vector3.Up * 0.01f; // Render above a coincident terrain floor, not another physical step.
         var painted = StructureGeometry.Group(generated, "PaintedLines");
         var sidewalk = StructureGeometry.Group(generated, "Sidewalk");
         var markers = StructureGeometry.Group(generated, "Markers");
@@ -56,13 +59,11 @@ public partial class ParkingLotMesh : Node3D
         var paint = StructureGeometry.Paint(s.LineColor);
 
         // One shallow collidable apron and one same-height southern driveway extension.
-        StructureGeometry.Box(surfaces, collision, "AsphaltApron",
+        StructureGeometry.Box(surfaces, UseTerrainSupport ? null : collision, "AsphaltApron",
             new(0, thickness * 0.5f, 0), new(width, thickness, depth), asphalt);
-        StructureGeometry.Box(surfaces, collision, "DrivewayStub",
+        StructureGeometry.Box(surfaces, UseTerrainSupport ? null : collision, "DrivewayStub",
             new(0, thickness * 0.5f, halfDepth + driveLength * 0.5f),
             new(driveWidth, thickness, driveLength), asphalt);
-        BuildEdgeRamps(surfaces, collision, halfWidth, halfDepth, driveWidth * 0.5f,
-            driveLength, topY, Mathf.Clamp(s.EdgeRampWidth, 0.25f, 2), asphalt);
         // A small subdued asphalt patch, with no additional collider, breaks the uniform colour.
         StructureGeometry.Box(surfaces, null, "OldAsphaltPatch",
             new(-halfWidth * 0.32f, topY + 0.002f, 0.9f),
@@ -86,8 +87,8 @@ public partial class ParkingLotMesh : Node3D
                 new(segmentLength, sidewalkHeight * 0.88f, 0.20f), curb);
         }
         // A low central access strip that aligns with the future convenience-store entrance.
-        StructureGeometry.Box(sidewalk, collision, "EntranceAccess",
-            new(0, topY - 0.008f, walkwayCenterZ),
+        StructureGeometry.Box(sidewalk, null, "EntranceAccess",
+            new(0, topY + 0.002f, walkwayCenterZ),
             new(gap, 0.020f, sidewalkDepth), concrete);
 
         // The front of the bays is near the sidewalk; their southern ends open into the driving aisle.
@@ -126,51 +127,6 @@ public partial class ParkingLotMesh : Node3D
         AddMarker(markers, "Entrance", new(0, topY, curbZ + 0.9f));
         AddMarker(markers, "Storefront", new(0, topY, -halfDepth - 0.35f));
         AddMarker(markers, "RoadConnection", new(0, topY, halfDepth + driveLength));
-    }
-
-    // =========================================================
-    // Follow the complete apron+driveway outline, including its two concave joins. Flat slab colliders
-    // stay authoritative on top; these outward shoulders replace the abrupt 12cm step from any side.
-    private static void BuildEdgeRamps(Node3D visuals, StaticBody3D collision, float halfWidth,
-        float halfDepth, float driveHalf, float driveLength, float top, float width, Material material)
-    {
-        Vector2[] edge = { new(-halfWidth, -halfDepth), new(halfWidth, -halfDepth),
-            new(halfWidth, halfDepth), new(driveHalf, halfDepth), new(driveHalf, halfDepth + driveLength),
-            new(-driveHalf, halfDepth + driveLength), new(-driveHalf, halfDepth), new(-halfWidth, halfDepth) };
-        var outer = new Vector2[edge.Length];
-        for (int i = 0; i < edge.Length; i++)
-        {
-            Vector2 incoming = (edge[i] - edge[(i + edge.Length - 1) % edge.Length]).Normalized();
-            Vector2 outgoing = (edge[(i + 1) % edge.Length] - edge[i]).Normalized();
-            // All edges are axis-aligned/right-angle: summed outward normals form an exact miter.
-            outer[i] = edge[i] + new Vector2(incoming.Y + outgoing.Y, -incoming.X - outgoing.X) * width;
-        }
-        using var surface = new SurfaceTool(); surface.Begin(Mesh.PrimitiveType.Triangles);
-        for (int i = 0; i < edge.Length; i++)
-        {
-            int next = (i + 1) % edge.Length;
-            Vector3 a = new(edge[i].X, top, edge[i].Y), b = new(edge[next].X, top, edge[next].Y);
-            Vector3 c = new(outer[next].X, -0.02f, outer[next].Y), d = new(outer[i].X, -0.02f, outer[i].Y);
-            foreach (var face in new[] { (a, b, c), (a, c, d) })
-            {
-                // Godot front faces are clockwise: use the reversed cross product.
-                Vector3 normal = (face.Item3 - face.Item1).Cross(face.Item2 - face.Item1).Normalized();
-                bool reverse = normal.Y < 0; if (reverse) normal = -normal;
-                foreach (Vector3 vertex in new[] { face.Item1, reverse ? face.Item3 : face.Item2,
-                    reverse ? face.Item2 : face.Item3 })
-                { surface.SetNormal(normal); surface.AddVertex(vertex); }
-            }
-            // Solid volume rather than one-way triangle collision. Bury bottom/toe in the ground;
-            // the top edge meets the slab exactly, with a small collision margin at shared seams.
-            collision.AddChild(new CollisionShape3D { Name = $"WalkableAsphaltShoulder{i + 1:00}",
-                Shape = new ConvexPolygonShape3D { Margin = 0.001f, Points = new[] {
-                    a, b, c, d, new Vector3(a.X, -0.10f, a.Z), new Vector3(b.X, -0.10f, b.Z),
-                    new Vector3(c.X, -0.10f, c.Z), new Vector3(d.X, -0.10f, d.Z) } } });
-        }
-        var mesh = surface.Commit();
-        var shoulderMaterial = (StandardMaterial3D)material.Duplicate();
-        shoulderMaterial.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
-        visuals.AddChild(new MeshInstance3D { Name = "SlopedAsphaltShoulders", Mesh = mesh, MaterialOverride = shoulderMaterial });
     }
 
     // =========================================================

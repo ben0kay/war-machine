@@ -10,8 +10,6 @@ public partial class ParkingLotSettings : Resource
     [Export(PropertyHint.Range, "24,42,0.5")] public float Depth { get; set; } = 36f;
     [Export(PropertyHint.Range, "0.06,0.25,0.01")] public float AsphaltThickness { get; set; } = 0.12f;
 
-    [Export(PropertyHint.Range, "0.25,2,0.05")] public float EdgeRampWidth { get; set; } = 0.8f;
-
     [ExportGroup("Parking bays")]
     [Export(PropertyHint.Range, "1,16,1")] public int BayCount { get; set; } = 14;
     [Export(PropertyHint.Range, "2.6,3.6,0.1")] public float BayWidth { get; set; } = 3.1f;

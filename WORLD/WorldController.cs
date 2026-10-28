@@ -69,7 +69,6 @@ public partial class WorldController : Node3D
             { status.Text = "Village placement failed; actors remain dormant. See Output for terrain/layout errors."; return; }
             var props = GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot");
             VillageRoadMesh.Build(props, _village.Roads, _village.Level);
-            VillageRoadMesh.BuildSiteAccess(props, _village.Site, _village.Level);
         }
         else
         {

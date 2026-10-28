@@ -7,6 +7,8 @@ public partial class ConvenienceStoreMesh : Node3D
 {
     [Export] public ConvenienceStoreSettings Settings { get; set; } = null!;
     [Export] public bool ShowRoof { get; set; } = true;
+    // Only opt in when the whole interior has been surveyed/graded before actors activate.
+    [Export] public bool UseTerrainSupport { get; set; }
     private Node3D? _roof;
 
     // =========================================================
@@ -56,8 +58,12 @@ public partial class ConvenienceStoreMesh : Node3D
         var yellow = StructureGeometry.Paint(new Color(0.63f, 0.54f, 0.27f));
 
         // Entire store has a thin, collidable floor at 0.12m, matching the future parking apron.
-        StructureGeometry.Box(furniture, body, "WalkableSlab", new Vector3(0, 0.06f, 0),
-            new Vector3(w - 0.18f, 0.12f, d - 0.18f), concrete);
+        Vector3 floorSize = new(w - 0.18f, 0.12f, d - 0.18f);
+        // Separate visual clearance from physical height: no z-fighting or raised collision lip.
+        StructureGeometry.Box(furniture, null, "WalkableSlab", new Vector3(0, 0.07f, 0), floorSize, concrete);
+        if (!UseTerrainSupport)
+            body.AddChild(new CollisionShape3D { Name = "WalkableSlabShape", Position = new Vector3(0, 0.06f, 0),
+                Shape = new BoxShape3D { Size = floorSize } });
         StructureGeometry.Box(furniture, null, "StockroomFloorTone",
             new Vector3(0, 0.127f, (rear + divider) * 0.5f),
             new Vector3(w - 0.42f, 0.010f, stockDepth - 0.22f), insideWall);
