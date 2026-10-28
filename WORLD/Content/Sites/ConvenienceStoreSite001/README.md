@@ -1,6 +1,6 @@
 # ConvenienceStoreSite001 — future roadside site
 
-**Status: folder/empty scene scaffold only. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for PL0A–PL4 (next: PL0A).**
+**Status: site assembly still empty. PL0A reusable [ParkingLot001](../../Infrastructure/ParkingLots/ParkingLot001/README.md) is implemented separately, awaiting Godot validation; next planned phase PL0B. See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).**
 
 Scene: `ConvenienceStoreSite001.tscn` — currently a valid *empty* Node3D root, with no instantiated lot, building, cars, lamps, collisions, lighting or world placement.
 
@@ -18,4 +18,4 @@ The parent owns layout/positions, **not** child art, light animation, building f
 
 `Configuration/SiteMaster.tres` is a valid but empty generic Godot Resource. `Configuration/ConvenienceStoreSiteSettings.cs` is intentionally empty; neither is attached or used by the scene yet. Replace with typed configurable dimensions/relative prefab positions when the site assembly is authorized, and duplicate authoring resources before runtime tuning.
 
-**PL0A next:** implement *only* the independent parking-lot prefab under `Infrastructure/ParkingLots/ParkingLot001/`, not the store, streetlamps, site assembly or world integration. The current-branch, adapted [implementation plan](IMPLEMENTATION_PLAN.md) is now the canonical PL roadmap; the original main-branch version is historical only.
+**PL0A delivered:** the independent parking-lot prefab now has asphalt, bays, curbs and markers. It is intentionally **not** instanced into this site. PL0B will compose the store, lamps, cars and the lot into one reusable scene; PL1 will place that scene in the world. The current-branch, adapted [implementation plan](IMPLEMENTATION_PLAN.md) is now the canonical PL roadmap; the original main-branch version is historical only.

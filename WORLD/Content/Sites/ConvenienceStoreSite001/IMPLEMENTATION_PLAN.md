@@ -32,14 +32,14 @@ The site owns **relative transforms, car/lamp selection, layout and site-wide wo
 
 | Phase | Deliverable | State |
 | --- | --- | --- |
-| **PL0A — reusable parking foundation** | Independent asphalt/car-park scene; lane, 6–8 marked bays, sidewalk, curb/entrance gap, short driveway, static colliders, `Marker3D` bay/connection positions, typed Inspector master and docs. No cars/store/lamps/site assembly/world placement. | **Planned** |
+| **PL0A — reusable parking foundation** | Independent asphalt/car-park scene; lane, 6–8 marked bays, sidewalk, curb/entrance gap, short driveway, static colliders, `Marker3D` bay/connection positions, typed Inspector master and docs. No cars/store/lamps/site assembly/world placement. | **Implemented; awaiting Godot validation** |
 | **PL0B — reusable prefabs and site composition** | Author independent convenience-store shell and streetlamp (geometry first), instance them plus existing Car001 prefabs into the parent site. Adjustable parent transforms; no night lighting yet. | Planned |
 | **PL1 — world integration** | Place assembled site on suitable saved Terrain3D near an accessible approach; validate height variation, foundations, total-site foliage/grass/rock clearings and building visibility registration. No terrain rebake. | Planned |
 | **PL2 — nighttime atmosphere** | Local store light and limited street-lamp lights (one optionally flickers), warm shop windows, compare with Sky3D/night and volumetric ground haze. Limit shadowed lights and update work. | Planned |
 | **PL3 — optional view comparison** | Compare the **same site** in top-down and existing FPS debug camera with no new player/controller rewrite. Add fixed view markers only if requested. | Planned |
 | **PL4 — polish** | Refine visual wear, sign, props, oil marks, roadside edge transitions, rain response and atmosphere based on in-game screenshots; don't build extra systems by default. | Planned |
 
-### PL0A detailed contract — do first
+### PL0A detailed contract — implemented (awaiting Godot validation)
 
 - **Only change** the independent `Infrastructure/ParkingLots/ParkingLot001/` scene, mesh/settings/master/docs, plus documentation links/status. Leave `ConvenienceStoreSite001.tscn`, store and lamp placeholders untouched.
 - Base grid: local Y up; **-Z is towards the future store**, **+Z faces the road/approach**. Center origin is the paving's centre. Suggested 40m × 28m main apron, 8 bays approximately 3.1 × 5.6m along the north storefront edge, central ~9m circulation aisle and ~8m-wide southward driveway stub.
@@ -66,3 +66,7 @@ Reuse `ENVIRONMENT/Lighting/` authored system and its existing muzzle-flash foun
 ## Handoff and regression list
 
 Read current branch, inspect modified sources, perform a brief C# build if tools exist, otherwise say compile is **unverified**. For PL0A open `ParkingLot001.tscn` in Godot; check asphalt from above/ground level, 8 slots, clearance from markings, raised footpath and central curb gap, face direction and named marker transforms. Check source master values are actually read by the scene, `SetProcess(false)`, collision layers, and no accidental world placement. Other prefabs stay empty. Check changes against root CodePreferences. Record exact commit, files and deferred in-game/visual testing; user acceptance is separate from source review.
+
+### PL0A delivery note
+
+PL0A is now implemented in `Infrastructure/ParkingLots/ParkingLot001`, with typed `ParkingLotSettings.cs`, an authored master, a standalone `[Tool]` scene, one-time generated collidable asphalt/sidewalk/curb, non-colliding painted bays/road dashes, and stable slot/site markers. It deliberately does **not** instantiate anything in `ConvenienceStoreSite001`, modify WorldController, alter Terrain3D, or add store/lamp/car models. **PL0B is next** once the user approves the standalone scale. Local C# compile, Godot preview and physical walk testing remain pending.
