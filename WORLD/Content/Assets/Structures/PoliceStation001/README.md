@@ -1,6 +1,6 @@
-# PoliceStation001 — PS0 two-storey police-station shell
+# PoliceStation001 — PS1 two-storey police-station shell
 
-**Branch:** `implement-td0-td1` · **State:** implemented in source; awaiting Godot .NET build, scene preview and physical/visibility tests.
+**Branch:** `implement-td0-td1` · **PS1:** implemented in source; awaiting local build, preview, walkability and collision validation.
 
 ## Open it directly in the Godot editor
 
@@ -21,10 +21,10 @@ Footprint **48 × 64m = 3,072m²**, exactly **eight times** ConvenienceStore001'
 
 | Level | Shell zones, excluding later furniture |
 | --- | --- |
-| Ground (0) | Front full-width public lobby (Z=19..32); 5m-wide long central corridor (X ±2.5, Z≈-31..19); multiple west/east rooms divided by cross walls; west-rear stair core; rear exit |
-| Upper (1) | West wing subdivided into office rooms; east/front larger open-plan office; east-rear rooms and an empty bathroom enclosure; long central corridor and stair landing |
+| Ground (0) | Lobby, separate front-left waiting/intake zone, **front-right U-stair** by the entrance, 5m main corridor, larger administration/operations zones, varied interview/records rooms and service spaces |
+| Upper (1) | West offices, east/front open-plan office, east-rear rooms and bathroom, and a new front-right upper stair landing/exit joined to the upper floor |
 | Both | Repeated front/rear/side true window apertures with simple tinted **collidable** glass panels; continuous exterior/partition wall assemblies with independent collision and door openings |
-| Stair core | Straight 24-tread flight at X≈-13, Z≈-29.5..-19.5 climbing **toward +Z**, with single inclined walkable collider, continuous upper landing and a **real 6 × 14.2m upper deck void** |
+| Stair core | **Front-right U-shaped stair** (X≈8..17, Z≈18..30.4), twelve risers up, 180° middle landing, twelve risers back, two slope colliders and a real 9.2×12.4m upper deck opening |
 
 The roof is a flat concrete slab with parapet. The exterior door frames include **noncolliding visual leaves propped open**; side-office doors also have open visual leaves. **These are not operational swinging doors:** no hinge, lock, mouse interaction, keycard or motor in PS0. Their openings and matching wall collisions are real. Glazed windows are physically solid, not painted wall rectangles.
 
@@ -33,7 +33,7 @@ The roof is a flat concrete slab with parapet. The exterior door frames include 
 - Reuses `StructureGeometry`, `StructureLayout.Occupied/Level/Visual/FadeGroup`, `StructureClearance`, `StructureVisibility` and `FadeAwareAim.Link` via the existing structure primitives.
 - Logical wall groups fade together from the top-down view. Deck, walls, stairs and roof have separate semantic owners. **Visual opacity never changes collision**.
 - `Generated/ClearanceVolumes` reserves both exterior entrances, all office doorways and windows, the continuous corridors, lobby and stair shaft/landing. These are *nonphysical authoring metadata* for a later furniture pass.
-- Step risers are visual only; the **single inclined collision shape** prevents a CharacterBody3D from getting stuck on each 17.5cm riser. The upper deck is split around the shaft and the gap is bridged only by the physical upper landing.
+- Step risers are visual only; **each U-stair flight** has one walkable slope collider, a solid turn landing and upper landing. A real upper deck opening surrounds the new core.
 - One build on `_Ready`, with optional explicit **Build / Refresh Preview** button; both `_Process` and `_PhysicsProcess` disabled. No AI, pickups, furnishings, lights, decor, extra test scenes or per-frame geometric updates. This is intended to expose drawing/collision/visibility costs before decoration.
 - Root `UseTerrainSupport=false` on the master by default, so the shell is a stand-alone collidable prefab. Set it only when the **entire site is graded and supported** by Terrain3D to avoid overlapping physical floors.
 
@@ -41,10 +41,14 @@ The roof is a flat concrete slab with parapet. The exterior door frames include 
 
 1. **Compile:** `dotnet build war-machine.csproj`; then open `PoliceStation001.tscn` in Godot .NET. Confirm the editor-owned `Generated` anchor appears and the station mesh is visible. If already open when code was compiled, click **Build / Refresh Preview**; verify output and selectors, and ensure repeated refreshes never duplicate the generated geometry.
 2. **Visual:** Ground, upper and exterior previews; every real door/window gap, upper shaft opening, rear exit, roof and floor elevations. Make sure no corridor crosses solid partition/collision.
-3. **Walkability when later placed in the active world:** enter from +Z, walk the full hall, enter side rooms, climb the stair's sloped collision to Y≈4.2, reach the upper corridor and bathroom doorway, return down, exit at -Z. The editor itself does **not** simulate player movement.
+3. **Walkability when later placed in the active world:** enter from +Z, walk the full hall, enter side rooms, climb both stairs and the middle landing to Y≈4.2, reach the upper corridor and bathroom doorway, return down, exit at -Z. The editor itself does **not** simulate player movement.
 4. **Presentation:** Outside/inside wall fade groups, upper deck/roof reveal, AIM1 collision-to-visual aim mapping, FPS opaque surfaces, and camera occlusion while climbing.
 5. **Performance:** Compare idle unplaced scene draw-call/material and collision shape counts, then add/stream this one prefab through a **separately authorized** world placement/stress scene. Do not claim FPS gains or acceptable budgets without local measurements.
 
 **Not included:** furnishing or actual furniture placement, working hinged doors, reception desk, bathroom fixtures, indoor lighting, enemies, placement in the active village, navigation mesh, terrain modifications, item/interaction state, save or streaming ownership.
 
 [PS phase tracker](IMPLEMENTATION_PLAN.md) · [Building authoring contract](../BUILDING_AUTHORING_README.md) · [Convenience store reference](../ConvenienceStore001/README.md) · [Multi-floor reference](../Building002/README.md)
+
+## PS1 structural redesign — 2026-10-28
+
+Following the owner's direct Godot preview feedback, the original rear-left straight staircase has moved into the **front-right of the public lobby**, with two opposing twelve-riser flights and a real 180-degree turn landing. The ground floor now has a separate public waiting/intake room, a large admin zone, nonmatching interview/records rooms and larger rear service spaces, rather than rows of identical rectangles. Every new doorway has a true hole in the wall/collision plus `StructureClearance` metadata. The upstairs corridor and offices are retained, but the new stair opening and arrival landing are now at the front. No furniture, operational doors, world placement or additional tick loops. Local Godot build, editor/physics and camera acceptance remain pending.
