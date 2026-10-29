@@ -1,3 +1,5 @@
+> **SOC0 note (2026-10-28):** Bookcase001, Bed001, Table001 and Hedge001 now default to collision mode AutoBox; their F1 previews are physically solid and use layer 1. Book001/PineTree001 have no static collider. The shared `PlaceableVisual` also supports CustomBoxes for open/traversable structures. Runtime testing pending. Older visual-only catalogue descriptions below reflect their original art-only authoring.
+
 # Placeables catalogue — reusable GLB art and size masters
 
 **Current GLB models:** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001. All have reusable visual-only `.tscn` wrappers, independent `.tres` scale masters and automatic F1 debug preview discovery (source implemented 2026-10-28, local tests pending). Units are metres; +Y up. No collision, item pickup, rigid-body simulation or permanent placement is implemented for these three.

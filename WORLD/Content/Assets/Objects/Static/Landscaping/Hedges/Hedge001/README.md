@@ -1,3 +1,5 @@
+> **SOC0 collision enabled (2026-10-28):** Hedge001 now generates one static bounds box from its imported GLB, scaled with `SizeMultiplier`, even for its existing convenience-store site placements. This may alter walking routes at the parking area: check player/zombie paths and door/walkway clearances in-game. Fixed ornamental foliage is a solid blocker; procedural natural bushes are unaffected. Source implemented, runtime acceptance pending.
+
 # Hedge001 — neatly clipped rectangular landscaping hedge (GLB)
 
 **Status:** Original GLB art and canonical reusable visual scene authored. Godot import/appearance validation **pending**. This is a non-pickup **static landscaping object**, not a member of the procedural `VEGETATION/` system or the world chunk vegetation generators. No automatic procedural vegetation scatter, terrain clearing, collision, interaction or F1 menu entry. **Eight explicit scene instances are now used by ConvenienceStoreSite001** as decorative parking/walkway landscaping, using a site-specific size override; the canonical GLB and default master are unchanged.

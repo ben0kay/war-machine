@@ -1,3 +1,5 @@
+> **SOC0 static shape integration (2026-10-28):** Bookcase001, Bed001, Table001 and Hedge001 use the shared `PlaceableVisual` AutoBox (one StaticBody3D/BoxShape3D derived from imported mesh bounds). PineTree001 retains no collision, and Car001/StreetLamp001/doors retain independent physics. For future bus-stop shelters or open shelves, switch to CustomBoxes. [Shared collision documentation](../Shared/README.md). Local Godot validation pending.
+
 # Static objects — cannot be picked up
 
 Non-pickup architectural objects may be interactive or physically moving (a door leaf may be a RigidBody3D). Folder membership does not automatically create a StaticBody3D.

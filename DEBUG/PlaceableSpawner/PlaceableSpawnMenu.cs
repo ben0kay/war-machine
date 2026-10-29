@@ -84,7 +84,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
     {
         _wasCaptured = Input.MouseMode == Input.MouseModeEnum.Captured;
         Input.MouseMode = Input.MouseModeEnum.Visible;
-        _status.Text = _entries.Count == 0 ? "No eligible GLB object scenes found." : "Visual preview only · no collision or gravity";
+        _status.Text = _entries.Count == 0 ? "No eligible GLB object scenes found." : "Temporary placeables · solid collision follows each prefab";
         _backdrop.Show();
     }
 

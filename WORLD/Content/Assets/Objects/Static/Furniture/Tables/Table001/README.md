@@ -1,3 +1,5 @@
+> **SOC0 collision enabled (2026-10-28):** Table001 now uses AutoBox on the canonical scene, so F1/world instances cannot be walked through. One simple static box also fills the under-table gap **by design for this first pass**. To allow crawling or loose objects under it later, select `CollisionMode=2 CustomBoxes` and author tabletop/leg box resources in original model metres. Visual variants and size master still work; runtime checks pending.
+
 # Table001 — rectangular six-seat dining table
 
 **Status:** original GLB artwork + reusable visual-only Godot scene, source implemented; **local Godot import, .NET build and in-game visual validation pending**. Classified as a **Static Object**, meaning it will not be liftable. This does **not** add a physics `StaticBody3D` yet.

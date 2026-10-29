@@ -1,3 +1,5 @@
+> **SOC0 collision enabled (2026-10-28):** Bookcase001.tscn now sets `CollisionMode = 1` (AutoBox), providing one inexpensive StaticBody3D+BoxShape3D from the imported GLB bounds on runtime instantiation, including F1. Its GLB and master remain unchanged; scale is reflected in collision. **This first-pass full box also blocks the decorative shelf cavities**, so switch to `CustomBoxes` later before allowing books/loot to physically occupy shelf openings. No placement changes; gameplay testing pending.
+
 # Bookcase001 — weathered wooden bookcase
 
 **Original imported GLB retained unchanged.** [Bookcase001.tscn](Bookcase001.tscn) is a new lightweight visual wrapper for [Artwork/Bookcase001.glb](Artwork/Bookcase001.glb), with per-asset size master [Configuration/BookcaseMaster.tres](Configuration/BookcaseMaster.tres). **No physics/interactions yet; local validation pending.**

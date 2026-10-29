@@ -1,6 +1,8 @@
-# Object authoring guide — GLB-first catalogue (visual phase)
+> **SOC0 static collider integration (2026-10-28):** `PlaceableVisual` supports runtime `CollisionMode=0 None, 1 AutoBox, 2 CustomBoxes`. Current Bookcase001, Table001, Bed001 and Hedge001 scenes enable AutoBox; Book001/PineTree001 remain None. For **new fixed static objects**, set `CollisionMode=1` unless traversable openings require multiple `StaticCollisionBox` resources and mode 2. Use native unscaled model-local coordinates for custom boxes, matching visual `SizeMultiplier` on instantiation. No automatic physics for Props/rigid/pickup, and no added permanent world spawns. [Shared helper](Shared/README.md).
 
-**Status:** Active guidance for future AI asset-authoring chats. **Visual-only phase**: new furniture and small props can be created now; do **not** add colliders, physics, pickup, loot, breakage, sleep/use interactions or persistent world placement without a separate request.
+# Object authoring guide — GLB-first catalogue (SOC0 static collision available)
+
+**Status:** Active guidance for future AI asset-authoring chats. **SOC0 static collision is now available:** new fixed furniture/landscaping objects can opt into a shared AutoBox or CustomBoxes static collider. Movable props, pickup, loot, breakage, sleeping interactions and permanent world placement still require separate authorization.
 
 **Current location:** `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md`.
 **AM0 implemented:** this is the canonical guide. The [migration record](../../ASSETS_MIGRATION_PLAN.md) tracks local validation. Never create duplicate catalogues or asset copies in the old locations.
@@ -8,7 +10,7 @@
 ## Start here for every new model
 
 1. Read root `README.md`, `CodePreferences.md`, this guide, the current Objects README and catalogue, `DEBUG/PlaceableSpawner/README.md`, and one comparable asset's scene/master/README. **Work on `implement-td0-td1`, not `main`.**
-2. Confirm the requested asset ID and role. **Static / Object** means **not liftable** (it might become interactable later); **Prop** means **intended to be liftable/throwable eventually**, but **not yet physically implemented**. Don't confuse this folder classification with Godot `StaticBody3D`/`RigidBody3D`—new catalogue entries are visual-only.
+2. Confirm the requested asset ID and role. **Static / Object** means **not liftable** (it might become interactable later); **Prop** means **intended to be liftable/throwable eventually**, but **not yet physically implemented**. Don't confuse folder classification with the physics-body type: SOC0 adds optional **StaticBody3D** to fixed objects; loose/throwable Props require future IX RigidBody3D.
 3. Create one original, Godot-importable **`.glb`** with plausible real-world dimensions. Prefer GLB for furniture, clutter, tools, containers and appliances. Use procedural geometry C# under `C/` only if **explicitly requested** or clearly essential for dynamic geometry; C# can still own a tiny palette selector or scene settings without constructing vertices.
 4. Wrap the GLB in a **canonical `<AssetID>.tscn`** and add a **per-asset `Configuration/<AssetName>Master.tres`** for size, reusing the common `PlaceableVisual` and `PlaceableSizeSettings` already in `Shared/`. Don't invent duplicate copies of shared helpers for each object.
 5. Record the new asset in the catalogue and its own README. **F1 automatically discovers canonical `<AssetID>/<AssetID>.tscn` visual wrappers deriving from `PlaceableVisual` under `Static/` or `Props/`; no new F1 registration or spawner code is required.** Don't add it to the active world without permission.
@@ -72,7 +74,7 @@ SizeMultiplier = Vector3(1, 1, 1)
 
 - **X = width, Y = height/thickness, Z = length/depth** multipliers, **not metres**. Example `Vector3(1.2, 1, 1)` increases model width by 20%.
 - Editing the shared asset master affects **all default instances after reload/reinstancing**. For a differently sized individual copy, use an instance-specific duplicated/overridden resource.
-- Scale only the visual `Model` child, preserving stable asset root placement. This size setting does **not** automatically build or resize physical collision; physics is deferred.
+- Scale only the visual `Model` child, preserving stable asset root placement. For scene roots with `CollisionMode = 1` (AutoBox), SOC0 automatically generates and scales one static collider from the imported bounds **at runtime readiness**. `CollisionMode = 2` uses authored `CollisionBoxes` resources in unscaled model-local metres; `CollisionMode = 0` generates no collider.
 - Reuse the existing helpers and master format instead of generating a new per-object C# `Settings` class solely for width.
 
 **Other settings are optional, not implemented globally yet.** A future common `MaterialVariant` selector or `ConditionVariant` (clean/used/dirty/damaged) could be worthwhile, but **do not export pretend settings that have no visual effect**. Add targeted, asset-specific visual configuration only when the actual art supports it.
@@ -113,9 +115,9 @@ Keep checks proportional:
 
 Keep object identity and scene roots stable so a later separately authorized IX task can add collision without recreating artwork. Likely needs:
 
-- **Static furniture:** fitted `StaticBody3D` shapes for relevant solid portions, not one giant box filling bookcase shelves/under-bed gaps.
+- **Static furniture:** SOC0 is now available via root `CollisionMode = 1` (one bounding box) or `2` (authored `StaticCollisionBox` resources). Prefer custom box sets for meaningful empty shelving or table/bed clearance. AutoBox is an intentionally inexpensive initial blocker, not a traversable shelf/under-table simulation.
 - **Liftable props:** appropriately sized `RigidBody3D` shapes, mass/friction/sleep, carry/drop/throw through the shared interaction owner, and sensible lifecycle/persistence.
 - **Scale awareness:** scene visual scaling must agree with collider geometry, particularly for nonuniform multipliers.
 - **Gameplay boundaries:** collision, interaction, damage, loot, container storage, audio and visibility belong to their respective owners; never simulate physics for every decorative item by default.
 
-Keep this section as **future considerations only**, not permission to implement or claim these capabilities today.
+**SOC0 only is implemented:** collision for static canonical GLB wrappers. Loose-prop rigid physics, item interaction/loot and persistent world placement remain future, separately authorized work.

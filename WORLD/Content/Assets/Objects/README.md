@@ -1,3 +1,5 @@
+> **SOC0 static collision (2026-10-28):** fixed Bookcase001, Bed001, Table001 and Hedge001 now generate an invisible static BoxShape3D once from imported GLB bounds, scaled with the scene's size master. CustomBoxes and None are shared options. F1 can spawn these as temporary solid objects. Book001 and PineTree001 remain visual-only; future movable objects still need IX1+. Source implemented; runtime validation pending. [Implementation details](Shared/README.md).
+
 # Objects — reusable world asset library
 
 **Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001 are GLB artwork in stable reusable **visual-only `.tscn` scenes**, each with its own `.tres` size master. The F1 menu now discovers eligible canonical visual-wrapper scenes automatically (source implemented; local validation pending). Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. Colliders, pickup and permanent placement are future gameplay tasks.

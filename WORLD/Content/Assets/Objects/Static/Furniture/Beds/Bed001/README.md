@@ -1,3 +1,5 @@
+> **SOC0 collision enabled (2026-10-28):** Bed001 now creates one static auto-bounds BoxShape3D during runtime instancing, scaled with `SizeMultiplier`. F1 bed palette previews are solid; bed/under-bed volume is filled by the first-pass bounding box. A future interactive or under-bed clearance pass can use CustomBoxes; no rigid-body sleeping or inventory system was added. Godot validation pending.
+
 # Bed001 — imported GLB with four bedding variations
 
 **Status:** GLB scene conversion complete in source; **local Godot import, C# build and visual validation pending**. No physical collision, pickup, bed/sleep interaction or permanent world placement.

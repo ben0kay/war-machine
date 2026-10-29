@@ -45,3 +45,7 @@ F1/Escape/captured-mouse behavior, `Spawn selected model`, `Clear spawned`, max 
 5. Create a dummy standard GLB wrapper `Static/Furniture/Chairs/Chair001/Chair001.tscn` deriving from `PlaceableVisual`; restart world, confirm it automatically appears under Furniture / Chairs, spawns correctly, and requires **zero** edits to `PlaceableSpawnMenu.cs` or `PlaceableCatalog.cs`. For a dummy new enum-variant wrapper, verify each enum member appears and changes the model as expected.
 
 **Source implementation staged, local compile/runtime acceptance pending.** Do not claim tested or accepted until the owner runs the above.
+
+## SOC0 physics preview update (2026-10-28)
+
+The F1 catalogue remains automatic and capped at 24 temporary instances, but the old “visual preview only” limitation is relaxed **per asset**: `PlaceableVisual.CollisionMode` now controls fixed collision. Bookcase001, Table001, Bed001 and Hedge001 default to `AutoBox` and are solid in F1 and when instanced in the world. Book001 and PineTree001 remain noncolliding; Car001/StreetLamp001 remain outside this F1 catalogue. The menu no longer claims all previews lack collision. Clearing previews frees their temporary static bodies; nothing is saved to world placement. The exported collision selector is an **int with an Inspector enum hint**, not a C# enum property, so automatic F1 palette enumeration remains unchanged. A bounding box may also block decorative gaps until manually configured as CustomBoxes. Godot gameplay testing pending.
