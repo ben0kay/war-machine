@@ -7,7 +7,7 @@
 **Current location:** `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md`.
 **AM0 implemented:** this is the canonical guide. The [migration record](../../ASSETS_MIGRATION_PLAN.md) tracks local validation. Never create duplicate catalogues or asset copies in the old locations.
 
-> **Future only — not implemented:** [SOC1 Object Diagnostics & Performance Plan](SOC1_OBJECT_DIAGNOSTICS_PLAN.md) proposes optional per-object shadows/render caps, F1 bounds/collider inspection, offline GLB validation and cost reports. Deferred phases cover LOD, placement footprint and camera fade. **Use this plan for later authoring/tool work, not as permission to alter the game now.**
+> **SOC1A shadow mode implemented in source (2026-10-29):** Every asset's `Configuration/<Asset>Master.tres` now has `ShadowMode: 0 Inherit / 1 Disabled / 2 Enabled` via the existing `PlaceableSizeSettings`. Default **Inherit** changes nothing; modes 1/2 apply to imported meshes once at runtime and do not affect collision, WS1 or material variants. The [SOC1 plan](SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render caps, F1 bounds/collider inspection, offline GLB validation and cost reporting; those are **not implemented**. Test in game after pulling.
 
 ## Start here for every new model
 
@@ -56,6 +56,15 @@ For `CustomBoxes`, create the entries via the Inspector rather than inventing pe
 - In `WORLD/World.tscn` or the inherited FPS view, use **F1** to spawn a temporary instance. It now has **real collision if the canonical scene is AutoBox/CustomBoxes**, and passes through if None. F1 is not a persistent world-placement tool. Walk against the shape; test a rotated instance and modified `SizeMultiplier`, and check any intended entrance/underside opening. Use Remote scene inspection/visible collision shapes; physics colliders are not constructed in the editor hint preview.
 - Check weapons/LOS for solid blockers, especially cases with decorative gaps or transparent glazing; don't claim bullet-blocking or zombie navigation is correct without a local test.
 - Keep imported meshes/materials shared, collider count low, and no idle per-object callbacks. No automatic movable-item physics, loot, inventory, player interaction, AI pathfinding or saving is part of SOC0. See [shared implementation](Shared/README.md) and [IX gameplay plan](../../../../INTERACTION/IMPLEMENTATION_PLAN.md).
+
+### SOC1A shadow authoring for new GLBs
+
+In the **existing** `Configuration/<Asset>Master.tres`, find `Visual rendering (SOC1A) → ShadowMode` (Inspector dropdown, backed by `PlaceableSizeSettings.ShadowMode`). Choose:
+- `0 Inherit` (**default**) keeps original imported shadows and avoids scanning meshes during scene startup.
+- `1 Disabled` makes the GLB's imported `MeshInstance3D` meshes **not cast** shadows, useful for lightweight decoration and dense repetitive props.
+- `2 Enabled` forces ordinary shadow casting on all imported visual meshes, generally suitable for solid opaque containers/props but potentially incorrect for glass/transparent surfaces.
+
+The setting is per asset master: a change to a shared `.tres` affects every prefab instance using that resource after reload. Duplicate/override the resource if a single instance needs a different value; changing the resource live does not automatically reapply. This is one-time runtime work, no new `_Process` loop. Existing collision modes (SOC0), material variants and WS1 culling remain separate. **The shadow parameter is implemented; RenderDistance and other SOC1 tools are still planned.**
 
 ## Directory examples
 

@@ -1,10 +1,12 @@
 # Shared GLB placeable visuals, size masters and SOC0 static collision
 
+**SOC1A shadow-only implementation (2026-10-29):** Each asset's existing `PlaceableSizeSettings` master now exposes `Visual rendering (SOC1A) → ShadowMode`: `0 Inherit` (default; no change to imported mesh settings), `1 Disabled` (all imported meshes under `Model` cast no shadows) and `2 Enabled` (force ordinary shadow casting). Set it in the asset's `Configuration/<Asset>Master.tres`; reinstantiate/reload to see the change in runtime/F1. The `PlaceableVisual` helper applies the override **only once per scene instance** and only to `MeshInstance3D` under `Model`. It does not modify materials, collision, lights, camera occlusion, shader flags or WS1. The default introduces no traversal or visual changes. This is a global **per-asset-master** setting, so to change only one specific instance use an instance-specific duplicated/overridden resource. A mesh's shadow casting `Off` won't switch off its visibility or ability to receive light/shadows. `Enabled` may produce visually inappropriate opaque shadows for glass; use `Inherit` for such assets. **RenderDistance, F1 overlay inspector, validator and surface-budget report remain unimplemented.** Runtime Godot test/compile pending.
+
 Every catalogued GLB placeable has its own `Configuration/<Asset>Master.tres` with `SizeMultiplier = Vector3(1, 1, 1)`. X controls model width, Y height/thickness and Z depth/length as a **relative multiplier**, not as a size in metres. `Vector3(1.2, 1, 1)` is 20% wider.
 
 `PlaceableVisual.cs` applies that size once on `Model`. On runtime readiness, it optionally invokes `StaticObjectCollision.Build()` to create one `StaticBody3D` and one or more `CollisionShape3D` / `BoxShape3D` primitives beside the model. Collision shapes are **not renderable meshes**, and the GLB is never regenerated or modified.
 
-> **SOC1 proposal (not implemented):** [Future object render/debug settings](../SOC1_OBJECT_DIAGNOSTICS_PLAN.md) would extend the existing masters with optional shadow/render caps, add F1 debug overlays and validate new GLBs. Do not treat those planned exports as available today.
+> **SOC1 status:** ShadowMode is implemented in source as a partial SOC1A. [The remaining object render/debug plan](../SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes RenderDistance, F1 overlays, GLB validation and cost reporting.
 
 ## SOC0 collision selector — inherited by every PlaceableVisual prefab
 

@@ -1,13 +1,13 @@
 # SOC1 — Object authoring diagnostics, performance controls and validation
 
-**Status: PROPOSED ONLY — NOT IMPLEMENTED.** This is a future implementation handoff, not authorization to change gameplay. Current branch: `implement-td0-td1` in `ben0kay/war-machine`. Read root `README.md`, `CodePreferences.md`, `OBJECT_AUTHORING_GUIDE.md` and latest implementation source first. Implement only owner-approved phases, one commit per phase.
+**Status: PARTIALLY IMPLEMENTED — ShadowMode only (SOC1A shadow subset, 2026-10-29); all other phases remain proposed.** This is a future implementation handoff, not authorization for the remaining gameplay work. Current branch: `implement-td0-td1` in `ben0kay/war-machine`. Read root `README.md`, `CodePreferences.md`, `OBJECT_AUTHORING_GUIDE.md` and latest implementation source first. Implement only owner-approved phases, one commit per phase.
 
 ## Purpose and constraints
 
 Make the GLB catalogue safe to grow from a handful of items to hundreds by exposing useful **authoring settings**, offering **on-demand F1 diagnostics**, and checking generated models **before** they get into Godot. Prioritize frame time, draw/surface count, debugging and consistency. Do **not** add a `_Process` or `_PhysicsProcess` per static object, regenerate imported mesh data, introduce a second culling system, change player/zombie/world placement, or change colour-variant semantics.
 
 **Current foundations to reuse:**
-- `Shared/PlaceableSizeSettings.cs`: per-type master currently contains **only** `SizeMultiplier`.
+- `Shared/PlaceableSizeSettings.cs`: per-type master now contains **SizeMultiplier** and **ShadowMode** (int Inspector dropdown; 0 Inherit / 1 Disabled / 2 Enabled, default Inherit). Only the shadow subset of SOC1A has landed.
 - `Shared/PlaceableVisual.cs`: applies size and calls SOC0 static collision once at `_Ready`; `CollisionMode=0 None / 1 AutoBox / 2 CustomBoxes`. Fridge/Bed/Table derive for colour/material overrides.
 - `WORLD/Rendering/WorldRenderCulling.cs` and `WorldRenderEnvelope.cs`: WS1 owns native visibility distances, fog rules, shadow safety buffer and published `world_authored_range_end` / `world_render_exempt` metadata. No custom per-object distance polling.
 - `DEBUG/PlaceableSpawner/PlaceableCatalog.cs` + `PlaceableSpawnMenu.cs`: F1 discovers canonical scenes and exported enum *visual variants*, spawns temporary previews (max 24). Root exported enums for new global controls would **accidentally create fake F1 variants**; use Inspector int dropdowns or a nested Resource.
@@ -17,7 +17,7 @@ Make the GLB catalogue safe to grow from a handful of items to hundreds by expos
 
 | ID | Status | Priority | Feature |
 | --- | --- | --- | --- |
-| **SOC1A** | Proposed | First | `ShadowMode` and optional per-asset `RenderDistance` cap |
+| **SOC1A** | Shadow portion in source; render cap proposed | First | `ShadowMode` **implemented**; optional per-asset `RenderDistance` cap **not implemented** |
 | **SOC1B** | Proposed | First | `DebugBounds`, `DebugCollision`, pivot / mesh view in F1 |
 | **SOC1C** | Proposed | First | Offline `AssetValidation` for GLB + .tscn + master + palette contracts |
 | **SOC1D** | Proposed | Second | `SurfaceBudget` report and repeatable performance benchmark |
@@ -27,14 +27,17 @@ Make the GLB catalogue safe to grow from a handful of items to hundreds by expos
 
 ### SOC1A — ShadowMode + RenderDistance
 
+**Implementation record (2026-10-29):** Only `ShadowMode` is now implemented. `PlaceableSizeSettings.ShadowMode` is an exported `int` dropdown in each existing per-asset master; `PlaceableVisual._Ready` recursively updates imported `MeshInstance3D.CastShadow` once at runtime **only when mode 1 or 2**. Mode 0 avoids the traversal, retains original imported shadow settings, and makes existing scenes backward-compatible. No per-object update loop; SOC0, WS1, visual variants, lights and physics remain unchanged. No assets' masters were switched off by default. **Godot compile/visual/performance checks pending.** The following RenderDistance design is still a proposal; do not claim it exists or implement without permission.
+
+
 **Owner:** shared asset master + `PlaceableVisual` one-time apply helper; WS1 owns distance policy. **Keep existing default appearances and visibility identical.**
 
 Suggested optional exports within the existing size-master Resource (choose one canonical settings owner; don't clone competing masters):
 
 ```text
 [Model] SizeMultiplier = (1,1,1)        # existing
-[Render] ShadowMode = 0                  # int Inspector dropdown: 0 Inherit, 1 Disabled, 2 Enabled
-[Render] MaxRenderDistance = 0.0         # float metres; 0 = inherit existing/WS1 cap
+[Render] ShadowMode = 0                  # IMPLEMENTED, int dropdown: 0 Inherit, 1 Disabled, 2 Enabled
+[Render] MaxRenderDistance = 0.0         # NOT IMPLEMENTED; future float metres (0 = inherit)
 ```
 
 1. `ShadowMode=Inherit`: preserve imported `GeometryInstance3D.CastShadow`. `Disabled`: set Off on the imported visual mesh nodes; `Enabled`: set ordinary On for appropriate opaque meshes. No changes to collider, lights, camera proxies or materials. Do not force transparent glass panels to cast unsuitable opaque shadows without asset-specific testing.
@@ -101,4 +104,4 @@ Validate **before committing each generated GLB**:
 
 **Future AI instructions:** To begin later, ask `Implement SOC1A only from WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md`. Likewise SOC1B, SOC1C, or SOC1D. Don't silently implement deferred SOC2 features.
 
-**Phase checklist:** SOC1A [ ] · SOC1B [ ] · SOC1C [ ] · SOC1D [ ] · SOC2A [ ] · SOC2B [ ] · SOC2C [ ].
+**Phase checklist:** SOC1A ShadowMode [x] (source, runtime validation pending) · SOC1A RenderDistance [ ] · SOC1B [ ] · SOC1C [ ] · SOC1D [ ] · SOC2A [ ] · SOC2B [ ] · SOC2C [ ].

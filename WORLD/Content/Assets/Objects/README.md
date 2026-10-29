@@ -6,7 +6,7 @@
 
 > **DOOR1 exception:** Non-pickup architectural doors can include a hinged RigidBody3D leaf. `Static/` describes item *ownership/pickup classification*, not the physics body type. See [Door001](Static/Doors/Door001/README.md). No loose-props physics system is active.
 
-> **Proposed later:** [SOC1 Object Diagnostics & Performance Plan](SOC1_OBJECT_DIAGNOSTICS_PLAN.md) defines independently implementable shadow/range controls, F1 visual debugging, asset validation and budget reports. SOC0 collision and size masters are the currently available shared parameters.
+> **SOC1A partially implemented (2026-10-29):** The shared asset size master also includes `ShadowMode` (Inherit / Disabled / Enabled). Default Inherit preserves existing imported shadow settings. [SOC1 plan](SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render-distance controls, F1 debugging, GLB validation and performance budget reports.
 
 ## Object versus Prop
 

@@ -8,7 +8,7 @@
 
 > **New object/item authoring:** Read the [canonical Object Authoring Guide](WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md) before creating any new GLB furniture, bin, shelter, household item or prop. **SOC0** requires a documented choice of **None / AutoBox / CustomBoxes** (modes 0/1/2). The same guide distinguishes fixed Static collision from future movable Props/IX physics; creating an asset does not authorize placing it permanently in the world.
 
-> **Future asset performance & diagnostics:** [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) covers shadow/render settings, F1 inspection, malformed-GLB checks and performance cost reports, with LOD/placement/fade options deferred. **Planning only.**
+> **Object render/debug status:** Shared per-asset `ShadowMode` (Inherit / Disabled / Enabled) is implemented in source as the shadow-only subset of SOC1A. [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render caps, F1 inspection, malformed-GLB checks and performance cost reports. Runtime validation pending.
 
 ## Game vision
 

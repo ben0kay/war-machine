@@ -4,7 +4,7 @@
 
 `WorldRenderCulling` is created once under SystemsRoot in the active world and inherited FPS test. It observes only `WorldActorsRoot/PersistentPropsRoot` and `SystemsRoot/VegetationRoot`: existing buildings, lot, cars, hedges, lamps, F1 GLB previews, pine/scatter mesh batches. One startup traversal registers supported native MeshInstance3D/MultiMeshInstance3D and local OmniLight3D/SpotLight3D; node-add/remove events handle later assets and rebuilds. Deferred registration waits for procedural geometry, GLB wrappers and final spawn transforms. The catalogue does not instantiate anything for this system.
 
-> **Future object-level visibility/shadow authoring:** [SOC1A plan](../Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md#soc1a--shadowmode--renderdistance) would define optional authored caps that cooperate with WS1's existing metadata and refresh lifecycle. **Not implemented.**
+> **SOC1A partial:** Per-asset `ShadowMode` is implemented via the shared GLB size master and one-time `PlaceableVisual` traversal. `Inherit` is default; mode `Disabled` removes that GLB's shadow casting (and naturally avoids WS1 shadow buffer for those meshes), with no changes to culling logic. Per-asset `RenderDistance` caps in [SOC1A plan](../Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md#soc1a--shadowmode--renderdistance) remain **unimplemented**.
 
 ## Policy and configuration
 
