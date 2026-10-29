@@ -1,3 +1,9 @@
+## Shadow-only comparison
+
+**Debug → Disable zombie shadows + corpses** turns off shadow casting on registered zombie geometry while keeping models visible. Leave **Hide zombie visuals + corpses** unchecked, hold the camera still and compare stable FPS. Both switches are independent and default off. Existing corpses, future spawns and deaths inherit the selected shadow state through the same visual-root registry. Each geometry node's original shadow mode is cached once at registration and restored when unchecked or on teardown; hidden severed parts remain hidden. No AI, animation, physics, materials or lighting settings change. Tree traversal occurs once per registration, with cached geometry touched only on explicit toggles. No per-frame work is added.
+
+Source checks only; compilation and the same-camera World/FPS comparison require local Godot validation.
+
 # Zombie debug visibility
 
 `ZombieVisionDebug` owns existing zombie registration, F7 sight-cone presentation and explicit nearest-target lookup for injury tests. `ZombieRenderDebug` is a passive visibility-only registry used by the World/FPS debug panel.

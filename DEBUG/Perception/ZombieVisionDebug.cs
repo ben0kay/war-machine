@@ -7,6 +7,8 @@ public partial class ZombieVisionDebug : Node
     private readonly List<ZombieController> _zombies = new();
     private readonly ZombieRenderDebug _render = new();
     public bool VisualsHidden => _render.Hidden;
+    public bool ShadowsDisabled => _render.ShadowsDisabled;
+    public void SetShadowsDisabled(bool disabled) => _render.SetShadowsDisabled(disabled);
     private bool _visible = true;
     public bool ConesVisible => _visible;
     public event System.Action<bool>? VisibilityChanged;
