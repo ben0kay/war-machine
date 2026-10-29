@@ -1,22 +1,19 @@
-# Dense canopy forest — DF0 site foundation
+# Dense canopy forest — DF0/DF1/DF2
 
-**Status: DF0 + DF1 implemented in source, awaiting local Godot validation. DF2–DF5 remain planned only.**
+**Status:** DF0–DF2 implemented in source; awaiting local Godot/.NET and visual validation. DF3–DF5 remain planned.
 
-The current stage defines an optional **96 × 96m** test footprint east of the village at absolute X/Z **(667, 567)**, opposite the western robot patrol. It has not been proven safe in a running scene; a bounded startup survey inspects terrain/slopes/approach and the existing village/patrol/building/zombie/deer reservation rectangles before accepting it.
+The shared World and FPS scenes now support a **conditional dense, high-canopy broadleaf patch** east of the village. The forest still defaults OFF in `Configuration/ForestMaster.tres`. DF0 surveys the 96 × 96m footprint around X/Z (667,567), including terrain, entry approach and existing village/robot/actor reservations. If the survey fails, **no replacement trees are created and the old pines stay**.
 
-## Files and operation
+## DF2 gameplay integration
 
-- [FOREST_IMPLEMENTATION_PLAN.md](FOREST_IMPLEMENTATION_PLAN.md): DF0–DF5 planning and local handoff.
-- `ForestZone.cs`: **static, startup-only** survey + optional debug border. No process loop or terrain writing.
-- `Configuration/ForestSettings.cs`, `Configuration/ForestMaster.tres`: sole settings owner, linked from `WORLD/Configuration/WorldMaster.tres → DenseForest`.
-- World startup surveys after grading and before the existing pine batches are spawned; only an enabled/approved footprint is added to their exclusions. No pine generator fork and no new tree art.
+- `ForestPlacement.cs` builds an irregular, seeded layout from DF1's three tall canopy variants and smaller, simplified filler trees; mature/filler candidate spacings default to 7m/8m, with configurable densities and minimum trunk separations.
+- Trees are grouped into **32m chunks**, with shared near/far Mesh templates and `MultiMeshInstance3D` batches. Each loaded chunk owns one static body with capsule colliders only at trunks (same physics layer 5 as pines).
+- A winding **7m walking corridor** and two small clearings keep the zone traversable. Terrain3D height and slope are sampled once for candidate tree roots; no runtime terrain writing.
+- New canopy foliage uses one shared opaque shader, which permits **top-down-only per-tree camera fading**. FPS displays full leaves. Near trees cast shadows by default; far trees do not. DF3 will refine canopy light blocking.
+- The patch excludes old random pines **and random rocks only inside the successfully approved footprint**. Grass remains, ready for DF4 undergrowth integration.
 
-**Default is OFF:** the world and existing pines are unchanged. To inspect, enable `ShowDebugOutline` in `ForestMaster.tres`, restart the FPS scene (F6) and walk east; look for the green terrain-following border and `DF0 forest site` Output. `Enabled=true` on a passing site clears **only existing pine placements** from that square for a future canopy forest, and OFF restores the original deterministic pines on restart. A rejection does not clear pines.
+## Configuration and test
 
-**Important:** DF0 does **not** yet create a tall forest, adjust global pine density, block sunshine, change grass/rock scatter, or create wildlife/zombie behaviour. Location remains **awaiting actual in-game approval**. Next phase DF1 will create sample canopy tree artwork, then DF2 will use the confirmed site for chunked MultiMesh distribution.
+Edit `Configuration/ForestMaster.tres`: set `Enabled=true`, optionally enable `ShowDebugOutline`, and restart F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`. Check Output for the DF0 approved/rejected message and, if approved, `DF2 forest: ... seeded trees`. Visit the east village outskirts; try walking along the corridor and shooting between collidable trunks. Repeat F6 `WORLD/World.tscn` to inspect top-down canopy fading. OFF + scene restart restores the original deterministic pine/rock distribution.
 
-**Performance:** OFF: no DF0 iteration at all. ON/preview: bounded terrain survey once and optional static outline, with no idle callback, physics shape, per-tree Node or world-scanning loop. Use `dotnet build war-machine.csproj` and F6 World/FPS for compilation and acceptance.
-
-## DF1 canopy tree source
-
-[Standalone CanopyTree prototype](../Trees/CanopyTree/README.md) now provides a 17–22m procedural broadleaf tree, three seeded crown silhouettes, a smaller filler example, lightweight far geometry and its own `CanopyTreePreview.tscn` visual scene. This is **art-only**, not a live forest. Existing DF0 zone toggle and pine clearings are unchanged. The user must approve the tree silhouette and DF0 footprint before DF2 world placement.
+Source and settings are present; **compilation, visible density, tree collision and performance remain untested locally**. There are no per-tree update loops or standalone spawned tree scenes. [Detailed DF2 handoff](FOREST_IMPLEMENTATION_PLAN.md#df2--implementation-handoff-2026-10-29).

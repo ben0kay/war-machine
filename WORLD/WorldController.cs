@@ -12,6 +12,7 @@ public partial class WorldController : Node3D
     [ExportGroup("Debug")]
     [Export] public bool ShowZombieSightConesOnStart { get; set; } = false;
     protected PinePlacement _pines = null!;
+    protected ForestPlacement? _forestPlacement;
     protected TerrainGrass _grass = null!;
     private PlayerController _player = null!;
     protected WorldAudio _audio = null!;
@@ -175,6 +176,7 @@ public partial class WorldController : Node3D
         // DF0: survey once, after village/robot/spawn reservations. Enabled reserves only the
         // surveyed core for future canopy art; OFF or rejected restores original pine placement.
         var forest = Settings.DenseForest;
+        Rect2? approvedForestArea = null;
         if (forest != null && (forest.Enabled || forest.ShowDebugOutline))
         {
             bool safe = ForestZone.TrySurvey(data, forest, Settings, _pines.ExclusionAreas,
@@ -182,7 +184,7 @@ public partial class WorldController : Node3D
             if (safe)
             {
                 GD.Print($"DF0 forest site approved for preview: {survey}");
-                if (forest.Enabled) _pines.ExclusionAreas.Add(area);
+                if (forest.Enabled) { _pines.ExclusionAreas.Add(area); approvedForestArea = area; }
             }
             else GD.PushWarning($"DF0 forest site rejected; original pines retained: {survey}");
             if (forest.ShowDebugOutline && area.Size.X > 0 && area.Size.Y > 0)
@@ -201,12 +203,22 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Fast);
         AddDeerPreviewClearing(_rocks.ExclusionAreas);
+        // DF2: avoid accidental random boulders through the approved new tree trunks.
+        if (approvedForestArea.HasValue) _rocks.ExclusionAreas.Add(approvedForestArea.Value);
         // Keep the giant's route and foot corridor free of new solid boulders.
         if (_village == null)
             _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
         GetNode("WorldActorsRoot/PersistentPropsRoot").AddChild(_rocks);
         _rocks.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _rocks.UpdateAnchor;
+        // DF2 only activates after DF0's shared terrain/structure/patrol survey succeeds.
+        if (approvedForestArea.HasValue && forest != null)
+        {
+            _forestPlacement = new ForestPlacement { Name = "DenseForest" };
+            GetNode("SystemsRoot/VegetationRoot").AddChild(_forestPlacement);
+            _forestPlacement.InitializeView(terrain, player, forest, approvedForestArea.Value);
+            player.PositionChanged += _forestPlacement.UpdateAnchor;
+        }
         InitializeOcclusion(camera, player);
         _environmentScene.InitializeView(terrain, player, camera);
         _weather = _environmentScene.Weather; _groundHaze = _environmentScene.Haze;
@@ -252,6 +264,7 @@ public partial class WorldController : Node3D
     {
         var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
         occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
+        if (_forestPlacement != null) occlusion.RegisterProvider(_forestPlacement);
         occlusion.RegisterStructures(GetNode("WorldActorsRoot/PersistentPropsRoot/Structures"));
     }
 
@@ -664,11 +677,14 @@ public partial class WorldController : Node3D
         _weather.SetOrthographicCoverage(_camera.ViewHeight);
         _grass.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);
         _pines.UpdateView(CameraSettings.CameraDistance);
+        _forestPlacement?.UpdateView(CameraSettings.CameraDistance);
     }
 
     // =========================================================
     public override void _ExitTree()
     {
+        if (IsInstanceValid(_player) && IsInstanceValid(_forestPlacement))
+            _player.PositionChanged -= _forestPlacement!.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_rocks)) _player.PositionChanged -= _rocks.UpdateAnchor;
         if (IsInstanceValid(_camera))
         {

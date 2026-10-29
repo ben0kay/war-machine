@@ -62,5 +62,5 @@ public partial class FirstPersonWorld : WorldController
     // =========================================================
     // Retain FPS-specific emitter coverage and close foliage profile.
     protected override void UpdateWeatherCoverage()
-    { _weather.SetOrthographicCoverage(24); _pines.UpdateView(0); }
+    { _weather.SetOrthographicCoverage(24); _pines.UpdateView(0); _forestPlacement?.UpdateView(0); }
 }

@@ -27,3 +27,7 @@ Inspect in Godot from 2m, 15m and 60m for strong trunk/leaf silhouette and dayli
 **No collider in DF1:** the visual prefab uses **None** (CollisionMode 0 conceptual decision), because this tree is an art preview, not a standalone gameplay object. DF2 will use the existing pine strategy: one native `StaticBody3D` per loaded forest chunk, simple trunk capsules on layer 5, no branch/leaf physics. No forest density, terrain, environment, zombie sight or existing pine changes.
 
 **Performance activation:** procedural mesh generation only on preview ready/explicit preview reload; then the tree has zero `_Process`/`_PhysicsProcess` work, and the mesh is static. DF2 must generate/cache meshes once per variant rather than instancing `CanopyTree.tscn` hundreds of times. Current triangles/draw calls/FPS have **not** been measured. [DF plan](../../Forest/FOREST_IMPLEMENTATION_PLAN.md).
+
+## DF2 forest mesh consumption (2026-10-29)
+
+`VEGETATION/Forest/ForestPlacement.cs` generates the three DF1 near/far mesh pairs once per initialization, and reuses the simplified meshes at reduced scale for younger fillers. Chunk-owned MultiMeshes display the trees; `CanopyTree.tscn` is **not instantiated hundreds of times**. Bark/foliage keep two surfaces; a shared forest foliage shader provides top-down camera fade. Native trunk collision belongs to `ForestPlacement`, not this art prefab. Existing standalone DF1 preview remains unchanged. World placement is gated by ForestMaster.Enabled and DF0 survey acceptance.

@@ -8,3 +8,7 @@
 - `CenterXZ=(667,567)` is the survey-only east-side candidate; `SizeXZ=(96,96)`, `TransitionWidth=12`, `SurveyStep=8`, `MaximumSlope=0.75`. Validation also samples an approach from the village's east road.
 
 The survey runs once at world initialization (only when Enabled or ShowDebugOutline). It refuses invalid/missing terrain, reserved rectangles and excessively steep samples; a rejected zone leaves the original pines alone. The location **has not passed local in-engine verification**. No grass/rock exclusions are changed in DF0; DF2/DF4 will decide their forest-specific blending. [DF phases](../FOREST_IMPLEMENTATION_PLAN.md).
+
+## DF2 world population settings (source implemented)
+
+The same ForestMaster resource now includes Seed, Mature/Young Spacing, Density, MinSeparation, scale ranges, TrailWidth, ChunkSize=32, RenderDistance=160, LodDistance=64, native range margin, near/far shadow toggles and group trunk collider controls. DF0 centre/size and approval remain the single authoritative ownership. Forest defaults OFF; enabling requires a scene restart and successful startup survey. With an approved site, the old pines and random rocks are cleared only inside the zone, and the new trees render in streamed MultiMeshes. No per-tree scene scripts or permanently running renderer callbacks.
