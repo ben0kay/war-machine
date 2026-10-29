@@ -95,7 +95,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             ?? GD.Load<AnatomySettings>("res://ENTITIES/Shared/Anatomy/Configuration/AnatomyMaster.tres"));
         Node3D head = _anatomyHead = VisualRoot.GetNode<Node3D>("UpperBody/Head");
         // Torso now follows the dedicated waist pivot rather than the whole-body (legs) root.
-        var pivots = new[] { _attackUpperBody, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee };
+        var pivots = new[] { _attackUpperBody, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
         var regions = new[] { BodyRegion.Torso, BodyRegion.Head, BodyRegion.LeftArm, BodyRegion.RightArm,
             BodyRegion.LeftLeg, BodyRegion.RightLeg, BodyRegion.LeftLeg, BodyRegion.RightLeg };
         var boundaries = new System.Collections.Generic.HashSet<Node3D>(pivots);
