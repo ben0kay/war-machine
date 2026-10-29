@@ -2,7 +2,7 @@
 
 **Status:** DF0–DF2 implemented in source; awaiting local Godot/.NET and visual validation. DF3–DF5 remain planned.
 
-The shared World and FPS scenes now support a **conditional dense, high-canopy broadleaf patch** east of the village. The forest still defaults OFF in `Configuration/ForestMaster.tres`. DF0 surveys the 96 × 96m footprint around X/Z (667,567), including terrain, entry approach and existing village/robot/actor reservations. If the survey fails, **no replacement trees are created and the old pines stay**.
+The shared World and FPS scenes now support a **conditional dense, high-canopy broadleaf patch** east of the village. The forest is now **enabled in `Configuration/ForestMaster.tres`** for DF2 preview testing. DF0 surveys the 96 × 96m footprint around X/Z (667,567), including terrain, entry approach and existing village/robot/actor reservations. If the survey fails, **no replacement trees are created and the old pines stay**.
 
 ## DF2 gameplay integration
 
@@ -14,6 +14,6 @@ The shared World and FPS scenes now support a **conditional dense, high-canopy b
 
 ## Configuration and test
 
-Edit `Configuration/ForestMaster.tres`: set `Enabled=true`, optionally enable `ShowDebugOutline`, and restart F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`. Check Output for the DF0 approved/rejected message and, if approved, `DF2 forest: ... seeded trees`. Visit the east village outskirts; try walking along the corridor and shooting between collidable trunks. Repeat F6 `WORLD/World.tscn` to inspect top-down canopy fading. OFF + scene restart restores the original deterministic pine/rock distribution.
+`Configuration/ForestMaster.tres` now has `Enabled=true`. Optionally enable `ShowDebugOutline`, and restart F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`. Check Output for the DF0 approved/rejected message and, if approved, `DF2 forest: ... seeded trees`. Visit the east village outskirts; try walking along the corridor and shooting between collidable trunks. Repeat F6 `WORLD/World.tscn` to inspect top-down canopy fading. OFF + scene restart restores the original deterministic pine/rock distribution.
 
 Source and settings are present; **compilation, visible density, tree collision and performance remain untested locally**. There are no per-tree update loops or standalone spawned tree scenes. [Detailed DF2 handoff](FOREST_IMPLEMENTATION_PLAN.md#df2--implementation-handoff-2026-10-29).

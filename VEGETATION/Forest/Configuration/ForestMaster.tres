@@ -3,7 +3,7 @@
 
 [resource]
 script = ExtResource("1")
-Enabled = false
+Enabled = true
 ShowDebugOutline = false
 CenterXZ = Vector2(667, 567)
 SizeXZ = Vector2(96, 96)
