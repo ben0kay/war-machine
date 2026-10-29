@@ -89,6 +89,7 @@ public partial class PoliceStationMesh : Node3D
     private void Build()
     {
         ValidateStairApproach(); // A malformed shell must fail before generating blocked stairs.
+        ValidateUpperLandingGeometry(); // Check open shaft against the walking path.
         var s = Settings ?? new PoliceStationSettings();
         float h0 = Mathf.Clamp(s.GroundFloorHeight, 3.8f, 5.2f);
         float h1 = Mathf.Clamp(s.UpperFloorHeight, 3.2f, 4.8f), top = h0 + h1;
@@ -137,14 +138,15 @@ public partial class PoliceStationMesh : Node3D
         BuildExterior(groundWalls, groundBody, clear, "G", 0f, h0, true, shell, trim, glass, doors);
         BuildGroundRooms(groundWalls, groundBody, clear, groundPartitionTop, partitions, trim, doors);
 
-        // The four upper-floor spans leave a real, non-colliding void above the new front-right stair core.
+        // Close the obsolete part of the large stairwell cutout: the upper floor now
+        // reaches the TOP TREAD at z=23. Only z=23..30.4 is an open, guarded shaft.
         float slabY = h0 - deckThickness * 0.5f;
         FloorSpan(upperDeck, upperBody, "WestDeck", -Width * 0.5f + inset, ShaftMinX,
             -Depth * 0.5f + inset, Depth * 0.5f - inset, slabY, deckThickness, floorMat);
         FloorSpan(upperDeck, upperBody, "EastDeck", ShaftMaxX, Width * 0.5f - inset,
             -Depth * 0.5f + inset, Depth * 0.5f - inset, slabY, deckThickness, floorMat);
-        FloorSpan(upperDeck, upperBody, "ShaftSouthDeck", ShaftMinX, ShaftMaxX,
-            -Depth * 0.5f + inset, ShaftMinZ, slabY, deckThickness, floorMat);
+        FloorSpan(upperDeck, upperBody, "StairApproachDeck", ShaftMinX, ShaftMaxX,
+            -Depth * 0.5f + inset, StairSouthZ, slabY, deckThickness, floorMat);
         FloorSpan(upperDeck, upperBody, "ShaftNorthDeck", ShaftMinX, ShaftMaxX,
             ShaftMaxZ, Depth * 0.5f - inset, slabY, deckThickness, floorMat);
 
@@ -331,10 +333,12 @@ public partial class PoliceStationMesh : Node3D
     private static void BuildUpperRooms(Node3D walls, StaticBody3D body, StructureClearance clear,
         float baseY, float top, Material partition, Material trim, Material doors)
     {
+        // Terminate both hall walls at a REAL connecting front partition, not loose ends.
+        const float upstairsVestibuleZ = 18.5f;
         CorridorSide(walls, body, clear, "UpperWestHall", -CorridorHalfWidth, baseY, top,
-            new[] { -25f, -12f, 0f, 12f }, partition, trim, doors);
+            new[] { -25f, -12f, 0f, 12f }, partition, trim, doors, upstairsVestibuleZ);
         CorridorSide(walls, body, clear, "UpperEastHall", CorridorHalfWidth, baseY, top,
-            new[] { -26.5f, -15f, 12f }, partition, trim, doors);
+            new[] { -26.5f, -15f, 12f }, partition, trim, doors, upstairsVestibuleZ);
 
         foreach (float z in new[] { -8f, 8f, 18.5f })
         {
@@ -346,6 +350,13 @@ public partial class PoliceStationMesh : Node3D
         // Large open office above the lobby, separate from the rear staff rooms.
         DoorPartitionX(east, body, clear, "OpenPlanToRear", CorridorHalfWidth, 24f,
             -9f, baseY, top, 13f, 3.0f, partition, trim, doors);
+
+        // The former free-ended east hallway now meets a structural east vestibule wall.
+        // A wide doorway aligns with the stair exit; the upper landing remains traversable.
+        var front = WallGroup(walls, "UpperEastFrontVestibule");
+        DoorPartitionX(front, body, clear, "StairLandingToUpperOffices",
+            CorridorHalfWidth, Width * 0.5f, upstairsVestibuleZ, baseY, top,
+            UpperFlightX, 3.6f, partition, trim, doors);
 
         // Empty 6.5 x 7m bathroom enclosure with corridor access at Z=-26.5.
         var bathroomWest = WallGroup(walls, "UpperBathroomEastWall");
@@ -367,7 +378,7 @@ public partial class PoliceStationMesh : Node3D
     // Corridor wall is one logical fade group but retains independent collision around every door.
     private static void CorridorSide(Node3D walls, StaticBody3D body, StructureClearance clear,
         string name, float x, float bottom, float top, float[] doors,
-        Material partition, Material trim, Material doorMat)
+        Material partition, Material trim, Material doorMat, float frontJunctionZ = 19f)
     {
         var group = WallGroup(walls, name);
         const float half = 1.15f, head = 2.72f;
@@ -387,8 +398,8 @@ public partial class PoliceStationMesh : Node3D
             clear.Reserve(name + "Door", new(x, bottom + 1.45f, z), new(3.2f, 2.9f, 3.3f));
             cursor = b;
         }
-        StructureGeometry.WallZ(group, body, name + "EndSpan", x, cursor, 19f - PartitionHalfThickness,
-            bottom, top, partition, 0.18f);
+        StructureGeometry.WallZ(group, body, name + "EndSpan", x, cursor,
+            frontJunctionZ - PartitionHalfThickness, bottom, top, partition, 0.18f);
     }
 
     // =========================================================
@@ -507,22 +518,38 @@ public partial class PoliceStationMesh : Node3D
         StairFlight(visuals, body, "Upper", UpperFlightX, StairNorthZ, StairSouthZ,
             halfRise, halfRise, tread, riser, rail);
 
-        // Top landing joins the permanently solid second floor at the shaft's south edge.
-        StructureGeometry.Box(visuals, body, "UpperLanding",
-            new(UpperFlightX, rise - 0.11f, (ShaftMinZ + StairSouthZ + 0.2f) * 0.5f),
-            new(4f, 0.22f, StairSouthZ + 0.2f - ShaftMinZ), tread);
+        // The upper landing is now the continuous, collidable StairApproachDeck.
+        // No coplanar duplicate slab or shape. Guard the genuine shaft on three sides.
         foreach (float x in new[] { ShaftMinX, ShaftMaxX })
-            StructureGeometry.Box(upperGuards, upperBody, "UpperShaftRail",
+            StructureGeometry.Box(upperGuards, upperBody, "UpperShaftSideGuard",
                 new(x, rise + 0.54f, (StairSouthZ + ShaftMaxZ) * 0.5f),
                 new(0.12f, 1.08f, ShaftMaxZ - StairSouthZ), rail);
-        StructureGeometry.Box(upperGuards, upperBody, "UpperNorthRail",
+        StructureGeometry.Box(upperGuards, upperBody, "UpperShaftNorthGuard",
             new((ShaftMinX + ShaftMaxX) * 0.5f, rise + 0.54f, ShaftMaxZ),
             new(ShaftMaxX - ShaftMinX, 1.08f, 0.12f), rail);
+
+        // Do NOT guard across the top step. Only protect the two unused south-edge spans.
+        const float exitHalfWidth = 1.76f; // Includes stair rail width.
+        FloorEdgeGuard(upperGuards, upperBody, "UpperShaftSouthGuardWest",
+            ShaftMinX, UpperFlightX - exitHalfWidth, StairSouthZ, rise, rail);
+        FloorEdgeGuard(upperGuards, upperBody, "UpperShaftSouthGuardEast",
+            UpperFlightX + exitHalfWidth, ShaftMaxX, StairSouthZ, rise, rail);
         clear.Reserve("FrontUStairwell",
             new((ShaftMinX + ShaftMaxX) * 0.5f, rise * 0.5f + 0.45f, (ShaftMinZ + ShaftMaxZ) * 0.5f),
             new(ShaftMaxX - ShaftMinX, rise + 1.7f, ShaftMaxZ - ShaftMinZ));
         clear.Reserve("UpperStairExit", new(UpperFlightX, rise + 1.2f, 19.4f),
             new(4.8f, 2.4f, 4.8f));
+    }
+
+    // =========================================================
+    // Two upper guard segments protect the opening without blocking the top stair exit.
+    private static void FloorEdgeGuard(Node3D visuals, StaticBody3D body, string name,
+        float a, float b, float z, float floorY, Material material)
+    {
+        if (b <= a) return;
+        StructureGeometry.Box(visuals, body, name,
+            new((a + b) * 0.5f, floorY + 0.54f, z),
+            new(b - a, 1.08f, 0.12f), material);
     }
 
     // =========================================================
@@ -540,7 +567,7 @@ public partial class PoliceStationMesh : Node3D
             float z = Mathf.Lerp(startZ, endZ, (i + 0.5f) / count);
             float y = baseY + (i + 1) * dy;
             StructureGeometry.Box(visuals, null, name + "Tread",
-                new(x, y - 0.035f, z), new(width, 0.07f, depth - 0.015f), tread);
+                new(x, y - 0.035f, z), new(width, 0.07f, depth), tread);
             StructureGeometry.Box(visuals, null, name + "Riser",
                 new(x, y - dy * 0.5f, z + (north ? 1f : -1f) * depth * 0.45f),
                 new(width, dy, 0.065f), riser);
@@ -638,6 +665,20 @@ public partial class PoliceStationMesh : Node3D
         EnsureClearPerimeterWindowJunction(a, b, z, name);
         TrimInteriorXJunctions(ref a, ref b);
         StructureGeometry.WallX(visual, body, name, a, b, z, bottom, top, material, 0.18f);
+    }
+
+    // =========================================================
+    // Validate the upper exit: its entire width must remain open and the deck must
+    // meet the last upper-flight tread while leaving a walkable 2m+ apron.
+    private static void ValidateUpperLandingGeometry()
+    {
+        const float exitHalfWidth = 1.76f;
+        if (StairSouthZ - ShaftMinZ < MinimumStairApproach
+            || ShaftMaxZ <= StairNorthZ
+            || UpperFlightX - exitHalfWidth <= ShaftMinX
+            || UpperFlightX + exitHalfWidth >= ShaftMaxX)
+            throw new System.InvalidOperationException(
+                "PoliceStation001: unsafe upper stairwell cutout or a guard blocking the upstairs arrival.");
     }
 
     // =========================================================
