@@ -4,6 +4,7 @@
 
 Non-pickup architectural objects may be interactive or physically moving (a door leaf may be a RigidBody3D). Folder membership does not automatically create a StaticBody3D.
 
+- [Appliances/Fridges/Fridge001](Appliances/Fridges/Fridge001/README.md): two-door refrigerator/freezer GLB, four finishes (warm white/silver/graphite/seafoam), separate future door pivots, shared size master, SOC0 AutoBox and F1 previews.
 - [Doors/Door001](Doors/Door001/README.md): DOOR1 reusable hinged rigid-body service door with a fixed hinge and DOOR2 handle anchors; installed only at the convenience store rear exit.
 - [Containers/Dumpsters/DumpsterBin001](Containers/Dumpsters/DumpsterBin001/README.md): huge dark-green industrial dumpster, two black hinged-pivot lids, **no wheels**; original GLB, size master, SOC0 AutoBox and F1 discoverability, no permanent placement.
 - [Containers/WheelieBins/WheelieBin001](Containers/WheelieBins/WheelieBin001/README.md): low-poly dark green household wheelie bin with separate black lid, rear wheels, standard size master and SOC0 AutoBox; F1 eligible, no permanent world placement.

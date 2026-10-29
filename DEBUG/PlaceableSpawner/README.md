@@ -25,6 +25,7 @@ The first applies the existing `Configuration/PlaceableSpawnMaster.tres` `BookHo
 
 ## Current expected menu
 
+- OBJECT · Appliances / Fridges: **Fridge001** (Warm White, Brushed Silver, Dark Graphite, Seafoam Green).
 - OBJECT · Containers / Dumpsters: **DumpsterBin001** (static AutoBox, 7m preview minimum).
 - OBJECT · Containers / WheelieBins: WheelieBin001 (static AutoBox).
 - OBJECT · Furniture / Beds: Bed001, each of Slate Blue / Moss Green / Warm Sand / Dusty Rose.
@@ -41,7 +42,7 @@ F1/Escape/captured-mouse behavior, `Spawn selected model`, `Clear spawned`, max 
 ## Validation handoff (Godot/.NET not run here)
 
 1. `dotnet build war-machine.csproj`, import current GLBs once, F6 `WORLD/World.tscn`, open F1.
-2. Confirm category headings and all **13** options (including WheelieBin001 and DumpsterBin001): Bookcase001 (1), Book001 (1), Bed001 (4), Table001 (3), PineTree001 (1), Hedge001 (1). Procedural Car001/StreetLamp001 should not appear.
+2. Confirm category headings and all **17** options (including WheelieBin001 and DumpsterBin001): Bookcase001 (1), Book001 (1), Bed001 (4), Table001 (3), PineTree001 (1), Hedge001 (1). Procedural Car001/StreetLamp001 should not appear.
 3. Spawn each existing variation, check materials and canonical size masters. Book001 hovers using `BookHoverHeight`, PineTree001 appears >=12m away, Hedge001 spawns grounded, and the same selected type gets the right preview name/status.
 4. Check 24-instance cap, Clear, F1/Escape focus and FPS mouse recapture. No additional physics bodies/terrain placement should appear.
 5. Create a dummy standard GLB wrapper `Static/Furniture/Chairs/Chair001/Chair001.tscn` deriving from `PlaceableVisual`; restart world, confirm it automatically appears under Furniture / Chairs, spawns correctly, and requires **zero** edits to `PlaceableSpawnMenu.cs` or `PlaceableCatalog.cs`. For a dummy new enum-variant wrapper, verify each enum member appears and changes the model as expected.
@@ -57,3 +58,5 @@ The F1 catalogue remains automatic and capped at 24 temporary instances, but the
 **WheelieBin001:** now automatically discovered under `OBJECT · Containers / WheelieBins` with no spawner code changes. Solid SOC0 AutoBox scene; please validate appearance and collision locally. F1 remains temporary-only.
 
 **DumpsterBin001 (2026-10-28):** A new canonical static object `Static/Containers/Dumpsters/DumpsterBin001/DumpsterBin001.tscn` auto-registers under `OBJECT · Containers / Dumpsters`. Its scene metadata requests a **7m minimum** preview distance because its dimensions are ~3.48 × 2.55 × 1.91m; no changes to the global F1 3m setting, its scanner, or other assets. Uses one SOC0 AutoBox; lids stay closed. Model import, visual appearance and contact must be validated locally.
+
+**Fridge001 (2026-10-28):** the canonical `Static/Appliances/Fridges/Fridge001/Fridge001.tscn` is automatically discovered with the four exported `FridgeVisual.FridgeFinish` options. Each prefab instance uses shared GLB/materials with per-instance paint overrides and SOC0 static AutoBox. No spawner code edits or permanent scene placement; import/finish appearance and physics must be verified in Godot.
