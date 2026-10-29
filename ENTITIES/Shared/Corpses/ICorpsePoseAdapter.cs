@@ -1,4 +1,4 @@
-// Species/rig boundary: cache anatomy in the adapter at handoff; the shared fall owner only supplies normalized progress.
+// Species/rig boundary for cheap fall poses. Optional IArticulatedCorpsePose supplies a connected-body death blueprint.
 public interface ICorpsePoseAdapter
 {
     void Apply(float progress);

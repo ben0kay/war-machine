@@ -1,4 +1,4 @@
-// ZD0 physics-assisted fall: one temporary box body, short pose relaxation, then frozen collision-free visuals or bounded dismissal.
+// Bounded articulated or proxy fall, frozen pile contact, soft slowdown and manager-owned sinking.
 using Godot;
 
 public partial class CorpseBody : RigidBody3D
@@ -7,9 +7,11 @@ public partial class CorpseBody : RigidBody3D
     public event System.Action<CorpseBody>? Removed;
     private CorpseSlowArea? _slowArea;
     private bool _pendingStatic;
+    private CorpseRagdoll? _ragdoll;
     private Transform3D _staticAt;
     private Vector3 _staticDirection;
     public bool IsPhysicalFall { get; private set; }
+    public int ActiveRagdollPartCount => _ragdoll?.PartCount ?? 0;
     public bool IsSinking { get; private set; }
     public bool IsSettled { get; private set; }
     private ICorpsePoseAdapter _pose = null!;
@@ -49,6 +51,12 @@ public partial class CorpseBody : RigidBody3D
         IsPhysicalFall = simulateFall;
         if (!simulateFall)
         { _pendingStatic = true; _staticAt = at; _staticDirection = direction; SetPhysicsProcess(true); return; }
+        if (settings.ArticulatedEnabled && pose is IArticulatedCorpsePose articulated)
+        {
+            _shape.Disabled = true; CollisionLayer = CollisionMask = 0;
+            _ragdoll = new CorpseRagdoll(visual, articulated.CreateRagdollParts(visual), settings, direction, velocity);
+            SetPhysicsProcess(true); return;
+        }
         Freeze = false;
         LinearVelocity = velocity.LimitLength(2) * 0.25f + direction * settings.PushSpeed;
         AngularVelocity = Vector3.Up.Cross(direction) * settings.InitialAngularSpeed + Vector3.Up * random.RandfRange(-0.35f, 0.35f);
@@ -65,7 +73,7 @@ public partial class CorpseBody : RigidBody3D
     // Physics owns contacts and root motion; no transform snapping, ground teleport, gait or scene searches during the fall.
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
     {
-        if (!_initialized || _finishing) return;
+        if (!_initialized || _finishing || _ragdoll != null || IsSettled || !IsPhysicalFall) return;
         _age += (float)state.Step;
         state.LinearVelocity = state.LinearVelocity.LimitLength(7);
         state.AngularVelocity = state.AngularVelocity.LimitLength(6);
@@ -93,13 +101,17 @@ public partial class CorpseBody : RigidBody3D
     // =========================================================
     public void Settle()
     {
-        if (!_initialized || IsSinking || IsQueuedForDeletion()) return;
+        if (!_initialized || IsSettled || IsSinking || IsQueuedForDeletion()) return;
         Freeze = true; LinearVelocity = AngularVelocity = Vector3.Zero;
-        _pose.Apply(1); IsSettled = true;
+        Aabb box;
+        if (_ragdoll != null)
+        { box = _ragdoll.Bake(this); _ragdoll = null; }
+        else
+        { _pose.Apply(1); box = GlobalTransform * new Aabb(-_settings.ProxySize * 0.5f, _settings.ProxySize); }
+        IsSettled = true;
         CollisionLayer = PileLayer; CollisionMask = 0;
         if (_slowArea == null)
         {
-            Aabb box = GlobalTransform * new Aabb(-_settings.ProxySize * 0.5f, _settings.ProxySize);
             _slowArea = new CorpseSlowArea { Name = "SoftFootprint" }; AddChild(_slowArea);
             _slowArea.GlobalTransform = new Transform3D(Basis.Identity, box.GetCenter());
             _slowArea.Initialize(new Vector3(box.Size.X + 0.2f, 0.8f, box.Size.Z + 0.2f),
@@ -113,13 +125,20 @@ public partial class CorpseBody : RigidBody3D
     public void Dismiss()
     {
         if (IsQueuedForDeletion()) return;
+        _ragdoll?.Stop(); _ragdoll = null; // Immediate retirement needs no baked replacement shapes.
         BeginSink(); QueueFree();
     }
 
     // =========================================================
-    // Run the static fallback support/clearance checks once on a physics-safe callback, then sleep.
+    // Drive active articulation, or run static fallback support/clearance once; settled bodies stop this callback.
     public override void _PhysicsProcess(double delta)
     {
+        if (_ragdoll != null)
+        {
+            if (_ragdoll.Advance((float)delta, out bool supported))
+            { if (supported) Settle(); else Dismiss(); }
+            return;
+        }
         SetPhysicsProcess(false);
         if (!_pendingStatic || IsSinking || IsQueuedForDeletion()) return;
         _pendingStatic = false; PlaceStatic(_staticAt, _staticDirection);
@@ -149,6 +168,9 @@ public partial class CorpseBody : RigidBody3D
     public void BeginSink()
     {
         IsSinking = true; _finishing = true; Freeze = true;
+        if (_ragdoll != null)
+        { _ragdoll.Bake(this); _ragdoll = null; }
+        SetPhysicsProcess(false);
         CollisionLayer = CollisionMask = 0;
         if (_shape != null) _shape.SetDeferred(CollisionShape3D.PropertyName.Disabled, true);
         _slowArea?.Release(); _slowArea?.QueueFree(); _slowArea = null;

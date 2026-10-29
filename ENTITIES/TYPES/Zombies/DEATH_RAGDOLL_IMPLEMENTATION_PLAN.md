@@ -1,3 +1,5 @@
+> **ZD4 articulated deaths — implemented in source, awaiting local validation (2026-10-29):** Nearby, budgeted deaths of both variants now use up to 11 joint-connected pelvis/torso/head/limb bodies, including elbows/knees; missing limbs allocate no bodies. Minimum 1.4s, stable 0.6s, maximum 4s, then bake the exact pose and remove active physics/joints. Existing static distance/overflow fallback, pile slowdown, 300s lifetime and budgets remain. [Current ownership, costs and validation](../../Shared/Corpses/README.md). Earlier one-box-only statements below describe the historical ZD0 implementation.
+
 > **ZD1–ZD3 source implemented / awaiting local validation:** Shared frozen pile proxies and capped event-driven slowdown (zombies enabled, player opt-in off), 300s lifetime/8s sinking, 96 retained/8 active-fall budgets and supported static fallback. Current ownership/settings/limitations/checks: [shared corpse lifecycle](../../Shared/Corpses/README.md). Older deferred statements below are historical; ELD3/ELD4 and articulated ragdolls remain separate.
 
 > **ELD2 source implementation (2026-10-28), awaiting local validation:** [Injury locomotion and World/FPS acceptance](LOCOMOTION_README.md). Both variants share limp, one-leg shuffle, low living crawl and immobilization. Debug panel buttons demonstrate injuries without HP changes. Existing attacks/ELD3 and ZD1–ZD3 remain deferred. This supersedes older ELD2-Planned/upright-legless descriptions below.
@@ -29,6 +31,7 @@
 | **ZD1** | Stationary corpses that visibly pile up, with mild event-driven movement slowdown for passing entities | **Implemented; Awaiting Validation** |
 | **ZD2** | Five-minute corpse lifetime, timed sinking/removal, reliable collision and resource cleanup | **Implemented; Awaiting Validation** |
 | **ZD3** | Crowd/streaming budget, debugging and regression/performance acceptance | **Implemented; Awaiting Validation** |
+| **ZD4** | Short-lived articulated procedural ragdolls, frozen limb poses and cheap distance/overflow fallback | **Implemented; Awaiting Validation** |
 
 Codex may implement **ZD0–ZD3 together as one bounded job when explicitly asked to implement the entire corpse feature**, or individually when authorized by phase. The plan itself is not authorization to implement anything.
 

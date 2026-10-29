@@ -85,10 +85,11 @@ public sealed class ZombieMeshBuilder
         Part(arm, "Shoulder", new(0, -0.065f, 0), new(0.224f, 0.214f, 0.218f), shirt, Rounded);
         Part(arm, "RaggedSleeve", new(0, left ? -0.18f : -0.135f, 0),
             new(0.181f, left ? 0.29f : 0.22f, 0.195f), shirt, Rounded);
-        Part(arm, "ExposedForearm", new(0, left ? -0.375f : -0.34f, 0),
+        var elbow = Joint(arm, "Elbow", new(0, -0.27f, 0));
+        Part(elbow, "ExposedForearm", new(0, left ? -0.105f : -0.07f, 0),
             new(0.142f, left ? 0.29f : 0.34f, 0.165f), skin, Rounded);
         // A slightly longer shared hand contour replaces two tiny finger draw calls.
-        Part(arm, "Hand", new(0, -0.545f, -0.018f), new(0.118f, 0.167f, 0.128f), skin, Rounded, new(left ? 8 : -5, 0, left ? 7 : -7));
+        Part(elbow, "Hand", new(0, -0.275f, -0.018f), new(0.118f, 0.167f, 0.128f), skin, Rounded, new(left ? 8 : -5, 0, left ? 7 : -7));
     }
 
     // =========================================================

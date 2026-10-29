@@ -77,9 +77,10 @@ public sealed class ZombieRunnerMeshBuilder
         Part(arm, "Shoulder", new(0, -0.055f, 0), new(0.192f, 0.19f, 0.190f), Shirt, Rounded);
         Part(arm, "Sleeve", new(0, left ? -0.145f : -0.19f, 0),
             new(0.162f, left ? 0.21f : 0.285f, 0.182f), left ? ShirtDark : Shirt, Rounded);
-        Part(arm, "Forearm", new(0, -0.368f, 0), new(0.123f, 0.298f, 0.142f), Skin, Rounded);
+        var elbow = Pivot(arm, "Elbow", new(0, -0.27f, 0));
+        Part(elbow, "Forearm", new(0, -0.098f, 0), new(0.123f, 0.298f, 0.142f), Skin, Rounded);
         // Keep a slightly longer glove shape in place of tiny separate fingertip meshes.
-        Part(arm, "Hand", new(0, -0.546f, -0.024f), new(0.111f, 0.160f, 0.124f), SkinShadow, Rounded);
+        Part(elbow, "Hand", new(0, -0.276f, -0.024f), new(0.111f, 0.160f, 0.124f), SkinShadow, Rounded);
     }
 
     // =========================================================

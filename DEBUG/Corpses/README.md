@@ -1,3 +1,5 @@
+> **ZD4 smoke update — provided, not run:** Existing test checks intact shambler (11 parts), runner with severed arm/leg (7 parts), exact original visual handoff, release of temporary joints/bodies, frozen elbow/knee transforms and no-articulation distance fallback. No new scene. Local build/runtime required; dotnet is unavailable here. Use the commands below, then visually inspect fluidity/piles in FirstPersonWorld. Expected exit 0 and `[ZD0] PASS` (legacy test prefix).
+
 > **ZD1–ZD3 source update:** Existing smoke now expects settled pile-only layer 9 rather than zero layer. Manager frame callbacks still sleep when not sinking; its shared aging timer is intentional. Older ZD0-only descriptions below are historical. See [current lifecycle and local checks](../../ENTITIES/Shared/Corpses/README.md). No new test scenes; build/runtime pending.
 
 # ZD0 fall validation
