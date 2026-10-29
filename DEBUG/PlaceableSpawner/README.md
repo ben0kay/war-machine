@@ -2,6 +2,8 @@
 
 > **Current (2026-10-28): Dynamic F1 catalogue implemented in source; local Godot/.NET import, build and visual tests are pending.** Replaces the original hardcoded Bookcase/Book/Bed/Table/Pine menu entries, numeric selection ranges and source file path switches.
 
+> **Future F1 asset inspector:** [SOC1B proposal](../../WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md#soc1b--f1-asset-inspector-debugbounds-and-debugcollision) would expose selected-instance bounds, collider overlays, pivots and cost stats. **Not implemented.** Current F1 remains a canonical object/variant preview spawner.
+
 ## Automatic menu rules
 
 `PlaceableCatalog.cs` scans **once** when the world creates the F1 debug menu. It searches `res://WORLD/Content/Assets/Objects/Static/` and `Props/` recursively for **canonical** `<AssetID>/<AssetID>.tscn` files. It ignores helper folders such as `Artwork/`, `Configuration/`, `C/` and `Shared/`. It only accepts scene roots deriving from `PlaceableVisual`; **procedural/physics-aware Car001 and StreetLamp001 are excluded** because their roots don't inherit `PlaceableVisual`. **Eligible SOC0-enabled fixed objects do have collision in F1 runtime previews**, as authored on the canonical scene; no duplicate physics is added by the menu. A future visual-only wrapper can opt a procedural asset in when explicitly requested.

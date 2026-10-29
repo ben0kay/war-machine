@@ -8,6 +8,8 @@
 
 > **New object/item authoring:** Read the [canonical Object Authoring Guide](WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md) before creating any new GLB furniture, bin, shelter, household item or prop. **SOC0** requires a documented choice of **None / AutoBox / CustomBoxes** (modes 0/1/2). The same guide distinguishes fixed Static collision from future movable Props/IX physics; creating an asset does not authorize placing it permanently in the world.
 
+> **Future asset performance & diagnostics:** [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) covers shadow/render settings, F1 inspection, malformed-GLB checks and performance cost reports, with LOD/placement/fade options deferred. **Planning only.**
+
 ## Game vision
 
 War Machine takes place on a recognizably earthly but unsettling world: misty forests, rolling terrain, cliffs, roads, abandoned businesses and houses, caves, changing light and weather, and signs of a science-fiction intrusion. **Zombies and imposing mechanical entities** are current threat foundations; other hostile life, wildlife and environmental dangers may broaden the setting later.

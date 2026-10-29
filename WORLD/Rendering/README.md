@@ -4,6 +4,8 @@
 
 `WorldRenderCulling` is created once under SystemsRoot in the active world and inherited FPS test. It observes only `WorldActorsRoot/PersistentPropsRoot` and `SystemsRoot/VegetationRoot`: existing buildings, lot, cars, hedges, lamps, F1 GLB previews, pine/scatter mesh batches. One startup traversal registers supported native MeshInstance3D/MultiMeshInstance3D and local OmniLight3D/SpotLight3D; node-add/remove events handle later assets and rebuilds. Deferred registration waits for procedural geometry, GLB wrappers and final spawn transforms. The catalogue does not instantiate anything for this system.
 
+> **Future object-level visibility/shadow authoring:** [SOC1A plan](../Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md#soc1a--shadowmode--renderdistance) would define optional authored caps that cooperate with WS1's existing metadata and refresh lifecycle. **Not implemented.**
+
 ## Policy and configuration
 
 `WorldMaster.tres → RenderPolicy` owns Enabled, HiddenBuffer (8m), CameraRefreshStep (2m), ShadowBuffer (48m), DeformationPadding (2m), FadeLocalLights and LightFadeLength (8m). All are consumed. Existing World startup duplicates these resources; UI edits never write source masters. The debug panel's **Fog-aware rendering (WS1)** section offers an A/B switch and hidden/shadow buffers in both views; Copy settings includes their values with WS1 prefixes for identification (these are snapshot keys, not new resource property names).

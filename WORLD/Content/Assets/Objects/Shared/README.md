@@ -4,6 +4,8 @@ Every catalogued GLB placeable has its own `Configuration/<Asset>Master.tres` wi
 
 `PlaceableVisual.cs` applies that size once on `Model`. On runtime readiness, it optionally invokes `StaticObjectCollision.Build()` to create one `StaticBody3D` and one or more `CollisionShape3D` / `BoxShape3D` primitives beside the model. Collision shapes are **not renderable meshes**, and the GLB is never regenerated or modified.
 
+> **SOC1 proposal (not implemented):** [Future object render/debug settings](../SOC1_OBJECT_DIAGNOSTICS_PLAN.md) would extend the existing masters with optional shadow/render caps, add F1 debug overlays and validate new GLBs. Do not treat those planned exports as available today.
+
 ## SOC0 collision selector — inherited by every PlaceableVisual prefab
 
 The scene root has an Inspector `CollisionMode` dropdown with:

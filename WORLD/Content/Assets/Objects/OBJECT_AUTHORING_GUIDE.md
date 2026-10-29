@@ -7,6 +7,8 @@
 **Current location:** `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md`.
 **AM0 implemented:** this is the canonical guide. The [migration record](../../ASSETS_MIGRATION_PLAN.md) tracks local validation. Never create duplicate catalogues or asset copies in the old locations.
 
+> **Future only — not implemented:** [SOC1 Object Diagnostics & Performance Plan](SOC1_OBJECT_DIAGNOSTICS_PLAN.md) proposes optional per-object shadows/render caps, F1 bounds/collider inspection, offline GLB validation and cost reports. Deferred phases cover LOD, placement footprint and camera fade. **Use this plan for later authoring/tool work, not as permission to alter the game now.**
+
 ## Start here for every new model
 
 1. Read root `README.md`, `CodePreferences.md`, this guide, the current Objects README and catalogue, `DEBUG/PlaceableSpawner/README.md`, and one comparable asset's scene/master/README. **Work on `implement-td0-td1`, not `main`.**

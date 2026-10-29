@@ -6,6 +6,8 @@
 
 > **DOOR1 exception:** Non-pickup architectural doors can include a hinged RigidBody3D leaf. `Static/` describes item *ownership/pickup classification*, not the physics body type. See [Door001](Static/Doors/Door001/README.md). No loose-props physics system is active.
 
+> **Proposed later:** [SOC1 Object Diagnostics & Performance Plan](SOC1_OBJECT_DIAGNOSTICS_PLAN.md) defines independently implementable shadow/range controls, F1 visual debugging, asset validation and budget reports. SOC0 collision and size masters are the currently available shared parameters.
+
 ## Object versus Prop
 
 - `Static/` are not pickup-able: Bookcase001 and Bed001 are fixed furniture; they can later be interactive without being carried.
