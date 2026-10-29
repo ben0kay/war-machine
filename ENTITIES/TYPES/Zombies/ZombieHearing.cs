@@ -1,10 +1,11 @@
 // HE1: one discrete gunshot listener and compact pending estimate; the existing brain consumes it.
-// No source actor tracking, hearing callback loop, physics query or expanding event history.
+// One optional blocker ray on brain consumption; no tracking, hearing loop or event history.
 using Godot;
 
 public partial class ZombieController
 {
     private SoundDispatcher? _soundDispatcher;
+    private PhysicsRayQueryParameters3D? _soundBlockerRay;
     private bool _hearingSubscribed, _pendingSound;
     private Vector3 _soundOriginal, _soundEstimate, _soundWeights;
     private float _soundStrength;
@@ -84,6 +85,19 @@ public partial class ZombieController
         _pendingSound = false;
         if (!_config.HearingEnabled || IsChasing
             || (_investigation.HasPoint && _investigation.Clue == InvestigationClue.Hit)) return;
-        if (_investigation.Remember(_soundEstimate, InvestigationClue.Sound)) BeginInvestigation(now, _soundWeights);
+        // Physics timer consumption guarantees a physics-safe query and avoids rays for superseded clues.
+        _soundBlockerRay ??= new PhysicsRayQueryParameters3D {
+            CollideWithBodies = true, CollideWithAreas = false, HitFromInside = true,
+            Exclude = new Godot.Collections.Array<Rid> { GetRid() }
+        };
+        _soundBlockerRay.From = SightOrigin; _soundBlockerRay.To = _soundOriginal;
+        _soundBlockerRay.CollisionMask = _config.SoundBlockerMask;
+        bool blocked = _config.SoundBlockerMask != 0
+            && GetWorld3D().DirectSpaceState.IntersectRay(_soundBlockerRay).Count > 0;
+        Vector3 weights = blocked ? _soundWeights.Lerp(new Vector3(1, 0, 0),
+            SafePolicy(_config.SoundBlockedEarlyBias, 0, 1)) : _soundWeights;
+        float durationScale = blocked ? SafePolicy(_config.SoundBlockedTimeoutMultiplier, 0.1f, 1) : 1;
+        if (_investigation.Remember(_soundEstimate, InvestigationClue.Sound))
+            BeginInvestigation(now, weights, durationScale);
     }
 }

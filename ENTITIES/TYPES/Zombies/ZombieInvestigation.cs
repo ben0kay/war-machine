@@ -57,9 +57,9 @@ public partial class ZombieController
     }
 
     // =========================================================
-    private void BeginInvestigation(ulong now, Vector3? commitmentWeights = null)
+    private void BeginInvestigation(ulong now, Vector3? commitmentWeights = null, float durationScale = 1)
     {
-        if (!_investigation.Begin(GlobalPosition, _locomotion.Speed(_config.ChaseSpeed), now, _random, commitmentWeights)) return;
+        if (!_investigation.Begin(GlobalPosition, _locomotion.Speed(_config.ChaseSpeed), now, _random, commitmentWeights, durationScale)) return;
         _goal = _investigation.Destination; _hasGoal = true; _anchorPending = false;
         _stuck = 0; _restUntil = 0;
         if (_locomotion.CanDrive) SetPhysicsProcess(true);

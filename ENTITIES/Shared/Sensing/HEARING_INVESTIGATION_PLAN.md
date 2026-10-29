@@ -1,3 +1,9 @@
+> **HE1 clear/blocked first pass (source implemented, awaiting local validation):** Each accepted sound consumed by the existing physics brain gets **one** cached ray from the listener eye to the original recorded muzzle coordinate. Mask 17 checks world/props (including eligible solid doors), excludes self and ignores actors/anatomy areas. A first hit means blocked; there is no counting, recasting or route search. The sampled estimate remains unchanged. Blocked commitment weights blend 85% toward early-only, and the existing capped episode deadline is multiplied by 0.35. Clear-line sight/hit-independent sound policy is unchanged. These are authored `SoundBlockerMask`, `SoundBlockedEarlyBias`, `SoundBlockedTimeoutMultiplier` defaults for both species. Mask 0 disables this check. Retarget cooldown is now **6 seconds**. This explicitly supersedes HE1's original no-acoustic-rays exclusion below; HE2 and full HE3 remain deferred.
+>
+> Query occurs only once on the existing brain timer after visual/hit priority checks, never every shot or movement tick. Blocker result applies only to this episode; ordinary PER2 sight/hit calls use durationScale=1 and unchanged weights. The shared deadline multiplier changes no stored policy. Blocked does not mean unreachable: this is a cheap commitment heuristic, not sound attenuation or pathfinding. Hidden decorative meshes without solid collision do not block. Terrain counts when intersected; no extra ground checks. No added callbacks, ray loops or new scene nodes.
+>
+> Source/whitespace/loop and numeric policy checks only; Godot/.NET unavailable. Locally build, then test clear vs solid wall/fence/closed door in both World/FPS and both species. Use missed shots outside vision to isolate hearing. Blocked sounds should mostly yield partial/early searches and shorter deadlines, retain fixed estimates, respect burst cooldown and settle at actual give-up positions. Verify visual and bullet-hit priority, multiple walls still only one ray, actor crowds alone do not mark the line blocked, death/unload cleanup and horde frame time. No measured runtime result claimed.
+
 # Hearing and fixed-point investigation
 
 Required branch: `implement-td0-td1`. Current source supersedes the older exact-sound-anchor proposal: all investigations retain PER2's physically settled wander anchor, never the original or estimated sound coordinate.
@@ -38,7 +44,7 @@ Both standard and runner masters explicitly author the same **Gunshot hearing (H
 | SoundNearCommitmentWeights | (0.05, 0.15, 0.80) early/moderate/thorough |
 | SoundFarCommitmentWeights | (0.80, 0.18, 0.02) early/moderate/thorough |
 | SoundResponseChance | (1, 0.25), near/strong to far/weak |
-| SoundRetargetCooldownSeconds | 3s; also throttles a probabilistic no-response decision |
+| SoundRetargetCooldownSeconds | 6s; also throttles a probabilistic no-response decision |
 | SoundStrongerRatio | 1.25; received strength relative to accepted sound |
 | SoundNewSourceDistance | 12m horizontal displacement for a newer, comparably audible source |
 

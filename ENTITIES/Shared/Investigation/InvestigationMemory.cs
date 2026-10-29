@@ -37,7 +37,7 @@ public sealed class InvestigationMemory
 
     // =========================================================
     // Same seeded draws and sanitized ranges as the original zombie PER2 episode; no hidden target reads.
-    public bool Begin(Vector3 from, float speed, ulong now, RandomNumberGenerator random, Vector3? commitmentWeights = null)
+    public bool Begin(Vector3 from, float speed, ulong now, RandomNumberGenerator random, Vector3? commitmentWeights = null, float durationScale = 1)
     {
         if (!HasPoint || !from.IsFinite()) return false;
         Vector3 weights = commitmentWeights ?? _settings.Weights;
@@ -50,7 +50,7 @@ public sealed class InvestigationMemory
         Vector3 distance = Destination - from; distance.Y = 0;
         float travel = distance.Length() / Safe(speed, 0.1f, 30);
         float seconds = travel * Sample(random, _settings.TimeScale, 1, 3) + Safe(_settings.TimeAllowance, 0.5f, 20);
-        seconds = Mathf.Min(seconds, Safe(_settings.MaximumSeconds, 1, 120));
+        seconds = Mathf.Min(seconds, Safe(_settings.MaximumSeconds, 1, 120)) * Safe(durationScale, 0.1f, 1);
         _searchUntil = now + Milliseconds(seconds); _lookUntil = 0; Phase = InvestigationPhase.Travel;
         return true;
     }

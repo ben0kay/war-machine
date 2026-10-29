@@ -1,3 +1,5 @@
+> `Begin` also accepts an optional per-episode `durationScale` (default 1, sanitized 0.1–1). HE1 blocked sounds use it to shorten the capped deadline without changing stored PER2 settings or sight/hit callers.
+
 # Shared fixed-point investigation
 
 **Implemented in source, awaiting local build/World/FPS acceptance (2026-10-28).** InvestigationMemory is a passive plain C# helper: remember a point, choose a partial/full destination, expire a bounded episode, and optionally dwell/look on arrival. It has no scene nodes, actor references, species types, movement, raycasts, timers or engine callbacks. A species adapter supplies confirmed clues, its position/current speed, its seeded RNG and monotonic runtime time, and owns the existing movement/sensing lifecycle.

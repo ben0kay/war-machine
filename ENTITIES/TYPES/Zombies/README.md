@@ -1,3 +1,5 @@
+> **HE1 update:** One clear/blocked obstacle ray per consumed sound; blocked lines favour early give-up and shorter deadlines. Retarget cooldown 6s. Source complete; local validation pending. [Tuning and handoff](../../Shared/Sensing/HEARING_INVESTIGATION_PLAN.md).
+
 > **HE1 source implemented / awaiting local validation:** Active zombies now receive gunshot events and investigate one distance-uncertain estimate with separate sound commitment/retarget policy. Shared sight/hit settings and physically settled wander anchors are preserved. Rifle/MG hearing radii: 130m/120m. Current ownership, tuning and checks: [HE1 handoff](../../Shared/Sensing/HEARING_INVESTIGATION_PLAN.md). Older no-listener/hearing-proposal notes below are historical. HE2/HE3 remain planned.
 
 > **CM5 source implemented / awaiting local validation:** Zombie standing strikes now use the shared melee executor and existing player-health route. Damage/timing and checks: [CM5 handoff](../../../COMBAT/CM5_README.md). ELD3 attack capability rules remain deferred.
