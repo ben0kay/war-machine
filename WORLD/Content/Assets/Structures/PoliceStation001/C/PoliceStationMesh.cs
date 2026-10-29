@@ -128,12 +128,14 @@ public partial class PoliceStationMesh : Node3D
         StructureGeometry.Box(groundDeck, s.UseTerrainSupport ? null : groundBody, "GroundSlab",
             new(0, -0.10f, 0), new(Width - 0.24f, 0.20f, Depth - 0.24f), floorMat);
 
-        // The upper deck spans Y=h0-0.24..h0. The lower walls must terminate a little
-        // below its underside, or their top faces z-fight / peek through the next floor.
-        const float deckThickness = 0.24f, inset = 0.18f, wallDeckGap = 0.02f;
-        float groundWallTop = h0 - deckThickness - wallDeckGap;
-        BuildExterior(groundWalls, groundBody, clear, "G", 0f, groundWallTop, true, shell, trim, glass, doors);
-        BuildGroundRooms(groundWalls, groundBody, clear, groundWallTop, partitions, trim, doors);
+        // Only INTERIOR partitions terminate below the upper deck underside.
+        // The perimeter facade must continue to the upper wall base at Y=h0:
+        // shortening exterior walls too caused a visible 0.26m horizontal gap on every side.
+        const float deckThickness = 0.24f, wallDeckGap = 0.02f;
+        const float inset = ExteriorInsideFace; // Floor meets the inside facade face without protruding.
+        float groundPartitionTop = h0 - deckThickness - wallDeckGap;
+        BuildExterior(groundWalls, groundBody, clear, "G", 0f, h0, true, shell, trim, glass, doors);
+        BuildGroundRooms(groundWalls, groundBody, clear, groundPartitionTop, partitions, trim, doors);
 
         // The four upper-floor spans leave a real, non-colliding void above the new front-right stair core.
         float slabY = h0 - deckThickness * 0.5f;
@@ -146,10 +148,11 @@ public partial class PoliceStationMesh : Node3D
         FloorSpan(upperDeck, upperBody, "ShaftNorthDeck", ShaftMinX, ShaftMaxX,
             ShaftMaxZ, Depth * 0.5f - inset, slabY, deckThickness, floorMat);
 
-        // Upper walls stop below the roof underside as well; collision follows visual spans.
-        float upperWallTop = top - wallDeckGap;
-        BuildExterior(upperWalls, upperBody, clear, "U", h0, upperWallTop, false, shell, trim, glass, doors);
-        BuildUpperRooms(upperWalls, upperBody, clear, h0, upperWallTop, partitions, trim, doors);
+        // Exterior upper facade similarly reaches the roof underside at Y=top.
+        // Only interior upper partitions retain a small 0.02m roof clearance.
+        float upperPartitionTop = top - wallDeckGap;
+        BuildExterior(upperWalls, upperBody, clear, "U", h0, top, false, shell, trim, glass, doors);
+        BuildUpperRooms(upperWalls, upperBody, clear, h0, upperPartitionTop, partitions, trim, doors);
         BuildStairs(generated, upperBody, upperGuards, clear, h0, step, riser, trim);
         if (s.CeilingLightsEnabled)
             BuildCeilingFixtures(groundLights, upperLights, h0 - deckThickness, top, s);
