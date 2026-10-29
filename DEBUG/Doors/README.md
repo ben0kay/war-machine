@@ -14,3 +14,7 @@ Checks: resolved hinge bodies, joint Z vertical, no rigid angular locks, closed 
 After build, F6 **World.tscn and FirstPersonTest.tscn**. Enter through the front (still open), approach the rear door from both sides and walk near the handle. Verify smooth swinging without sag/jam; player/zombie/bullets still collide at the moving leaf. Repeat faded rear wall and mouse targeting checks. No interaction button/grabbing, DOOR2 or DOOR3 in this pass. No terrain rebake.
 
 If it fails, hold movement against the door and press **F10**. Return the movement collider path/normal/point plus the DOOR1 line: pushes count, hinge axis, last hinge torque impulse, yaw, upright dot, sleeping and A/B paths. Expected A=HingeAnchor, B=Leaf, axis upward, up-dot near 1 and rising pushes/nonzero torque near handle. If only a jamb/wall appears, it is a contact/clearance issue, not evidence for increasing force. No scene scan, extra production ray or always-on logger was added.
+
+## DOOR1.1 contact-feel regression (2026-10-28)
+
+The regression now checks that the shared DoorMaster loads, a 0.8m/s nudge generates less than 20% of a 4m/s walking contact's scale, a 7m/s sprint transfers at least 1.5 times the walking scale, and no movement transfers zero impulse. It checks reduced angular damping before the existing real MoveAndSlide contact tests, which still validate both push directions, yaw angles, upright hinge, limits and settling. These curve assertions do not replace a real runtime feel test in the convenience store; run them locally.

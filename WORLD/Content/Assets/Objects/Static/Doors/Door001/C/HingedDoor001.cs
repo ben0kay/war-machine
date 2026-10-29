@@ -1,4 +1,4 @@
-// DOOR1: one reusable hinged service door, no player input or per-frame gameplay callbacks.
+// DOOR1: reusable hinged service door with speed-sensitive player contact and natural momentum; no per-frame gameplay callbacks.
 // A rigid leaf swings on Godot's HingeJoint3D; its door handle anchors support future DOOR2 pulling.
 using Godot;
 
@@ -120,8 +120,9 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
         var s = Settings ?? new HingedDoorSettings();
         float force = Mathf.Clamp(s.CharacterContactForce, 0f, 150f);
         if (force <= 0f) return false;
-        // Applying a small per-step impulse (force * dt) prevents 60/120 Hz runaway pushes.
-        float speedFactor = Mathf.Clamp(speed / 5f, 0.35f, 1.5f);
+        // Walking pushes comfortably; a soft nudge is weak, while sprinting transfers more momentum.
+        // Keep the normal contact force × dt budget, one eligible slide contact per physics step.
+        float speedFactor = ContactSpeedFactor(speed, s);
         Vector3 impulse = direction.Normalized() * (force * speedFactor * Mathf.Clamp(delta, 0f, 0.05f));
         _leaf.Sleeping = false;
         _leaf.ApplyImpulse(impulse, point - _leaf.GlobalPosition);
@@ -129,6 +130,19 @@ public partial class HingedDoor001 : Node3D, ICharacterContactPushable
         LastHingeTorqueImpulse = (point - _joint!.GlobalPosition).Cross(impulse).Dot(_joint.GlobalBasis.Z.Normalized());
         CharacterPushCount++;
         return true;
+    }
+
+    // =========================================================
+    // Compute contact transfer from actual horizontal movement speed. No minimum impulse floor:
+    // barely brushing the door must not hit it as hard as walking or sprinting.
+    // Exposed internally for deterministic isolated checks; configuration remains in DoorMaster.tres.
+    internal static float ContactSpeedFactor(float speed, HingedDoorSettings s)
+    {
+        if (!float.IsFinite(speed) || speed <= 0f) return 0f;
+        float reference = Mathf.Clamp(s.ContactSpeedReference, 1f, 10f);
+        float exponent = Mathf.Clamp(s.ContactSpeedExponent, 1f, 3f);
+        float maximum = Mathf.Clamp(s.MaxContactSpeedMultiplier, 1f, 4f);
+        return Mathf.Clamp(Mathf.Pow(speed / reference, exponent), 0f, maximum);
     }
 
     // =========================================================

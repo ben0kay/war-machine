@@ -25,3 +25,7 @@ Depends on accepted DOOR1 and a narrow shared reach/obstruction/input arbitratio
 ## DOOR3 — cupboards, wardrobes and drawers (future)
 
 Depends on DOOR2's reusable grabbing/physical control rather than a second interaction system. Reuse hinge/handle control for cabinet/wardrobe leaves; use sliding constraints for drawers. Keep prefab geometry/configuration independent of selection/input and constrain travel to avoid detachment. Validate actor clearance, blockers, release and dormant performance. Do not implement cupboards, drawers, inventory or general physics pickups under DOOR1.
+
+## DOOR1.1 — physics-feel tuning (2026-10-28)
+
+**Authorized owner follow-up; source implemented, awaiting local Jolt validation.** Shared `Door001` defaults now use MassKg 7, AngularDamping 0.65 and CharacterContactForce 52, plus authored `ContactSpeedReference=4.0m/s`, `ContactSpeedExponent=1.65` and `MaxContactSpeedMultiplier=2.5`. Actual motion remains a bounded force×delta impulse delivered only by the existing contact dispatcher. The nonlinear speed curve makes soft nudges weak, walks effective and sprints materially stronger, while reduced angular damping preserves motion after release. No per-door update or joint motor; no new Door002/handle input/furniture scope. Extend the headless door regression with deterministic nudge/walk/sprint scaling assertions; local Godot .NET compile, actual contact momentum and both view playtests remain outstanding.

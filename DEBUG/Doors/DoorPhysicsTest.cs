@@ -14,6 +14,18 @@ public partial class DoorPhysicsTest : Node3D
     {
         try
         {
+            // Response curve must distinguish brushing/nudging, walking and running.
+            // Tested independently of collision frames so a tuning regression fails deterministically.
+            var tuned = GD.Load<HingedDoorSettings>(
+                "res://WORLD/Content/Assets/Objects/Static/Doors/Door001/Configuration/DoorMaster.tres");
+            Check(tuned != null, "shared DoorMaster settings load");
+            float nudge = HingedDoor001.ContactSpeedFactor(0.8f, tuned!);
+            float walk = HingedDoor001.ContactSpeedFactor(4.0f, tuned!);
+            float sprint = HingedDoor001.ContactSpeedFactor(7.0f, tuned!);
+            Check(nudge > 0f && nudge < walk * 0.2f, "gentle contact transfers much less impulse than walking");
+            Check(sprint > walk * 1.5f, "sprint contact transfers much more impulse than walking");
+            Check(HingedDoor001.ContactSpeedFactor(0f, tuned!) == 0f, "no push at zero movement speed");
+            Check(tuned!.AngularDamping < 1f, "light door retains momentum after contact ends");
             foreach (float yaw in new[] { 0f, 45f }) foreach (float side in new[] { -1f, 1f })
             {
                 var fixture = new Node3D { Position = new Vector3(8, 0, 4), RotationDegrees = new Vector3(0, yaw, 0) }; AddChild(fixture);

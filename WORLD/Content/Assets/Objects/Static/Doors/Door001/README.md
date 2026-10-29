@@ -8,7 +8,7 @@ Godot's HingeJoint3D, including the Jolt backend, uses its **joint-local Z axis*
 
 The joint frame now starts at **X=-90°**, mapping its +Z to door-local +Y. The **leaf remains at its closed identity rotation**. HingeAnchor and Leaf are both explicitly bound and their NodeA/NodeB paths checked after attachment. The leaf origin and custom centre of mass are the slab centre; the joint anchor is at its left edge at the same height. No motor, rigid-body angular axis locks, artificial leaf rotation, animation/tween or per-door update loop. Jolt owns all constrained motion; symmetric ±110° limits avoid single-sided limit-sign ambiguity.
 
-Mass remains **9kg**, angular damping **2.2** and CharacterContactForce **38**. Angular damping explicitly replaces environmental damping so the authored number is predictable. The sleeping leaf is explicitly woken before a real impulse. A small authored **5mm BoxShape margin** fits the thin 75mm slab. No speculative force increase or unrelated collision changes.
+The original DOOR1 baseline used **9kg**, angular damping **2.2** and CharacterContactForce **38**. The owner's later contact-feel pass below replaces these values with a lighter, more responsive default. Angular damping explicitly replaces environmental damping so the authored number is predictable. The sleeping leaf is explicitly woken before a real impulse. A small authored **5mm BoxShape margin** fits the thin 75mm slab. Door geometry, pivot and hinge limits remain unchanged.
 
 ## Reusable prefab and geometry
 
@@ -43,3 +43,22 @@ Panel/plates retain DynamicFadeVisualMeta and structure_camera_blocker=false. Re
 Source/resource/path/axis/geometry/loop/whitespace checks passed. **No dotnet or Godot executable here: compilation and actual contacts/swing are NOT verified.** The headless actual-contact regression is provided at [DEBUG/Doors](../../../../../../../DEBUG/Doors/README.md); it covers both sides, yaw 0/45°, closed overlap, upright/anchor stability, swing/damping and AIM1/bullet compatibility.
 
 Pull/build, then F6 World and FPS. Walk front entrance → rear service passage; confirm front remains open. Walk into the rear leaf near its handle from **inside and outside**. It should start square/closed, swing smoothly without tilt/detachment/jamming, slow and settle, retain solid bullet/zombie/player collision and respect limits. Repeat camera wall fade and AIM1 targeting. If it fails, return F10 output and the first physics/debugger error. No terrain rebake. DOOR2 and DOOR3 remain unimplemented.
+
+## DOOR1.1 — responsive weight, velocity-sensitive contact and longer swing (2026-10-28)
+
+**Owner feedback:** rear convenience-store door feels rigid, needs too much pushing and stops too soon; a sprint should swing it further than a gentle brush. This is a targeted tuning of the existing **shared** `Door001`, not a bespoke store controller or artificial animation.
+
+| Tunable in `DoorMaster.tres` | Old | New default | Reason |
+| --- | ---: | ---: | --- |
+| `MassKg` | 9 | **7** | Less inertial resistance at the same contact force |
+| `AngularDamping` | 2.2 | **0.65** | Preserve angular momentum after release; natural slow-down still occurs through Jolt |
+| `CharacterContactForce` | 38 | **52** | Easier ordinary walking contact |
+| `ContactSpeedReference` | implicit 5 | **4.0 m/s** | Speed producing ~1× contact scale |
+| `ContactSpeedExponent` | linear | **1.65** | Gentle contacts transfer much less; fast collisions give more impulse |
+| `MaxContactSpeedMultiplier` | 1.5 | **2.5** | Strong but bounded sprint contact response |
+
+A single `MoveAndSlide` leaf contact still supplies movement direction, world-space contact point, speed and delta, with no new queries or per-frame door code. The actual per-contact impulse remains `Force × clamp(delta,0,0.05) × clamp((speed/reference)^exponent, 0, maxMultiplier)` applied at the true collision point; the near-hinge region produces little torque as before. For example, the default curve produces approximately **0.07× at 0.8m/s**, **1× at 4m/s**, and **2.5× at 7m/s**. Unlike before, there is **no 0.35× floor** that makes tiny nudges disproportionately strong. Angular damping and the physical hinge naturally govern continued motion once the player stops touching the door.
+
+**Scope:** affects the *one existing rear convenience-store service door* and any future structure that instances the same master. No front door installation, handle pulling, locks, player movement, geometry, collision masks or hinge-axis edits. If custom copies later override the master, compare their exported values individually.
+
+**Validation pending locally:** `dotnet build war-machine.csproj`; run `DEBUG/Doors/DoorPhysicsTest.tscn` for contact, hinge and deterministic speed-response checks; play in top-down/FPS and nudge, walk and sprint into the rear door from both sides. Release movement immediately after a firm contact: the leaf should keep swinging and gradually damp, not freeze; a light tap should barely move it. Confirm stable upright hinge, no jamb collision, limits, no accidental oscillation, no desync in FPS and no character shoving through the door. Runtime feel and performance have **not** been measured here.

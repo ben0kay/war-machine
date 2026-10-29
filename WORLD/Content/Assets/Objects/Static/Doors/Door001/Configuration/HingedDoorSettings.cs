@@ -13,10 +13,15 @@ public partial class HingedDoorSettings : Resource
     [Export(PropertyHint.Range, "0.001,0.02,0.001")] public float CollisionMargin { get; set; } = 0.005f;
 
     [ExportGroup("Hinge physics")]
-    [Export(PropertyHint.Range, "1,50,1")] public float MassKg { get; set; } = 9f;
-    [Export(PropertyHint.Range, "0,12,0.1")] public float AngularDamping { get; set; } = 2.2f;
+    [Export(PropertyHint.Range, "1,50,0.5")] public float MassKg { get; set; } = 7f;
+    [Export(PropertyHint.Range, "0,12,0.05")] public float AngularDamping { get; set; } = 0.65f;
     [Export(PropertyHint.Range, "25,120,5")] public float SwingLimitDegrees { get; set; } = 110f;
-    [Export(PropertyHint.Range, "0,150,1")] public float CharacterContactForce { get; set; } = 38f;
+    [Export(PropertyHint.Range, "0,150,1")] public float CharacterContactForce { get; set; } = 52f;
+
+    [ExportGroup("Contact speed response")]
+    [Export(PropertyHint.Range, "1,10,0.25")] public float ContactSpeedReference { get; set; } = 4f;
+    [Export(PropertyHint.Range, "1,3,0.05")] public float ContactSpeedExponent { get; set; } = 1.65f;
+    [Export(PropertyHint.Range, "1,4,0.1")] public float MaxContactSpeedMultiplier { get; set; } = 2.5f;
 
     [ExportGroup("Handle & finish")]
     [Export(PropertyHint.Range, "0.65,1.55,0.05")] public float HandleHeight { get; set; } = 1.15f;
