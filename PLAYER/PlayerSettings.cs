@@ -4,6 +4,8 @@ using Godot;
 [GlobalClass]
 public partial class PlayerSettings : Resource
 {
+    [ExportGroup("Corpse piles")]
+    [Export] public bool CorpseSlowdownEnabled { get; set; } = false;
     [ExportGroup("Vitality and body condition")]
     [Export] public PlayerVitalsSettings Vitals { get; set; } = new();
     [ExportGroup("Movement")]

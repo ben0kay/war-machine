@@ -1,3 +1,5 @@
+> **ZD1:** Shared movement optionally applies cached corpse-area slowdown; PlayerMaster defaults CorpseSlowdownEnabled=false. No extra per-player callback/query. Both views use this shared hook.
+
 # Player movement and stance — PSR0
 
 | Helper | Owns |

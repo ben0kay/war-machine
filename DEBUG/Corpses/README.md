@@ -1,3 +1,5 @@
+> **ZD1–ZD3 source update:** Existing smoke now expects settled pile-only layer 9 rather than zero layer. Manager frame callbacks still sleep when not sinking; its shared aging timer is intentional. Older ZD0-only descriptions below are historical. See [current lifecycle and local checks](../../ENTITIES/Shared/Corpses/README.md). No new test scenes; build/runtime pending.
+
 # ZD0 fall validation
 
 Provided, **not run in the implementation environment** (no Godot/.NET):

@@ -53,6 +53,7 @@ public partial class PlayerController
                 : _player.IsCrouching ? Mathf.Clamp(_player._settings.CrouchSpeedMultiplier, 0.1f, 1f)
                 : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1f, _player._settings.RunMultiplier) : 1f);
             if (_player._lean.IsActive) speed *= Mathf.Clamp(_player._settings.LeanMoveMultiplier, 0.1f, 1f);
+            if (_player.CorpseSlowdownEnabled) speed *= _player._corpseMovement.Multiplier;
             Vector3 horizontal = new(_player.Velocity.X, 0, _player.Velocity.Z);
             horizontal = _player.UpdateHorizontalVelocity(horizontal, direction * speed, dt);
             Vector3 before = _player.GlobalPosition;

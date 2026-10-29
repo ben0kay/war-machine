@@ -1,4 +1,4 @@
-// Shared ZD0 fall profile. No species anatomy, corpse TTL, pile collision or movement penalties.
+// Shared bounded corpse fall, pile, aging and budget settings; no species anatomy.
 using Godot;
 using System;
 
@@ -20,6 +20,18 @@ public partial class CorpseSettings : Resource
     [Export] public float AngularDamping { get; set; } = 1;
     [Export] public float MaximumTravel { get; set; } = 5;
 
+    [ExportGroup("Pile slowdown")]
+    [Export] public float PileSpeedMultiplier { get; set; } = 0.8f;
+    [Export] public float MinimumPileSpeedMultiplier { get; set; } = 0.65f;
+    [ExportGroup("Lifetime")]
+    [Export] public float LifetimeSeconds { get; set; } = 300;
+    [Export] public float SinkSeconds { get; set; } = 8;
+    [Export] public float SinkDepth { get; set; } = 2.2f;
+    [ExportGroup("Budgets")]
+    [Export] public int MaximumCorpses { get; set; } = 96;
+    [Export] public int MaximumActiveFalls { get; set; } = 8;
+    [Export] public float PhysicalFallDistance { get; set; } = 45;
+
     // =========================================================
     // Fail before visual handoff; malformed authoring never creates a permanent runaway physics body.
     public void Validate()
@@ -32,6 +44,11 @@ public partial class CorpseSettings : Resource
             || !InRange(InitialAngularSpeed, 1, 5) || !InRange(LinearDamping, 0, 5)
             || !InRange(AngularDamping, 0, 5) || !InRange(MaximumTravel, 2, 10))
             throw new ArgumentException("Invalid shared corpse fall profile.");
+        if (!InRange(PileSpeedMultiplier, 0.65f, 1) || !InRange(MinimumPileSpeedMultiplier, 0.5f, PileSpeedMultiplier)
+            || !InRange(LifetimeSeconds, 1, 3600) || !InRange(SinkSeconds, 0.1f, 30) || !InRange(SinkDepth, 0.5f, 5)
+            || MaximumCorpses < 1 || MaximumCorpses > 512 || MaximumActiveFalls < 1 || MaximumActiveFalls > 32
+            || MaximumActiveFalls > MaximumCorpses || !InRange(PhysicalFallDistance, 1, 500))
+            throw new ArgumentException("Invalid corpse lifetime/pile/budget profile.");
     }
 
     // =========================================================

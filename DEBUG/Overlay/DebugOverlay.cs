@@ -28,7 +28,7 @@ public partial class DebugOverlay : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null)
     {
         _view = view; _renderCulling = renderCulling;
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
@@ -211,6 +211,11 @@ public partial class DebugOverlay : PanelContainer
                 disableShadows.Toggled += visionDebug.SetShadowsDisabled;
                 ZombieInjuryDebug.Build(AddSection(rows, "Zombie injury tests"), visionDebug, player);
                 AnatomyPerformanceDebug.Build(AddSection(rows, "Anatomy performance"));
+                if (corpses != null)
+                {
+                    var reportCorpses = new Button { Text = "Print corpse budgets", FocusMode = FocusModeEnum.None };
+                    rows.AddChild(reportCorpses); reportCorpses.Pressed += corpses.PrintDiagnostics;
+                }
             }
         }
         _clock = _sky.Sky.GetNode("TimeOfDay");

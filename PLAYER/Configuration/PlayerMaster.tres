@@ -12,6 +12,7 @@ script = ExtResource("vitals_script")
 Health = SubResource("health")
 
 [resource]
+CorpseSlowdownEnabled = false
 script = ExtResource("1")
 Vitals = SubResource("vitals")
 CrouchSpeedMultiplier = 0.45

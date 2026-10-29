@@ -205,9 +205,10 @@ public partial class WorldController : Node3D
         // Scene-owned startup default affects only debug visuals; F7/checkbox can toggle them afterward.
         _visionDebug.SetConesVisible(ShowZombieSightConesOnStart);
         GetNode("DebugUIRoot").AddChild(_visionDebug);
+        InitializeCorpses();
+        if (_corpses != null) _corpses.Focus = player;
         InitializeControls(camera);
         InitializeSectionDiagnostics(player);
-        InitializeCorpses();
         SpawnZombies(data, player, horde.Slow, horde.Fast, storeStressSlow, storeStressFast);
         SpawnDeerPreview(data, player);
         bool patrolReady = GetNode<RobotPlacement>("WorldActorsRoot/PersistentEntitiesRoot/RobotPatrol").Initialize(terrain, player, Settings, _village?.Structures);
@@ -263,7 +264,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses);
     }
 
     // =========================================================

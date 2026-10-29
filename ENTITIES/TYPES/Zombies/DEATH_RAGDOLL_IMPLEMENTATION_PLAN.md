@@ -1,3 +1,5 @@
+> **ZD1–ZD3 source implemented / awaiting local validation:** Shared frozen pile proxies and capped event-driven slowdown (zombies enabled, player opt-in off), 300s lifetime/8s sinking, 96 retained/8 active-fall budgets and supported static fallback. Current ownership/settings/limitations/checks: [shared corpse lifecycle](../../Shared/Corpses/README.md). Older deferred statements below are historical; ELD3/ELD4 and articulated ragdolls remain separate.
+
 > **ELD2 source implementation (2026-10-28), awaiting local validation:** [Injury locomotion and World/FPS acceptance](LOCOMOTION_README.md). Both variants share limp, one-leg shuffle, low living crawl and immobilization. Debug panel buttons demonstrate injuries without HP changes. Existing attacks/ELD3 and ZD1–ZD3 remain deferred. This supersedes older ELD2-Planned/upright-legless descriptions below.
 
 > **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../../Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
@@ -24,9 +26,9 @@
 | Phase | Deliverable | State |
 | --- | --- | --- |
 | **ZD0** | Death handoff, varied low-cost physics-assisted falling, settle into frozen visual pose | **Implemented; Awaiting Validation** |
-| **ZD1** | Stationary corpses that visibly pile up, with mild event-driven movement slowdown for passing entities | **Proposed** |
-| **ZD2** | Five-minute corpse lifetime, timed sinking/removal, reliable collision and resource cleanup | **Proposed** |
-| **ZD3** | Crowd/streaming budget, debugging and regression/performance acceptance | **Proposed** |
+| **ZD1** | Stationary corpses that visibly pile up, with mild event-driven movement slowdown for passing entities | **Implemented; Awaiting Validation** |
+| **ZD2** | Five-minute corpse lifetime, timed sinking/removal, reliable collision and resource cleanup | **Implemented; Awaiting Validation** |
+| **ZD3** | Crowd/streaming budget, debugging and regression/performance acceptance | **Implemented; Awaiting Validation** |
 
 Codex may implement **ZD0–ZD3 together as one bounded job when explicitly asked to implement the entire corpse feature**, or individually when authorized by phase. The plan itself is not authorization to implement anything.
 

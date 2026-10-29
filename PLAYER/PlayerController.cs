@@ -1,8 +1,14 @@
 // Player identity and lifecycle coordinator; input, locomotion, stance and rig posing are plain private collaborators.
 using Godot;
 
-public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDamageReceiver, ICombatLifeState
+public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDamageReceiver, ICombatLifeState, ICorpseSlowable
 {
+    private readonly CorpseMovementModifiers _corpseMovement = new();
+    public bool CorpseSlowdownEnabled => _settings != null && _settings.CorpseSlowdownEnabled && !IsDead;
+    // =========================================================
+    public void SetCorpseSlowdown(ulong id, float multiplier, float floor) => _corpseMovement.Set(id, multiplier, floor);
+    // =========================================================
+    public void RemoveCorpseSlowdown(ulong id) => _corpseMovement.Remove(id);
     public enum MovementStance { Standing, Crouching, Prone }
     public PlayerVitals Vitals { get; private set; } = null!;
     public bool IsDead => Vitals != null && Vitals.IsDead;

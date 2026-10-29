@@ -40,8 +40,8 @@ public partial class CorpseFallTest : Node3D
                 while (IsInstanceValid(corpse) && !corpse.IsSettled && Time.GetTicksMsec() < deadline)
                     await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
                 Check(IsInstanceValid(corpse) && corpse.IsSettled, "supported flat-ground fall settles");
-                Check(corpse.Freeze && corpse.CollisionLayer == 0 && corpse.CollisionMask == 0
-                    && !corpse.IsProcessing() && !corpse.IsPhysicsProcessing(), "settled corpse has no actor collision or frame loops");
+                Check(corpse.Freeze && corpse.CollisionLayer == CorpseBody.PileLayer && corpse.CollisionMask == 0
+                    && !corpse.IsProcessing() && !corpse.IsPhysicsProcessing(), "settled corpse has pile-only collision and no frame loops");
                 Transform3D pose = corpse.GlobalTransform;
                 for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
                 Check(corpse.GlobalTransform == pose, "settled world pose remains frozen");

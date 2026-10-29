@@ -1,3 +1,5 @@
+> **ZD3:** Debug → Print corpse budgets reports registered/active/settled/sinking counts and fallback/retirement totals on click, in both views. No polling. Local build/runtime validation pending.
+
 > **Zombie render isolation (2026-10-28):** Debug builds expose **Debug → Hide zombie visuals + corpses** in World/FPS. Visibility only; AI/physics/animation keep running. See [ownership and same-view comparison](../Perception/README.md). Source implemented; local build/runtime validation pending.
 
 > **ELD2 source implementation (2026-10-28), awaiting local validation:** [Injury locomotion and World/FPS acceptance](../Anatomy/README.md). Both variants share limp, one-leg shuffle, low living crawl and immobilization. Debug panel buttons demonstrate injuries without HP changes. Existing attacks/ELD3 and ZD1–ZD3 remain deferred. This supersedes older ELD2-Planned/upright-legless descriptions below.

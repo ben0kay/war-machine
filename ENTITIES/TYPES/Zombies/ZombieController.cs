@@ -1,8 +1,14 @@
 // Reusable zombie: shared sight, health, roaming and chase with overridable artwork/gait for future variants.
 using Godot;
 
-public partial class ZombieController : EntityCore, IDamageReceiver, IImpactReceiver
+public partial class ZombieController : EntityCore, IDamageReceiver, IImpactReceiver, ICorpseSlowable
 {
+    private readonly CorpseMovementModifiers _corpseMovement = new();
+    public bool CorpseSlowdownEnabled => true;
+    // =========================================================
+    public void SetCorpseSlowdown(ulong id, float multiplier, float floor) => _corpseMovement.Set(id, multiplier, floor);
+    // =========================================================
+    public void RemoveCorpseSlowdown(ulong id) => _corpseMovement.Remove(id);
     public CorpseManager? CorpseOwner { get; set; }
     private uint _corpseSeed;
     private bool _deathHandled;
@@ -313,6 +319,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     {
         if (_deathHandled) return;
         _deathHandled = true;
+        ulong deathAt = Time.GetTicksMsec();
         _anatomy.Disable();
         Node3D visual = VisualRoot;
         Transform3D at = visual.GlobalTransform;
@@ -334,7 +341,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             try
             {
                 if (IsInstanceValid(owner) && owner!.IsInsideTree())
-                    owner.TrySpawn(visual, at, pose, hit.Direction, velocity, _corpseSeed, alignPivotToVisual: alignCorpsePivot);
+                    owner.TrySpawn(visual, at, pose, hit.Direction, velocity, _corpseSeed, alignPivotToVisual: alignCorpsePivot, deathAt: deathAt);
             }
             finally { QueueFree(); }
         }).CallDeferred();
@@ -513,6 +520,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         { if (_investigation.Phase == InvestigationPhase.Travel) InvestigationArrived(); else Rest(); }
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
         float speed = _locomotion.Speed(Mathf.Max(0, IsPursuing ? _config.ChaseSpeed : _config.WanderSpeed));
+        speed *= _corpseMovement.Multiplier;
         // Scale movement slowdown with accepted bullet strength. Do not alter shove displacement.
         if (reacting && !_shoveStagger)
             speed *= Mathf.Lerp(1f, Mathf.Clamp(_config.StaggerMoveMultiplier, 0f, 1f),
