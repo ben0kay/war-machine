@@ -6,6 +6,8 @@
 
 **Important for assistants and contributors:** The active development branch is **`implement-td0-td1`**, **not `main`**. Read and write on this branch explicitly unless the owner directs otherwise. [CodePreferences.md](CodePreferences.md) is authoritative for coding style, scope, performance, validation and commit rules.
 
+> **New object/item authoring:** Read the [canonical Object Authoring Guide](WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md) before creating any new GLB furniture, bin, shelter, household item or prop. **SOC0** requires a documented choice of **None / AutoBox / CustomBoxes** (modes 0/1/2). The same guide distinguishes fixed Static collision from future movable Props/IX physics; creating an asset does not authorize placing it permanently in the world.
+
 ## Game vision
 
 War Machine takes place on a recognizably earthly but unsettling world: misty forests, rolling terrain, cliffs, roads, abandoned businesses and houses, caves, changing light and weather, and signs of a science-fiction intrusion. **Zombies and imposing mechanical entities** are current threat foundations; other hostile life, wildlife and environmental dangers may broaden the setting later.

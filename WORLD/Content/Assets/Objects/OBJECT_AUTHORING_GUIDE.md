@@ -15,6 +15,46 @@
 4. Wrap the GLB in a **canonical `<AssetID>.tscn`** and add a **per-asset `Configuration/<AssetName>Master.tres`** for size, reusing the common `PlaceableVisual` and `PlaceableSizeSettings` already in `Shared/`. Don't invent duplicate copies of shared helpers for each object.
 5. Record the new asset in the catalogue and its own README. **F1 automatically discovers canonical `<AssetID>/<AssetID>.tscn` visual wrappers deriving from `PlaceableVisual` under `Static/` or `Props/`; no new F1 registration or spawner code is required.** Don't add it to the active world without permission.
 
+## SOC0 — required collision decision when authoring an object or item
+
+**Before creating the canonical prefab, decide whether it is fixed scenery, decoration or intended to become a movable prop.** Every new asset README/catalogue entry must state its **collision mode and rationale**. The shared `PlaceableVisual` C# default is **0/None**, so new assets do not become solid unless the mode is **explicitly selected on their scene root**.
+
+| Inspector selection | Exact `.tscn` value | Use cases | Important consequence |
+| --- | --- | --- | --- |
+| **None** | `CollisionMode = 0` | Decorative art, Book001 visual-only future movable prop, imported PineTree001 comparison, wall picture, nonblocking clutter | No `StaticBody3D`; player/zombie pass through |
+| **AutoBox** | `CollisionMode = 1` | **Default for fixed solid objects:** closed wheelie bin/dustbin, fridge, bookcase, table, bed, hedge, solid cupboard frame | One box around **all imported visual bounds**; blocks gaps beneath tables and inside shelves |
+| **CustomBoxes** | `CollisionMode = 2` | **Walk-through/complex fixed objects:** bus shelter roof/posts/side walls, covered walkway, open shelving, crawl-under table | Manually specify a few solid boxes, leaving valid openings physically free |
+
+**Selection rule:** choose **AutoBox** for a typical stationary object unless its visible holes need to stay usable; then choose **CustomBoxes**. Choose **None** only when no static obstruction is intended. A wheelie bin that should later be **pushed, tipped, carried or thrown** belongs to the separately planned `INTERACTION/` IX1–IX2 rigid-body work, **not** a static collider pretending to move. Classifying a model under `Static/` versus `Props/` describes gameplay ownership, not an automatic collision rule.
+
+### Exactly how to author it (reuse SOC0; don't duplicate scripts)
+
+1. Use the existing `Shared/PlaceableVisual.cs` on `<AssetID>.tscn` root, or an existing derived presentation script such as `BedVisual` / `TableVisual`. Keep `Model/Artwork` and `Configuration/<AssetName>Master.tres` `SizeMultiplier`.
+2. The root Inspector shows **Static collision (SOC0) → CollisionMode** as a dropdown; it is an exported **int with `PropertyHint.Enum`**, not a C# enum that F1 would mistake for a visual variant. In a scene file the property is simply `CollisionMode = 0`, `1`, or `2`.
+3. **AutoBox:** set `CollisionMode = 1`. **Do not manually add `StaticBody3D` or `CollisionShape3D` to the prefab**. At runtime `Shared/StaticObjectCollision.cs` walks visual meshes once, combines transformed AABBs, and creates one static `BoxShape3D` in the correct scaled position.
+4. **CustomBoxes:** set `CollisionMode = 2`; add `StaticCollisionBox` Resource entries to root `CollisionBoxes` in the Inspector. Each has **Center** and **Size**, both `Vector3` values in the **unscaled GLB's Model-local metres**. For a bus stop, make thin boxes for **roof, supporting posts, rear/side panels and bench** only—**no entrance-spanning box**. For open shelves use back/uprights/shelf boards, not a single block. Empty/invalid lists warn and generate no collision.
+5. **None:** set `CollisionMode = 0` for no collider; leave future movable Books/Buckets/Brooms as art-only until the IX physics phase. Never mix SOC0 static collision with later active `RigidBody3D` on the same item.
+6. SOC0 uses one world-layer-1 `StaticBody3D` named `StaticCollision` with lightweight `BoxShape3D` children. The physics body is a **sibling** of `Model`, not a child of the nonuniformly scaled visual; the common size master scales boxes appropriately at creation. Collision may block movement, shots and sight rays **where those systems include world layer 1**. A bus shelter's transparent panels still count as **solid occluders** if covered by boxes; keep openings actually clear.
+7. Collision exists **after runtime scene instantiation**, not as a permanent node visible inside the editor's packed prefab. It is generated **once**, without per-object `_Process`, `_PhysicsProcess`, triangle-mesh physics or per-frame bounds scans. To change mode/size/custom boxes, edit the scene/master and respawn/reload. No live recalculation is implemented.
+
+Minimal `<AssetID>.tscn` root example for a **fixed Bin001** (keep actual resource IDs from its new scene):
+
+```ini
+[node name="Bin001" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+CollisionMode = 1
+```
+
+For `CustomBoxes`, create the entries via the Inspector rather than inventing per-asset physics C#. The canonical examples already using **AutoBox** are `Bookcase001`, `Bed001`, `Table001` and `Hedge001`. `Book001` and the imported `PineTree001` visual preview remain **None**. `Car001`, `StreetLamp001` and `Door001` have their own existing gameplay collision and must **not** get duplicate SOC0 bodies.
+
+### Required AI handoff / acceptance checks
+
+- Record asset ID, `.glb`, `.tscn`, master, dimensions, pivot, variants, **collision mode and blocked/accessible gaps** in its own README and `PLACEABLE_CATALOG.md`.
+- In `WORLD/World.tscn` or the inherited FPS view, use **F1** to spawn a temporary instance. It now has **real collision if the canonical scene is AutoBox/CustomBoxes**, and passes through if None. F1 is not a persistent world-placement tool. Walk against the shape; test a rotated instance and modified `SizeMultiplier`, and check any intended entrance/underside opening. Use Remote scene inspection/visible collision shapes; physics colliders are not constructed in the editor hint preview.
+- Check weapons/LOS for solid blockers, especially cases with decorative gaps or transparent glazing; don't claim bullet-blocking or zombie navigation is correct without a local test.
+- Keep imported meshes/materials shared, collider count low, and no idle per-object callbacks. No automatic movable-item physics, loot, inventory, player interaction, AI pathfinding or saving is part of SOC0. See [shared implementation](Shared/README.md) and [IX gameplay plan](../../../../INTERACTION/IMPLEMENTATION_PLAN.md).
+
 ## Directory examples
 
 **Canonical layout:**
@@ -55,7 +95,7 @@ A particular asset needs only the files it actually uses. Optional per-asset col
 
 A detailed model does not automatically perform badly. **Draw calls/material surfaces, visible instance count, shadows and texture memory** matter too; geometry generation method alone does not determine runtime performance. Do not claim measured FPS benefits without profiling.
 
-## The standard visual scene and size master
+## The standard placeable scene and size master
 
 Follow existing **Bookcase001**, **Book001** and **Bed001**; their GLBs live under `Artwork/`. The canonical scene has this logical hierarchy:
 
@@ -94,26 +134,26 @@ For new variant-ready assets:
 
 ## How to add it to the catalogue and F1 menu
 
-- Update the current `PLACEABLE_CATALOG.md` with **asset ID**, Object/Prop classification, canonical scene + GLB path, native dimensions/pivot/front, triangle and material/surface counts, available variants, own `.tres` path and **visual-only status**.
-- The asset's own `README.md` should explain appearance, where it fits the world, scale defaults, orientation, which surfaces are safe to swap, and the **future** collision/interaction intent without claiming those are implemented.
-- **F1 discovery is automatic** for standard `PlaceableVisual` scenes at `Static/.../<AssetID>/<AssetID>.tscn` or `Props/.../<AssetID>/<AssetID>.tscn`. The F1 scanner uses actual scene files, not catalogue markdown. It rejects procedural/physics scene roots that don't derive from `PlaceableVisual`; Car001/StreetLamp001 are intentionally excluded from visual-only previews. New scenes appear after world reload, with **no F1 C# edits**. For colour/finish variations, expose a **public `[Export]` enum property** on a `PlaceableVisual`-derived script; the menu enumerates choices and sets the property before `_Ready`. Optional per-scene root metadata `f1_preview_hover=true` or `f1_preview_min_distance=12.0` adjusts only unusual preview placement. See [PlaceableSpawner README](../../../../DEBUG/PlaceableSpawner/README.md).
-- The debug preview is temporary/noncolliding. Don't use world controller, building-generator paths or gameplay spawns to test simple artwork. Do not silently add furniture to houses or trigger a permanent terrain rebuild.
+- Update `PLACEABLE_CATALOG.md` with **asset ID**, Static/Prop classification, canonical scene and GLB, native dimensions/pivot/front, triangles/surfaces, variants, size master and **actual SOC0 mode** (`None`, `AutoBox`, `CustomBoxes`). Never label an active AutoBox prefab as visual-only.
+- The asset's README must explain appearance, intended placement, scale, orientation, safe colour surfaces, **chosen collision mode with its limitations**, and future interaction intent without claiming it exists.
+- **F1 discovery is automatic** for standard `PlaceableVisual` scenes at `Static/.../<AssetID>/<AssetID>.tscn` or `Props/.../<AssetID>/<AssetID>.tscn`. The F1 scanner uses actual scene files, not catalogue markdown. It rejects roots that don't derive from `PlaceableVisual`; Car001/StreetLamp001 remain excluded. **SOC0 collision on eligible placeables is active in runtime F1 previews**. New scenes appear after world reload, with **no F1 C# edits**. For colour/finish variations, expose a **public `[Export]` enum property** on a `PlaceableVisual`-derived script; the menu enumerates choices and sets the property before `_Ready`. Optional per-scene root metadata `f1_preview_hover=true` or `f1_preview_min_distance=12.0` adjusts only unusual preview placement. See [PlaceableSpawner README](../../../../DEBUG/PlaceableSpawner/README.md).
+- The F1 debug preview is temporary: **AutoBox/CustomBoxes are solid** when authored on the canonical scene, while None remains pass-through. Do not use world controller/building generators just to preview art or silently add furniture to houses.
 
-## Visual-phase validation and AI handoff
+## GLB authoring, collision and validation handoff
 
 Keep checks proportional:
 
 1. Verify the actual `.glb` file exists, is structurally valid/importable and has the claimed dimensions/material groups. If generated by code outside Godot, ensure export is real GLB binary, not a renamed text file; inspect mesh normals, face winding and bottom pivot.
 2. Verify `.tscn` references to GLB, script and master exist; ensure the scene wraps the imported model at `Model/Artwork`.
 3. Where practical, `dotnet build war-machine.csproj`; otherwise clearly mark **not compiled**. Run Godot GLB import and visual test locally if available. Preview via **F6 `WORLD/World.tscn` → F1**; compare variants and edit/reload `SizeMultiplier`. Check FPS debug preview if relevant.
-4. Confirm there is no per-instance idle `_Process`/`_PhysicsProcess`, no active rigid bodies, no bogus collider or unintended world placement. Verify old catalogue entries and F1 options are not broken.
+4. Check that the chosen `CollisionMode` is actually written on the scene root and works in F1 at runtime (or None stays noncolliding). Test source scale/rotation and open spaces. Confirm no per-instance idle `_Process`/`_PhysicsProcess`, accidentally duplicated bodies or unintended permanent placements.
 5. Update catalogue/asset README and report changed files, branch, one commit SHA, what was tested and what still needs local validation. Respect unrelated edits and the active branch; don't push to main.
 
-**Done for this phase** means: genuine GLB, correct visual scene/master, correct documentation, optional working variants/F1 entry and an honest visual-validation handoff. **It does not mean the model is physically solid, pick-up-able, interactable or deployed in the game world.**
+**Done for this asset-authoring phase** means: genuine GLB, correct scene/master, **explicit documented collision choice**, catalogue/README updates, proper F1 discovery and a truthful validation handoff. Solidity requires configured/valid SOC0 at runtime; it **does not** imply pickup, interaction, inventory or deployment.
 
-## Reserved for later: collision and physics integration
+## Reserved for later: dynamic physics and interactions
 
-Keep object identity and scene roots stable so a later separately authorized IX task can add collision without recreating artwork. Likely needs:
+Keep object identity and scene roots stable so a later IX phase can add **dynamic item physics** without recreating artwork. Remaining future needs:
 
 - **Static furniture:** SOC0 is now available via root `CollisionMode = 1` (one bounding box) or `2` (authored `StaticCollisionBox` resources). Prefer custom box sets for meaningful empty shelving or table/bed clearance. AutoBox is an intentionally inexpensive initial blocker, not a traversable shelf/under-table simulation.
 - **Liftable props:** appropriately sized `RigidBody3D` shapes, mass/friction/sleep, carry/drop/throw through the shared interaction owner, and sensible lifecycle/persistence.

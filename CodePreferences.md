@@ -9,6 +9,8 @@
 - If this branch is unavailable, report the issue rather than silently falling back to `main`. Only a later explicit instruction from Ben changes this branch policy.
 - Continue to make one commit per authorized job. This policy specifies the destination; it does not authorize unrelated work.
 
+**For EVERY new furniture, street object, decorative item or pickable-prop GLB, read `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md` before authoring.** The guide is canonical for assets and requires an explicit `CollisionMode` choice: `0 None`, `1 AutoBox`, `2 CustomBoxes`. Ordinary **fixed** objects generally use AutoBox; open shelters use CustomBoxes; future movable props stay None until their IX rigid-body phase. Keep `PLACEABLE_CATALOG.md` and the asset's README current. Do not accidentally make both static and movable physics for the same prop.
+
 Read the main README.md in the project root for an overall flavour of the game/coding structure. This is C#.
 I prefer comments above functions/methods. along with a commented line of ========================================================= so i can easily see when editing code in godot
 I prefer some comment at top of each script to explain what the script is doing.

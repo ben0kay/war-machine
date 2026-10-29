@@ -24,3 +24,5 @@ For instance variants, duplicate/override the master resource; edit and reinstan
 ## WS1 world rendering
 
 Active-world static GLB wrappers inherit fog-aware native ranges from WORLD/Rendering via scene lifecycle registration under PersistentPropsRoot. PlaceableVisual still has no per-object distance loop. Final model scale/spawn transform is captured after Ready. Later explicit transform edits must notify FogRenderPolicy.Refresh; visibility and physics are separate.
+
+**Mandatory for future AI-generated assets:** [OBJECT_AUTHORING_GUIDE.md](../OBJECT_AUTHORING_GUIDE.md#soc0--required-collision-decision-when-authoring-an-object-or-item) now contains the full three-option decision table, exact scene-root properties, fixed wheelie-bin and custom bus-stop examples, checks for open entrances and guidance on future dynamic Props. Before adding a new canonical asset, follow that checklist; do not assume inheriting `PlaceableVisual` automatically enables collision (default is mode 0).
