@@ -4,8 +4,11 @@ using Godot;
 public partial class FirstPersonWorld : WorldController
 {
     private FirstPersonFog _fpsFog = null!;
-    protected override string ControlsHelp => "FIRST PERSON · arrows walk · Shift run · Left Ctrl/C crouch · Right Ctrl prone · Right click jump\nMouse look · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
+    protected override string ControlsHelp => "FIRST PERSON · arrows walk · Shift run · Right Ctrl crouch · / prone · Right click jump\nMouse look · Hold E + LMB interact · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
     protected override IDebugOverlayView? OverlayView => _fpsFog;
+
+    // =========================================================
+    protected override IInteractionView CreateInteractionView() => new FirstPersonInteraction();
 
     // =========================================================
     // FPS-only hysteresis tuning. Full far-clip coverage and actor pins remain enforced by the shared bridge.

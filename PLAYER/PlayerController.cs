@@ -13,6 +13,17 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     public PlayerVitals Vitals { get; private set; } = null!;
     public bool IsDead => Vitals != null && Vitals.IsDead;
     public bool GameplayInputBlocked { get; private set; }
+    public PlayerInteraction? Interaction { get; internal set; }
+    public bool InteractionModeActive { get; private set; }
+    public event System.Action<bool>? InteractionModeChanged;
+
+    // =========================================================
+    // Interaction focus cancels weapon triggers without blocking movement or camera look.
+    internal void SetInteractionMode(bool active)
+    {
+        if (InteractionModeActive == active) return;
+        InteractionModeActive = active; InteractionModeChanged?.Invoke(active);
+    }
     public event System.Action<bool>? GameplayInputBlockChanged;
     public event System.Action<Vector3>? PositionChanged;
     public event System.Action<bool>? StanceChanged;

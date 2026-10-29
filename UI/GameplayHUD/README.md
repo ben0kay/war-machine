@@ -1,3 +1,5 @@
+> **IX0:** One read-only interaction prompt below screen centre now appears while holding E. LMB invokes the reachable target action; GUI remains first priority. See [interaction HUD](Interaction/README.md). Source implemented; local input/layout checks pending.
+
 > **PH2 temporary stamina card (2026-10-29):** One small [bottom-right stamina meter](Stamina/README.md) is now composed beside the existing body/ammo/inventory HUD, shared by both views. Event-driven, mouse-through, always visible while enabled; narrow windows lift it above existing controls. Source implemented; layout/build acceptance pending.
 
 > **Current implementation (2026-10-28):** PH0/PH1 now implemented in source: one read-only BodyConditionWidget beside the NPC overlay and backpack, above the hotbar. Hidden vitality has no generic player HP bar. World/FPS share this composition. Local build/visual acceptance pending; older planned status below is superseded.

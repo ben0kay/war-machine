@@ -130,6 +130,7 @@ public partial class WorldController : Node3D
             { status.Text = "Village arrival capsule is blocked; actors remain dormant."; return; }
         }
         player.Initialize(PlayerSettings, camera);
+        InitializeInteraction(player, camera);
         _audio.BindListener(player, camera);
         InitializeEquipment(player, camera);
         _camera = camera; _player = player;
@@ -238,7 +239,7 @@ public partial class WorldController : Node3D
 
     // =========================================================
     // View-specific adapters are replaceable; terrain, scenery and entity composition remain shared.
-    protected virtual string ControlsHelp => "World · Arrows screen-relative walk · Shift run · Left Ctrl/C crouch · Right Ctrl prone · Right click jump · Mouse aim · Left click/hold fire · Q shove · Wheel zoom\nF6 in editor: Run Current Scene";
+    protected virtual string ControlsHelp => "World · Arrows screen-relative walk · Shift run · Right Ctrl crouch · / prone · Right click jump · Mouse aim · Hold E + LMB interact · Left click/hold fire · Q shove · Wheel zoom\nF6 in editor: Run Current Scene";
     protected virtual bool EnableHorde => true;
     protected virtual void InitializeEquipment(PlayerController player, Camera camera)
     {
@@ -325,6 +326,43 @@ public partial class WorldController : Node3D
         }
         catch (System.ArgumentException error)
         { GD.PushWarning($"WS2 streaming unavailable; startup scenery retained: {error.Message}"); }
+    }
+
+    // =========================================================
+    protected virtual IInteractionView CreateInteractionView() => new TopDownInteraction();
+
+    // =========================================================
+    // One player-local owner/prompt, plus the optional IX0 fixture; no catalog assets or world items are converted.
+    private void InitializeInteraction(PlayerController player, Camera camera)
+    {
+        var settings = GD.Load<InteractionSettings>("res://INTERACTION/Configuration/InteractionMaster.tres");
+        var owner = new PlayerInteraction { Name = "Interaction" }; player.AddChild(owner);
+        owner.Initialize(player, camera, CreateInteractionView(), settings);
+        var prompt = new InteractionPrompt { Name = "InteractionPrompt" };
+        GetNode<Control>("GameplayHUD/Screen").AddChild(prompt); prompt.Initialize(owner);
+        if (!settings.Enabled || !settings.SpawnTestSwitch) return;
+        var scene = GD.Load<PackedScene>("res://DEBUG/Interaction/InteractionTestSwitch.tscn");
+        var box = new BoxShape3D { Size = new Vector3(0.35f, 1.2f, 0.35f) };
+        var space = player.GetWorld3D().DirectSpaceState;
+        foreach (Vector3 offset in new[] { new Vector3(1.8f, 0, -1.1f), new Vector3(-1.8f, 0, -1.1f),
+            new Vector3(1.8f, 0, 1.1f), new Vector3(-1.8f, 0, 1.1f) })
+        {
+            Vector3 near = player.GlobalPosition + offset;
+            var support = space.IntersectRay(new PhysicsRayQueryParameters3D { CollisionMask = 17,
+                From = near + Vector3.Up * 0.75f, To = near - Vector3.Up * 1.5f });
+            if (support.Count == 0 || support["normal"].AsVector3().Y < 0.7f) continue;
+            Vector3 ground = support["position"].AsVector3();
+            if (Mathf.Abs(ground.Y - player.GlobalPosition.Y) > 0.5f) continue;
+            var at = new Transform3D(Basis.Identity, ground + Vector3.Up * 0.62f);
+            if (space.IntersectShape(new PhysicsShapeQueryParameters3D { Shape = box, Transform = at,
+                CollisionMask = settings.QueryMask | 17u, Margin = 0.01f }, 1).Count > 0) continue;
+            var target = scene.Instantiate<InteractionTestSwitch>();
+            GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot").AddChild(target);
+            target.GlobalPosition = ground + Vector3.Up * 0.02f;
+            target.LookAt(new Vector3(player.GlobalPosition.X, target.GlobalPosition.Y, player.GlobalPosition.Z));
+            target.ResetPhysicsInterpolation(); return;
+        }
+        GD.PushWarning("IX0 test switch skipped: no clear supported spot near player.");
     }
 
     // =========================================================

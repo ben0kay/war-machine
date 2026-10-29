@@ -21,17 +21,29 @@ public static class FadeAwareAim
     // There are no per-frame callbacks or object registries, and the original query is restored.
     public static bool TryHit(PhysicsDirectSpaceState3D space, PhysicsRayQueryParameters3D query, out Vector3 position)
     {
+        bool found = TryHitResult(space, query, out var hit);
+        position = found ? hit["position"].AsVector3() : Vector3.Zero;
+        return found;
+    }
+
+    // =========================================================
+    // Full camera hit for interaction selection; use still requires an independent solid-world reach ray.
+    public static bool TryHitResult(PhysicsDirectSpaceState3D space, PhysicsRayQueryParameters3D query,
+        out Godot.Collections.Dictionary result, int maxFadedHits = MaxFadedHits)
+    {
         Vector3 origin = query.From, end = query.To;
         Vector3 travel = end - origin;
-        position = Vector3.Zero;
+        result = null!;
         if (travel.LengthSquared() < 0.000001f) return false;
+        maxFadedHits = Mathf.Clamp(maxFadedHits, 0, MaxFadedHits);
         Vector3 step = travel.Normalized() * StepPastHit;
-        for (int attempt = 0; attempt <= MaxFadedHits; attempt++)
+        for (int attempt = 0; attempt <= maxFadedHits; attempt++)
         {
             var hit = space.IntersectRay(query);
             if (hit.Count == 0) { query.From = origin; return false; }
-            position = hit["position"].AsVector3();
-            if (!IsFadedBuildingHit(hit) || attempt == MaxFadedHits)
+            result = hit;
+            Vector3 position = hit["position"].AsVector3();
+            if (!IsFadedBuildingHit(hit) || attempt == maxFadedHits)
             { query.From = origin; return true; } // Conservative stop at the ray budget.
             Vector3 next = position + step;
             if ((end - next).Dot(step) <= 0f) { query.From = origin; return false; }

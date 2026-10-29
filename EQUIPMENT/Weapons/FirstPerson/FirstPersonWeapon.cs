@@ -29,7 +29,7 @@ public partial class FirstPersonWeapon : Node
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
         _slots.Initialize(equipment, player, camera, camera.ViewSettings.WeaponOffset, audio);
         SwitchWeapon(0);
-        if (_weapon != null) { _shove = new PlayerQuickMelee(player); player.GameplayInputBlockChanged += OnInputBlocked; }
+        if (_weapon != null) { _shove = new PlayerQuickMelee(player); player.GameplayInputBlockChanged += OnInputBlocked; player.InteractionModeChanged += OnInputBlocked; }
     }
 
     // =========================================================
@@ -69,9 +69,11 @@ public partial class FirstPersonWeapon : Node
     // An uncaptured click belongs to the camera and cannot become a shot.
     public override void _UnhandledInput(InputEvent input)
     {
+        if (_player?.Interaction?.HandlePrimaryInput(input) == true) return;
         if ((_weapon == null && _melee == null) || _player.GameplayInputBlocked || Input.MouseMode != Input.MouseModeEnum.Captured) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
+        if (_player.InteractionModeActive) return;
         // Manual R reload is handled by the currently selected shared firearm.
         if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.R)
         {
@@ -162,7 +164,7 @@ public partial class FirstPersonWeapon : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if ((!IsInstanceValid(_weapon) && !IsInstanceValid(_melee)) || _player.GameplayInputBlocked || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured
+        if ((!IsInstanceValid(_weapon) && !IsInstanceValid(_melee)) || _player.GameplayInputBlocked || _player.InteractionModeActive || !GetWindow().HasFocus() || Input.MouseMode != Input.MouseModeEnum.Captured
             || GetViewport().GuiGetFocusOwner() != null)
         { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil(); _weapon?.CancelFeedback(); return; }
         Vector2 centre = _camera.GetViewport().GetVisibleRect().Size * 0.5f;
@@ -212,7 +214,7 @@ public partial class FirstPersonWeapon : Node
     public override void _ExitTree()
     {
         CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil();
-        if (IsInstanceValid(_player)) _player.GameplayInputBlockChanged -= OnInputBlocked;
+        if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.InteractionModeChanged -= OnInputBlocked; }
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
     }
 }

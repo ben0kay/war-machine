@@ -1,3 +1,5 @@
+> **IX0 input arbitration:** Interaction focus cancels held/queued fire and active shove/bat; focused LMB is forwarded to the shared interaction owner before weapon handling. Slot switching remains available. Releasing E does not restore a held trigger. No weapon damage/ammo/stamina formulas changed. See [current interaction contract](../../INTERACTION/README.md). Local validation pending.
+
 > **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
 
 # Player equipment adapter

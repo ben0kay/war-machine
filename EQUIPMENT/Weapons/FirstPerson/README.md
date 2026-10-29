@@ -1,3 +1,5 @@
+> **IX0:** The FPS adapter now forwards focused LMB to shared interaction and cancels queued/held attacks on focus entry. Capture/look stay owned by the camera; slots remain available and a fresh trigger press is required after release. See [interaction contract](../../../INTERACTION/README.md). Source implemented; local validation pending.
+
 > **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../../Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
 
 > **Current ownership:** Production FPS adapter/profile in `EQUIPMENT/Weapons/FirstPerson`. [View composition and settings](../../../WORLD/FirstPerson/README.md). Older test-folder statements below are historical; current paths and behaviour are defined by the promoted source.

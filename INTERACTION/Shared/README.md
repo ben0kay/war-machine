@@ -1,0 +1,3 @@
+# Shared IX0 targeting and actions
+
+IInteractable supplies one currently allowed InteractionAction and executes it against a readonly actor/hit-position context. Targets own their state; the source does not create item clones or infer inventory/physics behavior. InteractionTargeting owns reusable camera/reach queries, at most eight collider ancestors, real 3D reach and solid-world line of sight. Top-down camera fade may affect selection only; use always checks solid cover. Calls happen on the player-local owner's physics timer/use request, never on the prop. See ../README.md for masks, budgets and local checks.

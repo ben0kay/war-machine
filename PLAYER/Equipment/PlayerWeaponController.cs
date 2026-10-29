@@ -31,7 +31,7 @@ public partial class PlayerWeaponController : Node
         SwitchWeapon(0);
         if (_weapon == null) return;
         _shove = new PlayerQuickMelee(player);
-        player.SetWeaponPose(true); player.GameplayInputBlockChanged += OnInputBlocked;
+        player.SetWeaponPose(true); player.GameplayInputBlockChanged += OnInputBlocked; player.InteractionModeChanged += OnInputBlocked;
         player.PositionChanged += OnPlayerMoved; player.WeaponPoseChanged += RequestAim;
         camera.ViewChanged += RequestAim;
         CameraOccluder.AimFadeChanged += RequestAim;
@@ -74,9 +74,11 @@ public partial class PlayerWeaponController : Node
     // UI gets first refusal on clicks; cursor changes queue one physics-safe aim update.
     public override void _UnhandledInput(InputEvent input)
     {
+        if (_player?.Interaction?.HandlePrimaryInput(input) == true) return;
         if (!_initialized || _player.GameplayInputBlocked) return;
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
+        if (_player.InteractionModeActive) return;
         // Manual R reload uses the same shared firearm API as the FPS view.
         if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.R)
         {
@@ -140,7 +142,7 @@ public partial class PlayerWeaponController : Node
     public override void _PhysicsProcess(double delta)
     {
         SetPhysicsProcess(false);
-        if (!_initialized || (!IsInstanceValid(_weapon) && !IsInstanceValid(_melee)) || !GetWindow().HasFocus() || _player.GameplayInputBlocked)
+        if (!_initialized || (!IsInstanceValid(_weapon) && !IsInstanceValid(_melee)) || !GetWindow().HasFocus() || _player.GameplayInputBlocked || _player.InteractionModeActive)
         { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); return; }
         if (GetViewport().GuiGetHoveredControl() != null || GetViewport().GuiGetFocusOwner() != null)
         { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); return; }
@@ -210,7 +212,7 @@ public partial class PlayerWeaponController : Node
         CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil();
         if (IsInstanceValid(_player)) _player.SetBatWeapon(null);
         if (!_initialized) return;
-        if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
+        if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.InteractionModeChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;
         CameraOccluder.AimFadeChanged -= RequestAim;
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }

@@ -1,16 +1,18 @@
-> **DOOR1 correction (2026-10-28):** owner-reported crooked/unpushable rear door traced in source to incorrect hinge-axis orientation. Joint-local Z is now vertical; body bindings/COM/thin-slab margin and explicit contact diagnostics added, force unchanged. Source implemented, runtime acceptance pending. [DOOR1–DOOR3 roadmap](../WORLD/Content/Assets/Objects/Static/Doors/Door001/IMPLEMENTATION_PLAN.md). DOOR2/DOOR3 and IX0–IX8 remain unimplemented.
+> **IX0 source implemented (2026-10-29), awaiting local build/physics/input/visual validation:** Hold E to focus, LMB to use the nearby labelled test switch. Shared reach/solid cover, view adapters, weapon arbitration, one event-driven prompt and stopped-at-idle targeting owner are now present. [Current ownership, defaults, costs and checks](README.md). IX1–IX8 remain Planned; older no-runtime descriptions below are historical.
+
+> **DOOR1 correction (2026-10-28):** owner-reported crooked/unpushable rear door traced in source to incorrect hinge-axis orientation. Joint-local Z is now vertical; body bindings/COM/thin-slab margin and explicit contact diagnostics added, force unchanged. Source implemented, runtime acceptance pending. [DOOR1–DOOR3 roadmap](../WORLD/Content/Assets/Objects/Static/Doors/Door001/IMPLEMENTATION_PLAN.md). DOOR2/DOOR3 and IX1–IX8 remain unimplemented; IX0 is now source implemented as described above.
 
 # IX — Physical interactions, persistent items and scavenging
 
-> **DOOR1 external dependency implemented in source (2026-10-28; local Godot acceptance pending):** a reusable, manually pushable `RigidBody3D` leaf and `HingeJoint3D` were added at the convenience store's rear exit under `WORLD/Content/Assets/Objects/Static/Doors/Door001/`. It is *not* IX1 loose-prop physics, IX0 targeting, or IX3 cupboard interaction: those phases remain planned. The door has `HandleInside` and `HandleOutside` marker anchors ready for future DOOR2 pull-to-close or cupboard doors; no grabbing/click input implemented. Reuse the hinge physics as a reference in IX3 without assuming the whole IX roadmap is complete.
+> **DOOR1 external dependency implemented in source (2026-10-28; local Godot acceptance pending):** a reusable, manually pushable `RigidBody3D` leaf and `HingeJoint3D` were added at the convenience store's rear exit under `WORLD/Content/Assets/Objects/Static/Doors/Door001/`. It is *not* IX1 loose-prop physics, IX0 targeting, or IX3 cupboard interaction: IX1/IX3 remain planned; IX0 is now source implemented separately. The door has `HandleInside` and `HandleOutside` marker anchors ready for future DOOR2 pull-to-close or cupboard doors; no grabbing/click input implemented. Reuse the hinge physics as a reference in IX3 without assuming the whole IX roadmap is complete.
 
-> **Status: IX0–IX8 Planned; DOCUMENTATION ONLY (2026-10-27).** This is a **Codex-ready master plan and design record**, not an instruction to implement every phase. No gameplay logic, scene, item system, collision settings or master resources change with this document. Explicitly authorize one bounded phase/job at a time. Work on `implement-td0-td1` unless instructed otherwise; **one GitHub commit per authorized job**, and brief proportional validation per `CodePreferences.md`.
+> **Current status: IX0 source implemented / awaiting validation; IX1–IX8 Planned.** This is a **Codex-ready master plan and design record**, not an instruction to implement every phase. The original 2026-10-27 planning revision was documentation only; the IX0 implementation handoff above supersedes its no-runtime status. Explicitly authorize one bounded phase/job at a time. Work on `implement-td0-td1` unless instructed otherwise; **one GitHub commit per authorized job**, and brief proportional validation per `CodePreferences.md`.
 
 ## Phases at a glance
 
 | Phase | Result | Dependencies | Suggested implementation assistant | Status |
 | --- | --- | --- | --- | --- |
-| **IX0** | Shared interactable/targeting/actions; thin top-down and FPS adapters | Existing player/camera/UI input | Codex / Work | **Planned** |
+| **IX0** | Shared interactable/targeting/actions; thin top-down and FPS adapters | Existing player/camera/UI input | Codex / Work | **Implemented; Awaiting Validation** |
 | **IX1** | Loose rigid props collide, fall, topple and sleep | IX0 helpful for debug; Godot Jolt already configured | Regular Chat for prefab/settings; Codex / Work for physics issues | **Planned** |
 | **IX2** | Pick up light loose props into a **physics-held position**, move, drop and throw | IX0, IX1 | Codex / Work | **Planned** |
 | **IX3** | Reusable cupboard hinged door: click toggle overhead, handle drag FPS | IX0; optional IX2 only if sharing drag controls | Codex / Work | **Planned** |
@@ -24,7 +26,7 @@
 
 ## 1. Vision — one physical survival world, two interaction experiences
 
-The owner is **intentionally retaining both viewpoints** until side-by-side play makes the better long-term direction clear. The top-down 3D view affords readable movement/combat but makes giant robot scale and multi-floor scavenging harder; roof/wall fading can obscure interior objects. First-person makes towering machines and tactile scavenging more convincing but demands closer-detail models, materials, animation and atmospheric rendering. The dark, dusty/smoky alien-invasion environment and distance fog support a deliberately stylized first-person presentation. **Do not choose a camera mode on behalf of the owner, delete the FPS experiment, fork content or design two different worlds.**
+**Current direction:** First-person is the primary gameplay/presentation reference; top-down is a supported secondary view. Both share one physical world and target state. Input adapters may differ, but do not fork reach, permissions, item state or world simulation. The larger kitchen encounter below remains a future multi-phase acceptance scenario, not the IX0 scope.
 
 **Desired kitchen encounter (vertical-slice acceptance):** walk into a house, break boards off a blocked doorway using melee, put the equipped rifle carefully on a table (it leaves equipped ownership), open a hinged cupboard, push/lift loose books hiding food or ammunition, collect and possibly consume an item, notice a zombie approaching, use **unarmed quick shove/punch** while the gun is unavailable, recover the *same* rifle with its state intact, equip and shoot. The same physical state should be accessible from overhead and FPS; only targeting/input and animation presentation differ. Player-versus-zombie outgoing attacks require the separately planned COMBAT/PH health phases; the whole narrative is **not** an IX0 acceptance test.
 
@@ -131,6 +133,10 @@ A state transition must be **atomic/rollback-safe**: validate eligibility and de
 - **Realism budget**: complex effects are optional. Closed containers/doors keep collision and state; loose props use physics while disturbed then engine sleep; distant props can remain authored static or be serialized/frozen with a safe wake boundary only when later streaming exists. Do not simulate hundreds of items permanently just to preserve their locations.
 
 ## IX0 — Minimal shared interaction/targeting foundation
+
+**Implemented in source; Awaiting Validation.** Current defaults: hold E + LMB, 2.5m reach, 0.15s refresh only in interaction focus, one debug post. Optional test spawn performs four bounded support/clearance attempts. Camera selection is followed by direct solid reach; known faded-camera skips do not make walls/floors usable through. Weapon focus cancellation and explicit LMB forwarding preserve firing outside mode and slot switching inside it. Prompt subscribes to changes. No carrying/items/cupboards/physics props implemented. Current contract, runtime cost and exact local checks: [INTERACTION README](README.md).
+
+Source/loop/resource/diff checks only; dotnet is missing (build attempt exit 127), native smoke/input/visual tests not run. One commit on implement-td0-td1; do not mark Accepted until local review.
 
 **Objective:** Prove both views can select **one actual 3D object** nearby, request an allowed interaction and display a tiny contextual prompt, without gunfire/UI conflicts.
 
