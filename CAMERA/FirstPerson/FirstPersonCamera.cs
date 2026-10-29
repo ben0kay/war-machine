@@ -126,7 +126,7 @@ public partial class FirstPersonCamera : Camera
     // =========================================================
     // Camera-right sway plus world-up bounce; no mouse-look, recoil or physics-body rotation.
     private Vector3 BobbedEye(Vector3 baseEye)
-        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanRendered * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.25f))
+        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanRendered * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.5f))
             + Vector3.Up * _headBob.Offset.Y;
 
     // =========================================================

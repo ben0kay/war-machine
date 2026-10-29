@@ -23,3 +23,7 @@ The current `FirstPersonCamera.ApplyWeaponRecoilKick` adds **positive pitch to t
 ## L0a — FPS lean visual smoothing (2026-10-28)
 
 The initial L0 directly assigned camera Z tilt on physics ticks; this could show visible increments on higher-refresh displays and left a stationary sideways eye offset stale after mouse look. `FirstPersonCamera` now records the shared physics lean as a **target** and interpolates its displayed roll and eye shift together at render frequency in the **existing** callback (frame-rate independent exponential blend, authored `LeanRenderSmoothingSeconds = 0.045`). The render callback wakes for changes and sleeps once eye interpolation, head bob and lean are all settled. Mouse look and recoil still change persistent pitch/yaw immediately; they wake a one-frame position refresh when already leaned. FPS values are now **16° tilt, 0.20m shift**, with no additional weapon node/process. Local in-engine checks pending, especially thin-wall clipping.
+
+## L0b stronger cosmetic corner peek (2026-10-28)
+
+Authored FPS camera tilt is **18°** and lateral eye shift is **0.35m**, increased from 16° and 0.20m after side-by-side in-game screenshots. `FirstPersonCamera.BobbedEye` now clamps configurable side shift at 0.50m rather than 0.25m (with matching `FirstPersonSettings` Inspector hint) so the new value is not silently reduced. Existing event-driven render smoothing, camera-mounted weapon, recoil/mouse input and idle sleep remain unchanged. Verify interior geometry clipping locally; physical cover exposure is still deferred.
