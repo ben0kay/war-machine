@@ -31,3 +31,7 @@ PER2 uses the shared last-seen investigation, speed-aware expiry and actual-stop
 Runner detection is now **22.5m** and its alerted/search retention range **28.75m**, matching the regular zombie's +25% range increase. Runner `WanderSpeed=0.85m/s` and `ChaseSpeed=8.3m/s` intentionally remain unchanged. PER2A is now implemented: after a frontal first sighting, active chase/investigation can retain or reacquire an unobstructed target behind the runner. Initial 160° detection remains unchanged.
 
 **PER2A note (2026-10-28):** Same shared alerted, LOS-gated all-angle retention for runner and regular zombie. No runner speed, hit investigation, hearing, attacks or navigation changes. Runtime validation pending.
+
+## CM5-A runner attack pose
+
+Runner attack animation uses the same `ZombieUpperBodyRig` and `ZombieAttack` timing/pivot motion as regular shamblers. It does not add a runner-only attack mechanic or change run acceleration/gait, damage, sensing or the shared melee profile. `ZombieRunnerMaster.tres` authors matching visual-only sway/lunge tuning; check standing runner attack from side and FPS, injury interrupt, corpse transition and original sprinting motion. Source implemented; local validation pending.

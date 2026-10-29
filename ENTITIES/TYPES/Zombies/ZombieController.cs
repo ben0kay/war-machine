@@ -11,7 +11,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public AnatomyComponent? Anatomy { get; private set; }
     private bool _receivingHit;
     private ZombieLocomotion _locomotion = null!;
-    private Node3D _anatomyHead = null!;
+    private Node3D _anatomyHead = null!, _attackUpperBody = null!;
+    private Vector3 _upperBodyRest;
     private bool _mobilityDirty, _reportedMobilityBlock;
     public ZombieMobility Mobility => _locomotion?.Mode ?? ZombieMobility.Walk;
     public bool LowBodyActive => _locomotion?.IsLowBody == true;
@@ -52,6 +53,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         if (_brain == null)
         {
             BuildArt();
+            _attackUpperBody = VisualRoot.GetNode<Node3D>("UpperBody");
+            _upperBodyRest = _attackUpperBody.Position;
             UpdatePose(0);
             BuildAnatomy();
             _health = new HealthComponent { Name = "Health" }; AddChild(_health);
@@ -84,8 +87,9 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         _anatomy = new AnatomyHitboxes { Name = "AnatomyHitboxes" }; AddChild(_anatomy);
         _anatomy.Initialize(this, (Settings as ZombieSettings)?.AnatomyProfile
             ?? GD.Load<AnatomySettings>("res://ENTITIES/Shared/Anatomy/Configuration/AnatomyMaster.tres"));
-        Node3D head = _anatomyHead = VisualRoot.GetNode<Node3D>("Head");
-        var pivots = new[] { VisualRoot, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
+        Node3D head = _anatomyHead = VisualRoot.GetNode<Node3D>("UpperBody/Head");
+        // Torso now follows the dedicated waist pivot rather than the whole-body (legs) root.
+        var pivots = new[] { _attackUpperBody, head, _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee };
         var regions = new[] { BodyRegion.Torso, BodyRegion.Head, BodyRegion.LeftArm, BodyRegion.RightArm,
             BodyRegion.LeftLeg, BodyRegion.RightLeg, BodyRegion.LeftLeg, BodyRegion.RightLeg };
         var boundaries = new System.Collections.Generic.HashSet<Node3D>(pivots);
@@ -130,6 +134,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     private void PoseWithMobility(float step, float leftLift = 0, float rightLift = 0)
     {
         VisualRoot.Rotation = new Vector3(0, VisualRoot.Rotation.Y, 0);
+        // Restore the cached waist pivot before each species gait; attack applies an absolute overlay.
+        _attackUpperBody.Rotation = Vector3.Zero; _attackUpperBody.Position = _upperBodyRest;
         Pose(step, leftLift, rightLift);
         _locomotion?.ApplyPose(step);
         ApplyAttackPose();
@@ -188,7 +194,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
         Deactivate(); ClearReaction(); ClearInvestigation(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
-        _corpseSeed = seed; _deathHandled = false;
+        _corpseSeed = seed; _deathHandled = false; _attackSide = (seed & 1u) == 0u ? -1f : 1f;
         // ZMAT0: spawn-seeded cached material assignment; does not advance the movement RNG.
         ZombieAppearance.Apply(VisualRoot, seed, _config.AppearanceVariationEnabled, _config.BloodChance);
         _sightTarget = player as IPerceptionTarget;
@@ -312,7 +318,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Transform3D at = visual.GlobalTransform;
         Vector3 velocity = Velocity;
         var joints = new System.Collections.Generic.List<Node3D> { _leftArm, _rightArm, _leftLeg, _rightLeg, _leftKnee, _rightKnee };
-        var head = visual.GetNodeOrNull<Node3D>("Head"); if (head != null) joints.Add(head);
+        var head = visual.GetNodeOrNull<Node3D>("UpperBody/Head"); if (head != null) joints.Add(head);
+        if (GodotObject.IsInstanceValid(_attackUpperBody)) joints.Add(_attackUpperBody);
         AnatomySnapshot injuries = Anatomy!.Capture();
         var pose = new ZombieCorpsePose(_corpseSeed, injuries, joints.ToArray());
         bool alignCorpsePivot = LowBodyActive;

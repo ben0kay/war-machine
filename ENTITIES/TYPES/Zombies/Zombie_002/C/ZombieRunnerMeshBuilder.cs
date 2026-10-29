@@ -31,9 +31,9 @@ public sealed class ZombieRunnerMeshBuilder
     {
         _root = root;
         if (_visualTemplate == null)
-        { Build(); _visualTemplate = ZombieVisualBatcher.Capture(root); }
+        { Build(); ZombieUpperBodyRig.Attach(root); _visualTemplate = ZombieVisualBatcher.Capture(root); }
         else ZombieVisualBatcher.Populate(root, _visualTemplate);
-        LeftArm = root.GetNode<Node3D>("LeftArm"); RightArm = root.GetNode<Node3D>("RightArm");
+        LeftArm = root.GetNode<Node3D>("UpperBody/LeftArm"); RightArm = root.GetNode<Node3D>("UpperBody/RightArm");
         LeftLeg = root.GetNode<Node3D>("LeftLeg"); RightLeg = root.GetNode<Node3D>("RightLeg");
         LeftKnee = LeftLeg.GetNode<Node3D>("Knee"); RightKnee = RightLeg.GetNode<Node3D>("Knee");
         ZombieAppearance.Apply(root, unchecked((uint)root.GetInstanceId()));
