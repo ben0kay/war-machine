@@ -1,3 +1,5 @@
+> **ZM-PERF2A — source implemented; local validation pending.** Runner geometry uses its own one-time cached batched template: compatible pieces on the same pivot and palette/material are merged to one material surface, with original runner proportions, seeded blood/clothing variation, joints, anatomy and corpse visuals preserved. Does not add LOD or affect runner AI.
+
 > **ZM-PERF1 — source implemented, awaiting in-engine FPS/quality measurements (2026-10-28):** Runner reduced **40 → 29 visible mesh instances**. Removed four tiny standalone fingers, two eyes, two raised elbow bruises, two toe meshes and one extra shirt rip. Preserved runner silhouette, eye sockets/brow, jaw/mouth, staining, articulation, seeded materials, hitboxes and corpse transfer.
 
 # Zombie 002 procedural artwork
@@ -12,3 +14,8 @@ Both zombies now share `../../C/ZombieHumanGeometry.cs` for angular, properly ca
 ## ZM-PERF1 runner tests
 
 One longer glove shape and one extended trainer shape replace tiny separate meshes. The runner keeps all its named shoulder, knee, lower-leg, ankle and head pivots. Check front/back/side at normal top-down zoom and in close FPS view, and confirm runner gait, limb severing and corpse death remain intact. Compare identical visible crowd before/after, drawing and FPS monitors. No new runtime processing or material allocation is added. **Source-only inspection; engine compile/visual benchmark pending.**
+
+
+## ZM-PERF2A runner acceptance
+
+Runner has a separate cached geometry template from standard zombies but shares the `ZombieVisualBatcher` and the same `ZombieAppearance.PaletteForPart` mapping. Subsequent runners duplicate the template, preserve all pivot names and receive their own spawn-seeded palette. Please check both the **first** spawned runner and additional runners, the two different glove/sleeve proportions, static cheek/bruise and dark mouth, head tilt, animation and limb severing. Profile draw calls/FPS with the same camera as ZM-PERF1; no verified FPS gain is claimed.

@@ -23,8 +23,21 @@ public sealed class ZombieMeshBuilder
     private static readonly Material Hair = Solid(new(0.17f, 0.18f, 0.15f));
     private static readonly Material Boots = Solid(new(0.15f, 0.16f, 0.15f));
 
+    private static Node3D? _visualTemplate;
+
     // =========================================================
-    public ZombieMeshBuilder(Node3D root) { _root = root; BuildArt(); }
+    // Only the first shambler constructs source primitives; all later bodies share the batched meshes.
+    public ZombieMeshBuilder(Node3D root)
+    {
+        _root = root;
+        if (_visualTemplate == null)
+        { BuildArt(); _visualTemplate = ZombieVisualBatcher.Capture(root); }
+        else ZombieVisualBatcher.Populate(root, _visualTemplate);
+        _leftArm = root.GetNode<Node3D>("LeftArm"); _rightArm = root.GetNode<Node3D>("RightArm");
+        _leftLeg = root.GetNode<Node3D>("LeftLeg"); _rightLeg = root.GetNode<Node3D>("RightLeg");
+        _leftKnee = _leftLeg.GetNode<Node3D>("Knee"); _rightKnee = _rightLeg.GetNode<Node3D>("Knee");
+        ZombieAppearance.Apply(root, unchecked((uint)root.GetInstanceId()));
+    }
 
     // =========================================================
     // Materials use an instance-based temporary preview until world placement supplies its stable seed.

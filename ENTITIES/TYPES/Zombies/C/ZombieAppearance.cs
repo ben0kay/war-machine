@@ -47,33 +47,39 @@ public static class ZombieAppearance
         ApplyChildren(visualRoot, materials);
     }
 
+    // Material categories are shared by both per-part authors and ZM-PERF2A single-surface batches.
+    // Names encode the palette explicitly after batching; non-palette bruises/boots keep their own materials.
+    public enum PaletteRegion { None, Skin, Face, Shirt, Pants }
+
     // =========================================================
-    // Both low-poly builders use the same part names for skin/clothes wherever possible.
-    // Unlisted details intentionally keep their existing material (e.g. torn fabric and bruises).
+    public static PaletteRegion PaletteForPart(string name) => name switch
+    {
+        "SkinBatch" or "ExposedNeck" or "BentNeck" or "ExposedForearm"
+            or "Forearm" or "Hand" or "Finger" => PaletteRegion.Skin,
+        "FaceBatch" or "Skull" or "Jaw" or "Nose" or "Brow" => PaletteRegion.Face,
+        "ShirtBatch" or "SlouchedTorso" or "LeanTorso" or "ShoulderShape"
+            or "NarrowShoulders" or "TornCollar" or "ShirtHem" or "Shoulder"
+            or "RaggedSleeve" or "Sleeve" or "TornShirtHem" => PaletteRegion.Shirt,
+        "PantsBatch" or "Hips" or "Waist" or "Thigh" or "LongThigh"
+            or "KneeJoint" or "Shin" or "LongShin" => PaletteRegion.Pants,
+        _ => PaletteRegion.None
+    };
+
+    // =========================================================
+    // Reassign only the palette category. Detail batches keep the exact original static material.
     private static void ApplyChildren(Node node,
         (Material Skin, Material Face, Material Shirt, Material Pants) appearance)
     {
         foreach (Node child in node.GetChildren())
         {
             if (child is MeshInstance3D mesh)
-            {
-                switch (mesh.Name.ToString())
+                switch (PaletteForPart(mesh.Name.ToString()))
                 {
-                    case "Skull": case "Jaw": case "Nose": case "Brow":
-                        mesh.MaterialOverride = appearance.Face; break;
-                    case "ExposedNeck": case "BentNeck": case "ExposedForearm":
-                    case "Forearm": case "Hand": case "Finger":
-                        mesh.MaterialOverride = appearance.Skin; break;
-                    case "SlouchedTorso": case "LeanTorso": case "ShoulderShape":
-                    case "NarrowShoulders": case "TornCollar": case "ShirtHem":
-                    case "Shoulder": case "RaggedSleeve": case "Sleeve":
-                    case "TornShirtHem":
-                        mesh.MaterialOverride = appearance.Shirt; break;
-                    case "Hips": case "Waist": case "Thigh": case "LongThigh":
-                    case "KneeJoint": case "Shin": case "LongShin":
-                        mesh.MaterialOverride = appearance.Pants; break;
+                    case PaletteRegion.Face: mesh.MaterialOverride = appearance.Face; break;
+                    case PaletteRegion.Skin: mesh.MaterialOverride = appearance.Skin; break;
+                    case PaletteRegion.Shirt: mesh.MaterialOverride = appearance.Shirt; break;
+                    case PaletteRegion.Pants: mesh.MaterialOverride = appearance.Pants; break;
                 }
-            }
             ApplyChildren(child, appearance);
         }
     }

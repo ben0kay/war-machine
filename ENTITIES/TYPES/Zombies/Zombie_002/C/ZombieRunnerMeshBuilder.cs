@@ -23,8 +23,21 @@ public sealed class ZombieRunnerMeshBuilder
     private static readonly Material Boots = Paint(new Color(0.13f, 0.16f, 0.16f));
     private static readonly Material Bruise = Paint(new Color(0.31f, 0.20f, 0.20f));
 
+    private static Node3D? _visualTemplate;
+
     // =========================================================
-    public ZombieRunnerMeshBuilder(Node3D root) { _root = root; Build(); }
+    // Assemble the runner's unique silhouette once; copy cached mesh references for later spawns.
+    public ZombieRunnerMeshBuilder(Node3D root)
+    {
+        _root = root;
+        if (_visualTemplate == null)
+        { Build(); _visualTemplate = ZombieVisualBatcher.Capture(root); }
+        else ZombieVisualBatcher.Populate(root, _visualTemplate);
+        LeftArm = root.GetNode<Node3D>("LeftArm"); RightArm = root.GetNode<Node3D>("RightArm");
+        LeftLeg = root.GetNode<Node3D>("LeftLeg"); RightLeg = root.GetNode<Node3D>("RightLeg");
+        LeftKnee = LeftLeg.GetNode<Node3D>("Knee"); RightKnee = RightLeg.GetNode<Node3D>("Knee");
+        ZombieAppearance.Apply(root, unchecked((uint)root.GetInstanceId()));
+    }
 
     // =========================================================
     // Compact, recognisably different silhouette: narrower torso, longer-looking legs and stripped-down clothes.
@@ -53,9 +66,8 @@ public sealed class ZombieRunnerMeshBuilder
         LeftLeg = Pivot(_root, "LeftLeg", new(-0.119f, 0.82f, 0));
         RightLeg = Pivot(_root, "RightLeg", new(0.119f, 0.82f, 0));
         LeftKnee = Leg(LeftLeg, true); RightKnee = Leg(RightLeg, false);
-        // Give standalone runner previews the same shared appearance pool as Zombie_001.
-        // InitializeTarget replaces this provisional selection with the stable world spawn seed.
-        ZombieAppearance.Apply(_root, unchecked((uint)_root.GetInstanceId()));
+        // The constructor applies the provisional seed to both first-build and cached runner copies.
+        // InitializeTarget later applies the stable world spawn seed, as before.
     }
 
     // =========================================================
