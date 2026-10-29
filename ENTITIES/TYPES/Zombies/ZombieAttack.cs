@@ -79,8 +79,8 @@ public partial class ZombieController
     }
 
     // =========================================================
-    // The same CM5 windup/contact/recovery clock now drives a coordinated chest/head/arm lunge.
-    // Waist pivot moves the chest, shoulders and head, but never the legs or native collider.
+    // CM5-A1: one raised claw swipes horizontally across the chest while the waist/head twist.
+    // Visual-only overlay on the existing windup/hit/recovery clock; neither reach nor collision changes.
     private void ApplyAttackPose()
     {
         if (!Attacking) return;
@@ -88,39 +88,51 @@ public partial class ZombieController
         float windup = Mathf.Clamp(_attackProfile.WindupSeconds, 0.01f, 1f);
         float active = Mathf.Clamp(_attackProfile.ActiveSeconds, 0.01f, 1f);
         float recovery = Mathf.Clamp(_attackProfile.RecoverySeconds, 0.01f, 1f);
-        float roll, twist, forward, shift, arms;
+        float roll, twist, forward, shift, reach, sweep;
         if (elapsed < windup)
         {
             float t = Mathf.SmoothStep(0f, 1f, elapsed / windup);
             roll = -0.65f * t; twist = -0.70f * t; forward = -0.20f * t;
-            shift = -0.40f * t; arms = -0.65f * t;
+            shift = -0.40f * t; reach = t; sweep = -1f;
         }
         else if (elapsed < windup + active)
         {
             float t = Mathf.SmoothStep(0f, 1f, (elapsed - windup) / active);
             roll = Mathf.Lerp(-0.65f, 1f, t); twist = Mathf.Lerp(-0.70f, 1f, t);
             forward = Mathf.Lerp(-0.20f, 1f, t); shift = Mathf.Lerp(-0.40f, 1f, t);
-            arms = Mathf.Lerp(-0.65f, 0.70f, t);
+            reach = 1f; sweep = Mathf.Lerp(-1f, 1f, t);
         }
         else
         {
             float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp((elapsed - windup - active) / recovery, 0f, 1f));
             roll = 1f - t; twist = 1f - t; forward = 1f - t;
-            shift = 1f - t; arms = 0.70f * (1f - t);
+            shift = 1f - t; reach = 1f - t; sweep = 1f;
         }
-        float side = _attackSide;
+
+        float side = _attackSide; // -1: left claw leads; +1: right claw leads.
         float chestRoll = Mathf.DegToRad(Mathf.Clamp(_config.AttackTorsoRollDegrees, 0f, 30f)) * roll * side;
         float chestTwist = Mathf.DegToRad(Mathf.Clamp(_config.AttackTorsoTwistDegrees, 0f, 25f)) * twist * side;
         float chestPitch = Mathf.DegToRad(Mathf.Clamp(_config.AttackForwardLungeDegrees, 0f, 35f)) * forward;
         _attackUpperBody.Rotation = new Vector3(-chestPitch, chestTwist, chestRoll);
         _attackUpperBody.Position = _upperBodyRest + new Vector3(
             side * Mathf.Clamp(_config.AttackSideShift, 0f, 0.18f) * shift, 0f, -0.03f * Mathf.Max(0f, forward));
-        // Head follows the waist swing and adds a smaller late sideways reach rather than bobbing alone.
         float headSway = Mathf.DegToRad(Mathf.Clamp(_config.AttackHeadSwayDegrees, 0f, 20f));
         _anatomyHead.Rotation += new Vector3(-chestPitch * 0.25f, chestTwist * 0.35f, side * headSway * roll);
-        // One arm leads the clawing motion; the other counterbalances. Disabled limbs retain their visual mask.
-        float leftLead = side < 0f ? 1.20f : 0.65f, rightLead = side > 0f ? 1.20f : 0.65f;
-        _leftArm.Rotation += new Vector3(arms * leftLead, -side * 0.10f * twist, -arms * 0.30f);
-        _rightArm.Rotation += new Vector3(arms * rightLead, -side * 0.10f * twist, arms * 0.30f);
+
+        // Lift the striking arm once in windup, then keep its elevation almost fixed.
+        // Sweep around its local Y axis: outside shoulder -> across the player's chest -> recover.
+        // The other arm stays slightly lower and counterbalances; the original gait is restored after attack.
+        float clawPitch = Mathf.DegToRad(Mathf.Clamp(_config.AttackSwipeArmPitchDegrees, 40f, 100f));
+        float yaw = side * Mathf.DegToRad(Mathf.Clamp(_config.AttackHorizontalSwipeDegrees, 30f, 140f)) * 0.5f * sweep * reach;
+        bool leftLead = side < 0f;
+        Vector3 leading = leftLead ? _leftArm.Rotation : _rightArm.Rotation;
+        Vector3 following = leftLead ? _rightArm.Rotation : _leftArm.Rotation;
+        leading.X = Mathf.Lerp(leading.X, clawPitch, reach);
+        following.X = Mathf.Lerp(following.X, clawPitch * 0.72f, reach);
+        leading.Y += yaw;
+        following.Y -= yaw * 0.18f;
+        leading.Z += (leftLead ? -0.12f : 0.12f) * reach;
+        if (leftLead) { _leftArm.Rotation = leading; _rightArm.Rotation = following; }
+        else { _rightArm.Rotation = leading; _leftArm.Rotation = following; }
     }
 }

@@ -22,3 +22,15 @@ The current attack's **existing windup → active → recovery** clock drives an
 ## Handoff
 
 Branch: `implement-td0-td1`. Single commit for this authorized visual pass; see Git history for commit SHA. Visual correctness and runtime/body-region verification remain for local acceptance. Do not start CM5-B/ELD3 automatically.
+
+## CM5-A1 — horizontal claw swipe (2026-10-29)
+
+**Source implemented, local validation pending.** After CM5-A's waist/head sway pass, the strike still looked mostly vertical because both arms swept primarily in local X pitch. CM5-A1 replaces that repetitive up/down arc with a **single leading claw held near chest height** (default 78° raised pitch), traversing **110° total horizontal yaw** across the torso during the same 0.12s active window. The opposite arm follows at 72% of lead elevation and lightly counterbalances at 18% of the yaw. The lead alternates left/right per committed swipe using the existing attack-side state.
+
+The same `MeleeAttack` elapsed phase drives an eased 0.45s arm-raising windup, 0.12s side-crossing swipe, and 0.55s recovery; there is no animation player, new node or independent timer. Torso twist is increased from 10° to **18°** to accompany the horizontal stroke, and forward pitch is reduced from 16° to **10°** to avoid the appearance of an overhead hammer-down. Existing roll/head sway/side shift remain unchanged. These are cosmetic presentation parameters: **melee contact origin, arc, damage, cooldown, physics root, limb injury logic and pursuit AI are unchanged**. The runner inherits the same attack overlay and retains its own movement pose.
+
+**Tuning:** Added `ZombieSettings.AttackHorizontalSwipeDegrees` (30–140°, default 110°) and `AttackSwipeArmPitchDegrees` (40–100°, default 78°), authored identically in the regular and runner masters. Torso twist 18°, forward pitch 10° are now authored in both masters. All settings remain in the existing *Attack lunge pose (visual only)* inspector group.
+
+**Performance:** only existing attacking zombies execute the extra few scalar calculations and cached arm pivot writes inside `ApplyAttackPose`. Grounded idle zombies retain their sleep behavior. No new queries, timers, extra scene nodes, mesh regeneration or allocations.
+
+**Acceptance handoff:** `dotnet build war-machine.csproj`; run `WORLD/FirstPerson/FirstPersonWorld.tscn` and `WORLD/World.tscn`. Watch front and side silhouettes in shambler/runner attacks. Expect a raised leading arm to travel sideways across the body rather than both arms pumping, with alternating lead sides and torso/head follow-through. Confirm one damage event per accepted strike, no reach increase, cancellation on shot/shove/death, missing-arm visual handling, corpse handoff, and idle sleep. Godot/SDK rendering and compilation have not been performed from the GitHub connection. CM5-B physical stepping and ELD3 low-body attacks remain unapproved.

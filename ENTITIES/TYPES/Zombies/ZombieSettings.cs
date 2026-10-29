@@ -9,10 +9,12 @@ public partial class ZombieSettings : EntitySettings
     [Export] public MeleeSettings? AttackProfile { get; set; }
     [ExportGroup("Attack lunge pose (visual only)")]
     [Export(PropertyHint.Range, "0,30,1")] public float AttackTorsoRollDegrees { get; set; } = 14f;
-    [Export(PropertyHint.Range, "0,25,1")] public float AttackTorsoTwistDegrees { get; set; } = 10f;
-    [Export(PropertyHint.Range, "0,35,1")] public float AttackForwardLungeDegrees { get; set; } = 16f;
+    [Export(PropertyHint.Range, "0,25,1")] public float AttackTorsoTwistDegrees { get; set; } = 18f;
+    [Export(PropertyHint.Range, "0,35,1")] public float AttackForwardLungeDegrees { get; set; } = 10f;
     [Export(PropertyHint.Range, "0,20,1")] public float AttackHeadSwayDegrees { get; set; } = 7f;
     [Export(PropertyHint.Range, "0,0.18,0.01")] public float AttackSideShift { get; set; } = 0.075f;
+    [Export(PropertyHint.Range, "30,140,5")] public float AttackHorizontalSwipeDegrees { get; set; } = 110f;
+    [Export(PropertyHint.Range, "40,100,5")] public float AttackSwipeArmPitchDegrees { get; set; } = 78f;
     [ExportGroup("Injury locomotion")]
     [Export] public ZombieLocomotionSettings? LocomotionProfile { get; set; }
     [ExportGroup("Anatomy")]
