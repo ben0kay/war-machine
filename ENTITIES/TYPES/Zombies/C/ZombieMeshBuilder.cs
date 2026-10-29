@@ -20,8 +20,6 @@ public sealed class ZombieMeshBuilder
     private static readonly SphereMesh Rounded = new() { Radius = 0.5f, Height = 1f, RadialSegments = 10, Rings = 5 };
     private static readonly Mesh Torso = ZombieHumanGeometry.Torso;
     private static readonly Material Bruise = Solid(new(0.24f, 0.26f, 0.23f));
-    private static readonly Material Wound = Solid(new(0.34f, 0.19f, 0.20f));
-    private static readonly Material Eye = Solid(new(0.30f, 0.32f, 0.28f));
     private static readonly Material Hair = Solid(new(0.17f, 0.18f, 0.15f));
     private static readonly Material Boots = Solid(new(0.15f, 0.16f, 0.15f));
 
@@ -44,7 +42,6 @@ public sealed class ZombieMeshBuilder
         Part(_root, "ExposedNeck", new(0.02f, 1.42f, -0.035f), new(0.16f, 0.16f, 0.18f), skin, Rounded);
         Part(_root, "TornCollar", new(-0.10f, 1.405f, -0.125f), new(0.16f, 0.075f, 0.075f), shirt, Rounded, new(0, 0, -18));
         Part(_root, "ShirtHem", new(0.09f, 0.824f, -0.112f), new(0.24f, 0.13f, 0.085f), shirt, Rounded, new(0, 0, -9));
-        Part(_root, "FabricTear", new(-0.11f, 1.02f, -0.174f), new(0.15f, 0.075f, 0.022f), Wound, Rounded, new(0, 0, 17));
 
         // Small head tilt, sunken sockets, discoloured jaw and imperfect hairline.
         var head = Joint(_root, "Head", new(0.022f, 1.55f, -0.047f));
@@ -54,11 +51,7 @@ public sealed class ZombieMeshBuilder
         Part(head, "Nose", new(0.0f, -0.005f, -0.156f), new(0.055f, 0.085f, 0.058f), face, Rounded);
         Part(head, "LeftSocket", new(-0.082f, 0.041f, -0.129f), new(0.071f, 0.037f, 0.019f), Bruise, Rounded);
         Part(head, "RightSocket", new(0.085f, 0.025f, -0.129f), new(0.071f, 0.038f, 0.019f), Bruise, Rounded);
-        Part(head, "LeftEye", new(-0.083f, 0.037f, -0.153f), new(0.017f, 0.012f, 0.008f), Eye, Rounded);
-        Part(head, "RightEye", new(0.089f, 0.022f, -0.154f), new(0.016f, 0.011f, 0.008f), Eye, Rounded);
         Part(head, "OpenMouth", new(-0.002f, -0.119f, -0.149f), new(0.083f, 0.018f, 0.014f), Hair, Rounded);
-        Part(head, "TempleBruise", new(0.126f, -0.02f, -0.067f), new(0.041f, 0.09f, 0.09f), Wound, Rounded);
-        Part(head, "HairPatch", new(-0.04f, 0.15f, 0.009f), new(0.165f, 0.038f, 0.166f), Hair, Rounded);
 
         // Existing animation pivots are kept exactly at shoulder/hip positions and names.
         _leftArm = Joint(_root, "LeftArm", new(-0.32f, 1.30f, 0));
@@ -73,7 +66,7 @@ public sealed class ZombieMeshBuilder
     }
 
     // =========================================================
-    // Uneven sleeves, mottled forearms and hanging hands read as decayed rather than identical mannequin limbs.
+    // Asymmetric sleeves and articulated forearms remain; tiny finger/bruise draws are removed.
     private static void BuildArm(Node3D arm, bool left, Material shirt, Material skin)
     {
         Part(arm, "Shoulder", new(0, -0.065f, 0), new(0.224f, 0.214f, 0.218f), shirt, Rounded);
@@ -81,12 +74,8 @@ public sealed class ZombieMeshBuilder
             new(0.181f, left ? 0.29f : 0.22f, 0.195f), shirt, Rounded);
         Part(arm, "ExposedForearm", new(0, left ? -0.375f : -0.34f, 0),
             new(0.142f, left ? 0.29f : 0.34f, 0.165f), skin, Rounded);
-        Part(arm, "Hand", new(0, -0.535f, -0.018f), new(0.113f, 0.134f, 0.125f), skin, Rounded, new(left ? 8 : -5, 0, left ? 7 : -7));
-        for (int i = 0; i < 2; i++)
-            Part(arm, "Finger", new(i == 0 ? -0.029f : 0.025f, -0.618f + i * 0.01f, -0.025f),
-                new(0.033f, 0.076f - i * 0.014f, 0.037f), skin, ZombieHumanGeometry.LowerLimb);
-        Part(arm, "ArmBruise", new(left ? -0.074f : 0.073f, -0.365f, -0.008f),
-            new(0.024f, 0.096f, 0.099f), left ? Wound : Bruise, Rounded);
+        // A slightly longer shared hand contour replaces two tiny finger draw calls.
+        Part(arm, "Hand", new(0, -0.545f, -0.018f), new(0.118f, 0.167f, 0.128f), skin, Rounded, new(left ? 8 : -5, 0, left ? 7 : -7));
     }
 
     // =========================================================
@@ -103,8 +92,8 @@ public sealed class ZombieMeshBuilder
         lower.Rotation = new Vector3(left ? -0.10f : 0.03f, 0, left ? -0.03f : 0);
         Part(lower, "Shin", new(0, -0.17f, 0), new(0.178f, 0.35f, 0.195f), pants, Rounded);
         var ankle = Joint(lower, "Ankle", new(0, -0.34f, 0));
-        Part(ankle, "ShoeUpper", new(0, 0.028f, 0.003f), new(0.187f, 0.140f, 0.216f), Boots, Rounded);
-        Part(ankle, "ShoeToe", new(0, -0.035f, -0.097f), new(0.198f, 0.077f, 0.244f), Boots, Rounded);
+        // Keep a shoe toe silhouette with one longer mesh rather than a separate toe instance.
+        Part(ankle, "ShoeUpper", new(0, 0.013f, -0.042f), new(0.192f, 0.145f, 0.310f), Boots, Rounded);
         return knee;
     }
 
@@ -117,7 +106,7 @@ public sealed class ZombieMeshBuilder
     { return new StandardMaterial3D { AlbedoColor = color, Roughness = 0.96f }; }
 
     // =========================================================
-    // Visual meshes do not collide, think or process. Shared primitives/materials remain reusable across zombies.
+    // Visual meshes do not collide, think or process. Shared geometry/materials remain cached.
     private static void Part(Node3D parent, string name, Vector3 position, Vector3 size,
         Material material, Mesh? shape = null, Vector3? rotation = null)
     {
