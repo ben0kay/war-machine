@@ -6,6 +6,7 @@ public partial class ZombieController
 {
     private MeleeAttack? _attack;
     private MeleeSettings _attackProfile = null!;
+    private Vector3 _committedAttackAim;
     private bool Attacking => _attack?.IsActive == true;
 
     // =========================================================
@@ -23,7 +24,12 @@ public partial class ZombieController
     // =========================================================
     // Current target only; other actors still block cover rays. No player/camera/input dependency.
     private bool CanAttackTarget()
-        => _config.AttacksEnabled && IsChasing && !_reaction.IsActive && !LowBodyActive
+        => IsChasing && CanContinueAttack();
+
+    // =========================================================
+    // Losing sight/reach does not undo a committed swipe; lifecycle and accepted reactions still interrupt.
+    private bool CanContinueAttack()
+        => _config.AttacksEnabled && !_reaction.IsActive && !LowBodyActive
             && _locomotion.CanDrive && IsInstanceValid(_target) && _target!.IsInsideTree()
             && !_target.IsQueuedForDeletion() && _target is IDamageReceiver
             && !(_target is ICombatLifeState life && life.IsDead);
@@ -48,16 +54,20 @@ public partial class ZombieController
     private void TryStartAttack()
     {
         if (CanAttackTarget() && InAttackReach() && _attack!.TryStart(_attackProfile))
-        { _stuck = 0; SetPhysicsProcess(true); }
+        {
+            _committedAttackAim = AttackAim;
+            Velocity = new Vector3(0, Velocity.Y, 0);
+            _stuck = 0; SetPhysicsProcess(true);
+        }
     }
 
     // =========================================================
-    // Existing active physics drives contact. Dodging, cover, reactions and death can prevent the strike.
+    // Complete misses through recovery. Only the shared active-window query checks present reach/arc/cover.
     private void AdvanceAttack(float delta)
     {
         if (!Attacking) return;
-        if (!CanAttackTarget() || !InAttackReach()) { _attack!.Cancel(); return; }
-        if (_attack!.Advance(delta, AttackOrigin, AttackAim, MeleeAimMode.Horizontal,
+        if (!CanContinueAttack()) { _attack!.Cancel(); return; }
+        if (_attack!.Advance(delta, AttackOrigin, _committedAttackAim, MeleeAimMode.Horizontal,
             out MeleeContact contact, _target))
         {
             var hit = new DamagePacket(_attackProfile.Damage, _attackProfile.DamageKind,

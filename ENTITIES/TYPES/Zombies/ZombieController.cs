@@ -156,6 +156,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // Long crawler colliders must turn with their visual body, including slow investigation-look turns.
     private void SetMobilityFacing(float yaw)
     {
+        if (Attacking) return; // Committed swipe heading stays fixed through recovery.
         yaw = _locomotion.TryTurn(yaw);
         VisualRoot.Rotation = new Vector3(VisualRoot.Rotation.X, yaw, VisualRoot.Rotation.Z);
     }
@@ -378,7 +379,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); UpdatePose(0); } }
         ulong now = Time.GetTicksMsec();
         UpdateInvestigation(wasChasing, now, targetValid);
-        if (!CanAttackTarget()) _attack?.Cancel();
+        if (!CanContinueAttack()) _attack?.Cancel();
         TryStartAttack();
         if (_locomotion.CanDrive && !IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)
         {

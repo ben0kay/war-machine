@@ -9,7 +9,7 @@ public partial class ZombieController
     private float _lookYaw;
     private PhysicsShapeQueryParameters3D _wanderQuery = null!;
     public bool IsInvestigating => _investigation?.IsActive == true;
-    protected bool IsPursuing => IsChasing || _investigation?.Phase == InvestigationPhase.Travel;
+    protected bool IsPursuing => IsChasing || Attacking || _investigation?.Phase == InvestigationPhase.Travel;
 
     // =========================================================
     private void ClearInvestigation()
