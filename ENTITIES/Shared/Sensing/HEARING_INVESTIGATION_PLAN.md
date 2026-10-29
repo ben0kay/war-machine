@@ -1,137 +1,77 @@
-> **Shared investigation + bullet-hit clue (2026-10-28):** [Current owner/acceptance](../Investigation/README.md). The existing last-seen episode policy now lives in a species-independent passive helper. Surviving player bullet contacts can start the same fixed-point search with the same give-up rules, independently of flinch. Both zombie variants/views share it. No nearby-gunshot hearing/HE1, new movement AI or attacks are included. Source implemented; local validation pending. This supersedes older hit-trigger-deferred/no-shot-investigation statements below; existing hearing phases retain their own status.
+# Hearing and fixed-point investigation
 
-# Hearing, sound stimuli and movable investigation anchors
+Required branch: `implement-td0-td1`. Current source supersedes the older exact-sound-anchor proposal: all investigations retain PER2's physically settled wander anchor, never the original or estimated sound coordinate.
 
-> **Status: HE0 implemented in source, awaiting local validation. HE1–HE3 remain proposed.**
-> **Related roadmap:** [PERCEPTION_IMPLEMENTATION_PLAN.md](PERCEPTION_IMPLEMENTATION_PLAN.md) → PER2 (now specified as per-zombie randomized last-seen search) and PER5 (hearing). PER0/PER1 visual detection already exist; PER2 is implemented; HE0 now supplies gameplay noise events, but AI listening/reaction is not implemented.
-> **Branch:** `implement-td0-td1`. **Primary first consumer:** zombies in `WORLD/World.tscn`. Long-term consumers could include animals, hostile humans and robots, with species-specific responses.
-
-## Desired player-facing behaviour
-
-- Zombies initially **wander around their spawn point** using the existing configurable `WanderRadius`.
-- A sufficiently audible action (gunshot, melee strike, looting, footsteps, etc.) creates **one spatial sound stimulus at the position where the action happened**. Each listener evaluates the sound's intensity/range from *that immutable position*, not from the player's continuously updated location.
-- A zombie that hears but **does not see** the player walks toward an **approximate sound location** (with a small per-listener positional error / search radius, rather than perfect precision). During this travel, normal visual detection can acquire the player and take priority immediately.
-- If it reaches the investigation area **without finding the player**, its **wander anchor moves to the recorded sound position**. It then resumes random wandering within `WanderRadius` around that **new** anchor, not the original spawn. This is persistent for that zombie during the current runtime unless later changed by a new investigation or future explicit reset rule.
-- Weak nearby sounds may trigger a shorter local search, with optional **minimum intensity for relocating the long-term anchor**. This allows footsteps to attract a nearby zombie without necessarily relocating every wander home; make the rule configurable.
-- Several shots do not cause constantly oscillating targets. Define a small event-refresh/priority rule to accept stronger/newer relevant stimuli while investigating.
-- **Hearing is not eyesight.** A zombie may react to a shot behind itself or behind a building without gaining LOS or learning the player's live position.
-- Current zombies have **no player attack**. If they see the player en route, use **existing visual chase** now; eventual melee/attack logic remains a *separate* future phase.
-
-### State and priority
-
-Illustrative state ownership in `ZombieController` (keep it simple; do not mandate a state-machine framework):
-
-```text
-WANDER near wanderAnchor (initially spawn)
-   + qualifying sound -> INVESTIGATE recordedPosition + small deterministic offset
-INVESTIGATE
-   + direct sight -> existing CHASE (visible target position only)
-   + reached investigation radius, no sight -> wanderAnchor = recordedPosition -> WANDER
-   + unreachable/stuck or max investigate time -> abandon exact approach safely;
-     configurable choice to keep the last confirmed anchor or switch to a nearby reachable
-     point; never teleport or track an unseen moving source
-CHASE
-   + sight lost -> follow the separately planned PER2 last-seen logic when implemented;
-     each zombie may independently abandon its visual search early, part-way or at the last-seen point
-     hearing does NOT secretly preserve a live target position
-```
-
-**Important distinction:** `spawnPosition` can remain a permanent historical reference, but a mutable `wanderAnchor` becomes the **actual origin** for subsequent random goals. Do not overwrite `spawnPosition` merely to imitate anchor changes; use explicit names so a future return-home or reset system remains possible. On a new sound, clear the old random wander goal and select one investigation destination; don't use `_target.GlobalPosition` unless `IsChasing` is true and sight was verified.
-
-## Confirmed current integration points (reviewed 2026-10-27)
-
-- `ENTITIES/TYPES/Zombies/ZombieController.cs`: one staggered `_brain` physics timer (~0.4s); `Think()` first updates LOS/chase, otherwise wanders around `_home` with `_config.WanderRadius` and random 1–3s rests. It already has `_goal`, `_hasGoal`, `_stuck`, and `IsChasing`; currently **no sound reaction or investigation memory**.
-- `ENTITIES/TYPES/Zombies/ZombieSettings.cs` / `Configuration/ZombieMaster.tres`: Inspector-editable detection ranges, wander radius, movement speeds and sight interval. Add hearing/investigation settings here (resource duplicated per actor).
-- `ENTITIES/Shared/Sensing/VisibilityResolver.cs`: sight geometry only. Keep it separate from hearing; sound need not require visual LOS.
-- `EQUIPMENT/Weapons/Shared/FirearmController.cs`: `TryFire()` returns `true` **only after a successful shot**, resolves hits, plays short visual effects and optionally calls `_audio.Play()`. Publish a **gameplay sound event from this successful-shot path**, even if `ShotSound` is null or muted.
-- `EQUIPMENT/Weapons/Shared/FirearmSettings.cs` and `EQUIPMENT/Weapons/Rifles/Rifle_001/Configuration/RifleMaster.tres`: already have `ShotSound` and `ShotVolumeDb` for audible playback. **Gameplay hearing radius/strength is separate**; do not infer AI awareness directly from volume in dB.
-- `PLAYER/PlayerController.cs`: knows movement/crouch/running and emits `PositionChanged`. It currently has **no crawling, looting or melee action**. Future player-action systems should publish sound events when those mechanics actually exist.
-- `WORLD/WorldController.cs`: knows placed zombie instances and player/weapon composition; appropriate to wire one scene-local sound dispatcher once, not to contain noise attenuation rules.
-- The robot's `ScanSensor` and cyan scanner visuals are unrelated to this initial zombie hearing implementation. Do not attach hearing or change robot targeting without explicit authorization.
-
-## Suggested shared design
-
-```text
-ENTITIES/Shared/Sensing/
-  PERCEPTION_IMPLEMENTATION_PLAN.md        # existing general roadmap, PER5
-  HEARING_INVESTIGATION_PLAN.md            # this document
-  SoundStimulus.cs                         # future lightweight readonly event/value
-  SoundDispatcher.cs                       # future world-local event dispatcher (not global singleton)
-  HearingSensor.cs                         # optional reusable listener filtering, only if worthwhile
-ENTITIES/TYPES/Zombies/
-  ZombieController.cs                      # owns audible investigation / mutable wander anchor
-  ZombieSettings.cs                        # owns hearing response and search tuning
-  Configuration/ZombieMaster.tres          # authored defaults
-EQUIPMENT/Weapons/Shared/
-  FirearmController.cs                     # publish only on confirmed successful shot
-  FirearmSettings.cs                       # per-weapon gameplay hearing radius/strength
-PLAYER/
-  PlayerController.cs + future actions     # publish stride, loot, crawl, melee, etc. when available
-WORLD/
-  WorldController.cs                       # register/unregister active listeners and composer
-```
-
-- **Stimulus contract:** immutable `WorldPosition`, `Kind` (e.g. `Gunshot`, `Footstep`, `Looting`, `Melee`, `Impact`), gameplay `Radius` and/or `Intensity`, event time/sequence ID if needed for arbitration, optional originator reference/affiliation **for filtering only**. Event consumers retain coordinates; they **must never follow the originator's live transform** based on sound alone. A sound event should not retain actor nodes indefinitely.
-- **Dispatch:** a single scene/world-local notification route to explicitly registered active listeners. For current ~12 zombies, immediate squared-distance filtering on discrete stimuli is inexpensive. Skip inactive/dead actors and suppress zero-radius sounds. As active populations scale, only consider a world-local spatial grid / nearby listener index after profiling. Avoid `GetNodesInGroup()` per event, engine-wide singleton broadcasts and zombie-per-frame searches.
-- **Hearing threshold:** each species gets `HearingSensitivity` / `MinimumAudibleIntensity` or equivalent; use a simple, predictable falloff for distance. No cone requirement (ears hear behind); advanced wall/terrain acoustic occlusion/reflection is optional later. Never confuse a 3D audio falloff curve with AI hearing logic.
-- **Reaction:** the *listener*, not the emitter/dispatcher, chooses whether to investigate, flee, ignore or change its wander anchor. Zombie `HearSound(stimulus)` stores the snapshot and wakes the existing decision/movement mechanism; no separate always-running zombie hearing loop.
-- **Approximation:** pick one seeded XZ offset within `InvestigationAccuracyRadius` at sound acceptance, and store it. Don't reroll that offset each brain tick or the goal will jitter. Distinguish `InvestigationArrivalRadius` (when to stop searching) from `WanderRadius` (future roam circle).
-- **Priority:** `confirmed visual chase > deliberate nonvisual investigation > ordinary wander`. PER2 last-seen investigation and HE1 sound investigation represent **separate evidence and completion policies**: early visual give-up returns to ordinary wandering, while a sufficiently strong heard stimulus may relocate the wander anchor only after the audible investigation succeeds. Decide which new nonvisual clue may supersede a visual memory using a strength/recency rule; never read the source actor's live position. When a stronger/newer sound supersedes the current one, use a cooldown/minimum priority difference so repeated automatic shots don't retarget every 0.65s. Do not have a remembered noise override a currently visible player.
-- **Completion:** if no visual contact by arrival, use **the original recorded sound coordinate as new wander anchor**, not the inaccurate investigation offset. Thereafter random patrol destinations are sampled around that anchor until another qualifying stimulus moves it.
-- **Pathfinding limit:** current zombies use direct `MoveAndSlide()`, no navigation. Use existing stuck protection, bounded timeout and safe fallback. Do **not** attempt to cross buildings/steep cliffs with teleportation; proper navigation belongs to a future task.
-- **Sound playback is optional:** an AI noise event is not an `AudioStreamPlayer3D` and should work in silent/headless tests. Keep the real audio and gameplay hearing independently configurable.
-
-## Starter tuning — suggestions, NOT implemented/hardcoded
-
-| Player or world action | Illustrative gameplay hearing radius | Notes |
-| --- | ---: | --- |
-| Unsuppressed rifle shot | 65–90 m | Major distraction; likely changes the long-term wander anchor |
-| Melee impact | 8–16 m | Future action; meaningful nearby |
-| Running footsteps | 7–12 m | Emit by stride/distance, not every physics frame |
-| Normal walking footsteps | 3–7 m | Usually only nearby zombies |
-| Crouched walking | 1–3 m | Quiet, not guaranteed silent |
-| Crawling | 0.5–2 m | Future movement mode only |
-| Looting / inventory interaction | 2–6 m | On discrete relevant actions, not each UI operation |
-| Environmental impact / door slam | Source-specific | Eventually applies to non-player sources |
-
-All values are design starting points, not physical acoustics. Tune against the current 18m visual detection and actual scene scale. Suggested zombie Inspector settings: `HearingSensitivity`, `InvestigationAccuracyRadius` (~2–4m), `InvestigationArrivalRadius` (~1.5–3m), `InvestigationTimeoutSeconds`, `SoundRetargetCooldownSeconds`, `AnchorRelocationMinIntensity`. Keep existing `WanderRadius` editable and **recenter it** instead of introducing a second duplicate wandering radius.
-
-## Implementation stages — future approval required
-
-| Phase | Deliverable | State |
+| Phase | Scope | Status |
 | --- | --- | --- |
-| **HE0 — shared spatial noise** | Minimal immutable stimulus and world-local dispatcher; expose one shot-noise setting on weapon resource; issue a sound on successful `TryFire()` independently of audio playback. No zombie behaviour change yet. | Implemented; awaiting local validation |
-| **HE1 — zombie hearing + anchor** | Receive and filter shot events, investigate a recorded offset position, prioritize current LOS chase, recenter `wanderAnchor` when reached without visual acquisition, handle timeout/stuck/multiple shots, cleanup on death/unload. | Proposed |
-| **HE2 — quiet/loud actions** | Add event-driven running/walking/crouched footstep thresholds, then melee, looting and crawl only as those systems become real. Per-action sounds use shared contract and data-driven radii. | Proposed |
-| **HE3 — polish and scale** | Optional hearing debug circles/last-noise marker, obstacle muffling with bounded budget, suppression/equipment/weather modifiers, listener spatial indexing if profiling justifies. Keep these optional. | Proposed |
+| HE0 | World-local immutable sound events, successful-shot emission independent of playback | Implemented; local validation pending |
+| HE1 | Event-driven gunshot hearing, uncertain position, distance/intensity commitment, shared investigation and listener cleanup | Implemented; awaiting local build/gameplay/performance validation |
+| HE2 | Footsteps, looting, doors, melee and other discrete action emitters | Planned; not implemented |
+| HE3 | Acoustic obstruction/reflections, environmental modifiers, spatial indexing/suppression | Planned; not implemented |
 
-HE0 is implemented. The next useful playable pass is **HE1**, after separate review/authorization, without changing robot scanner, natural eyesight geometry, melee attacks or the AI navigation system. PER2 last-seen memory may be integrated deliberately if implemented earlier; HE1 must function without PER2.
+## Current HE0 ownership
 
-## Acceptance / regression checks (brief)
+`WorldAudio` owns `WorldSoundEvents`, whose `Hearing` dispatcher broadcasts immutable `SoundStimulus` values. Successful firearm shots emit at the actual muzzle, with numeric source/emitter IDs and per-world sequence; no retained source node or event history. Invalid/blocked firing attempts emit nothing. Hearing remains independent of audio stream availability, mute, playback distance, voice pool and mixer gains. Effective amplitude is clamped profile/action loudness; hearing radius scales by sqrt(amplitude), intensity falls linearly with distance. No new emitters were added in HE1.
 
-1. Zombie spawns -> wander anchor is spawn; random destinations remain within configured `WanderRadius`.
-2. Player fires out of view/behind zombie -> nearby zombie goes to **recorded shot position**, not the running player's new location. Distant zombies beyond range stay unaffected.
-3. Zombie reaches search area with no LOS -> settles and resumes wandering **around shot coordinate** even after the player moves away; only an accepted newer event/explicit reset changes that anchor.
-4. While investigating, the zombie sees the player -> normal sight chase takes priority. After LOS loss, do not use an unverified live position.
-5. Walking/running/crouch sounds (once implemented) have increasing audibility; noise dispatch is silent when the actor stands still. Muted/missing real SFX does not disable gameplay hearing.
-6. Rapid automatic shots are handled predictably without target jitter, duplicates or growing unbounded memory. Multiple zombies respond independently with stable per-listener offsets.
-7. Stuck/no-path investigation terminates gracefully rather than cycling forever; no teleport, no additional idle timers, no leaks on actor death/deactivation/scene exit.
-8. Godot C# build, F6 `WORLD/World.tscn`, confirm current sight/cover, F7 debug cones, gunshot effects and hit damage are unchanged. User does visual gameplay/performance acceptance.
+## HE1 implementation
 
-**HE1–HE3 remain design references.** The HE0 handoff below supersedes old statements that the dispatcher does not exist. When authorized, follow root `CodePreferences.md`: one commit per job, brief validation, update the sensing and zombie READMEs, report outstanding local checks.
+`WORLD/WorldController.cs` binds each successfully placed zombie to `_audio.SoundEvents.Hearing` before target initialization. `ZombieHearing.cs` subscribes only when configured and activated, detaches on deactivation/death/exit or rebinding, and releases its dispatcher on exit. Existing WorldAudio shutdown clears delegates and invalidates emission handles. Both species and both views use this same path; standalone debug corpse fixtures intentionally have no service.
 
-## PER2 integration note
+One callback evaluates each gunshot: skip invalid/dead/inactive/uninitialized/disabled listeners and self-events, confirmed chase and direct-hit clues. Squared distance rejects outside-radius events before square root, randomness or estimate work. No sound cone, LOS ray, physical sound propagation or source transform lookup. Unheard shots do not alter goals or anchors.
 
-PER2 visual investigation is now implemented and, by explicit owner direction, already relocates the wander anchor to the physically settled give-up position. Future HE1 must preserve this visual behavior and reuse the actor-owned anchor policy; anchor relocation is no longer exclusive to hearing. HE0 supplies shared gameplay events; HE1–HE3 remain unimplemented. Playback alone still does not supply AI clues.
+Each accepted sound stores one compact snapshot: original immutable coordinate (arbitration only), one estimated coordinate, interpolated commitment weights, received strength and sequence/cooldown state. No list/history. Position error is a single seeded, uniform-area horizontal disk sample (`sqrt(random)` radius). The estimate stays fixed throughout travel; no brain-tick reroll. Existing seeded per-zombie RNG produces independent listeners. Sound evaluation may consume RNG; unchanged sight/hit Begin calls retain their original random draw sequence when no sounds intervene.
 
-## HE0 implementation handoff — 2026-10-28
+The existing staggered brain consumes the pending estimate after its visual decision, records a `Sound` clue and invokes the existing `InvestigationMemory.Begin` with a one-episode weight override. Existing shared fractions, speed-aware deadline, cap, dwell, arrival, stuck fallback and locomotion are reused. The optional override does not mutate settings, so sight/bullet-hit probabilities remain 40/35/25 (or their authored values). No new AI, navigation, timers or hearing physics callbacks.
 
-Owner authorized a shared emission route through AUDIO plus independent gameplay hearing, with common action loudness and no sound assets required. `AUDIO/Shared/WorldSoundEvents.cs` is composed once by the existing WorldAudio. `SoundEmissionSettings` is reusable by future footsteps/melee/interactions. `SoundStimulus` and `SoundDispatcher` live here; no actor reference, global singleton, event queue or scene scan. Both current weapon masters opt in (rifle 80m, MG 70m at loudness 1); old custom firearms without ShotEmission preserve their earlier playback-only behavior. Active world/FPS already inject the same AUDIO owner through WeaponSlots. Other consumers must explicitly use their world's service.
+Priority: confirmed visual chase > actual bullet-hit clue > heard sound > wandering. Sound may replace a last-seen search, but not an active direct-hit episode. A direct bullet contact clears a pending sound; confirmed sight replaces the sound episode normally. Sound episodes need no live source/target; moving after firing never updates the estimate. Giving up settles and anchors at the actor's real stopping point, including partial travel and blocked paths. No teleport or exact-sound anchor.
 
-Each successful TryFire closes its cooldown gate, then emits one snapshot at the actual muzzle coordinate (not the cover-adjusted ray origin), before optional pooled playback. Failed cooldown/unequipped/invalid-aim calls emit nothing. Numeric source actor ID is separate from emitter weapon ID. Per-world sequence supports later HE1 arbitration; it is not a save identifier. A service without audio can also be constructed for silent gameplay/tests. Shutdown clears subscribers and rejects future emissions.
+## Authored configuration
 
-Shared loudness is linear amplitude. Effective amplitude is profile loudness times action multiplier (individual and result caps 0–4); zero suppresses both. Playback adds 20log10(amplitude) dB to the existing gain, still subject to AudioCue distance and pool limits. Hearing radius is base radius times sqrt(amplitude), capped 1000m, with peak intensity equal to amplitude and linear distance falloff. Personal master/category volumes never alter hearing. Radius zero means playback only. These rules are simple gameplay tuning, not physical propagation.
+Both standard and runner masters explicitly author the same **Gunshot hearing (HE1)** fields in `ZombieSettings`:
 
-**No HE1 behavior:** zombies/deer/robots do not subscribe, investigate or change anchors from sounds yet. No footsteps, additional sounds or audio files were added. HE1 must range-filter registered active listeners, decide thresholds/priorities, unsubscribe and preserve PER2. See [shared API](../../../AUDIO/Shared/README.md).
+| Field | Default / meaning |
+| --- | --- |
+| HearingEnabled | true |
+| MinimumAudibleIntensity | 0.08; received intensity threshold |
+| SoundUncertaintyDistances | (10, 110)m; normalized distance endpoints |
+| SoundUncertaintyRadii | (1, 18)m maximum error radius |
+| SoundNearCommitmentWeights | (0.05, 0.15, 0.80) early/moderate/thorough |
+| SoundFarCommitmentWeights | (0.80, 0.18, 0.02) early/moderate/thorough |
+| SoundResponseChance | (1, 0.25), near/strong to far/weak |
+| SoundRetargetCooldownSeconds | 3s; also throttles a probabilistic no-response decision |
+| SoundStrongerRatio | 1.25; received strength relative to accepted sound |
+| SoundNewSourceDistance | 12m horizontal displacement for a newer, comparably audible source |
 
-**Checks/handoff:** source and resource paths/load counts plus finite/zero/multiplier/falloff arithmetic reviewed. No Godot/.NET executable is available here, so compilation and runtime event/playback acceptance remain pending. Locally run `dotnet build war-machine.csproj`; F6 both World and FPS. Temporarily subscribe to `WorldAudio.SoundEvents.Hearing.Emitted` and count snapshots: one per accepted rifle/MG shot, none for cooldown/unequipped/UI-blocked attempts; positions stay fixed as the player moves and cover-adjusted shots retain their muzzle origin. Confirm radius-zero vs loudness-zero, shutdown/reload and independent world instances. With Stream unassigned/audio OFF/full voice pool, noise counts must remain unchanged. When a real rifle sound is assigned, verify one pooled sound per shot, existing nested caps, louder/quieter gain and no legacy double-play. Remove the temporary subscriber after checking. No runtime acceptance is claimed.
+Normalize distance `t = clamp((distance-near)/(far-near),0,1)`. Error radius interpolates min/max using `t*t`, a continuous curve matching requested increasing uncertainty. Commitment/response use `weakness = max(t, 1-clamp(receivedIntensity,0,1))`. Close but quiet shots can therefore be weak evidence. Weights are sanitized/normalized by the shared helper.
+
+Illustrative rifle at loudness 1 (calculated policy, not runtime measurements):
+
+| Distance | Maximum error | Response chance | Thorough chance if responding |
+| --- | --- | --- | --- |
+| 20m | 1.17m | 88% | 68% |
+| 50m | 3.72m | 70% | 49% |
+| 75m | 8.18m | 51% | 29% |
+| 100m | 14.77m | 33% | 10% |
+
+Rifle emission radius is now 130m, MG 120m, both on existing ShotEmission profiles at loudness 1. Minimum intensity reduces actual response reach further (approximately 119.6m/110.4m). No playback volume or audio cue range changed. Shared deadlines still cap travel at the existing InvestigationMaxSeconds (60s by default); thorough commitment does not guarantee distant arrival, especially for injured slow actors.
+
+## Repeated gunfire and cost
+
+Before retargeting an active/pending sound episode, a newer sequence must pass cooldown AND be at least 25% stronger, OR be displaced at least 12m and retain at least 90% of prior strength. Comparable fire at the same location cannot reroll or extend the episode, even after cooldown. Different weapons at the same location are treated by the same evidence rule. After an episode finishes a later shot can start another. Rejected chance attempts reserve cooldown so automatic fire does not reroll response every shot.
+
+Broadcast remains O(active listeners) per discrete event, with cheap gates and no scene/group scan, raycast, material writes or physics objects. Near-constant gunfire still dispatches one cheap callback per listener per shot; profiling must determine whether a future spatial index is needed. Pending state is consumed only on the existing brain timer. Movement wakes only when the shared episode requires it and retains normal settling/sleep. Death/corpse handoff and unload unsubscribe; corpses never listen.
+
+## Validation and local handoff
+
+Source/lifecycle/priority review, C# loop/whitespace and resource reference checks plus a small numeric policy model were performed. No Godot/.NET binary is available here: compilation, actual native movement, both-view gameplay and horde frame-time measurements are **unverified**. One HE1 commit only; no test scenes added.
+
+Locally run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `WORLD/FirstPerson/FirstPersonWorld.tscn`:
+
+1. Fire behind normal zombies/runners outside vision range; compare 20/50/75/100m and beyond hearing radius. Use misses to isolate hearing from bullet-hit clues.
+2. Several listeners should choose distinct fixed estimates and commitments. Move away unseen after firing; they must not follow the new player position.
+3. Confirm real sight overrides sound and actual bullet-hit search prevents lower-priority sounds replacing it. Existing last-seen/hit probabilities and attack behaviour remain unchanged.
+4. Hold automatic fire at one location: no continually changing destination. After cooldown, test a significantly stronger or displaced source; no response is also valid at weak ranges.
+5. Check early/full search, looking, stuck timeout, settled wander anchoring, injured movement, dead/inactive listeners, scene exit/reload and no stale delegates/duplicate reception.
+6. Compare idle and active horde frame time; mute/disable audio and ensure gameplay hearing remains functional. No performance improvement is claimed without measurements.
+
+No HE2/HE3, acoustic rays, hearing grid, attack changes, new debug UI, rendering changes or movement overhaul is included.

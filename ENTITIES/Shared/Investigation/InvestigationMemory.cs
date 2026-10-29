@@ -2,7 +2,7 @@
 using Godot;
 
 public enum InvestigationPhase { None, Travel, Look }
-public enum InvestigationClue { LastSeen, Hit }
+public enum InvestigationClue { LastSeen, Hit, Sound }
 
 public sealed class InvestigationMemory
 {
@@ -37,11 +37,12 @@ public sealed class InvestigationMemory
 
     // =========================================================
     // Same seeded draws and sanitized ranges as the original zombie PER2 episode; no hidden target reads.
-    public bool Begin(Vector3 from, float speed, ulong now, RandomNumberGenerator random)
+    public bool Begin(Vector3 from, float speed, ulong now, RandomNumberGenerator random, Vector3? commitmentWeights = null)
     {
         if (!HasPoint || !from.IsFinite()) return false;
-        float early = Safe(_settings.Weights.X, 0, 100), middle = Safe(_settings.Weights.Y, 0, 100);
-        float full = Safe(_settings.Weights.Z, 0, 100), total = early + middle + full;
+        Vector3 weights = commitmentWeights ?? _settings.Weights;
+        float early = Safe(weights.X, 0, 100), middle = Safe(weights.Y, 0, 100);
+        float full = Safe(weights.Z, 0, 100), total = early + middle + full;
         float choice = total > 0 ? random.Randf() * total : 0;
         Thorough = total == 0 || choice >= early + middle;
         float fraction = Thorough ? 1 : Sample(random, choice < early ? _settings.EarlyFraction : _settings.ModerateFraction, 0.05f, 1);

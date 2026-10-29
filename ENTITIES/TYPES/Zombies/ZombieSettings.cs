@@ -51,6 +51,17 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float EyeHeight { get; set; } = 1.6f;
     [Export] public float SightIntervalSeconds { get; set; } = 0.4f;
     [Export(PropertyHint.Layers3DPhysics)] public uint SightBlockerMask { get; set; } = 17;
+    [ExportGroup("Gunshot hearing (HE1)")]
+    [Export] public bool HearingEnabled { get; set; } = true;
+    [Export] public float MinimumAudibleIntensity { get; set; } = 0.08f;
+    [Export] public Vector2 SoundUncertaintyDistances { get; set; } = new(10, 110);
+    [Export] public Vector2 SoundUncertaintyRadii { get; set; } = new(1, 18);
+    [Export] public Vector3 SoundNearCommitmentWeights { get; set; } = new(0.05f, 0.15f, 0.80f);
+    [Export] public Vector3 SoundFarCommitmentWeights { get; set; } = new(0.80f, 0.18f, 0.02f);
+    [Export] public Vector2 SoundResponseChance { get; set; } = new(1, 0.25f);
+    [Export] public float SoundRetargetCooldownSeconds { get; set; } = 3;
+    [Export] public float SoundStrongerRatio { get; set; } = 1.25f;
+    [Export] public float SoundNewSourceDistance { get; set; } = 12;
     [ExportGroup("Investigation triggers")]
     [Export] public bool HitInvestigationEnabled { get; set; } = true;
     [ExportGroup("Last seen investigation")]

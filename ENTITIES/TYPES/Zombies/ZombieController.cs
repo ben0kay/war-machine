@@ -335,11 +335,11 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     protected override void OnActivated()
-    { if (_configured) { _brain.Start(_random.RandfRange(0.05f, Mathf.Max(0.05f, _config.SightIntervalSeconds))); SetPhysicsProcess(true); } UpdateVisionDebug(); }
+    { SubscribeHearing(); if (_configured) { _brain.Start(_random.RandfRange(0.05f, Mathf.Max(0.05f, _config.SightIntervalSeconds))); SetPhysicsProcess(true); } UpdateVisionDebug(); }
 
     // =========================================================
     protected override void OnDeactivated()
-    { _attack?.Cancel(); ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
+    { UnsubscribeHearing(); _attack?.Cancel(); ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
 
     // =========================================================
     // Initial frontal acquisition, then angle-independent alerted tracking with mandatory LOS.
@@ -379,6 +379,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); UpdatePose(0); } }
         ulong now = Time.GetTicksMsec();
         UpdateInvestigation(wasChasing, now, targetValid);
+        ConsumeHeardSound(now);
         if (!CanContinueAttack()) _attack?.Cancel();
         TryStartAttack();
         if (_locomotion.CanDrive && !IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)

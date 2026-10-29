@@ -6,7 +6,7 @@
 
 [sub_resource type="Resource" id="shot_emission"]
 script = ExtResource("emission_script")
-HearingRadiusMeters = 80.0
+HearingRadiusMeters = 130.0
 Loudness = 1.0
 
 [resource]

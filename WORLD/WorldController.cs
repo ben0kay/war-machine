@@ -591,6 +591,7 @@ public partial class WorldController : Node3D
             }
             else zombie.GlobalPosition = new Vector3(position.X, height + 0.05f, position.Z);
             zombie.CorpseOwner = _corpses;
+            zombie.BindHearing(_audio.SoundEvents.Hearing);
             zombie.InitializeTarget(player, unchecked((uint)(Settings.Seed + seedOffset + i * 7919)),
                 point => terrainData.Call("get_height", point).AsSingle());
             visionDebug.Register(zombie);

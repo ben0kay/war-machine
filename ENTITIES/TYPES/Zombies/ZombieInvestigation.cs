@@ -17,7 +17,8 @@ public partial class ZombieController
 
     // =========================================================
     private bool InvestigationEnabled(InvestigationClue clue)
-        => clue == InvestigationClue.Hit ? _config.HitInvestigationEnabled : _config.LastSeenInvestigationEnabled;
+        => clue == InvestigationClue.Sound ? _config.HearingEnabled
+            : clue == InvestigationClue.Hit ? _config.HitInvestigationEnabled : _config.LastSeenInvestigationEnabled;
 
     // =========================================================
     // Only real sight can refresh a visual clue. Hidden targets never update an ongoing episode's fixed point.
@@ -35,7 +36,7 @@ public partial class ZombieController
             else FinishInvestigation();
         }
         if (!IsInvestigating) return;
-        if (!targetValid || !InvestigationEnabled(_investigation.Clue) || _investigation.Expired(now))
+        if ((!targetValid && _investigation.Clue != InvestigationClue.Sound) || !InvestigationEnabled(_investigation.Clue) || _investigation.Expired(now))
         { FinishInvestigation(); return; }
         if (_investigation.Phase == InvestigationPhase.Look)
         { SetMobilityFacing(_lookYaw + _investigation.LookOffset(now)); UpdatePose(0); }
@@ -47,6 +48,7 @@ public partial class ZombieController
     {
         if (!_config.HitInvestigationEnabled || !IsInstanceValid(source) || source == this || source != _target
             || !source!.IsInsideTree() || source.IsQueuedForDeletion()) return;
+        _pendingSound = false;
         Vector3 point = source.GlobalPosition; // Snapshot once at contact; never retain a live source reference here.
         if (!_investigation.Remember(point, InvestigationClue.Hit)) return;
         // Confirmed pursuit retains priority; if sight is lost next tick, this newest clue can start the episode.
@@ -55,9 +57,9 @@ public partial class ZombieController
     }
 
     // =========================================================
-    private void BeginInvestigation(ulong now)
+    private void BeginInvestigation(ulong now, Vector3? commitmentWeights = null)
     {
-        if (!_investigation.Begin(GlobalPosition, _locomotion.Speed(_config.ChaseSpeed), now, _random)) return;
+        if (!_investigation.Begin(GlobalPosition, _locomotion.Speed(_config.ChaseSpeed), now, _random, commitmentWeights)) return;
         _goal = _investigation.Destination; _hasGoal = true; _anchorPending = false;
         _stuck = 0; _restUntil = 0;
         if (_locomotion.CanDrive) SetPhysicsProcess(true);
@@ -94,5 +96,5 @@ public partial class ZombieController
 
     // =========================================================
     protected override void OnEntityExitTree()
-    { ClearInvestigation(); _target = null; _sightTarget = null; _visibility = null; _groundHeight = null; }
+    { UnsubscribeHearing(); _soundDispatcher = null; ClearInvestigation(); _target = null; _sightTarget = null; _visibility = null; _groundHeight = null; }
 }
