@@ -11,6 +11,8 @@
 
 > **Object render/debug status:** Shared per-asset `ShadowMode` (Inherit / Disabled / Enabled) is implemented in source as the shadow-only subset of SOC1A. [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render caps, F1 inspection, malformed-GLB checks and performance cost reports. Runtime validation pending.
 
+> **Dense woodland prototype — plan only:** [DF0–DF5 forest implementation plan](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) documents an FPS-first high-canopy forest test zone east of the village, using existing tree streaming/culling systems. The proposed footprint is unverified and **no new forest runtime code or world placement has been authorized or implemented**.
+
 ## Game vision
 
 War Machine takes place on a recognizably earthly but unsettling world: misty forests, rolling terrain, cliffs, roads, abandoned businesses and houses, caves, changing light and weather, and signs of a science-fiction intrusion. **Zombies and imposing mechanical entities** are current threat foundations; other hostile life, wildlife and environmental dangers may broaden the setting later.

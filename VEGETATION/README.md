@@ -50,3 +50,7 @@ See [validation results](Validation/README.md), including before/after/reference
 ## Pine integration
 
 Pine trees are now integrated under Trees/Pine/. Mesh code lives in C/, future models in Artwork/, placement/settings in the pine root. Shared defaults are tuned for overhead rendering, with enabled/density/size/wind controls.
+
+## Dense canopy forest proposal (DF0–DF5; planning only, 2026-10-29)
+
+[VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md](Forest/FOREST_IMPLEMENTATION_PLAN.md) is the implementation-ready plan for a **single 96 × 96m, FPS-first tall high-canopy woodland prototype** east of the village, opposite the robot's western patrol. Exact location is provisional and needs terrain/clearance survey. Reuse the existing pine chunk/MultiMesh/terrain/exclusion/physics/range architecture; do not simply set global pine density higher or instantiate per-tree scenes. Proposed separate phases cover location, broadleaf art, dense placement, real canopy shade, floor clutter and profiling. **Docs only; no new forest generator, model, resource or scene added.**
