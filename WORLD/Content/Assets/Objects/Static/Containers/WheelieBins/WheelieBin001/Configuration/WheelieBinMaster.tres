@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="PlaceableSizeSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Objects/Shared/PlaceableSizeSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+SizeMultiplier = Vector3(1, 1, 1)

@@ -2,7 +2,7 @@
 
 # Objects — reusable world asset library
 
-**Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001 and Hedge001 are GLB artwork in stable reusable **canonical `.tscn` scenes**, each with its own `.tres` size master. Bookcase001, Bed001, Table001 and Hedge001 additionally have SOC0 static AutoBox collision. The F1 menu now discovers eligible canonical visual-wrapper scenes automatically (source implemented; local validation pending). Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. **Movable-prop physics, pickup and permanent placement** are future gameplay tasks; static SOC0 collision is implemented in source.
+**Current status (2026-10-28):** Bookcase001, Book001, Bed001, Table001, PineTree001, Hedge001 and WheelieBin001 are GLB artwork in stable reusable **canonical `.tscn` scenes**, each with its own `.tres` size master. Bookcase001, Bed001, Table001, Hedge001 and WheelieBin001 additionally have SOC0 static AutoBox collision. The F1 menu now discovers eligible canonical visual-wrapper scenes automatically (source implemented; local validation pending). Bed001 has four duvet colours; Table001 has three wood finishes but uses only **one GLB model**. **Movable-prop physics, pickup and permanent placement** are future gameplay tasks; static SOC0 collision is implemented in source.
 
 > **DOOR1 exception:** Non-pickup architectural doors can include a hinged RigidBody3D leaf. `Static/` describes item *ownership/pickup classification*, not the physics body type. See [Door001](Static/Doors/Door001/README.md). No loose-props physics system is active.
 
@@ -17,6 +17,7 @@ AM0 consolidated the former libraries here. [Static](Static/README.md) includes 
 
 ## Current GLB catalogue
 
+- [WheelieBin001](Static/Containers/WheelieBins/WheelieBin001/README.md): 2-wheel dark-green refuse bin, matte black separate lid pivot, original GLB, size master, and SOC0 AutoBox; automatically eligible for F1, not permanently spawned.
 - [Bookcase001](Static/Furniture/Bookcases/Bookcase001/README.md): original GLB, a new visual `Bookcase001.tscn`, plus `Configuration/BookcaseMaster.tres`.
 - [Book001](Props/Books/Book001/README.md): original GLB, a new visual `Book001.tscn`, plus `Configuration/BookMaster.tres`.
 - [Bed001](Static/Furniture/Beds/Bed001/README.md): **converted the original C# geometry to `Artwork/Bed001.glb`**, kept a stable visual `Bed001.tscn` and `Configuration/BedMaster.tres`, plus 4 selectable cloth palettes.

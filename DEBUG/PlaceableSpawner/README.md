@@ -25,6 +25,7 @@ The first applies the existing `Configuration/PlaceableSpawnMaster.tres` `BookHo
 
 ## Current expected menu
 
+- OBJECT · Containers / WheelieBins: WheelieBin001 (static AutoBox).
 - OBJECT · Furniture / Beds: Bed001, each of Slate Blue / Moss Green / Warm Sand / Dusty Rose.
 - OBJECT · Furniture / Bookcases: Bookcase001.
 - OBJECT · Furniture / Tables: Table001, each of Weathered Oak / Dark Walnut / Faded Grey.
@@ -39,7 +40,7 @@ F1/Escape/captured-mouse behavior, `Spawn selected model`, `Clear spawned`, max 
 ## Validation handoff (Godot/.NET not run here)
 
 1. `dotnet build war-machine.csproj`, import current GLBs once, F6 `WORLD/World.tscn`, open F1.
-2. Confirm category headings and all **11** options: Bookcase001 (1), Book001 (1), Bed001 (4), Table001 (3), PineTree001 (1), Hedge001 (1). Procedural Car001/StreetLamp001 should not appear.
+2. Confirm category headings and all **12** options (including WheelieBin001): Bookcase001 (1), Book001 (1), Bed001 (4), Table001 (3), PineTree001 (1), Hedge001 (1). Procedural Car001/StreetLamp001 should not appear.
 3. Spawn each existing variation, check materials and canonical size masters. Book001 hovers using `BookHoverHeight`, PineTree001 appears >=12m away, Hedge001 spawns grounded, and the same selected type gets the right preview name/status.
 4. Check 24-instance cap, Clear, F1/Escape focus and FPS mouse recapture. No additional physics bodies/terrain placement should appear.
 5. Create a dummy standard GLB wrapper `Static/Furniture/Chairs/Chair001/Chair001.tscn` deriving from `PlaceableVisual`; restart world, confirm it automatically appears under Furniture / Chairs, spawns correctly, and requires **zero** edits to `PlaceableSpawnMenu.cs` or `PlaceableCatalog.cs`. For a dummy new enum-variant wrapper, verify each enum member appears and changes the model as expected.
@@ -51,3 +52,5 @@ F1/Escape/captured-mouse behavior, `Spawn selected model`, `Clear spawned`, max 
 The F1 catalogue remains automatic and capped at 24 temporary instances, but the old “visual preview only” limitation is relaxed **per asset**: `PlaceableVisual.CollisionMode` now controls fixed collision. Bookcase001, Table001, Bed001 and Hedge001 default to `AutoBox` and are solid in F1 and when instanced in the world. Book001 and PineTree001 remain noncolliding; Car001/StreetLamp001 remain outside this F1 catalogue. The menu no longer claims all previews lack collision. Clearing previews frees their temporary static bodies; nothing is saved to world placement. The exported collision selector is an **int with an Inspector enum hint**, not a C# enum property, so automatic F1 palette enumeration remains unchanged. A bounding box may also block decorative gaps until manually configured as CustomBoxes. Godot gameplay testing pending.
 
 **Future asset authors:** See the [canonical object/prop authoring guide](../../WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md) for the mandatory None/AutoBox/CustomBoxes selection, custom-box examples, and when to defer rigid-body physics. F1 does not create or replace colliders: it instantiates the actual canonical prefab with its authored SOC0 mode.
+
+**WheelieBin001:** now automatically discovered under `OBJECT · Containers / WheelieBins` with no spawner code changes. Solid SOC0 AutoBox scene; please validate appearance and collision locally. F1 remains temporary-only.
