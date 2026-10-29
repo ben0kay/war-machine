@@ -4,6 +4,8 @@ using Godot;
 
 public static class ZombieHumanGeometry
 {
+    private static readonly System.Collections.Generic.Dictionary<ulong, Mesh> FarMeshes = new();
+    private static readonly SphereMesh FarRounded = new() { Radius = 0.5f, Height = 1, RadialSegments = 6, Rings = 4 };
     // Ring data is (radiusX, normalized Y, radiusZ). Human contours have jaws,
     // cheekbones, a real shoulder slope, narrower hips and tapered muscular limbs.
     public static readonly Mesh Torso = Contour(new Vector3[] {
@@ -59,9 +61,21 @@ public static class ZombieHumanGeometry
     // 64px skin/fabric/blood textures stay visible. Flat normals avoid round toy shading.
     private static ArrayMesh Contour(Vector3[] rings)
     {
+        ArrayMesh full = BuildContour(rings, 10);
+        FarMeshes.Add(full.GetInstanceId(), BuildContour(rings, 6));
+        return full;
+    }
+
+    // =========================================================
+    // Distant versions retain every profile ring, end cap and UV range; only radial detail is reduced.
+    public static Mesh FarVariant(Mesh mesh)
+        => FarMeshes.TryGetValue(mesh.GetInstanceId(), out Mesh? far) ? far : mesh is SphereMesh ? FarRounded : mesh;
+
+    // =========================================================
+    private static ArrayMesh BuildContour(Vector3[] rings, int sides)
+    {
         using var tool = new SurfaceTool();
         tool.Begin(Mesh.PrimitiveType.Triangles);
-        const int sides = 10;
         for (int r = 0; r < rings.Length - 1; r++)
             for (int i = 0; i < sides; i++)
             {

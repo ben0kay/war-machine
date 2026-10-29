@@ -1,3 +1,5 @@
+> **ZM-PERF2B:** Native lower-polygon mesh LOD is now source implemented for both rigs with unchanged pivots, material palette, mesh-node count and full near detail. Original/template-copy actors and corpses share geometry; no managed distance loop. Local compilation/render/profiling pending. [Settings and checks](../../MESH_LOD_README.md).
+
 > **ZD4 elbows:** Both procedural rigs now keep forearm/hand art beneath an identity `Elbow` pivot at shoulder-local Y=-0.27m before template batching. Original world placement, palette selection, shoulder gait and hit regions remain. Living elbows do not process; death physics alone articulates them. Check first/cached spawns, sleeve seams, severing and close FPS appearance locally. Previous mesh counts describe the earlier grouping.
 
 > **ZM-PERF2A — source implemented; local validation pending.** Runner geometry uses its own one-time cached batched template: compatible pieces on the same pivot and palette/material are merged to one material surface, with original runner proportions, seeded blood/clothing variation, joints, anatomy and corpse visuals preserved. Does not add LOD or affect runner AI.

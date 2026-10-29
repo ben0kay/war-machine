@@ -203,6 +203,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         _corpseSeed = seed; _deathHandled = false; _attackSide = (seed & 1u) == 0u ? -1f : 1f;
         // ZMAT0: spawn-seeded cached material assignment; does not advance the movement RNG.
         ZombieAppearance.Apply(VisualRoot, seed, _config.AppearanceVariationEnabled, _config.BloodChance);
+        ZombieMeshLod.Configure(VisualRoot, _config.MeshLodEnabled, _config.MeshLodBias);
         _sightTarget = player as IPerceptionTarget;
         _visibility = player is CollisionObject3D body && _sightTarget != null
             ? new VisibilityResolver(this, body, _config.SightBlockerMask) : null;

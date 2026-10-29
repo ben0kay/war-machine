@@ -1,4 +1,4 @@
-// ZM-PERF2A: combine only same-pivot, same-material zombie geometry into one shared triangle surface.
+// ZM-PERF2A/B: combine same-pivot/material geometry and attach shared native lower-detail index buffers.
 // Author once per species; subsequent actors duplicate its immutable assembled visual rig, not the meshes.
 using Godot;
 using System.Collections.Generic;
@@ -47,8 +47,13 @@ public static class ZombieVisualBatcher
         foreach (var group in groups)
         {
             List<MeshInstance3D> members = group.Value;
-            if (members.Count < 2) continue; // Never rebuild a perfectly good single mesh.
-            ArrayMesh merged = Join(members);
+            if (members.Count < 2)
+            {
+                MeshInstance3D single = members[0];
+                single.Mesh = ZombieMeshLod.Create(single.Mesh!, ZombieHumanGeometry.FarVariant(single.Mesh!));
+                continue;
+            }
+            Mesh merged = ZombieMeshLod.Create(Join(members), Join(members, true));
             var batch = new MeshInstance3D {
                 Name = group.Key.Palette == ZombieAppearance.PaletteRegion.None
                     ? $"DetailBatch{detail++}" : $"{group.Key.Palette}Batch",
@@ -65,13 +70,13 @@ public static class ZombieVisualBatcher
     // Bake each part's original nonuniform scale, rotation, position, normal and UV into one
     // triangle stream. One material override and ONE surface per batch (not many material surfaces).
     // Source BoxMesh/SphereMesh/ArrayMesh data is read only during the first species build.
-    private static ArrayMesh Join(List<MeshInstance3D> pieces)
+    private static ArrayMesh Join(List<MeshInstance3D> pieces, bool far = false)
     {
         using var surface = new SurfaceTool();
         surface.Begin(Mesh.PrimitiveType.Triangles);
         foreach (MeshInstance3D piece in pieces)
         {
-            Mesh mesh = piece.Mesh!;
+            Mesh mesh = far ? ZombieHumanGeometry.FarVariant(piece.Mesh!) : piece.Mesh!;
             Transform3D transform = piece.Transform;
             Basis normalBasis = transform.Basis.Inverse().Transposed();
             for (int s = 0; s < mesh.GetSurfaceCount(); s++)

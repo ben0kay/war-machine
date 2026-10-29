@@ -59,6 +59,9 @@ public partial class ZombieSettings : EntitySettings
     [Export] public float EyeHeight { get; set; } = 1.6f;
     [Export] public float SightIntervalSeconds { get; set; } = 0.4f;
     [Export(PropertyHint.Layers3DPhysics)] public uint SightBlockerMask { get; set; } = 17;
+    [ExportGroup("Visual mesh LOD (ZM-PERF2B)")]
+    [Export] public bool MeshLodEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0.1,4,0.1")] public float MeshLodBias { get; set; } = 1f;
     [ExportGroup("Gunshot hearing (HE1)")]
     [Export] public bool HearingEnabled { get; set; } = true;
     [Export] public float MinimumAudibleIntensity { get; set; } = 0.08f;
