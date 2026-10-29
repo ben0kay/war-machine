@@ -106,6 +106,8 @@ Favor **inactive means dormant**: movement/AI work only when needed, low-rate/st
 
 World direction is a **large finite, expandable and partly authored town/wilderness**, not a fully allocated infinite sandbox. WS0 section identity, WS1 fog-aware render policy and WS2 bounded static-building load/unload are in source. **WS3 save round-trip, WS4 mobile actor ownership/relevance, WS5 authoring and WS6/WS7 larger populated regions are still planned.** Grow only after validating representative encounter and streaming budgets; don't overwrite saved terrain while exploring or adjusting gameplay.
 
+**New building workflow:** read the [architectural design guide](WORLD/Content/Assets/Structures/BUILDING_DESIGN_GUIDE.md) first (PoliceStation001 lessons, safe stairs, floor/partition geometry), followed by the [technical building authoring contract](WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md) (standalone editor preview, collisions, ground haze exclusions, top-down fades/FPS, aim mapping and performance). Both apply to every new building.
+
 ## Project ownership map
 
 | Folder | Responsibility |

@@ -18,4 +18,4 @@ Follow the project convention: `C/` is **only procedural C# mesh construction**;
 
 ## New building authoring
 
-Read [BUILDING_AUTHORING_README.md](BUILDING_AUTHORING_README.md) before creating buildings with AI or code. StructureVisibility + inherited StructureSettings and floor/role metadata replace named world visibility cases. Building002 remains the multi-storey reference. Works for later-spawned compliant prefabs under Structures; procedural generation/placement itself is not added.
+**Both building guides are required:** [BUILDING_DESIGN_GUIDE.md](BUILDING_DESIGN_GUIDE.md) **first** (floorplan, safe stairs, windows, seamless floors, wall junctions and PoliceStation001 failure register), then [BUILDING_AUTHORING_README.md](BUILDING_AUTHORING_README.md) (C#/Godot scenes, preview, collision, haze footprints, top-down fade, FPS presentation, targeting, streaming and performance). Use ConvenienceStore001 for the single-level example and Building002/004 for multi-level references. A new prefab is never automatically placed in the active world.

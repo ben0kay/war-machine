@@ -2,6 +2,8 @@
 
 **Branch:** `implement-td0-td1` · **PS1.2 cleanup and lights:** implemented in source; local Godot preview, stair/wall-junction inspection and lighting performance checks pending.
 
+**Shared future-building lessons:** [architectural design guide and PoliceStation001 failure register](../BUILDING_DESIGN_GUIDE.md) · [technical building authoring guide](../BUILDING_AUTHORING_README.md). Check both before repeating shell revisions.
+
 ## Open it directly in the Godot editor
 
 1. Pull the branch and **build the C# project** in Godot .NET (or run `dotnet build war-machine.csproj`).

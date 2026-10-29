@@ -74,6 +74,8 @@ Maintain clear phase states: Planned, In Progress, Implemented, Awaiting Validat
 
 Preferred workflow: Regular Chat investigates and drafts → user reviews/improves → user chooses phase and assistant → authorized implementation → validation → documentation update → next phase only on request.
 
+**For every new or significantly redesigned building**, first read [the architectural building design guide](WORLD/Content/Assets/Structures/BUILDING_DESIGN_GUIDE.md) and [the technical authoring contract](WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md). The architectural guide contains the PoliceStation001 mistake checklist for stairs, windows, floors and wall joins. The technical guide covers editor preview, collision/fade, haze and engine integration. Both checks are mandatory before furnishings. This is separate from the Object Authoring Guide for props.
+
 ## Procedural C# models and future artwork folder convention (owner preference)
 
 When an object, character, building, vehicle, tree or other asset is being **modelled/generated with C# instead of an imported 3D model**, follow the existing paired-folder pattern:
