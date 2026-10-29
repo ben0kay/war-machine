@@ -24,3 +24,7 @@ Each phase requires explicit separate authorization; PS0 is the only authorized 
 ## Next owner handoff
 
 Open `PoliceStation001.tscn` directly after C# build. Inspect GroundFloor, UpperFloor and Exterior via `EditorPreview`. Capture observations or screenshots to guide PS1. Only place the prefab into `WORLD/World.tscn` after an explicit placement request and terrain/streaming plan.
+
+## PS0 editor preview repair — 2026-10-29
+
+**Source implemented; awaiting local acceptance.** Screenshot showed Inspector settings but no visible model. The generator now rebuilds its transient children whenever the tool scene enters the tree, and offers a dedicated `[ExportToolButton]` **Build / Refresh Preview** action so a post-compile scene can recover without attaching to WORLD. Only the lightweight `Generated` anchor receives editor scene ownership for tree visibility; large procedural descendants remain transient and are not packed into `.tscn` on Save. The scene's root, world integration, procedural geometry, collision, fade and all three preview states are unchanged. Local owner should build, reopen, click Refresh if needed and inspect the Output dock for `[PoliceStation001]` or the first error.

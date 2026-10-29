@@ -12,6 +12,10 @@ public partial class PoliceStationMesh : Node3D
     [ExportGroup("Editor-only preview")]
     [Export] public PreviewFloor EditorPreview { get => _editorPreview; set { _editorPreview = value; ApplyPreview(); } }
 
+    // Explicit recovery after a C# hot reload: reopening the scene is no longer the only way to build.
+    [ExportToolButton("Build / Refresh Preview")]
+    public Callable RefreshPreviewButton => Callable.From(RefreshPreview);
+
     private const float Width = 48f, Depth = 64f, CorridorHalfWidth = 2.5f;
     private const float StairX = -13f, StairLowZ = -29.5f, StairHighZ = -19.5f;
     private const float ShaftMinX = -16f, ShaftMaxX = -10f, ShaftMinZ = -30f, ShaftMaxZ = -15.8f;
@@ -20,13 +24,41 @@ public partial class PoliceStationMesh : Node3D
     private Node3D? _upperLevel, _roof;
 
     // =========================================================
-    // Godot [Tool] invokes this while the PoliceStation001.tscn is open in the editor.
-    // Build once; the selector only changes visibility of already generated art.
+    // Godot [Tool] invokes this when the standalone scene opens in the editor.
+    // Regenerate transient children even if the editor previously saved an empty Generated anchor.
     public override void _Ready()
     {
-        if (GetNodeOrNull<Node3D>("Generated") == null) Build();
-        ApplyPreview();
+        RebuildPreviewGeometry();
         SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // Inspector recovery button for C# recompiles that did not rerun _Ready.
+    private void RefreshPreview()
+    {
+        if (Engine.IsEditorHint() && IsInsideTree()) RebuildPreviewGeometry();
+    }
+
+    // =========================================================
+    // Keep only the lightweight Generated anchor editor-owned (visible in the Scene dock).
+    // Its large procedural contents stay unowned, so saving the scene never bakes hundreds
+    // of meshes/colliders into the .tscn; they are rebuilt from code each time.
+    private void RebuildPreviewGeometry()
+    {
+        var previous = GetNodeOrNull<Node3D>("Generated");
+        if (previous != null)
+        {
+            RemoveChild(previous);
+            previous.QueueFree();
+        }
+        _upperLevel = null; _roof = null;
+        Build();
+        var generated = GetNode<Node3D>("Generated");
+        if (Engine.IsEditorHint() && GetTree().EditedSceneRoot == this)
+            generated.Owner = this;
+        ApplyPreview();
+        if (Engine.IsEditorHint())
+            GD.Print("[PoliceStation001] Editor shell generated. Choose GroundFloor / UpperFloor / Exterior, or Build / Refresh Preview.");
     }
 
     // =========================================================

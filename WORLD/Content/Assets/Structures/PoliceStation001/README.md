@@ -10,7 +10,8 @@
    - **GroundFloor (default):** upper deck/walls and roof are hidden in the editor, so you can inspect ground rooms and stairs from overhead.
    - **UpperFloor:** upper deck, offices and the open stairwell are visible; roof is hidden.
    - **Exterior:** the complete two-storey facade and flat roof are visible.
-4. Orbit/pan/zoom the **3D editor viewport**. The `[Tool]` generator creates `Generated` when the scene is loaded; it does not run every frame. The selector changes **visuals only**, not collision. Changes to `PoliceStationMaster.tres` that affect geometry require reopening/reinstancing the scene.
+4. Under the same Inspector group, click **Build / Refresh Preview** once if the 3D view is blank, particularly after pulling new scripts or compiling while the scene was already open. The **Output** dock should report `[PoliceStation001] Editor shell generated`. If it reports a C# exception instead, copy the first error.
+5. Orbit/pan/zoom the **3D editor viewport** (press **F** after selecting the root to focus near its centre). The `[Tool]` generator creates `Generated` on scene load; the refresh button rebuilds it explicitly and the selector changes only visual visibility. **Saving the scene does not bake the procedural mesh/collision children into its .tscn**; only a lightweight `Generated` anchor may persist. Geometry changes in `PoliceStationMaster.tres` can be applied by clicking Refresh.
 
 **Important:** This editor view is not a running gameplay/camera preview. Runtime always builds both floors; `ShowRoof=true` is the default, and shared `StructureVisibility` provides top-down fades once the prefab is later placed under the normal world `Structures` tree. It is **not added to WORLD/World.tscn** in PS0.
 
@@ -33,12 +34,12 @@ The roof is a flat concrete slab with parapet. The exterior door frames include 
 - Logical wall groups fade together from the top-down view. Deck, walls, stairs and roof have separate semantic owners. **Visual opacity never changes collision**.
 - `Generated/ClearanceVolumes` reserves both exterior entrances, all office doorways and windows, the continuous corridors, lobby and stair shaft/landing. These are *nonphysical authoring metadata* for a later furniture pass.
 - Step risers are visual only; the **single inclined collision shape** prevents a CharacterBody3D from getting stuck on each 17.5cm riser. The upper deck is split around the shaft and the gap is bridged only by the physical upper landing.
-- One build on `_Ready`; both `_Process` and `_PhysicsProcess` disabled. No AI, pickups, furnishings, lights, decor, extra test scenes or per-frame geometric updates. This is intended to expose drawing/collision/visibility costs before decoration.
+- One build on `_Ready`, with optional explicit **Build / Refresh Preview** button; both `_Process` and `_PhysicsProcess` disabled. No AI, pickups, furnishings, lights, decor, extra test scenes or per-frame geometric updates. This is intended to expose drawing/collision/visibility costs before decoration.
 - Root `UseTerrainSupport=false` on the master by default, so the shell is a stand-alone collidable prefab. Set it only when the **entire site is graded and supported** by Terrain3D to avoid overlapping physical floors.
 
 ## Local validation checklist
 
-1. **Compile:** `dotnet build war-machine.csproj`; then open `PoliceStation001.tscn` in Godot .NET. Check the preview selector updates without duplicating `Generated` or re-running geometry.
+1. **Compile:** `dotnet build war-machine.csproj`; then open `PoliceStation001.tscn` in Godot .NET. Confirm the editor-owned `Generated` anchor appears and the station mesh is visible. If already open when code was compiled, click **Build / Refresh Preview**; verify output and selectors, and ensure repeated refreshes never duplicate the generated geometry.
 2. **Visual:** Ground, upper and exterior previews; every real door/window gap, upper shaft opening, rear exit, roof and floor elevations. Make sure no corridor crosses solid partition/collision.
 3. **Walkability when later placed in the active world:** enter from +Z, walk the full hall, enter side rooms, climb the stair's sloped collision to Y≈4.2, reach the upper corridor and bathroom doorway, return down, exit at -Z. The editor itself does **not** simulate player movement.
 4. **Presentation:** Outside/inside wall fade groups, upper deck/roof reveal, AIM1 collision-to-visual aim mapping, FPS opaque surfaces, and camera occlusion while climbing.
