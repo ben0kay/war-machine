@@ -29,6 +29,7 @@ public partial class DoorPhysicsTest : Node3D
             Check(HingedDoor001.ContactSpeedFactor(3.5f, tuned!) < 2.5f, "walking remains below previous cap");
             Check(HingedDoor001.ContactSpeedFactor(0f, tuned!) == 0f, "no push at zero movement speed");
             Check(Mathf.IsEqualApprox(tuned!.MassKg, 5f), "shared rear door has owner-requested 5kg mass");
+            Check(Mathf.IsEqualApprox(tuned!.CharacterContactForce, 65f), "shared contact force increased to 65");
             Check(tuned.AngularDamping <= 0.40f, "hinge damping permits continued motion after release");
             Check(Mathf.IsEqualApprox(tuned.ContactSpeedReference, 3.5f), "walking contact reference is tuned lower");
             Check(tuned.AngularDamping < 1f, "light door retains momentum after contact ends");

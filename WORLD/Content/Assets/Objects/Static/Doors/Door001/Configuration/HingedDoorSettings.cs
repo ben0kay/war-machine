@@ -16,7 +16,7 @@ public partial class HingedDoorSettings : Resource
     [Export(PropertyHint.Range, "1,50,0.5")] public float MassKg { get; set; } = 5f;
     [Export(PropertyHint.Range, "0,12,0.05")] public float AngularDamping { get; set; } = 0.40f;
     [Export(PropertyHint.Range, "25,120,5")] public float SwingLimitDegrees { get; set; } = 110f;
-    [Export(PropertyHint.Range, "0,150,1")] public float CharacterContactForce { get; set; } = 52f;
+    [Export(PropertyHint.Range, "0,150,1")] public float CharacterContactForce { get; set; } = 65f;
 
     [ExportGroup("Contact speed response")]
     [Export(PropertyHint.Range, "1,10,0.25")] public float ContactSpeedReference { get; set; } = 3.5f;
