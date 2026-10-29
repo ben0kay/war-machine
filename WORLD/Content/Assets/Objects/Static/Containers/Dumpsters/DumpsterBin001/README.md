@@ -5,8 +5,8 @@
 ## Visual design
 
 - Heavy, gently tapered dark **forest-green metal chassis** with folded top rim, vertical side/front reinforcing ribs, inset front panel, front/lower bumper brace, metal skids and black forklift-lift pockets/frames. Small worn metal edge highlights, no graffiti or written labels. **No wheels**.
-- **Two separate matte-black steel lids**, with raised moulded ribs, front grab lips and a seam down the middle. `LeftLidHinge` and `RightLidHinge` are named GLB transform pivots at the rear, ready for a *future* interaction pass. Current lids are closed and purely visual. No lid open input/physics or simulated contents.
-- [`Artwork/DumpsterBin001.glb`](Artwork/DumpsterBin001.glb) is an original self-contained binary glTF 2.0: **1,356 triangles, 11 grouped mesh nodes, 8 opaque PBR materials, ~83 KiB**. No texture files, animation callbacks or external resource dependencies. The green body and black lids reuse WheelieBin001 base colour values. Details of mesh groups, material names and pivots: [Artwork README](Artwork/README.md).
+- **Two separate matte-black steel lids**, with raised moulded ribs, front grab lips and a seam down the middle. `LeftLidHinge` and `RightLidHinge` are named GLB transform pivots at the rear, ready for a *future* interaction pass. Current lids are closed and purely visual. Both lid pivots reference **shared geometry** but retain independent transform nodes. No lid open input/physics or simulated contents.
+- [`Artwork/DumpsterBin001.glb`](Artwork/DumpsterBin001.glb) is an original self-contained binary glTF 2.0: **1,140 unique mesh triangles (1,356 drawn across both lids), 9 shared mesh resources / 11 mesh nodes, 8 opaque PBR materials, ~69 KiB**. No texture files, animation callbacks or external resource dependencies. The green body and black lids reuse WheelieBin001 base colour values. Details of mesh groups, material names and pivots: [Artwork README](Artwork/README.md).
 
 ## Godot integration
 
