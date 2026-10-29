@@ -24,6 +24,9 @@ public partial class DoorPhysicsTest : Node3D
             float sprint = HingedDoor001.ContactSpeedFactor(7.0f, tuned!);
             Check(nudge > 0f && nudge < walk * 0.2f, "gentle contact transfers much less impulse than walking");
             Check(sprint > walk * 1.5f, "sprint contact transfers much more impulse than walking");
+            Check(Mathf.IsEqualApprox(tuned!.MaxContactSpeedMultiplier, 3f), "high-speed impulse cap is now 3x");
+            Check(Mathf.IsEqualApprox(HingedDoor001.ContactSpeedFactor(12f, tuned!), 3f), "extreme contact remains capped at 3x");
+            Check(HingedDoor001.ContactSpeedFactor(3.5f, tuned!) < 2.5f, "walking remains below previous cap");
             Check(HingedDoor001.ContactSpeedFactor(0f, tuned!) == 0f, "no push at zero movement speed");
             Check(Mathf.IsEqualApprox(tuned!.MassKg, 5f), "shared rear door has owner-requested 5kg mass");
             Check(tuned.AngularDamping <= 0.40f, "hinge damping permits continued motion after release");

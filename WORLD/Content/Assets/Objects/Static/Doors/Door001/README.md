@@ -81,3 +81,11 @@ Decreasing mass reduces rotational inertia, so the same player contact accelerat
 The hinge, physics bodies, player-contact adapter, scene, handle nodes, collision, swing limits and physics-loop sleeping are otherwise unchanged. This shared preset is used by the store rear service door and any future door instance that uses this master. It does not create new hinged doors in the police station.
 
 **Acceptance:** After building, approach the rear convenience-store leaf at low speed, normal speed and sprint from both sides. Compare opening acceleration and how far it continues to swing after contact ends. A light tap should produce only a small movement. Check it does not accelerate into the jamb, oscillate excessively, sag or clip. Test with the current Godot/Jolt backend; measured/runtime acceptance remains pending.
+
+## DOOR1.3 — higher sprint impulse cap (2026-10-29)
+
+Owner requested a more reactive door and an increase to the high-speed contact multiplier limit. **Implemented in source; awaits local Godot/Jolt testing.** MaxContactSpeedMultiplier is now **3.0** rather than 2.5 in HingedDoorSettings.cs and DoorMaster.tres. All other settings remain unchanged: 5kg mass, angular damping 0.40, CharacterContactForce 52, speed reference 3.5m/s and exponent 1.65.
+
+The existing rigid-body push computes an impulse using (base contact force × bounded speed response × physics delta), applied at the actual contact point. At ordinary walking and gentle-nudge speeds the multiplier stays below the former 2.5× cap, so only sufficiently fast impacts are stronger. At 7m/s the new curve hits the 3× cap (previously 2.5×). CharacterContactForce controls the base strength of **all** qualifying contacts; changing that would increase ordinary pushes as well, so it is intentionally unchanged in this pass. The cap is not a door opening angle. No scene, hinge, collision or movement code changed.
+
+Validate locally: build, run DEBUG/Doors/DoorPhysicsTest.tscn, then compare nudge/walk/sprint at the store rear door from both sides, checking upright hinge, comfortable momentum after release and no high-speed clipping. No local runtime result is claimed here.

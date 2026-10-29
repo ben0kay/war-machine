@@ -21,7 +21,7 @@ public partial class HingedDoorSettings : Resource
     [ExportGroup("Contact speed response")]
     [Export(PropertyHint.Range, "1,10,0.25")] public float ContactSpeedReference { get; set; } = 3.5f;
     [Export(PropertyHint.Range, "1,3,0.05")] public float ContactSpeedExponent { get; set; } = 1.65f;
-    [Export(PropertyHint.Range, "1,4,0.1")] public float MaxContactSpeedMultiplier { get; set; } = 2.5f;
+    [Export(PropertyHint.Range, "1,4,0.1")] public float MaxContactSpeedMultiplier { get; set; } = 3f;
 
     [ExportGroup("Handle & finish")]
     [Export(PropertyHint.Range, "0.65,1.55,0.05")] public float HandleHeight { get; set; } = 1.15f;

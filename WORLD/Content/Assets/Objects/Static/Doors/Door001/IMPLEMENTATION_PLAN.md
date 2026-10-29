@@ -33,3 +33,7 @@ Depends on DOOR2's reusable grabbing/physical control rather than a second inter
 ## DOOR1.2 — owner-requested extra responsiveness (2026-10-28)
 
 **Authorized follow-up; source implemented, local acceptance pending.** Shared physical `Door001` master defaults set to **5kg** mass, **0.40** angular damping and **3.5m/s** contact-speed reference. Force 52, exponent 1.65, impulse cap 2.5, Godot hinge geometry and player contact adapter remain unchanged. This intentionally makes the door easier to accelerate and preserves more momentum after release, without compromising soft-contact scaling or adding a motor/updates. Extend deterministic DEBUG/Doors regression to verify resource defaults and preserved nudge/walk/sprint ordering. Validate the rear convenience store door in both camera views and via the existing headless contact test when Godot is available.
+
+## DOOR1.3 — 3× sprint contact cap (2026-10-29)
+
+Owner authorized; implemented in source; local Godot acceptance pending. Increase only MaxContactSpeedMultiplier from 2.5 to 3.0 in the shared resource defaults and DoorMaster.tres; keep base force 52, mass 5kg, damping 0.40, speed reference 3.5m/s and exponent 1.65. High-speed impacts get more transfer without changing low-speed reactions. Extend the deterministic door regression to check cap and ordinary speed behaviour; no new mechanics or processing loops.
