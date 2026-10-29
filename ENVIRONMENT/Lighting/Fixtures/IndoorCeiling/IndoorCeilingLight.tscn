@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ENVIRONMENT/Lighting/Fixtures/IndoorCeiling/IndoorCeilingLight.cs" id="1"]
+[ext_resource type="Resource" path="res://ENVIRONMENT/Lighting/Fixtures/IndoorCeiling/Configuration/IndoorCeilingLightMaster.tres" id="2"]
+
+[node name="IndoorCeilingLight" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+
+[node name="Downlight" type="SpotLight3D" parent="."]

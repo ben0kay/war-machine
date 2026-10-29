@@ -1,0 +1,5 @@
+# IndoorCeilingLight — reusable small interior fixtures
+
+`IndoorCeilingLight.tscn` has one native `SpotLight3D`, a pale emissive diffuser and a shallow rectangular casing. `IsCorridor` chooses a 2.1m long strip or 0.78m room panel before scene entry. The light uses the same native Godot spotlight properties as `StreetLampLighting` but with a much lower energy, shorter range, no visible outdoor volumetric cone, **no shadows**, no scheduler and no `_Process`.
+
+The `[Tool]` fixture previews in the editor and builds geometry once. The owning building chooses fixture positions just beneath each slab/roof underside and puts light instances in their correct level's `StructureLayout.Visual(...,"contents")` group, so upper light fixtures hide with the upper floor. All parameters are in `Configuration/IndoorCeilingLightMaster.tres`. It can be used by future authored houses, shops or apartments; do not embed fixture creation code independently in each building. Native lighting still has a rendering cost; keep fixtures intentional rather than populating every room.

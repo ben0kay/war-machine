@@ -9,6 +9,11 @@ public partial class PoliceStationSettings : StructureSettings
     [Export(PropertyHint.Range, "3.8,5.2,0.1")] public float GroundFloorHeight { get; set; } = 4.2f;
     [Export(PropertyHint.Range, "3.2,4.8,0.1")] public float UpperFloorHeight { get; set; } = 3.8f;
 
+    [ExportGroup("Basic ceiling lighting")]
+    [Export] public bool CeilingLightsEnabled { get; set; } = true;
+    [Export] public bool CorridorLightsEnabled { get; set; } = true;
+    [Export] public bool RoomLightsEnabled { get; set; } = true;
+
     [ExportGroup("Ground support")]
     [Export] public bool UseTerrainSupport { get; set; } = false;
 

@@ -23,6 +23,7 @@ public partial class PoliceStationMesh : Node3D
     private const float StairSouthZ = 23f, StairNorthZ = 28f;
     private const float ShaftMinX = 8.7f, ShaftMaxX = 18.2f, ShaftMinZ = 18f, ShaftMaxZ = 30.4f;
     private const float MinimumStairApproach = 2f, SideWindowWidth = 3.6f;
+    private const float ExteriorInsideFace = 0.115f, PartitionHalfThickness = 0.09f;
     private static readonly float[] SideWindowZ = { -26f, -13f, 0f, 13f, 25f };
     private bool _showRoof = true;
     private PreviewFloor _editorPreview = PreviewFloor.GroundFloor;
@@ -118,6 +119,8 @@ public partial class PoliceStationMesh : Node3D
         var upperWalls = Role(_upperLevel, "UpperFloorWalls", "walls");
         // Upper guardrails disappear with the upper floor in the GroundFloor editor view.
         var upperGuards = Role(_upperLevel, "StairwellGuardrails", "contents");
+        var groundLights = Role(ground, "CeilingFixtures", "contents");
+        var upperLights = Role(_upperLevel, "CeilingFixtures", "contents");
         _roof = Role(_upperLevel, "FlatRoof", "roof");
 
         // Ground slab ends at Y=0 for easy placement on existing prepared terrain.
@@ -125,11 +128,14 @@ public partial class PoliceStationMesh : Node3D
         StructureGeometry.Box(groundDeck, s.UseTerrainSupport ? null : groundBody, "GroundSlab",
             new(0, -0.10f, 0), new(Width - 0.24f, 0.20f, Depth - 0.24f), floorMat);
 
-        BuildExterior(groundWalls, groundBody, clear, "G", 0f, h0, true, shell, trim, glass, doors);
-        BuildGroundRooms(groundWalls, groundBody, clear, h0, partitions, trim, doors);
+        // The upper deck spans Y=h0-0.24..h0. The lower walls must terminate a little
+        // below its underside, or their top faces z-fight / peek through the next floor.
+        const float deckThickness = 0.24f, inset = 0.18f, wallDeckGap = 0.02f;
+        float groundWallTop = h0 - deckThickness - wallDeckGap;
+        BuildExterior(groundWalls, groundBody, clear, "G", 0f, groundWallTop, true, shell, trim, glass, doors);
+        BuildGroundRooms(groundWalls, groundBody, clear, groundWallTop, partitions, trim, doors);
 
         // The four upper-floor spans leave a real, non-colliding void above the new front-right stair core.
-        const float deckThickness = 0.24f, inset = 0.18f;
         float slabY = h0 - deckThickness * 0.5f;
         FloorSpan(upperDeck, upperBody, "WestDeck", -Width * 0.5f + inset, ShaftMinX,
             -Depth * 0.5f + inset, Depth * 0.5f - inset, slabY, deckThickness, floorMat);
@@ -140,9 +146,13 @@ public partial class PoliceStationMesh : Node3D
         FloorSpan(upperDeck, upperBody, "ShaftNorthDeck", ShaftMinX, ShaftMaxX,
             ShaftMaxZ, Depth * 0.5f - inset, slabY, deckThickness, floorMat);
 
-        BuildExterior(upperWalls, upperBody, clear, "U", h0, top, false, shell, trim, glass, doors);
-        BuildUpperRooms(upperWalls, upperBody, clear, h0, top, partitions, trim, doors);
+        // Upper walls stop below the roof underside as well; collision follows visual spans.
+        float upperWallTop = top - wallDeckGap;
+        BuildExterior(upperWalls, upperBody, clear, "U", h0, upperWallTop, false, shell, trim, glass, doors);
+        BuildUpperRooms(upperWalls, upperBody, clear, h0, upperWallTop, partitions, trim, doors);
         BuildStairs(generated, upperBody, upperGuards, clear, h0, step, riser, trim);
+        if (s.CeilingLightsEnabled)
+            BuildCeilingFixtures(groundLights, upperLights, h0 - deckThickness, top, s);
 
         // Roof is one inexpensive solid deck with a shallow parapet, kept separate for top-down reveal.
         StructureGeometry.Box(_roof, upperBody, "RoofSlab", new(0, top + 0.13f, 0),
@@ -239,8 +249,10 @@ public partial class PoliceStationMesh : Node3D
         // The waiting/intake room has its own front-left enclosure and wide accessible door.
         var waiting = WallGroup(walls, "WaitingRoomWall");
         const float wx = -7.4f; // On solid frontage between the -11m window and main doorway.
-        StructureGeometry.WallZ(waiting, body, "WaitingRear", wx, 19.2f, 23.6f, 0, height, partition, 0.18f);
-        StructureGeometry.WallZ(waiting, body, "WaitingFront", wx, 26.4f, 32f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(waiting, body, "WaitingRear", wx, 19f + PartitionHalfThickness,
+            23.6f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(waiting, body, "WaitingFront", wx, 26.4f,
+            Depth * 0.5f - ExteriorInsideFace, 0, height, partition, 0.18f);
         StructureGeometry.WallZ(waiting, body, "WaitingHeader", wx, 23.6f, 26.4f, 2.85f, height, partition, 0.18f);
         DoorFrameZ(waiting, "WaitingEntry", wx, 25f, 0f, 2.8f, 2.85f, trim);
         clear.Reserve("WaitingEntry", new(wx, 1.45f, 25f), new(3.6f, 2.9f, 3.8f));
@@ -250,9 +262,11 @@ public partial class PoliceStationMesh : Node3D
         var core = WallGroup(walls, "LobbyStairCore");
         const float doorHalfZ = 1.4f;
         float doorStart = StairEntryZ - doorHalfZ, doorEnd = StairEntryZ + doorHalfZ;
-        StructureGeometry.WallZ(core, body, "CoreRear", CoreWallX, 19f, doorStart,
+        StructureGeometry.WallZ(core, body, "CoreRear", CoreWallX,
+            19f + PartitionHalfThickness, doorStart,
             0f, height, partition, 0.18f);
-        StructureGeometry.WallZ(core, body, "CoreFront", CoreWallX, doorEnd, 32f,
+        StructureGeometry.WallZ(core, body, "CoreFront", CoreWallX,
+            doorEnd, Depth * 0.5f - ExteriorInsideFace,
             0f, height, partition, 0.18f);
         StructureGeometry.WallZ(core, body, "CoreHead", CoreWallX, doorStart, doorEnd,
             2.9f, height, partition, 0.18f);
@@ -275,8 +289,10 @@ public partial class PoliceStationMesh : Node3D
                 z, 0, height, partition);
         }
         var interview = WallGroup(walls, "WestInterviewPartition");
-        StructureGeometry.WallZ(interview, body, "InterviewRear", -12f, -10.8f, -4.4f, 0, height, partition, 0.18f);
-        StructureGeometry.WallZ(interview, body, "InterviewFront", -12f, -1.6f, 3.8f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(interview, body, "InterviewRear", -12f,
+            -10.4f + PartitionHalfThickness, -4.4f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(interview, body, "InterviewFront", -12f,
+            -1.6f, 4f - PartitionHalfThickness, 0, height, partition, 0.18f);
         StructureGeometry.WallZ(interview, body, "InterviewHeader", -12f, -4.4f, -1.6f, 2.85f, height, partition, 0.18f);
         DoorFrameZ(interview, "InterviewEntry", -12f, -3f, 0f, 2.8f, 2.85f, trim);
         clear.Reserve("InterviewEntry", new(-12f, 1.45f, -3f), new(3.6f, 2.9f, 3.6f));
@@ -289,8 +305,10 @@ public partial class PoliceStationMesh : Node3D
                 z, 0, height, partition);
         }
         var records = WallGroup(walls, "EastRecordsPartition");
-        StructureGeometry.WallZ(records, body, "RecordsRear", 13f, -17.8f, -9.5f, 0, height, partition, 0.18f);
-        StructureGeometry.WallZ(records, body, "RecordsFront", 13f, -6.7f, -1.2f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(records, body, "RecordsRear", 13f,
+            -18f + PartitionHalfThickness, -9.5f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(records, body, "RecordsFront", 13f,
+            -6.7f, -4f - PartitionHalfThickness, 0, height, partition, 0.18f);
         StructureGeometry.WallZ(records, body, "RecordsHeader", 13f, -9.5f, -6.7f, 2.85f, height, partition, 0.18f);
         DoorFrameZ(records, "RecordsEntry", 13f, -8.1f, 0f, 2.8f, 2.85f, trim);
         clear.Reserve("RecordsEntry", new(13f, 1.45f, -8.1f), new(3.6f, 2.9f, 3.6f));
@@ -315,7 +333,7 @@ public partial class PoliceStationMesh : Node3D
         CorridorSide(walls, body, clear, "UpperEastHall", CorridorHalfWidth, baseY, top,
             new[] { -26.5f, -15f, 12f }, partition, trim, doors);
 
-        foreach (float z in new[] { -8f, 8f, 20f })
+        foreach (float z in new[] { -8f, 8f, 18.5f })
         {
             var west = WallGroup(walls, "UpperWestOfficeDivider");
             InteriorPerimeterPartitionX(west, body, "OfficeDivision", -24f, -CorridorHalfWidth,
@@ -329,9 +347,11 @@ public partial class PoliceStationMesh : Node3D
         // Empty 6.5 x 7m bathroom enclosure with corridor access at Z=-26.5.
         var bathroomWest = WallGroup(walls, "UpperBathroomEastWall");
         StructureGeometry.WallZ(bathroomWest, body, "BathroomSide", 9f,
-            -31f, -23f, baseY, top, partition, 0.18f);
+            -Depth * 0.5f + ExteriorInsideFace, -23f - PartitionHalfThickness,
+            baseY, top, partition, 0.18f);
         var bathroomNorth = WallGroup(walls, "UpperBathroomNorthWall");
-        StructureGeometry.WallX(bathroomNorth, body, "BathroomBack", CorridorHalfWidth, 9f,
+        StructureGeometry.WallX(bathroomNorth, body, "BathroomBack",
+            CorridorHalfWidth + PartitionHalfThickness, 9f - PartitionHalfThickness,
             -23f, baseY, top, partition, 0.18f);
 
         clear.Reserve("UpperMainCorridor", new(0, baseY + 1.4f, -6f),
@@ -348,7 +368,7 @@ public partial class PoliceStationMesh : Node3D
     {
         var group = WallGroup(walls, name);
         const float half = 1.15f, head = 2.72f;
-        float cursor = -31.5f;
+        float cursor = -Depth * 0.5f + ExteriorInsideFace;
         foreach (float z in doors)
         {
             float a = z - half, b = z + half;
@@ -364,7 +384,7 @@ public partial class PoliceStationMesh : Node3D
             clear.Reserve(name + "Door", new(x, bottom + 1.45f, z), new(3.2f, 2.9f, 3.3f));
             cursor = b;
         }
-        StructureGeometry.WallZ(group, body, name + "EndSpan", x, cursor, 19f,
+        StructureGeometry.WallZ(group, body, name + "EndSpan", x, cursor, 19f - PartitionHalfThickness,
             bottom, top, partition, 0.18f);
     }
 
@@ -376,6 +396,7 @@ public partial class PoliceStationMesh : Node3D
     {
         float left = center - width * 0.5f, right = center + width * 0.5f, head = bottom + 2.90f;
         EnsureClearPerimeterWindowJunction(start, end, z, name);
+        TrimInteriorXJunctions(ref start, ref end);
         StructureGeometry.WallX(group, body, name + "Left", start, left, z, bottom, top, wall, 0.18f);
         StructureGeometry.WallX(group, body, name + "Header", left, right, z, head, top, wall, 0.18f);
         StructureGeometry.WallX(group, body, name + "Right", right, end, z, bottom, top, wall, 0.18f);
@@ -542,6 +563,59 @@ public partial class PoliceStationMesh : Node3D
     }
 
     // =========================================================
+    // Place the reusable indoor native Spotlight3D fixture: narrower and weaker than streetlamp
+    // illumination, no streetlamp schedule/beam/shadows. All generated lights are in floor roles.
+    private static void BuildCeilingFixtures(Node3D ground, Node3D upper, float groundUnderside,
+        float upperUnderside, PoliceStationSettings s)
+    {
+        const string prefab = "res://ENVIRONMENT/Lighting/Fixtures/IndoorCeiling/IndoorCeilingLight.tscn";
+        var packed = ResourceLoader.Load<PackedScene>(prefab);
+        if (packed == null) { GD.PushWarning("PoliceStation001: missing indoor ceiling lighting scene."); return; }
+        float lowY = groundUnderside - 0.10f, highY = upperUnderside - 0.10f;
+        if (s.CorridorLightsEnabled)
+            foreach (float z in new[] { -26f, -18f, -10f, -2f, 6f, 14f })
+            {
+                AddCeilingFixture(packed, ground, "GroundCorridorLight", new(0f, lowY, z), true);
+                AddCeilingFixture(packed, upper, "UpperCorridorLight", new(0f, highY, z), true);
+            }
+        if (!s.RoomLightsEnabled) return;
+        // Representative major rooms lit; smaller service/interview spaces intentionally darker.
+        foreach (Vector2 xz in new[] {
+            new Vector2(-16f, 25f), new Vector2(-15f, 11f), new Vector2(-15f, -4f),
+            new Vector2(-15f, -16f), new Vector2(15f, 10f),
+            new Vector2(15f, -11f), new Vector2(15f, -25f),
+            new Vector2(3f, 26f) })
+            AddCeilingFixture(packed, ground, "GroundRoomLight", new(xz.X, lowY, xz.Y), false);
+        foreach (Vector2 xz in new[] {
+            new Vector2(-16f, 25f), new Vector2(-15f, 11f), new Vector2(-15f, -3f),
+            new Vector2(-15f, -20f), new Vector2(15f, 12f),
+            new Vector2(15f, -15f), new Vector2(15f, -28f),
+            new Vector2(6f, -27f), new Vector2(15f, 15.5f) })
+            AddCeilingFixture(packed, upper, "UpperRoomLight", new(xz.X, highY, xz.Y), false);
+    }
+
+    // =========================================================
+    // Configure style BEFORE entering the scene tree so each [Tool] fixture builds the right casing.
+    private static void AddCeilingFixture(PackedScene packed, Node3D parent, string name,
+        Vector3 position, bool corridor)
+    {
+        var fixture = packed.Instantiate<IndoorCeilingLight>();
+        fixture.Name = name; fixture.IsCorridor = corridor; fixture.Position = position;
+        parent.AddChild(fixture);
+    }
+
+    // =========================================================
+    // Every interior partition meets the inside FACE of an existing wall, not its centre.
+    // This removes repeated tiny tongues at perimeter/hall intersections on both floors.
+    private static void TrimInteriorXJunctions(ref float a, ref float b)
+    {
+        if (Mathf.IsEqualApprox(a, -Width * 0.5f)) a += ExteriorInsideFace;
+        if (Mathf.IsEqualApprox(b, Width * 0.5f)) b -= ExteriorInsideFace;
+        if (Mathf.IsEqualApprox(a, CorridorHalfWidth)) a += PartitionHalfThickness;
+        if (Mathf.IsEqualApprox(b, -CorridorHalfWidth)) b -= PartitionHalfThickness;
+    }
+
+    // =========================================================
     // Structural junction validator: an internal partition must meet solid wall, not window glass.
     // Check real window spans plus half a metre of pier margin; fail on bad authoring geometry.
     private static void EnsureClearPerimeterWindowJunction(float a, float b, float z, string name)
@@ -559,6 +633,7 @@ public partial class PoliceStationMesh : Node3D
         float a, float b, float z, float bottom, float top, Material material)
     {
         EnsureClearPerimeterWindowJunction(a, b, z, name);
+        TrimInteriorXJunctions(ref a, ref b);
         StructureGeometry.WallX(visual, body, name, a, b, z, bottom, top, material, 0.18f);
     }
 
