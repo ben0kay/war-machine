@@ -17,9 +17,13 @@ public partial class PoliceStationMesh : Node3D
     public Callable RefreshPreviewButton => Callable.From(RefreshPreview);
 
     private const float Width = 48f, Depth = 64f, CorridorHalfWidth = 2.5f;
-    private const float LowerFlightX = 10.1f, UpperFlightX = 14.6f;
-    private const float StairSouthZ = 20.5f, StairNorthZ = 27.5f;
-    private const float ShaftMinX = 7.8f, ShaftMaxX = 17f, ShaftMinZ = 18f, ShaftMaxZ = 30.4f;
+    // The doorway-to-first-riser landing and side approach are both at least 2m clear.
+    private const float CoreWallX = 7f, StairEntryZ = 20.8f;
+    private const float LowerFlightX = 11f, UpperFlightX = 15.3f;
+    private const float StairSouthZ = 23f, StairNorthZ = 28f;
+    private const float ShaftMinX = 8.7f, ShaftMaxX = 18.2f, ShaftMinZ = 18f, ShaftMaxZ = 30.4f;
+    private const float MinimumStairApproach = 2f, SideWindowWidth = 3.6f;
+    private static readonly float[] SideWindowZ = { -26f, -13f, 0f, 13f, 25f };
     private bool _showRoof = true;
     private PreviewFloor _editorPreview = PreviewFloor.GroundFloor;
     private Node3D? _upperLevel, _roof;
@@ -83,6 +87,7 @@ public partial class PoliceStationMesh : Node3D
     // The building root is centred on grade. Front entrance points toward local +Z.
     private void Build()
     {
+        ValidateStairApproach(); // A malformed shell must fail before generating blocked stairs.
         var s = Settings ?? new PoliceStationSettings();
         float h0 = Mathf.Clamp(s.GroundFloorHeight, 3.8f, 5.2f);
         float h1 = Mathf.Clamp(s.UpperFloorHeight, 3.2f, 4.8f), top = h0 + h1;
@@ -111,6 +116,8 @@ public partial class PoliceStationMesh : Node3D
         var groundWalls = Role(ground, "GroundFloorWalls", "walls");
         var upperDeck = Role(_upperLevel, "UpperFloorDeck", "deck");
         var upperWalls = Role(_upperLevel, "UpperFloorWalls", "walls");
+        // Upper guardrails disappear with the upper floor in the GroundFloor editor view.
+        var upperGuards = Role(_upperLevel, "StairwellGuardrails", "contents");
         _roof = Role(_upperLevel, "FlatRoof", "roof");
 
         // Ground slab ends at Y=0 for easy placement on existing prepared terrain.
@@ -135,7 +142,7 @@ public partial class PoliceStationMesh : Node3D
 
         BuildExterior(upperWalls, upperBody, clear, "U", h0, top, false, shell, trim, glass, doors);
         BuildUpperRooms(upperWalls, upperBody, clear, h0, top, partitions, trim, doors);
-        BuildStairs(generated, upperBody, clear, h0, step, riser, trim);
+        BuildStairs(generated, upperBody, upperGuards, clear, h0, step, riser, trim);
 
         // Roof is one inexpensive solid deck with a shallow parapet, kept separate for top-down reveal.
         StructureGeometry.Box(_roof, upperBody, "RoofSlab", new(0, top + 0.13f, 0),
@@ -153,7 +160,8 @@ public partial class PoliceStationMesh : Node3D
         Marker(markers, "GroundMainCorridor", new(0, 0, -5f));
         Marker(markers, "RearServiceExit", new(0, 0, -32.6f));
         Marker(markers, "StairFoot", new(LowerFlightX, 0, StairSouthZ));
-        Marker(markers, "StairTurnLanding", new((LowerFlightX + UpperFlightX) * 0.5f, h0 * 0.5f, 28.5f));
+        Marker(markers, "StairApproach", new(LowerFlightX, 0f, StairSouthZ - MinimumStairApproach));
+        Marker(markers, "StairTurnLanding", new((LowerFlightX + UpperFlightX) * 0.5f, h0 * 0.5f, 29.2f));
         Marker(markers, "StairUpperLanding", new(UpperFlightX, h0, ShaftMinZ + 0.8f));
         Marker(markers, "UpperOpenPlanOffice", new(14f, h0, 14f));
         Marker(markers, "UpperBathroom", new(6f, h0, -27f));
@@ -203,7 +211,7 @@ public partial class PoliceStationMesh : Node3D
             string side = x < 0 ? "West" : "East";
             var group = WallGroup(walls, prefix + side + "Wall");
             float cursor = -Depth * 0.5f;
-            foreach (float z in new[] { -26f, -13f, 0f, 13f, 25f })
+            foreach (float z in SideWindowZ)
             {
                 const float width = 3.6f;
                 float a = z - width * 0.5f, b = z + width * 0.5f;
@@ -230,21 +238,28 @@ public partial class PoliceStationMesh : Node3D
 
         // The waiting/intake room has its own front-left enclosure and wide accessible door.
         var waiting = WallGroup(walls, "WaitingRoomWall");
-        const float wx = -11.5f;
+        const float wx = -7.4f; // On solid frontage between the -11m window and main doorway.
         StructureGeometry.WallZ(waiting, body, "WaitingRear", wx, 19.2f, 23.6f, 0, height, partition, 0.18f);
-        StructureGeometry.WallZ(waiting, body, "WaitingFront", wx, 26.4f, 31.6f, 0, height, partition, 0.18f);
+        StructureGeometry.WallZ(waiting, body, "WaitingFront", wx, 26.4f, 32f, 0, height, partition, 0.18f);
         StructureGeometry.WallZ(waiting, body, "WaitingHeader", wx, 23.6f, 26.4f, 2.85f, height, partition, 0.18f);
         DoorFrameZ(waiting, "WaitingEntry", wx, 25f, 0f, 2.8f, 2.85f, trim);
         clear.Reserve("WaitingEntry", new(wx, 1.45f, 25f), new(3.6f, 2.9f, 3.8f));
 
-        // A 2.9m opening to the front-right U-stair core. No corridor or door crosses its treads.
+        // Stair entrance is positioned BESIDE a level vestibule, not alongside steps/rails.
+        // Enter through the west wall, turn, then travel 2.2m on a flat apron before step one.
         var core = WallGroup(walls, "LobbyStairCore");
-        const float coreX = 7f;
-        StructureGeometry.WallZ(core, body, "CoreRear", coreX, 19.2f, 20.55f, 0f, height, partition, 0.18f);
-        StructureGeometry.WallZ(core, body, "CoreFront", coreX, 23.45f, 30.4f, 0f, height, partition, 0.18f);
-        StructureGeometry.WallZ(core, body, "CoreHead", coreX, 20.55f, 23.45f, 2.9f, height, partition, 0.18f);
-        DoorFrameZ(core, "StairCoreEntry", coreX, 22f, 0f, 2.9f, 2.9f, trim);
-        clear.Reserve("StairCoreEntry", new(coreX, 1.45f, 22f), new(4.0f, 2.9f, 3.7f));
+        const float doorHalfZ = 1.4f;
+        float doorStart = StairEntryZ - doorHalfZ, doorEnd = StairEntryZ + doorHalfZ;
+        StructureGeometry.WallZ(core, body, "CoreRear", CoreWallX, 19f, doorStart,
+            0f, height, partition, 0.18f);
+        StructureGeometry.WallZ(core, body, "CoreFront", CoreWallX, doorEnd, 32f,
+            0f, height, partition, 0.18f);
+        StructureGeometry.WallZ(core, body, "CoreHead", CoreWallX, doorStart, doorEnd,
+            2.9f, height, partition, 0.18f);
+        DoorFrameZ(core, "StairCoreEntry", CoreWallX, StairEntryZ, 0f,
+            doorHalfZ * 2f, 2.9f, trim);
+        clear.Reserve("StairCoreEntry", new(CoreWallX, 1.45f, StairEntryZ),
+            new(4.4f, 2.9f, 4f));
 
         // Non-repeating door spacings give each functional zone a different length.
         CorridorSide(walls, body, clear, "GroundWestHall", -CorridorHalfWidth, 0f, height,
@@ -253,11 +268,11 @@ public partial class PoliceStationMesh : Node3D
             new[] { -26f, -7f, 10.5f }, partition, trim, doors);
 
         // Larger west front admin zone, split central interview pair and varied rear service rooms.
-        foreach (float z in new[] { -23.5f, -11f, 4f })
+        foreach (float z in new[] { -23.5f, -10.4f, 4f })
         {
             var wall = WallGroup(walls, "WestRoomBoundary");
-            StructureGeometry.WallX(wall, body, "WestDivider", -24f, -CorridorHalfWidth,
-                z, 0, height, partition, 0.18f);
+            InteriorPerimeterPartitionX(wall, body, "WestDivider", -24f, -CorridorHalfWidth,
+                z, 0, height, partition);
         }
         var interview = WallGroup(walls, "WestInterviewPartition");
         StructureGeometry.WallZ(interview, body, "InterviewRear", -12f, -10.8f, -4.4f, 0, height, partition, 0.18f);
@@ -267,11 +282,11 @@ public partial class PoliceStationMesh : Node3D
         clear.Reserve("InterviewEntry", new(-12f, 1.45f, -3f), new(3.6f, 2.9f, 3.6f));
 
         // Larger east-front operations area, a connected records/interview pair, and broad rear service.
-        foreach (float z in new[] { -18f, -1f })
+        foreach (float z in new[] { -18f, -4f })
         {
             var wall = WallGroup(walls, "EastRoomBoundary");
-            StructureGeometry.WallX(wall, body, "EastDivider", CorridorHalfWidth, 24f,
-                z, 0, height, partition, 0.18f);
+            InteriorPerimeterPartitionX(wall, body, "EastDivider", CorridorHalfWidth, 24f,
+                z, 0, height, partition);
         }
         var records = WallGroup(walls, "EastRecordsPartition");
         StructureGeometry.WallZ(records, body, "RecordsRear", 13f, -17.8f, -9.5f, 0, height, partition, 0.18f);
@@ -282,7 +297,11 @@ public partial class PoliceStationMesh : Node3D
 
         clear.Reserve("GroundMainCorridor", new(0, 1.4f, -6f), new(4.75f, 2.8f, 50f));
         clear.Reserve("PublicLobbyRoute", new(-1f, 1.4f, 25.5f), new(11f, 2.8f, 12f));
-        clear.Reserve("StairLobbyApproach", new(6f, 1.4f, 21.8f), new(6.4f, 2.8f, 3.8f));
+        clear.Reserve("StairLobbyApproach", new(8.5f, 1.4f, 21.2f),
+            new(5.8f, 2.8f, 3.6f));
+        clear.Reserve("StairBottomLanding", new(LowerFlightX, 1.4f,
+            StairSouthZ - MinimumStairApproach * 0.5f),
+            new(4.0f, 2.8f, MinimumStairApproach));
     }
 
     // =========================================================
@@ -299,8 +318,8 @@ public partial class PoliceStationMesh : Node3D
         foreach (float z in new[] { -8f, 8f, 20f })
         {
             var west = WallGroup(walls, "UpperWestOfficeDivider");
-            StructureGeometry.WallX(west, body, "OfficeDivision", -24f, -CorridorHalfWidth,
-                z, baseY, top, partition, 0.18f);
+            InteriorPerimeterPartitionX(west, body, "OfficeDivision", -24f, -CorridorHalfWidth,
+                z, baseY, top, partition);
         }
         var east = WallGroup(walls, "UpperEastOfficeDivider");
         // Large open office above the lobby, separate from the rear staff rooms.
@@ -356,6 +375,7 @@ public partial class PoliceStationMesh : Node3D
         float center, float width, Material wall, Material trim, Material doors)
     {
         float left = center - width * 0.5f, right = center + width * 0.5f, head = bottom + 2.90f;
+        EnsureClearPerimeterWindowJunction(start, end, z, name);
         StructureGeometry.WallX(group, body, name + "Left", start, left, z, bottom, top, wall, 0.18f);
         StructureGeometry.WallX(group, body, name + "Header", left, right, z, head, top, wall, 0.18f);
         StructureGeometry.WallX(group, body, name + "Right", right, end, z, bottom, top, wall, 0.18f);
@@ -442,7 +462,7 @@ public partial class PoliceStationMesh : Node3D
     // =========================================================
     // A real upper-floor opening plus a smooth sloped collider; individual visible risers do not
     // obstruct CharacterBody3D. The rising flight heads toward +Z, so pitch is negative.
-    private static void BuildStairs(Node3D generated, StaticBody3D upperBody, StructureClearance clear,
+    private static void BuildStairs(Node3D generated, StaticBody3D upperBody, Node3D upperGuards, StructureClearance clear,
         float rise, Material tread, Material riser, Material rail)
     {
         var stairs = StructureGeometry.Group(generated, "Stairs_0_to_1");
@@ -452,13 +472,14 @@ public partial class PoliceStationMesh : Node3D
         var visuals = Role(stairs, "StairVisuals", "stairs");
         var body = StructureGeometry.Body(stairs);
 
-        // Twelve steps up +Z, turn on a 2.5m-deep landing, then twelve steps back toward -Z.
+        // Twelve steps, a full 2.4m U-turn landing, then twelve steps back toward -Z.
         float halfRise = rise * 0.5f;
         StairFlight(visuals, body, "Lower", LowerFlightX, StairSouthZ, StairNorthZ,
             0f, halfRise, tread, riser, rail);
         StructureGeometry.Box(visuals, body, "TurnLanding",
-            new((LowerFlightX + UpperFlightX) * 0.5f, halfRise - 0.11f, 28.75f),
-            new(9f, 0.22f, 2.5f), tread);
+            new((LowerFlightX + UpperFlightX) * 0.5f, halfRise - 0.11f,
+                (StairNorthZ + ShaftMaxZ) * 0.5f),
+            new(8.6f, 0.22f, ShaftMaxZ - StairNorthZ), tread);
         StairFlight(visuals, body, "Upper", UpperFlightX, StairNorthZ, StairSouthZ,
             halfRise, halfRise, tread, riser, rail);
 
@@ -467,10 +488,11 @@ public partial class PoliceStationMesh : Node3D
             new(UpperFlightX, rise - 0.11f, (ShaftMinZ + StairSouthZ + 0.2f) * 0.5f),
             new(4f, 0.22f, StairSouthZ + 0.2f - ShaftMinZ), tread);
         foreach (float x in new[] { ShaftMinX, ShaftMaxX })
-            StructureGeometry.Box(visuals, upperBody, "UpperShaftRail",
-                new(x, rise + 0.54f, 25.25f), new(0.12f, 1.08f, 9.5f), rail);
-        StructureGeometry.Box(visuals, upperBody, "UpperNorthRail",
-            new((ShaftMinX + ShaftMaxX) * 0.5f, rise + 0.54f, 30.1f),
+            StructureGeometry.Box(upperGuards, upperBody, "UpperShaftRail",
+                new(x, rise + 0.54f, (StairSouthZ + ShaftMaxZ) * 0.5f),
+                new(0.12f, 1.08f, ShaftMaxZ - StairSouthZ), rail);
+        StructureGeometry.Box(upperGuards, upperBody, "UpperNorthRail",
+            new((ShaftMinX + ShaftMaxX) * 0.5f, rise + 0.54f, ShaftMaxZ),
             new(ShaftMaxX - ShaftMinX, 1.08f, 0.12f), rail);
         clear.Reserve("FrontUStairwell",
             new((ShaftMinX + ShaftMaxX) * 0.5f, rise * 0.5f + 0.45f, (ShaftMinZ + ShaftMaxZ) * 0.5f),
@@ -517,6 +539,45 @@ public partial class PoliceStationMesh : Node3D
                     new(0.10f, 0.85f, 0.10f), rail);
             }
         }
+    }
+
+    // =========================================================
+    // Structural junction validator: an internal partition must meet solid wall, not window glass.
+    // Check real window spans plus half a metre of pier margin; fail on bad authoring geometry.
+    private static void EnsureClearPerimeterWindowJunction(float a, float b, float z, string name)
+    {
+        if (a > -Width * 0.5f + 0.25f && b < Width * 0.5f - 0.25f) return;
+        foreach (float windowZ in SideWindowZ)
+            if (Mathf.Abs(z - windowZ) < SideWindowWidth * 0.5f + 0.5f)
+                throw new System.InvalidOperationException(
+                    $"PoliceStation001 {name}: divider at Z={z} hits side window centred on Z={windowZ}. Move the wall to a solid pier (0.5m margin).");
+    }
+
+    // =========================================================
+    // Required for all full-length interior X partitions on both floors.
+    private static void InteriorPerimeterPartitionX(Node3D visual, StaticBody3D body, string name,
+        float a, float b, float z, float bottom, float top, Material material)
+    {
+        EnsureClearPerimeterWindowJunction(a, b, z, name);
+        StructureGeometry.WallX(visual, body, name, a, b, z, bottom, top, material, 0.18f);
+    }
+
+    // =========================================================
+    // A level entry apron must exist in *both directions*: side of the railing and
+    // from the doorway centre to the bottom step. This is a structural check, not a
+    // furniture-only reservation, and must fail on authoring regression.
+    private static void ValidateStairApproach()
+    {
+        const float lowerRailOffset = 1.76f, lobbyRearWallZ = 19f;
+        float sidewaysClear = LowerFlightX - lowerRailOffset - CoreWallX;
+        float lengthClear = StairSouthZ - StairEntryZ;
+        if (sidewaysClear < MinimumStairApproach ||
+            lengthClear < MinimumStairApproach ||
+            StairSouthZ - lobbyRearWallZ < MinimumStairApproach + 0.5f ||
+            ShaftMinX >= LowerFlightX - lowerRailOffset ||
+            ShaftMaxX <= UpperFlightX + lowerRailOffset)
+            throw new System.InvalidOperationException(
+                $"PoliceStation001: blocked stairs. Minimum 2m flat approach; side={sidewaysClear:0.00}m, front={lengthClear:0.00}m.");
     }
 
     // =========================================================

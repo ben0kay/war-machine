@@ -1,6 +1,6 @@
 # PoliceStation001 — PS1 two-storey police-station shell
 
-**Branch:** `implement-td0-td1` · **PS1:** implemented in source; awaiting local build, preview, walkability and collision validation.
+**Branch:** `implement-td0-td1` · **PS1 shell correction:** stair door/approach and partition/window junction pass implemented in source; local Godot build, preview and physical acceptance pending.
 
 ## Open it directly in the Godot editor
 
@@ -24,7 +24,7 @@ Footprint **48 × 64m = 3,072m²**, exactly **eight times** ConvenienceStore001'
 | Ground (0) | Lobby, separate front-left waiting/intake zone, **front-right U-stair** by the entrance, 5m main corridor, larger administration/operations zones, varied interview/records rooms and service spaces |
 | Upper (1) | West offices, east/front open-plan office, east-rear rooms and bathroom, and a new front-right upper stair landing/exit joined to the upper floor |
 | Both | Repeated front/rear/side true window apertures with simple tinted **collidable** glass panels; continuous exterior/partition wall assemblies with independent collision and door openings |
-| Stair core | **Front-right U-shaped stair** (X≈8..17, Z≈18..30.4), twelve risers up, 180° middle landing, twelve risers back, two slope colliders and a real 9.2×12.4m upper deck opening |
+| Stair core | **Front-right U-shaped stair** (X≈8.7..18.2, Z≈18..30.4), two 12-riser flights starting at Z=23, 2.4m turn landing, two slope colliders, real 9.5×12.4m upper void, with 2.2m level approach from the door centre |
 
 The roof is a flat concrete slab with parapet. The exterior door frames include **noncolliding visual leaves propped open**; side-office doors also have open visual leaves. **These are not operational swinging doors:** no hinge, lock, mouse interaction, keycard or motor in PS0. Their openings and matching wall collisions are real. Glazed windows are physically solid, not painted wall rectangles.
 
@@ -52,3 +52,9 @@ The roof is a flat concrete slab with parapet. The exterior door frames include 
 ## PS1 structural redesign — 2026-10-28
 
 Following the owner's direct Godot preview feedback, the original rear-left straight staircase has moved into the **front-right of the public lobby**, with two opposing twelve-riser flights and a real 180-degree turn landing. The ground floor now has a separate public waiting/intake room, a large admin zone, nonmatching interview/records rooms and larger rear service spaces, rather than rows of identical rectangles. Every new doorway has a true hole in the wall/collision plus `StructureClearance` metadata. The upstairs corridor and offices are retained, but the new stair opening and arrival landing are now at the front. No furniture, operational doors, world placement or additional tick loops. Local Godot build, editor/physics and camera acceptance remain pending.
+
+## PS1 shell clearance correction — 2026-10-28
+
+The owner identified a blocked stair doorway/bottom step (two editor screenshots) and interior walls cutting into facade windows. This correction moves the first tread to Z=23, the stair-entry centre to Z=20.8 and the lower flight sideways to X=11, creating **2.2m of flat front approach** and **2.24m lateral width** from the lobby-facing doorway wall to the lower rail. The middle landing and return flight remain a genuine U configuration, and the guardrails belong to the upstairs visibility tree so they hide with UpperFloor in ground-level editor preview. The left public waiting-room partition now meets a solid pier between front windows, and the side-joining ground partitions have been moved off windows (west Z=-10.4, east Z=-4). Both floors use a fail-fast side-window-junction guard for perimeter-ending partitions, with a 0.5m clear edge margin. Named `StairBottomLanding` and `StairLobbyApproach` clearance zones preserve the flat apron for later furniture.
+
+These new guards are structural source checks, unlike the existing furniture-only `StructureClearance.Allows`. See the updated [building authoring contract](../BUILDING_AUTHORING_README.md). **Validation still needed locally:** build, refresh the editor scene, walk/inspect the ground-floor stair door, the flat approach before the first tread, U-turn, upper exit and upper floor/roof previews; check all exterior window/partition junctions from the room side. No world placement or terrain changes included.
