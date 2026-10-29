@@ -2,7 +2,7 @@
 
 **Repository:** `ben0kay/war-machine`  
 **Working branch:** `implement-td0-td1` (never `main` without explicit instruction)  
-**Status:** **DF0 implemented in source — awaiting local validation.** DF1–DF5 remain planned and not authorized. No canopy art, forest population, saved terrain or global lighting changes have been made.  
+**Status:** **DF0 and DF1 implemented in source — awaiting local validation.** DF2–DF5 remain planned and not authorized. No forest population, saved terrain or global lighting changes have been made.  
 **Priority:** Primary FPS view; retain shared-world/secondary top-down compatibility.  
 **Reference:** User's forest screenshots, especially the sunlit tall-trunk woodland with overlapping foliage high overhead (visual target, not a supplied asset/license).
 
@@ -11,7 +11,7 @@
 | Phase | Goal / deliverable | Recommended implementer | Status |
 | --- | --- | --- | --- |
 | **DF0** | Survey east-side footprint, document exclusions and add reversible forest toggle | Regular Chat (contained integration) | **Implemented in source — awaiting local validation** |
-| **DF1** | Build one convincing tall canopy tree and a cheaper younger/filler variant | Codex/Work for procedural/imported tree pipeline; Regular Chat for limited asset/config docs | **Planned — not authorized** |
+| **DF1** | Tall high-crowned broadleaf tree, three seeded variants, cheaper far art and preview | Regular Chat (isolated procedural asset) | **Implemented in source — awaiting local validation** |
 | **DF2** | Seed dense, non-uniform trees within only this footprint using chunked MultiMeshes and trunk collision | Codex/Work (streaming, physics and shared world) | **Planned — not authorized** |
 | **DF3** | Interlocking crowns, selective real sun shadows, atmospheric depth and canopy-gap lighting | Codex/Work for shader/render integration; Regular Chat for simple authored tuning | **Planned — not authorized** |
 | **DF4** | Forest-floor layers: grass, sparse undergrowth, logs/rocks and a subtle walkable route | Codex/Work for active-world scatter integration; Regular Chat for bounded config changes | **Planned — not authorized** |
@@ -187,3 +187,11 @@ WORLD/Configuration/WorldMaster.tres   [DF0 — authored zone, existing file]
 - **Limitations:** a rectangular terrain/slope/clearance preflight is not full physics walkability, view/cover validation or final placement density. A single centre can be relocated using `ForestMaster.tres` if the candidate fails. DF1 can start after accepting art direction; DF2 should not place dense trees until DF0 location is visually accepted. No new tree scenes or dedicated forest chunk streamer yet.
 
 **Changed owners:** `VEGETATION/Forest/ForestZone.cs`, `Configuration/ForestSettings.cs`, `Configuration/ForestMaster.tres`, `WORLD/WorldSettings.cs`, `WorldMaster.tres`, `WorldController.cs`, feature/parent READMEs. One commit on `implement-td0-td1`; SHA in Git history.
+
+## DF1 — asset implementation handoff (2026-10-29)
+
+**Source implemented; not yet accepted.** New [CanopyTree visual asset](../Trees/CanopyTree/README.md) has a procedural 17–22m high-crowned broadleaf tree with three deterministic seeded silhouettes, two opaque coloured material surfaces (wood/foliage), branching above walking height, and a reduced-clump distant mesh built from the same silhouette. One isolated [preview scene](../Trees/CanopyTree/CanopyTreePreview.tscn) displays three near trees, a shorter lower-detail filler, and one farther low-detail tree. The tree generator belongs in `VEGETATION/Trees/CanopyTree/C/`, master in its own Configuration, Artwork reserved for possible GLB replacement. **No active-world placement, DF0 toggle changes, forest-generation code, tree collisions, global wind or lighting changes.** DF0's site acceptance remains pending.
+
+**DF1 differences from initial proposal:** rather than a separate sapling generator, DF1 includes a 0.65× younger filler-tree example using the same far mesh; DF2 can adopt age-specific scale/mix rules without a second art pipeline. GPU wind and canopy sunlight tuning are deferred to DF2/DF3, keeping this isolated art review reversible. Distant art uses a separate generated low-detail mesh, not mesh scene nodes.
+
+**Local acceptance:** `dotnet build war-machine.csproj`, then F6 `VEGETATION/Trees/CanopyTree/CanopyTreePreview.tscn` and inspect 2m/15m/60m profiles in Godot editor. Compare three tall variants, the smaller filler and the far tree, crown gaps, trunk width/length, bark palette and branch silhouette. Verify exactly two mesh surfaces in Inspector; edit `CanopyTreeMaster.tres` values and restart preview. Confirm no `_Process`/physics updates and that World/FPS remain unchanged with DF0 OFF. No local Godot/.NET build or measured GPU performance was performed remotely. DF2 should build near/far templates once per variant and feed them through chunk-level `MultiMesh`, using the surveyed DF0 footprint and native collision layer 5.

@@ -1,0 +1,5 @@
+# DF1 procedural broadleaf tree
+
+`CanopyTreeMeshBuilder.Create(settings, variant, barkMaterial, leafMaterial, distant)` generates **one combined ArrayMesh with exactly two surfaces**: opaque tapered bark/branch structure and opaque irregular faceted broadleaf crowns. Near and far use the same deterministic seeded branch layout; far omits alternating canopy clumps and enlarges the remaining foliage for distant silhouette continuity. The same cheaper far mesh can also form a **0.65× younger/filler variant**, demonstrated in the isolated preview; DF2 will use uniform scale for this role.
+
+The tree is intended for 17–22m height, clear lower trunk and crowns starting around mid-height. `Create` is invoked **only when authoring/loading visual templates**, not every frame or for every future forest instance. DF2 is expected to cache one near/far mesh for each of three variants, and reuse those meshes in region-specific `MultiMeshInstance3D` batches. No per-leaf nodes, alpha blend, CPU wind loop, collider or tree interaction. Trunk collision belongs to DF2 chunk placement.

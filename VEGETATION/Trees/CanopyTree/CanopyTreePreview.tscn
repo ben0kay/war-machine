@@ -1,0 +1,69 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://VEGETATION/Trees/CanopyTree/CanopyTree.tscn" id="1"]
+
+[sub_resource type="PlaneMesh" id="ground_mesh"]
+size = Vector2(140, 140)
+
+[sub_resource type="StandardMaterial3D" id="ground_material"]
+albedo_color = Color(0.25, 0.29, 0.20, 1)
+roughness = 1.0
+
+[sub_resource type="Environment" id="preview_environment"]
+background_mode = 1
+background_color = Color(0.59, 0.68, 0.72, 1)
+ambient_light_source = 0
+ambient_light_color = Color(0.7, 0.75, 0.77, 1)
+ambient_light_energy = 0.6
+
+[node name="CanopyTreePreview" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("preview_environment")
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("ground_mesh")
+surface_material_override/0 = SubResource("ground_material")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-45, -35, 0)
+light_energy = 1.4
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.989016, 0.147809, 0, -0.147809, 0.989016, 0, 7, 31)
+current = true
+fov = 77.0
+far = 250.0
+
+[node name="Variant0" parent="." instance=ExtResource("1")]
+position = Vector3(-10, 0, -2)
+
+[node name="Variant1" parent="." instance=ExtResource("1")]
+position = Vector3(0, 0, 0)
+Variant = 1
+
+[node name="Variant2" parent="." instance=ExtResource("1")]
+position = Vector3(10, 0, -2)
+Variant = 2
+
+[node name="YoungFiller" parent="." instance=ExtResource("1")]
+position = Vector3(-20, 0, -14)
+scale = Vector3(0.65, 0.65, 0.65)
+Variant = 2
+PreviewFarMesh = true
+
+[node name="FarLODExample" parent="." instance=ExtResource("1")]
+position = Vector3(0, 0, -27)
+Variant = 1
+PreviewFarMesh = true
+
+[node name="Instructions" type="CanvasLayer" parent="."]
+
+[node name="Label" type="Label" parent="Instructions"]
+offset_left = 16.0
+offset_top = 14.0
+offset_right = 820.0
+offset_bottom = 62.0
+text = "DF1 CANOPY PREVIEW | 3 tall near trees + young filler (rear left) + far LOD (rear)\nF6 = Run scene | Tune CanopyTreeMaster.tres and restart preview"
+theme_override_font_sizes/font_size = 16

@@ -11,7 +11,7 @@
 
 > **Object render/debug status:** Shared per-asset `ShadowMode` (Inherit / Disabled / Enabled) is implemented in source as the shadow-only subset of SOC1A. [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render caps, F1 inspection, malformed-GLB checks and performance cost reports. Runtime validation pending.
 
-> **Dense woodland prototype — DF0 implemented, awaiting validation:** [DF0–DF5 forest implementation plan](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) now has a disabled-by-default 96m-square east-side site configuration, bounded terrain/clearance/approach survey, optional debug outline and reserved-only pine exclusion when enabled and approved. **No canopy trees, global forest placement, terrain writes or lighting changes yet.** DF1–DF5 remain planned. The candidate's actual in-game suitability is unverified.
+> **Dense woodland prototype — DF0+DF1 implemented, awaiting validation:** [Forest phases](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) include the disabled-by-default east-side 96m survey footprint (DF0) and an [isolated high-canopy broadleaf asset preview](VEGETATION/Trees/CanopyTree/README.md) with three seeded variants, small filler and near/far art (DF1). **No live dense forest population, terrain writes or lighting changes.** DF2–DF5 are planned and the test location/art require in-game acceptance.
 
 ## Game vision
 
