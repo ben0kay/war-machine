@@ -34,6 +34,7 @@ SoundUncertaintyRadii = Vector2(1, 18)
 SoundNearCommitmentWeights = Vector3(0.05, 0.15, 0.8)
 SoundFarCommitmentWeights = Vector3(0.8, 0.18, 0.02)
 SoundResponseChance = Vector2(1, 0.25)
+SoundReactionDelaySeconds = Vector2(0.15, 1.2)
 SoundRetargetCooldownSeconds = 6.0
 SoundBlockerMask = 17
 SoundBlockedEarlyBias = 0.85

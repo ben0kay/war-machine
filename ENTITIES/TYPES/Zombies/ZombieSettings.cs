@@ -67,6 +67,7 @@ public partial class ZombieSettings : EntitySettings
     [Export] public Vector3 SoundNearCommitmentWeights { get; set; } = new(0.05f, 0.15f, 0.80f);
     [Export] public Vector3 SoundFarCommitmentWeights { get; set; } = new(0.80f, 0.18f, 0.02f);
     [Export] public Vector2 SoundResponseChance { get; set; } = new(1, 0.25f);
+    [Export] public Vector2 SoundReactionDelaySeconds { get; set; } = new(0.15f, 1.2f);
     [Export] public float SoundRetargetCooldownSeconds { get; set; } = 6;
     [Export(PropertyHint.Layers3DPhysics)] public uint SoundBlockerMask { get; set; } = 17;
     [Export(PropertyHint.Range, "0,1,0.05")] public float SoundBlockedEarlyBias { get; set; } = 0.85f;

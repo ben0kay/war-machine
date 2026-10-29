@@ -1,5 +1,5 @@
 // HE1: one discrete gunshot listener and compact pending estimate; the existing brain consumes it.
-// One optional blocker ray on brain consumption; no tracking, hearing loop or event history.
+// Random reaction deadline and one optional blocker ray on brain consumption; no extra timer or hearing loop.
 using Godot;
 
 public partial class ZombieController
@@ -9,14 +9,14 @@ public partial class ZombieController
     private bool _hearingSubscribed, _pendingSound;
     private Vector3 _soundOriginal, _soundEstimate, _soundWeights;
     private float _soundStrength;
-    private ulong _nextSoundAt, _lastSoundSequence;
+    private ulong _nextSoundAt, _lastSoundSequence, _soundRespondAt;
 
     // =========================================================
     // World injects its own service once. Rebinding/deactivation/exit always detach the previous delegate.
     public void BindHearing(SoundDispatcher? dispatcher)
     {
         UnsubscribeHearing(); _soundDispatcher = dispatcher;
-        _pendingSound = false; _nextSoundAt = _lastSoundSequence = 0;
+        _pendingSound = false; _nextSoundAt = _lastSoundSequence = _soundRespondAt = 0;
         SubscribeHearing();
     }
 
@@ -31,7 +31,7 @@ public partial class ZombieController
     private void UnsubscribeHearing()
     {
         if (_hearingSubscribed && _soundDispatcher != null) _soundDispatcher.Emitted -= HearSound;
-        _hearingSubscribed = false; _pendingSound = false;
+        _hearingSubscribed = false; _pendingSound = false; _soundRespondAt = 0;
     }
 
     // =========================================================
@@ -74,6 +74,9 @@ public partial class ZombieController
         _soundOriginal = sound.WorldPosition;
         _soundEstimate = sound.WorldPosition + new Vector3(Mathf.Cos(angle) * radial, 0, Mathf.Sin(angle) * radial);
         _soundWeights = _config.SoundNearCommitmentWeights.Lerp(_config.SoundFarCommitmentWeights, weakness);
+        float delayMin = SafePolicy(_config.SoundReactionDelaySeconds.X, 0, 5);
+        float delayMax = Mathf.Max(delayMin, SafePolicy(_config.SoundReactionDelaySeconds.Y, 0, 5));
+        _soundRespondAt = now + (ulong)Mathf.CeilToInt(_random.RandfRange(delayMin, delayMax) * 1000);
         _soundStrength = strength; _pendingSound = true;
     }
 
@@ -82,9 +85,12 @@ public partial class ZombieController
     private void ConsumeHeardSound(ulong now)
     {
         if (!_pendingSound) return;
-        _pendingSound = false;
+        // Higher-priority clues discard the pending sound immediately, even before its response deadline.
         if (!_config.HearingEnabled || IsChasing
-            || (_investigation.HasPoint && _investigation.Clue == InvestigationClue.Hit)) return;
+            || (_investigation.HasPoint && _investigation.Clue == InvestigationClue.Hit))
+        { _pendingSound = false; _soundRespondAt = 0; return; }
+        if (now < _soundRespondAt) return;
+        _pendingSound = false; _soundRespondAt = 0;
         // Physics timer consumption guarantees a physics-safe query and avoids rays for superseded clues.
         _soundBlockerRay ??= new PhysicsRayQueryParameters3D {
             CollideWithBodies = true, CollideWithAreas = false, HitFromInside = true,

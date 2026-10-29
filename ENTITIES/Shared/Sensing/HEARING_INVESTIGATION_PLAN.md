@@ -1,3 +1,5 @@
+> **HE1 reaction staggering (2026-10-29):** Each accepted gunshot response now samples one independent **0.15–1.2s** delay from `SoundReactionDelaySeconds` in both zombie masters. The pending fixed estimate is consumed on the first existing brain tick after that deadline (normally up to 0.4s extra); no new timer, frame loop, or waiting ray. Sight/bullet-hit clues cancel the pending response before the delay check. Rejected burst events do not reroll/postpone it; accepted stronger/relocated replacements use a fresh delay under existing cooldown rules. Deactivation, death, rebind and unload clear it. Source implemented; compilation/runtime awaiting local validation.
+
 > **HE1 clear/blocked first pass (source implemented, awaiting local validation):** Each accepted sound consumed by the existing physics brain gets **one** cached ray from the listener eye to the original recorded muzzle coordinate. Mask 17 checks world/props (including eligible solid doors), excludes self and ignores actors/anatomy areas. A first hit means blocked; there is no counting, recasting or route search. The sampled estimate remains unchanged. Blocked commitment weights blend 85% toward early-only, and the existing capped episode deadline is multiplied by 0.35. Clear-line sight/hit-independent sound policy is unchanged. These are authored `SoundBlockerMask`, `SoundBlockedEarlyBias`, `SoundBlockedTimeoutMultiplier` defaults for both species. Mask 0 disables this check. Retarget cooldown is now **6 seconds**. This explicitly supersedes HE1's original no-acoustic-rays exclusion below; HE2 and full HE3 remain deferred.
 >
 > Query occurs only once on the existing brain timer after visual/hit priority checks, never every shot or movement tick. Blocker result applies only to this episode; ordinary PER2 sight/hit calls use durationScale=1 and unchanged weights. The shared deadline multiplier changes no stored policy. Blocked does not mean unreachable: this is a cheap commitment heuristic, not sound attenuation or pathfinding. Hidden decorative meshes without solid collision do not block. Terrain counts when intersected; no extra ground checks. No added callbacks, ray loops or new scene nodes.
@@ -43,6 +45,7 @@ Both standard and runner masters explicitly author the same **Gunshot hearing (H
 | SoundUncertaintyRadii | (1, 18)m maximum error radius |
 | SoundNearCommitmentWeights | (0.05, 0.15, 0.80) early/moderate/thorough |
 | SoundFarCommitmentWeights | (0.80, 0.18, 0.02) early/moderate/thorough |
+| SoundReactionDelaySeconds | (0.15, 1.2)s; finite endpoints clamped to 0–5s and ordered; (0,0) restores next-brain-tick response |
 | SoundResponseChance | (1, 0.25), near/strong to far/weak |
 | SoundRetargetCooldownSeconds | 6s; also throttles a probabilistic no-response decision |
 | SoundStrongerRatio | 1.25; received strength relative to accepted sound |
@@ -81,3 +84,6 @@ Locally run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `W
 6. Compare idle and active horde frame time; mute/disable audio and ensure gameplay hearing remains functional. No performance improvement is claimed without measurements.
 
 No HE2/HE3, acoustic rays, hearing grid, attack changes, new debug UI, rendering changes or movement overhaul is included.
+
+
+Reaction-delay handoff: focused diff/lifecycle/configuration checks passed; no new tests or scenes added. `dotnet build war-machine.csproj` cannot run here because dotnet is unavailable. Locally build and use FirstPersonWorld: fire a missed shot outside visual acquisition with several eligible shamblers/runners, observe varied starts, and verify bursts do not keep postponing an accepted clue. Walk into clear sight or land a nonlethal hit during the delay: higher-priority reaction should take over without a later stale sound search. Kill/deactivate/reload during the wait and compare (0,0) with the defaults. Existing one blocker ray occurs only when a still-valid delayed clue is actually consumed. Waiting actors retain only their existing staggered brain; no new active callback, physics or idle work.

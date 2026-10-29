@@ -48,7 +48,7 @@ public partial class ZombieController
     {
         if (!_config.HitInvestigationEnabled || !IsInstanceValid(source) || source == this || source != _target
             || !source!.IsInsideTree() || source.IsQueuedForDeletion()) return;
-        _pendingSound = false;
+        _pendingSound = false; _soundRespondAt = 0;
         Vector3 point = source.GlobalPosition; // Snapshot once at contact; never retain a live source reference here.
         if (!_investigation.Remember(point, InvestigationClue.Hit)) return;
         // Confirmed pursuit retains priority; if sight is lost next tick, this newest clue can start the episode.
