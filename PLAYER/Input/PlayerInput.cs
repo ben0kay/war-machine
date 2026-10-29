@@ -27,6 +27,11 @@ public partial class PlayerController
                 return;
             }
             if (input is not InputEventKey key || key.Echo) return;
+            if (key.Pressed && (key.PhysicalKeycode == Key.Kp1 || key.PhysicalKeycode == Key.Kp2))
+            {
+                if (!_player.CanAcceptLeanInput() || !_player.GetWindow().HasFocus() || _player.GetViewport().GuiGetFocusOwner() != null) return;
+                _player._lean.SetHeld(key.PhysicalKeycode, true); _player.GetViewport().SetInputAsHandled(); return;
+            }
             if (key.PhysicalKeycode == Key.F10 && key.Pressed)
             {
                 _player._movement._reportMovementCollision = true; _player.SetPhysicsProcess(true);
@@ -47,11 +52,20 @@ public partial class PlayerController
         }
 
         // =========================================================
-        // Focus changes clear a pending jump and wake the existing physics driver.
+        // Release is observed before GUI handling, avoiding a stuck held lean behind menus.
+        public void HandleLeanRelease(InputEvent input)
+        {
+            if (!_player._initialized || input is not InputEventKey key || key.Pressed) return;
+            if (key.PhysicalKeycode == Key.Kp1 || key.PhysicalKeycode == Key.Kp2)
+                _player._lean.SetHeld(key.PhysicalKeycode, false);
+        }
+
+        // =========================================================
+        // Focus changes clear a pending jump/lean and wake the existing physics driver.
         public void Notify(int what)
         {
             if (!_player._initialized) return;
-            if (what == Node.NotificationApplicationFocusOut) _jumpRequested = false;
+            if (what == Node.NotificationApplicationFocusOut) { _jumpRequested = false; _player._lean.ClearHeld(); }
             if (what == Node.NotificationApplicationFocusOut || what == Node.NotificationApplicationFocusIn)
                 _player.SetPhysicsProcess(true);
         }

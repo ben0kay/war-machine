@@ -61,8 +61,11 @@ public partial class PlayerController
             _art.Position = Vector3.Up * (bob * Mathf.Lerp(1, 0.35f, _player._stance._crouch)
                 - 0.72f * (1 - Mathf.Cos(1.15f * _player._stance._crouch)) - 0.30f * _player._stance._prone);
             // Lean upper body forward to the ground: the head/arms lead the crawl along local -Z.
+            // Cosmetic torso roll and shift do not rotate the physics body or detection volumes.
+            float lean = _player._lean.Amount;
+            _upperBody.Position = Vector3.Up * 0.85f + Vector3.Right * (lean * Mathf.Clamp(_player._settings.LeanTorsoShift, 0f, 0.15f));
             _upperBody.Rotation = new Vector3(0.18f * _player._stance._crouch - 1.26f * _player._stance._prone,
-                -swing * torsoTwist, across * torsoRoll);
+                -swing * torsoTwist, across * torsoRoll - Mathf.DegToRad(Mathf.Clamp(_player._settings.LeanBodyDegrees, 0f, 20f)) * lean);
             _shoulderGirdle.Rotation = new Vector3(0, -swing * shoulderSway * 0.3f * aimDamping,
                 Mathf.Sin(_phase * 2f) * shoulderSway * 0.5f * (_player._weapon._weaponPose ? 0.45f : 1f));
             _leftArm.Rotation = new Vector3(-stride - 0.4f * _player._stance._crouch + 1.8f * _player._stance._prone, 0, 0);

@@ -15,6 +15,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     public MovementStance CurrentStance => _stance.Current;
     public bool IsCrouching => CurrentStance == MovementStance.Crouching;
     public bool IsProne => CurrentStance == MovementStance.Prone;
+    public float LeanAmount => _lean.Amount; // -1 left, +1 right; presentation only.
     public Marker3D WeaponMount { get; private set; } = null!;
     public float CapsuleHeight => _stance._capsule.Height;
     public Vector3 PerceptionHead => GlobalPosition + Vector3.Up * Mathf.Max(0.1f, CapsuleHeight - 0.1f);
@@ -27,6 +28,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     private readonly PlayerInput _input;
     private readonly PlayerMovement _movement;
     private readonly PlayerStance _stance;
+    private readonly PlayerLean _lean;
     private readonly PlayerAnimation _animation;
     private readonly PlayerWeaponPose _weapon;
 
@@ -35,6 +37,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     public PlayerController()
     {
         _input = new PlayerInput(this); _movement = new PlayerMovement(this); _stance = new PlayerStance(this);
+        _lean = new PlayerLean(this);
         _animation = new PlayerAnimation(this); _weapon = new PlayerWeaponPose(this);
     }
 
@@ -54,7 +57,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
             Vitals = GetNode<PlayerVitals>("Vitals"); Vitals.Initialize(_settings.Vitals);
             Vitals.Died += OnDied;
         }
-        _initialized = true; _input.ClearRequests(); _stance.Reset();
+        _initialized = true; _input.ClearRequests(); _stance.Reset(); _lean.Reset();
         Velocity = Vector3.Zero; SetPhysicsProcess(true);
     }
 
@@ -65,7 +68,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         blocked |= IsDead;
         if (GameplayInputBlocked == blocked) return;
         GameplayInputBlocked = blocked; _input._toggleCrouch = _input._toggleProne = false;
-        if (blocked) _input._jumpRequested = false;
+        if (blocked) { _input._jumpRequested = false; _lean.ClearHeld(); }
         if (blocked) Velocity = new Vector3(0, Velocity.Y, 0);
         SetPhysicsProcess(true); GameplayInputBlockChanged?.Invoke(blocked);
     }
@@ -77,6 +80,10 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     // =========================================================
     private void OnDied()
     { SetGameplayInputBlocked(true); Input.MouseMode = Input.MouseModeEnum.Visible; }
+
+    // =========================================================
+    // Releases must be observed even when the GUI handles the key-up event.
+    public override void _Input(InputEvent input) => _input.HandleLeanRelease(input);
 
     // =========================================================
     public override void _UnhandledInput(InputEvent input) => _input.Handle(input);
@@ -92,6 +99,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     // =========================================================
     // Keep all virtual hooks on the player so existing FPS overrides dispatch exactly as before.
     protected virtual bool CanAcceptJumpInput() => true;
+    protected virtual bool CanAcceptLeanInput() => true;
     protected virtual bool IsMovementKey(Key key) => PlayerInput.MovementKey(key);
     protected virtual Vector2 ReadMovementInput() => PlayerInput.MovementInput();
     protected virtual Vector3 GetMovementDirection(Vector2 keys) => _movement.Direction(keys);

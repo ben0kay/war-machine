@@ -21,3 +21,7 @@ Arrows move; Shift runs; Left Ctrl/C crouches; Right Ctrl goes prone; RMB jumps;
 Promotion is source implemented, awaiting local build and World/FPS acceptance. No extra test scenes were added. Build `dotnet build war-machine.csproj`, then F6 this scene: verify capture/focus, movement/stances/jump, head bob, firing/recoil/reload/shove, terrain/content, fog/grass and UI. F6 `WORLD/World.tscn` to check top-down movement/aiming/fading. No terrain rebake. Check idle camera/player callbacks still sleep; no new callbacks or queries were introduced.
 
 [Earlier implementation notes](History.md) retain historical validation/tuning details; ownership statements there are superseded by this guide. The older `PLAYER/LegacyFirstPerson/` experiment remains parked and unchanged.
+
+## L0 held cosmetic leaning
+
+Hold Numpad 1 left / Numpad 2 right; releasing either smoothly levels the FPS view and its camera-mounted gun (including slot-3 bat). A 9° roll plus a 0.12m lateral eye shift is configured in `Configuration/FirstPersonMaster.tres`; shared blend duration, 0.55× movement multiplier and top-down torso pose are in `PLAYER/PlayerSettings.cs`. Top-down only tilts the player model, not its camera. Prone, blocked UI, Escape uncapture and focus loss suppress lean. No physics collision or zombie perception changes. Visual/compile tests pending.

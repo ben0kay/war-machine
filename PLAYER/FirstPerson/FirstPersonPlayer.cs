@@ -30,6 +30,7 @@ public partial class FirstPersonPlayer : PlayerController
         base._PhysicsProcess(delta);
         Vector3 travel = GlobalPosition - before; travel.Y = 0;
         bool movingInput = ReadMovementInput().LengthSquared() > 0.01f;
+        _view.SetLeanAmount(LeanAmount);
         _view.RecordPhysicsPose(CapsuleHeight, travel.Length(), IsOnFloor(),
             movingInput, CurrentStance, (float)delta);
     }
@@ -48,6 +49,9 @@ public partial class FirstPersonPlayer : PlayerController
     protected override bool CanAcceptJumpInput() => Input.MouseMode == Input.MouseModeEnum.Captured;
 
     // =========================================================
+    protected override bool CanAcceptLeanInput() => Input.MouseMode == Input.MouseModeEnum.Captured;
+
+    // =========================================================
     // Releases and camera capture changes wake the shared movement driver so velocity can settle.
     protected override Vector2 ReadMovementInput() => Input.MouseMode == Input.MouseModeEnum.Captured
         ? base.ReadMovementInput() : Vector2.Zero;
@@ -57,7 +61,8 @@ public partial class FirstPersonPlayer : PlayerController
     protected override Vector3 GetMovementDirection(Vector2 keys)
     {
         Vector3 forward = -_view.GlobalBasis.Z; forward.Y = 0;
-        Vector3 right = _view.GlobalBasis.X; right.Y = 0;
+        // Roll must not rotate the strafing axis; derive it from the level look-forward vector.
+        Vector3 right = forward.Cross(Vector3.Up); right.Y = 0;
         return (right.Normalized() * keys.X + forward.Normalized() * keys.Y).Normalized();
     }
 }

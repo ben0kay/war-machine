@@ -12,6 +12,9 @@ public partial class FirstPersonSettings : Resource
     [Export] public float EyeInset { get; set; } = 0.15f;
     [Export] public bool InterpolateTranslation { get; set; } = true;
     [Export] public float TeleportResetDistance { get; set; } = 8;
+    [ExportGroup("Lean (FPS view only)")]
+    [Export(PropertyHint.Range, "0,20,0.5")] public float LeanCameraDegrees { get; set; } = 9f;
+    [Export(PropertyHint.Range, "0,0.25,0.01")] public float LeanEyeShift { get; set; } = 0.12f;
     [ExportGroup("Head bob (FPS only)")]
     [Export] public bool HeadBobEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "0,0.08,0.001")] public float WalkVerticalAmplitude { get; set; } = 0.012f;

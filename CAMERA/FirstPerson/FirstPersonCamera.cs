@@ -8,7 +8,7 @@ public partial class FirstPersonCamera : Camera
     private bool _ready;
     private Vector3 _previousEye, _currentEye;
     private ulong _sampleTick;
-    private float _lookPitchDegrees;
+    private float _lookPitchDegrees, _leanAmount;
     private readonly FirstPersonHeadBob _headBob = new();
 
     // =========================================================
@@ -18,7 +18,7 @@ public partial class FirstPersonCamera : Camera
         _actor = player;
         Projection = ProjectionType.Perspective; Fov = Mathf.Clamp(ViewSettings.FieldOfView, 40, 110);
         Near = 0.05f; Far = 1800; Current = true; Rotation = Vector3.Zero;
-        _lookPitchDegrees = 0f;
+        _lookPitchDegrees = _leanAmount = 0f;
         GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - ViewSettings.EyeInset);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // We interpolate translation only, never mouse rotation.
         _previousEye = _currentEye = GlobalPosition;
@@ -72,6 +72,20 @@ public partial class FirstPersonCamera : Camera
     }
 
     // =========================================================
+    // The existing shared player interpolates lean, leaving FPS pitch/yaw/recoil unchanged.
+    // Camera-mounted gun and bat follow this roll without a second weapon animation.
+    public void SetLeanAmount(float amount)
+    {
+        if (!_ready) return;
+        amount = float.IsFinite(amount) ? Mathf.Clamp(amount, -1f, 1f) : 0f;
+        if (Mathf.IsEqualApprox(_leanAmount, amount)) return;
+        _leanAmount = amount;
+        Vector3 angle = RotationDegrees;
+        angle.Z = -amount * Mathf.Clamp(ViewSettings.LeanCameraDegrees, 0f, 20f);
+        RotationDegrees = angle; NotifyViewChanged();
+    }
+
+    // =========================================================
     // Physics supplies one completed eye pose and actual travel distance; no second movement driver.
     public void RecordPhysicsPose(float capsuleHeight, float horizontalDistance, bool grounded, bool movingInput,
         PlayerController.MovementStance stance, float physicsDelta)
@@ -96,7 +110,8 @@ public partial class FirstPersonCamera : Camera
     // =========================================================
     // Camera-right sway plus world-up bounce; no mouse-look, recoil or physics-body rotation.
     private Vector3 BobbedEye(Vector3 baseEye)
-        => baseEye + GlobalBasis.X * _headBob.Offset.X + Vector3.Up * _headBob.Offset.Y;
+        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanAmount * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.25f))
+            + Vector3.Up * _headBob.Offset.Y;
 
     // =========================================================
     private void SetEye(Vector3 eye)

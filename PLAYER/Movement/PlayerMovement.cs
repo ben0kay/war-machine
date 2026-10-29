@@ -40,6 +40,7 @@ public partial class PlayerController
         {
             float dt = (float)delta;
             bool stanceAnimating = _player._stance.Advance(dt);
+            bool leanChanged = _player._lean.Advance(dt);
             // Consume the press once. Upward velocity naturally disables floor snapping; gravity
             // continues while airborne until _player.MoveAndSlide reports landing, then idle physics can sleep.
             bool jumping = _player._input._jumpRequested && _player.IsOnFloor() && !_player.GameplayInputBlocked
@@ -51,6 +52,7 @@ public partial class PlayerController
                 (_player.IsProne ? Mathf.Clamp(_player._settings.ProneSpeedMultiplier, 0.05f, 0.4f)
                 : _player.IsCrouching ? Mathf.Clamp(_player._settings.CrouchSpeedMultiplier, 0.1f, 1f)
                 : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1f, _player._settings.RunMultiplier) : 1f);
+            if (_player._lean.IsActive) speed *= Mathf.Clamp(_player._settings.LeanMoveMultiplier, 0.1f, 1f);
             Vector3 horizontal = new(_player.Velocity.X, 0, _player.Velocity.Z);
             horizontal = _player.UpdateHorizontalVelocity(horizontal, direction * speed, dt);
             Vector3 before = _player.GlobalPosition;
@@ -65,9 +67,9 @@ public partial class PlayerController
             Vector3 travel = _player.GlobalPosition - before; travel.Y = 0;
             float actualSpeed = dt > 0 ? travel.Length() / dt : 0;
             _player._animation.Advance(travel, dt, actualSpeed);
-            if (stanceAnimating) _player.RaiseWeaponPoseChanged();
+            if (stanceAnimating || leanChanged) _player.RaiseWeaponPoseChanged();
             if (before.DistanceSquaredTo(_player.GlobalPosition) > 0.0000001f) _player.RaisePositionChanged();
-            if (_player.IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _player._stance._crouch == (_player.IsCrouching ? 1f : 0f) && _player._stance._prone == (_player.IsProne ? 1f : 0f))
+            if (_player.IsOnFloor() && keys == Vector2.Zero && horizontal.LengthSquared() < 0.0001f && _player._stance._crouch == (_player.IsCrouching ? 1f : 0f) && _player._stance._prone == (_player.IsProne ? 1f : 0f) && !_player._lean.IsTransitioning)
             { _player.Velocity = Vector3.Zero; _player._animation._phase = 0; _player._animation.Pose(0, 0); _player.SetPhysicsProcess(false); }
         }
 
