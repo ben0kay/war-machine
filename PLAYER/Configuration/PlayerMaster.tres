@@ -16,4 +16,6 @@ script = ExtResource("1")
 Vitals = SubResource("vitals")
 CrouchSpeedMultiplier = 0.45
 RunMultiplier = 1.6
+LeanBodyDegrees = 15.0
+LeanTorsoShift = 0.10
 GaitRate = 1.8

@@ -8,7 +8,8 @@ public partial class FirstPersonCamera : Camera
     private bool _ready;
     private Vector3 _previousEye, _currentEye;
     private ulong _sampleTick;
-    private float _lookPitchDegrees, _leanAmount;
+    private float _lookPitchDegrees, _leanTarget, _leanRendered;
+    private bool LeanAnimating => Mathf.Abs(_leanTarget - _leanRendered) > 0.0005f;
     private readonly FirstPersonHeadBob _headBob = new();
 
     // =========================================================
@@ -18,7 +19,7 @@ public partial class FirstPersonCamera : Camera
         _actor = player;
         Projection = ProjectionType.Perspective; Fov = Mathf.Clamp(ViewSettings.FieldOfView, 40, 110);
         Near = 0.05f; Far = 1800; Current = true; Rotation = Vector3.Zero;
-        _lookPitchDegrees = _leanAmount = 0f;
+        _lookPitchDegrees = _leanTarget = _leanRendered = 0f;
         GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - ViewSettings.EyeInset);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // We interpolate translation only, never mouse rotation.
         _previousEye = _currentEye = GlobalPosition;
@@ -51,6 +52,8 @@ public partial class FirstPersonCamera : Camera
             _lookPitchDegrees = Mathf.Clamp(_lookPitchDegrees + verticalDelta * sensitivity, -limit, limit);
             angle.X = _lookPitchDegrees;
             RotationDegrees = angle; NotifyViewChanged();
+            // A settled sideways eye offset must follow new mouse yaw even when idle rendering sleeps.
+            if (_leanRendered != 0f) SetProcess(true);
             GetViewport().SetInputAsHandled();
         }
     }
@@ -69,20 +72,33 @@ public partial class FirstPersonCamera : Camera
         Vector3 angle = RotationDegrees;
         angle.X = next;
         RotationDegrees = angle; NotifyViewChanged();
+        if (_leanRendered != 0f) SetProcess(true); // Eye shift follows recoil pitch while leaned.
     }
 
     // =========================================================
-    // The existing shared player interpolates lean, leaving FPS pitch/yaw/recoil unchanged.
+    // The shared player supplies physics lean targets; render frames smooth their visible motion.
     // Camera-mounted gun and bat follow this roll without a second weapon animation.
     public void SetLeanAmount(float amount)
     {
         if (!_ready) return;
         amount = float.IsFinite(amount) ? Mathf.Clamp(amount, -1f, 1f) : 0f;
-        if (Mathf.IsEqualApprox(_leanAmount, amount)) return;
-        _leanAmount = amount;
+        if (Mathf.IsEqualApprox(_leanTarget, amount)) return;
+        _leanTarget = amount; SetProcess(true);
+    }
+
+    // =========================================================
+    // Smooth both camera roll and lateral eye offset at render frequency; stop exactly at the target.
+    private bool AdvanceVisualLean(float delta)
+    {
+        float dt = float.IsFinite(delta) ? Mathf.Clamp(delta, 0f, 0.1f) : 0f;
+        float seconds = Mathf.Clamp(ViewSettings.LeanRenderSmoothingSeconds, 0.01f, 0.2f);
+        _leanRendered = Mathf.Lerp(_leanRendered, _leanTarget, 1f - Mathf.Exp(-dt / seconds));
+        if (!LeanAnimating) _leanRendered = _leanTarget;
+        float roll = -_leanRendered * Mathf.Clamp(ViewSettings.LeanCameraDegrees, 0f, 20f);
         Vector3 angle = RotationDegrees;
-        angle.Z = -amount * Mathf.Clamp(ViewSettings.LeanCameraDegrees, 0f, 20f);
-        RotationDegrees = angle; NotifyViewChanged();
+        if (!Mathf.IsEqualApprox(angle.Z, roll))
+        { angle.Z = roll; RotationDegrees = angle; NotifyViewChanged(); }
+        return LeanAnimating;
     }
 
     // =========================================================
@@ -95,14 +111,14 @@ public partial class FirstPersonCamera : Camera
         _previousEye = _currentEye; _currentEye = eye; _sampleTick = Engine.GetPhysicsFrames();
         float reset = Mathf.Max(1f, ViewSettings.TeleportResetDistance);
         if (_previousEye.DistanceSquaredTo(eye) > reset * reset)
-        { _previousEye = eye; _headBob.Reset(); SetEye(eye); SetProcess(false); return; }
+        { _previousEye = eye; _headBob.Reset(); SetEye(eye); SetProcess(LeanAnimating); return; }
         bool gameplay = Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus()
             && !_actor.GameplayInputBlocked && !_actor.IsDead;
         _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay,
             movingInput && gameplay, stance, ViewSettings);
         if (!ViewSettings.InterpolateTranslation || _previousEye == _currentEye)
         {
-            SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate); return;
+            SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate || LeanAnimating); return;
         }
         SetProcess(true);
     }
@@ -110,7 +126,7 @@ public partial class FirstPersonCamera : Camera
     // =========================================================
     // Camera-right sway plus world-up bounce; no mouse-look, recoil or physics-body rotation.
     private Vector3 BobbedEye(Vector3 baseEye)
-        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanAmount * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.25f))
+        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanRendered * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.25f))
             + Vector3.Up * _headBob.Offset.Y;
 
     // =========================================================
@@ -131,7 +147,7 @@ public partial class FirstPersonCamera : Camera
     { if (_ready && what == NotificationApplicationFocusOut) ReleaseMouse(); }
 
     // =========================================================
-    // Reuse the existing render callback for eye interpolation and smooth bob; sleep when both settle.
+    // Reuse the existing render callback for translation, bob and lean; sleep when all settle.
     public override void _Process(double delta)
     {
         if (!_ready) { SetProcess(false); return; }
@@ -140,8 +156,9 @@ public partial class FirstPersonCamera : Camera
         Vector3 baseEye = interpolating ? _previousEye.Lerp(_currentEye, (float)Engine.GetPhysicsInterpolationFraction())
             : _currentEye;
         bool bobbing = _headBob.Advance((float)delta, ViewSettings);
+        bool leaning = AdvanceVisualLean((float)delta);
         SetEye(BobbedEye(baseEye));
-        if (!interpolating && !bobbing) SetProcess(false);
+        if (!interpolating && !bobbing && !leaning) SetProcess(false);
     }
     // FPS follows at eye level, with a small allowance for translation interpolation; it has no overhead orbit.
     public override float MaximumRenderOffset => 4;

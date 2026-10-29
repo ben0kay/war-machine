@@ -13,3 +13,7 @@ The inherited PlayerController handles grounded jump impulse and gravity for bot
 ## Shared prone (2026-10-28)
 
 The FPS scene inherits the **same** player stance state, low capsule and slow crawl from `PLAYER/PlayerController.cs`; no duplicate FPS prone movement or camera loop. **Right Ctrl** toggles prone, **Left Ctrl/C** crouches, **RMB** jumps only standing and when the cursor is captured. `FirstPersonCamera.RecordPhysicsPose(CapsuleHeight)` automatically lowers/interpolates the eye to about 0.60m at the default 0.75m prone collision height. The native FPS movement/acceleration/braking override remains intact, while `ProneSpeedMultiplier=0.17` from PlayerMaster makes crawling far slower than crouching. Test low ceilings, input blocking, collisions and view-height transitions locally; the physical low capsule is not a long horizontal prone hitbox yet.
+
+## L0a — render-frequency lean
+
+The FPS camera now receives target lean from shared physics and blends its visible camera roll and lateral offset on render frames with `LeanRenderSmoothingSeconds` (0.045s). This avoids the discrete physics-step rotation previously visible when leaning. Mouse yaw and recoil refresh a resting eye offset when already leaned. Weapons remain camera children. FPS authored tilt/shift increased to 16° / 0.20m; physics, stance and collision are unchanged. Local FPS visual and gun-recoil checks pending.

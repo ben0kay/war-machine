@@ -19,8 +19,8 @@ public partial class PlayerSettings : Resource
     [ExportGroup("Held lean (both views)")]
     [Export(PropertyHint.Range, "0.1,1,0.05")] public float LeanMoveMultiplier { get; set; } = 0.55f;
     [Export(PropertyHint.Range, "0.05,0.5,0.01")] public float LeanTransitionSeconds { get; set; } = 0.18f;
-    [Export(PropertyHint.Range, "0,20,0.5")] public float LeanBodyDegrees { get; set; } = 9f;
-    [Export(PropertyHint.Range, "0,0.15,0.01")] public float LeanTorsoShift { get; set; } = 0.06f;
+    [Export(PropertyHint.Range, "0,20,0.5")] public float LeanBodyDegrees { get; set; } = 15f;
+    [Export(PropertyHint.Range, "0,0.15,0.01")] public float LeanTorsoShift { get; set; } = 0.10f;
     [ExportGroup("Walking gait")]
     [Export(PropertyHint.Range, "0,60,1")] public float KneeBendDegrees { get; set; } = 35f;
     [Export(PropertyHint.Range, "0,20,1")] public float FootRollDegrees { get; set; } = 8f;
