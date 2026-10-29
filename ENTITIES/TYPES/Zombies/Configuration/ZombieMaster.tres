@@ -92,3 +92,5 @@ InvestigationTimeAllowance = 3.0
 InvestigationMaxSeconds = 60.0
 InvestigationArrivalDistance = 0.45
 InvestigationLookSeconds = Vector2(0.8, 2.0)
+
+ImportedArtworkEnabled = true

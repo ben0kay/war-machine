@@ -53,3 +53,5 @@ Later instances copy the cached template's lightweight Node3D/mesh hierarchy, sh
 ## CM5-A shared upper-body attack pivot
 
 `ZombieUpperBodyRig.Attach` runs **once per species** before the existing visual batching template is captured; the new `UpperBody` pivot sits at waist height and parents the pre-existing torso, head and arm pieces with world transforms preserved. The small waist/hip shapes move with the torso so its anatomy region still covers them; both legs remain under the original art root. New zombies reuse the cached batched mesh template with a single extra transform node, no per-frame mesh regeneration, no additional materials and no mesh-builder duplicate animation code. The controller's shared `ZombieAttack` is the only visual attack driver. Anatomy torso bounds now follow `UpperBody`, limb/head pivots stay named and independently tracked. Local render/anatomy/corpse checks pending.
+
+Standard ZombieMeshBuilder first attempts the configured imported artwork via `../Artwork/ZombieImportedVisual.cs`; procedural generation/batching remains the fallback. See the Artwork README for compatibility and validation.

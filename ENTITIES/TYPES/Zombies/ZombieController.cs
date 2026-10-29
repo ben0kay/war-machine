@@ -177,7 +177,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     // Subtypes only supply art and optional motion tuning; detection, health and AI stay shared.
     protected virtual void BuildArt()
     {
-        var mesh = new ZombieMeshBuilder(VisualRoot);
+        var mesh = new ZombieMeshBuilder(VisualRoot, (Settings as ZombieSettings)?.ImportedArtworkEnabled ?? true);
         BindArtJoints(mesh.LeftArm, mesh.RightArm, mesh.LeftLeg, mesh.RightLeg, mesh.LeftKnee, mesh.RightKnee);
     }
 

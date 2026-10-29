@@ -27,12 +27,13 @@ public sealed class ZombieMeshBuilder
 
     // =========================================================
     // Only the first shambler constructs source primitives; all later bodies share the batched meshes.
-    public ZombieMeshBuilder(Node3D root)
+    public ZombieMeshBuilder(Node3D root, bool importedArtwork = true)
     {
         _root = root;
-        if (_visualTemplate == null)
+        bool imported = importedArtwork && ZombieImportedVisual.TryPopulate(root);
+        if (!imported && _visualTemplate == null)
         { BuildArt(); ZombieUpperBodyRig.Attach(root); _visualTemplate = ZombieVisualBatcher.Capture(root); }
-        else ZombieVisualBatcher.Populate(root, _visualTemplate);
+        else if (!imported) ZombieVisualBatcher.Populate(root, _visualTemplate!);
         _leftArm = root.GetNode<Node3D>("UpperBody/LeftArm"); _rightArm = root.GetNode<Node3D>("UpperBody/RightArm");
         _leftLeg = root.GetNode<Node3D>("LeftLeg"); _rightLeg = root.GetNode<Node3D>("RightLeg");
         _leftKnee = _leftLeg.GetNode<Node3D>("Knee"); _rightKnee = _rightLeg.GetNode<Node3D>("Knee");
