@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Objects/Shared/PlaceableVisual.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/Content/Assets/Objects/Static/Containers/Dumpsters/DumpsterBin001/Configuration/DumpsterBinMaster.tres" id="2"]
+[ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Objects/Static/Containers/Dumpsters/DumpsterBin001/Artwork/DumpsterBin001.glb" id="3"]
+
+[node name="DumpsterBin001" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+CollisionMode = 1
+metadata/f1_preview_min_distance = 7.0
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Artwork" parent="Model" instance=ExtResource("3")]

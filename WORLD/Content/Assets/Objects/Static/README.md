@@ -5,6 +5,7 @@
 Non-pickup architectural objects may be interactive or physically moving (a door leaf may be a RigidBody3D). Folder membership does not automatically create a StaticBody3D.
 
 - [Doors/Door001](Doors/Door001/README.md): DOOR1 reusable hinged rigid-body service door with a fixed hinge and DOOR2 handle anchors; installed only at the convenience store rear exit.
+- [Containers/Dumpsters/DumpsterBin001](Containers/Dumpsters/DumpsterBin001/README.md): huge dark-green industrial dumpster, two black hinged-pivot lids, **no wheels**; original GLB, size master, SOC0 AutoBox and F1 discoverability, no permanent placement.
 - [Containers/WheelieBins/WheelieBin001](Containers/WheelieBins/WheelieBin001/README.md): low-poly dark green household wheelie bin with separate black lid, rear wheels, standard size master and SOC0 AutoBox; F1 eligible, no permanent world placement.
 - [Cars/Car001](Cars/Car001/README.md): original stationary procedural car with existing collision and configuration, now at its single canonical Assets path.
 - [Furniture/Bookcases/Bookcase001](Furniture/Bookcases/Bookcase001/README.md): GLB bookcase with size master and SOC0 AutoBox collision.

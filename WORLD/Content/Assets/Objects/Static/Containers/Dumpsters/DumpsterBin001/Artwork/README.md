@@ -1,0 +1,11 @@
+# DumpsterBin001 original model
+
+**Original Godot-importable binary** `DumpsterBin001.glb` (glTF 2.0, buffers embedded) is a large industrial dumpster, **without any wheels**. Modelled as a reinforced steel container, not an upscaled WheelieBin001. Source-created stats: **1,356 triangles**, **11 grouped visual meshes**, **8 opaque PBR materials**, **84,932 bytes**. No textures, animation tracks, scripts, external references, UV image requirements, slogans or logos.
+
+Native approximate world dimensions, including projection details: **3.48m wide × 2.55m tall × 1.91m deep**. Meets the requested approximately **5× WheelieBin001 width and 2.5× WheelieBin001 height**. +Y up, +Z front (reinforcement panel/side fork pockets), -Z back (hinges), lower ground skids reach Y≈0. Front faces +Z. The steel chassis flares gently toward the top and has bevelled corners, rolled rim, interior liner below lids, vertical front and side ribs, a lower cross brace, visible forklift pockets with safety lips, worn edge markings and two steel **ground-contact skids** (no wheels).
+
+**Colour palette:** `Dumpster_ForestGreen` uses the same normalized PBR `baseColorFactor` RGB (0.115, 0.245, 0.145) as WheelieBin001 dark-green body; two matching green tones provide raised/darker metal facets. `Dumpster_BlackLid` uses the same RGB (0.052, 0.061, 0.060) as the small bin's matte lid. Other named materials are `Dumpster_GreenShadow`, `Dumpster_GreenHighlight`, `Dumpster_InteriorDarkGreen`, `Dumpster_BlackTrim`, `Dumpster_DarkIron`, `Dumpster_WornMetal`. All use PBR baseColorFactor (not `COLOR_0`-only colour).
+
+**Separate lid-ready transforms:** `LeftLidHinge` at (-0.845, 2.475, -0.854) and `RightLidHinge` at (+0.845, 2.475, -0.854) each contain **two named mesh groups**. Both are CLOSED and inactive. These are only pivots for potential later opening; there is no rotation controller, lid collision update, inventory or physics animation in this version. Preserve both pivot names/transforms when re-exporting.
+
+**Collision is not baked into the GLB.** The parent `DumpsterBin001.tscn` sets SOC0 `CollisionMode=1` for one stationary AutoBox. It includes the entire upper/lid footprint by design. Verify shading, model orientation, wheel-free appearance and lid seams after import; binary/file verification is not Godot rendering acceptance.
