@@ -1,8 +1,9 @@
 # WAR MACHINE
 
 > **Working title:** Atmospheric, fully 3D sci-fi survival on a strange, inhabited Earth.  
-> **Current direction:** Angled **top-down / isometric-style survival is the primary gameplay and balance reference**; **first-person is also an explicitly supported gameplay view**, sharing the same world and gameplay foundations. Supporting FPS does not automatically make it an equal design priority or require every future feature in both views.  
-> **Development:** Evolving Godot 4 C# prototype, not a finished survival loop. This snapshot was reconciled with the `implement-td0-td1` source on **2026-10-28**. Feature READMEs, plans and code carry the fine details.
+> **Current direction:** **First-person survival is the primary gameplay, presentation and balance reference.** Angled **top-down / isometric-style play remains a supported secondary view**, sharing the same world and gameplay foundations. Prioritize FPS feel and usability when making design tradeoffs; this does not require every future feature to receive equal presentation work in both views.
+>
+> **Development:** Evolving Godot 4 C# prototype, not a finished survival loop. This snapshot was reconciled with the `implement-td0-td1` source on **2026-10-29**. Feature READMEs, plans and code carry the fine details.
 
 **Important for assistants and contributors:** The active development branch is **`implement-td0-td1`**, **not `main`**. Read and write on this branch explicitly unless the owner directs otherwise. [CodePreferences.md](CodePreferences.md) is authoritative for coding style, scope, performance, validation and commit rules.
 
@@ -19,7 +20,7 @@ The player is a vulnerable survivor. **Explore, assess threats, use cover and st
 ### Design pillars
 
 - **Threat awareness and survival decisions:** Visibility, noise, distance, line of sight, movement stance, ammunition, injuries and escape routes should influence decisions. Avoid making every encounter a straightforward firefight.
-- **Top-down readability, genuine 3D depth:** Buildings, upper floors, obstacles, camera obstruction fading and line-of-sight rules must work in the primary angled view. FPS uses the same underlying world and simulation with its own camera/input/presentation adapters.
+- **First-person presence and physical space:** Eye-level exploration, readable threats, responsive movement, corner peeking, weapon handling, doors, interiors and vertical spaces should feel convincing in FPS. The secondary top-down view retains its camera obstruction fading, angled readability and aiming adapters over the same 3D simulation.
 - **Distinct threat types:** Shamblers, runners, major machines and eventually other species should present meaningfully different behavior. Anatomy and injury effects should change what an entity can still do, not just reduce a health bar.
 - **A lived-in, authored world:** Start with a convincing town and nearby wilderness. Reuse procedural generation for scenery/variants, but keep important streets, interiors, landmarks and encounter positions intentionally authored.
 - **Atmosphere without disguising technical problems:** Eerie blue-grey mist, natural terrain, night lighting, weather and distant silhouettes are central to the mood. Fog is visual atmosphere, not a substitute for correct culling, collision or streaming.
@@ -35,13 +36,13 @@ The currently playable prototype tests only parts of this loop. **Complete looti
 
 | Scene | Purpose | Run |
 | --- | --- | --- |
-| [WORLD/World.tscn](WORLD/World.tscn) | **Primary top-down survival game:** player, village, terrain, zombies, robot, combat, HUD and environment | Open and **F6 / Run Current Scene** |
-| [WORLD/FirstPerson/FirstPersonWorld.tscn](WORLD/FirstPerson/FirstPersonWorld.tscn) | **Supported FPS gameplay view** inheriting the active world, with view-specific controls, gun presentation, head bob, fog and grass configuration | Open and **F6** |
+| [WORLD/World.tscn](WORLD/World.tscn) | **Shared gameplay world / secondary top-down view:** player, village, terrain, zombies, robot, combat, HUD and environment | Open and **F6 / Run Current Scene** |
+| [WORLD/FirstPerson/FirstPersonWorld.tscn](WORLD/FirstPerson/FirstPersonWorld.tscn) | **Primary FPS gameplay entry** inheriting the shared world, with view-specific controls, weapon presentation, head bob, leaning, fog and grass configuration | Open and **F6** |
 | [WORLD/testworld.tscn](WORLD/testworld.tscn) | **Parked legacy wilderness/free-flight experiment**, retained with its terrain, caves and original environment work | Currently launched by **F5**, per `project.godot` |
 
-**Do not mistake F5 for the survival game.** The startup setting intentionally still points to the legacy `testworld.tscn`; changing it is a separate authorized decision. New gameplay should normally be built against `World.tscn` and shared gameplay owners, not the parked explorer.
+**Do not mistake F5 for the survival game.** The startup setting intentionally still points to the legacy `testworld.tscn`; changing it is a separate authorized decision. Use `FirstPersonWorld.tscn` as the primary gameplay acceptance scene. Build shared gameplay through `World.tscn` and its feature owners; use its top-down view for relevant compatibility checks.
 
-The two active views share terrain, buildings, entities, health/damage, inventory, weather and static streaming. Feature-specific FPS adapters live in their owning folders; see [FPS ownership](WORLD/FirstPerson/README.md).
+The two active views share terrain, buildings, entities, health/damage, inventory, weather and static streaming. Feature-specific FPS adapters live in their owning folders; see [FPS ownership](WORLD/FirstPerson/README.md). FPS-first is a design priority, not a request to duplicate the world, rename shared base classes or change startup configuration.
 
 ## Current implemented source — snapshot
 
@@ -49,18 +50,24 @@ The two active views share terrain, buildings, entities, health/damage, inventor
 
 | Area | Source-implemented foundation | Not yet complete / important boundary |
 | --- | --- | --- |
-| **World and locations** | Saved Terrain3D gameplay area, village/road layout, graded sites, convenience store and reusable Building001–004, parked cars, furniture/hedges/lamps, cliff/rock/forest content | Prototype region, not a populated persistent large world; advanced town and terrain authoring still in phases |
-| **Player and cameras** | Shared soldier/player, walk/run/crouch/prone, collision and jump, procedural pose; top-down follow/aim/zoom/occlusion; FPS look, body adapter and distance-driven head bob | Prone uses a low proxy capsule; realistic injury movement penalties and detailed player hurtboxes are future work |
+| **World and locations** | Saved Terrain3D gameplay area, village/road layout, graded sites, convenience store, reusable Building001–004 and a two-storey police-station prototype, parked cars, GLB household/street objects, furniture/hedges/lamps and shared swing-door helpers, cliff/rock/forest content | Prototype region, not a populated persistent large world; advanced town and terrain authoring still in phases |
+| **Player and cameras** | Shared soldier/player, walk/run/crouch/prone, collision and jump, procedural pose; top-down follow/aim/zoom/occlusion; FPS look, body adapter, distance-driven head bob and render-smoothed held lean/corner peek | Prone uses a low proxy capsule; realistic injury movement penalties and detailed player hurtboxes are future work |
 | **Player condition** | PH0/PH1 hidden vitality, six body-condition regions, death/control gate and compact event-driven body silhouette | Medical treatment, bleeding, damage-dependent limb impairment and broader survival metabolism not yet implemented |
 | **Firearms** | Rifle_001 and MachineGun_001, hitscan, shared damage/obstruction, shot spread, recoil/aim climb, muzzle feedback, ammo magazines, timed R reload and ammo HUD | Physical ammunition pickup/economy, reload animations and a full firearm/inventory interaction loop remain unfinished |
 | **Melee and impact** | Q quick shove, equipped slot-3 baseball bat with active horizontal multi-target swing, bullet flinch, collision-aware zombie shove/bat backsteps and CM5 standing zombie strikes (awaiting local validation) | Knife/other melee families, ELD3 injury-based attacks and crawling attacks remain future work |
-| **Zombies and perception** | Standard shamblers and runner variant, wandering, frontal initial detection, head/torso cover rays, pursuit, alerted tracking independent of facing once acquired, last-seen and bullet-hit fixed-point investigation | HE1 uncertain gunshot investigation source implemented, awaiting local validation; no obstacle-route navigation |
+| **Zombies and perception** | Standard shamblers and runner variant, wandering, frontal initial detection, head/torso cover rays, pursuit, alerted tracking independent of facing once acquired, last-seen and bullet-hit fixed-point investigation | HE1 uncertain gunshot investigation with distance-based estimates/commitment and one blocker ray for shorter blocked searches (awaiting local validation); no obstacle-route navigation |
 | **Anatomy and injury** | Shared region-aware hits, condition/sever states, missing-limb visuals, limp/hop/crawl/immobilize policies, injury-aware corpse handoff | No full attack-capability filtering, detached limb debris or advanced articulated ragdoll |
-| **Hitbox performance** | **ELD-PERF1:** one broad native anatomy shape per zombie by default; virtual joint-local boxes tested when firearm/bat queries reach the candidate. Includes bounded ray budgets and diagnostic counters | Correctness and measured FPS gain require local A/B profiling; do not report performance as proven |
+| **Hitbox performance** | **ELD-PERF1:** one broad native anatomy shape per zombie by default; virtual joint-local boxes tested when firearm/bat queries reach the candidate. Includes bounded ray budgets and diagnostic counters; compatible same-pivot zombie visuals also use shared batched templates (ZM-PERF2A) | Correctness and measured FPS gain require local A/B profiling; do not report performance as proven |
 | **Corpses** | ZD0–ZD3 transfer original injury-preserving art, bound falls/pile contacts, apply soft zombie slowdown, age/sink corpses and cap retained/active counts (awaiting local validation) | Player slowdown is opt-in off; articulated skeleton physics and persistence remain later work |
 | **Robots and wildlife** | Robot_001 patrol/scanning prototype; an optional stationary deer preview with a reusable creature/health foundation | Robot combat/strategic AI and wildlife populations/behavior are not yet implemented |
 | **Inventory, UI and audio** | PlayerBackpack stack storage and backpack UI, shared hotbar, F1 visual-only placeable spawner, NPC health bars, body/ammo HUD, reusable weapon sound and WorldAudio foundation | World pickups, usable items and integrated loot/ammo storage are unfinished; HE1 gunshot events alert zombies independently of actual audio playback |
 | **Environment and scale** | Sky3D day/night, weather, grass/pines/rocks, haze and building exclusions, scheduled streetlamp cones, distance/occlusion fog; render-range policy and WS2 static-building streaming prototype | Broader actor/terrain streaming, persistent state and full-world population budgets are not implemented |
+
+### Current development emphasis
+
+Recent commits focus on making close encounters and authored places feel physical: smoother FPS leaning and a larger lateral corner peek; FPS firearm/bat presentation; speed-sensitive swinging doors; a two-storey police-station shell/interior with stairs and ceiling lights; reusable GLB household/street objects; and shared static collision/shadow controls. Shared threat work adds telegraphed zombie strikes with torso/head lunges, uncertain gunshot investigation, injury-aware movement and bounded corpse piles/cleanup. Zombie visual batching, on-demand limb hit refinement and render diagnostics support horde performance investigation.
+
+These are prototype foundations, not proof of a complete survival loop or measured optimization. Prioritize eye-level movement, aiming, cover, interior traversal, threat readability and encounter feel in FPS while preserving shared simulation and the existing secondary view.
 
 ### Current small-area testbed
 
@@ -76,17 +83,17 @@ The reusable F1 placeable catalogue previews eligible visual asset wrappers; it 
 
 Keep the responsibilities separate:
 
-1. **Perception and investigation** recognize visible targets or verified clues. Initial zombie sight uses a frontal cone; alerted sight can track from behind when line of sight stays clear. Last-seen and direct bullet-hit investigation store a fixed point, not live omniscient tracking. HE1 receives HE0 gunshot events and investigates a single uncertain estimate, with distance-based commitment and burst retarget limits; local validation remains pending.
+1. **Perception and investigation** recognize visible targets or verified clues. Initial zombie sight uses a frontal cone; alerted sight can track from behind when line of sight stays clear. Last-seen and direct bullet-hit investigation store a fixed point, not live omniscient tracking. HE1 receives HE0 gunshot events and investigates a single uncertain estimate, with distance-based commitment and burst retarget limits. One blocker ray biases obstructed sound clues toward earlier abandonment and shorter timeouts; it does not count walls or find routes. Local validation remains pending.
 2. **Combat** determines hit contact, cover, damage packets, recoil, reactions and attack windows. The existing shared damage/impact resolution is the authority; do not create parallel pipelines for each view/weapon.
 3. **Anatomy** records region condition, capability changes and severing independently of overall vitality. Deferred broad candidate + virtual per-limb refinement is the current default, not eight constantly synchronized native shapes per moving zombie.
 4. **Locomotion/animation** interpret injury state using the existing actor movement callback and rig; they do not run duplicate AI loops. Crawling and hopping are first-pass behaviors, not final realistic biomechanics.
 5. **Corpses** receive the existing visuals and injury pose after death; their bounded fall and settled state are separate from a living entity. A frozen body is not a full skeletal ragdoll.
 
-**Current limitations:** Zombies still do not attack the player. Hearing-based reaction to shots and robust obstacle pathfinding remain distinct future features. ELD3–ELD5 and ZD1–ZD3 are not automatically authorized by the existing implementation.
+**Current limitations:** Standing zombies can damage the player through CM5 telegraphed melee, including committed misses/recovery and a coordinated torso/head lunge. Low-body/immobilized zombies do not attack in this pass; full injury-based attack selection (ELD3), later anatomy phases and robust obstacle pathfinding remain future work. HE1 hearing and ZD1–ZD3 corpse handling are implemented in source, awaiting local validation; their presence does not authorize later phases.
 
 ### Views and assets
 
-Gameplay rules should live with shared PLAYER, ENTITIES, EQUIPMENT, COMBAT and WORLD owners. Top-down and FPS may differ in input, camera, screen-space aiming, recoil/animation presentation and visibility, but not silently fork health, zombie AI, inventory or world state.
+FPS is the primary reference for new gameplay feel, balance and usability; top-down remains a secondary supported view. Preserve existing shared behavior and check relevant compatibility without assuming equal view-specific polish or automatically implementing every feature twice. Gameplay rules should live with shared PLAYER, ENTITIES, EQUIPMENT, COMBAT and WORLD owners. Top-down and FPS may differ in input, camera, screen-space aiming, recoil/animation presentation and visibility, but not silently fork health, zombie AI, inventory or world state.
 
 World content is built from reusable scenes. For generated art, **`C/` contains C# mesh construction** and **`Artwork/` holds future imported GLB/texture replacements**. Stable scene/gameplay contracts must survive visual swaps. Separate cosmetic appearance, physics/collision, interactability and persistent identity; one does not imply the others.
 
@@ -102,7 +109,7 @@ World direction is a **large finite, expandable and partly authored town/wildern
 | --- | --- |
 | [WORLD](WORLD/README.md) | Primary scene/composition, gameplay terrain, village layout, reusable structures/props, static streaming, render policy; legacy environment scene retained |
 | [PLAYER](PLAYER/README.md) | Shared player lifecycle, input/movement/stances, visuals, vitals and player equipment adapters |
-| [CAMERA](CAMERA/README.md) | Main follow/zoom camera, obstruction fading, FPS camera and head bob |
+| [CAMERA](CAMERA/README.md) | Primary FPS camera, head bob and lean; secondary follow/zoom camera and obstruction fading |
 | [ENTITIES](ENTITIES/README.md) | Shared actors, sensing/investigation, health/anatomy/corpses, zombies, robot and wildlife |
 | [COMBAT](COMBAT/README.md) | Shared impact/contact execution, melee and reactions; general health authority remains in ENTITIES |
 | [EQUIPMENT](EQUIPMENT/README.md) | Firearms/melee equipment, stats, ammo/recoil, weapon slots and view-specific visuals |
@@ -120,8 +127,8 @@ Each owning folder's README and master configuration should describe current cod
 ## Run and validate
 
 1. Use a compatible **Godot 4 .NET** editor and .NET SDK; check the actual installed engine/addon versions. Source project config currently advertises Godot **4.7**, **Forward+**, Windows **D3D12**, **Jolt Physics** and physics interpolation.
-2. Run `dotnet build war-machine.csproj` when available. For gameplay use **F6** on [WORLD/World.tscn](WORLD/World.tscn); use **F6** on [WORLD/FirstPerson/FirstPersonWorld.tscn](WORLD/FirstPerson/FirstPersonWorld.tscn) to compare FPS. **F5 still opens the legacy scene.**
-3. The shared player code currently binds **arrow keys for movement, Shift to run, Right Ctrl to crouch, `/` to toggle prone and RMB to jump**. Mouse aims in top-down and looks in FPS; LMB fires/uses equipped primary attack, **Q** shoves, **R** reloads and number keys select equipped slots. Escape releases FPS mouse capture. Check [current input source](PLAYER/Input/PlayerInput.cs): some older feature docs describe different crouch/prone bindings.
+2. Run `dotnet build war-machine.csproj` when available. For primary gameplay use **F6** on [WORLD/FirstPerson/FirstPersonWorld.tscn](WORLD/FirstPerson/FirstPersonWorld.tscn); use **F6** on [WORLD/World.tscn](WORLD/World.tscn) for the secondary top-down view. **F5 still opens the legacy scene.**
+3. The shared player code currently binds **arrow keys for movement, Shift to run, Right Ctrl to crouch, `/` to toggle prone and RMB to jump**. Mouse aims in top-down and looks in FPS; LMB fires/uses equipped primary attack, **Q** shoves, **R** reloads and number keys select equipped slots. Hold **Numpad 1 / Numpad 2** to lean left/right; FPS rolls/shifts the eye camera while top-down leans the soldier only. Escape releases FPS mouse capture. Check [current input source](PLAYER/Input/PlayerInput.cs): some older feature docs describe different crouch/prone bindings.
 4. Use the debug overlay and [anatomy A/B checks](ENTITIES/Shared/Anatomy/DEFERRED_HIT_DETECTION.md) for the current horde. Record accepted spawn counts, zombie idle/moving costs, hit correctness, visibility, physics, corpse settle behavior and FPS/frametime before claiming optimization benefits.
 5. When the active terrain is missing, follow [WORLD setup](WORLD/README.md) / [terrain generation](WORLD/Generation/README.md) for the explicit, protected one-time bake/migration. **Do not rebake or overwrite authored terrain on normal startup.**
 
