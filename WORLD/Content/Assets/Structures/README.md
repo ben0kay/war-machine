@@ -6,6 +6,8 @@ World-local **stationary** structures are owned here, independently of entities/
 - [Building003/](Building003/README.md): rural fuel/service station with a shop interior, garage passage, rear exit, fuel pumps and flat canopy.
 - [Building004/](Building004/README.md): two-storey field office with flat parapet roof, balcony, crosswise internal stair and true upper-floor opening; uses the same authoring contract as Building002.
 
+- [PoliceStation001/](PoliceStation001/README.md): standalone **48 × 64m, two-storey police-station shell**, with [Tool] editor floor-preview selector, stairwell/collision, actual windows/openings and shared structure metadata; **not placed in the active world** (PS0 source implemented, awaiting local validation).
+
 **Independent reusable prefab:** [ConvenienceStore001/](ConvenienceStore001/README.md) is now a complete store-only procedural shell with big unglazed windows, shelving, till counter, stockroom and back door. Shared structure visibility is wired, and the prefab is composed into the convenience-store site in the active village.
 
 All four buildings are now placed once by WorldController for both WORLD/World.tscn and the inherited WORLD/FirstPerson test. Offsets live in WorldMaster; generated bounds reserve tree clearings and approaches. See WORLD/README.md for the layout.

@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Structures/PoliceStation001/C/PoliceStationMesh.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/Content/Assets/Structures/PoliceStation001/Configuration/PoliceStationMaster.tres" id="2"]
+[ext_resource type="Script" path="res://WORLD/Content/Assets/Structures/Shared/StructureVisibility.cs" id="3"]
+
+[node name="PoliceStation001" type="Node3D"]
+script = ExtResource("1")
+Settings = ExtResource("2")
+ShowRoof = true
+EditorPreview = 0
+
+[node name="StructureVisibility" type="Node" parent="."]
+script = ExtResource("3")
+Settings = ExtResource("2")
