@@ -148,4 +148,8 @@ Use these documents for the precise implementation and phase boundaries rather t
 
 **Development workflow:** Read this README → [CodePreferences.md](CodePreferences.md) → owning README/plan → **actual current branch source and configuration**. Separate implemented, awaiting validation, accepted and proposed work. Draft/review phased plans where useful; implement **only explicitly authorized work**, verify the branch before writing, keep **one commit per job**, do proportional checks and update the owning documents without rewriting unrelated systems.
 
+## Visual quality direction
+
+See the root [Visual Quality Roadmap](VISUAL_QUALITY_ROADMAP.md) for the **high-level FPS art and graphics direction**: one polished woodland/roadside benchmark first, then vegetation, terrain materials, lighting, props and performance-aware expansion. It is a **vision/priority outline**, not approval to implement; detailed DF, SF and environment work remains in the owning feature plans.
+
 **North star:** *Build an atmospheric, replayable survival experience where an eerie lived-in Earth, dangerous encounters, physical cover and meaningful injury/resource decisions make exploration worth the risk—without losing sight of scope or performance.*
