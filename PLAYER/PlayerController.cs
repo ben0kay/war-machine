@@ -1,7 +1,7 @@
 // Player identity and lifecycle coordinator; input, locomotion, stance and rig posing are plain private collaborators.
 using Godot;
 
-public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDamageReceiver
+public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDamageReceiver, ICombatLifeState
 {
     public enum MovementStance { Standing, Crouching, Prone }
     public PlayerVitals Vitals { get; private set; } = null!;

@@ -1,3 +1,5 @@
+> **CM5 implemented in source / awaiting local validation:** Both zombie variants now deliver a standing, telegraphed melee strike through the existing shared executor and player PH0/PH1 receiver. CM4 knife is deferred and is not a dependency. See [CM5 handoff](CM5_README.md). CM0–CM3 are implemented; CM5 is awaiting validation, not runtime-accepted. ELD3 capability selection remains planned.
+
 > **CM3 bat source implementation (2026-10-28), awaiting local validation:** [Slot 3 / LMB horizontal multi-target bat](../EQUIPMENT/Melee/BaseballBat_001/README.md). Damage 11, cap 3, mild melee flinch, ELD-aware region damage, SeverPower=0; Q remains separate. This supersedes older firearm-only/two-slot/CM3-Planned descriptions. No knife, inventory or outgoing zombie attacks.
 
 > **ELD1 source implementation (2026-10-28), awaiting local validation:** [Limb condition, deterministic severing and injury-preserving ZD0 handoff](../ENTITIES/Shared/Anatomy/README.md). Original vitality/weapon HP damage is unchanged. ELD2 locomotion, ELD3/CM5 attacks, ELD4 debris and ZD1–ZD3 remain deferred. Existing World/FPS scenes are the acceptance venue; no new test scenes. This supersedes older ELD1-Planned/no-severing statements below.
@@ -19,7 +21,7 @@
 | **CM2** | Universal quick shove in **top-down and FPS**, with view-specific aim but shared melee query/impact | Regular Chat for bounded implementation; Codex / Work for difficult physics bugs | **Planned** |
 | **CM3** | Left-click equipped bat primary attack: configurable blunt arc/multi-target; quick shove remains available | Codex / Work; Regular Chat tunes feel | **Planned** |
 | **CM4** | Knife primary attack + reusable shape/profile and animation semantics for future swords, grip modes and dual-wield | Codex / Work; Regular Chat tunes feel | **Planned** |
-| **CM5** | Actor-neutral melee reuse for zombies striking the player (**after PH0**); bear/other creatures use species adapters later | Codex / Work; Copilot checks locally | **Planned** |
+| **CM5** | Zombie standing strike through shared melee/player health | Codex / Work; Copilot checks locally | **Awaiting Validation** |
 
 States: Planned → In Progress → Implemented → Awaiting Validation → Accepted. These are **independent authorization gates**, not permission to build the entire combat system in one pass.
 

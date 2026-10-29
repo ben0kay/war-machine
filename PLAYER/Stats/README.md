@@ -1,3 +1,5 @@
+> **CM5 source implemented / awaiting local validation:** Zombie standing strikes now use the shared melee executor and existing player-health route. Damage/timing and checks: [CM5 handoff](../../COMBAT/CM5_README.md). ELD3 attack capability rules remain deferred.
+
 # Player vitality and anatomy
 
 **PH0 implemented; awaiting local compilation/runtime validation.** `PlayerVitals` coordinates one hidden `HealthComponent` and one `BodyCondition` holding six fixed entries. `PlayerVitalsSettings` supplies deep-copied defaults in PlayerMaster: vitality 100, each region 100, zero armour/resistances. [Design](BODY_CONDITION_DESIGN.md) and [phase plan](../IMPLEMENTATION_PLAN.md).

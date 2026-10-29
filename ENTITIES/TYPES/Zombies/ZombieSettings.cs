@@ -4,6 +4,9 @@ using Godot;
 [GlobalClass]
 public partial class ZombieSettings : EntitySettings
 {
+    [ExportGroup("Melee attacks (CM5)")]
+    [Export] public bool AttacksEnabled { get; set; } = true;
+    [Export] public MeleeSettings? AttackProfile { get; set; }
     [ExportGroup("Injury locomotion")]
     [Export] public ZombieLocomotionSettings? LocomotionProfile { get; set; }
     [ExportGroup("Anatomy")]

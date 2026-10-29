@@ -70,6 +70,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             Exclude = new Godot.Collections.Array<Rid> { GetRid() } };
         base._Ready();
         _config = (ZombieSettings)RuntimeSettings;
+        InitializeAttack();
         _investigation ??= new InvestigationMemory(_config.CreateInvestigationSettings());
         _locomotion ??= new ZombieLocomotion(this, _bodyShape, VisualRoot, _anatomyHead,
             _config.LocomotionProfile ?? new ZombieLocomotionSettings(),
@@ -131,6 +132,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         VisualRoot.Rotation = new Vector3(0, VisualRoot.Rotation.Y, 0);
         Pose(step, leftLift, rightLift);
         _locomotion?.ApplyPose(step);
+        ApplyAttackPose();
     }
 
     // =========================================================
@@ -266,6 +268,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             Velocity = new Vector3(push.X, Velocity.Y, push.Z);
         }
         else return;
+        _attack?.Cancel();
         _recoveryRemaining = 0; _stuck = 0; SetPhysicsProcess(true);
     }
 
@@ -335,7 +338,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     protected override void OnDeactivated()
-    { ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
+    { _attack?.Cancel(); ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
 
     // =========================================================
     // Initial frontal acquisition, then angle-independent alerted tracking with mandatory LOS.
@@ -348,7 +351,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         TryMobilityBody();
         CheckGroundPenetration();
         bool wasChasing = IsChasing;
-        bool targetValid = IsInstanceValid(_target) && _target!.IsInsideTree() && !_target.IsQueuedForDeletion();
+        bool targetValid = IsInstanceValid(_target) && _target!.IsInsideTree() && !_target.IsQueuedForDeletion()
+            && !(_target is ICombatLifeState life && life.IsDead);
         bool chasing = false;
         if (targetValid && _visibility != null && _sightTarget != null)
         {
@@ -374,6 +378,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         { IsChasing = chasing; _hasGoal = false; if (!_reaction.IsActive) { RemoveReactionPose(); UpdatePose(0); } }
         ulong now = Time.GetTicksMsec();
         UpdateInvestigation(wasChasing, now, targetValid);
+        if (!CanAttackTarget()) _attack?.Cancel();
+        TryStartAttack();
         if (_locomotion.CanDrive && !IsChasing && !IsInvestigating && !_anchorPending && !_hasGoal && now >= _restUntil)
         {
             if (!TryChooseWanderGoal()) Rest();
@@ -492,7 +498,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance)
             : _investigation.Phase == InvestigationPhase.Travel ? SafePolicy(_config.InvestigationArrivalDistance, 0.2f, 1.5f) : 0.4f;
-        bool walking = _locomotion.CanDrive && _hasGoal && offset.LengthSquared() > stop * stop;
+        AdvanceAttack(dt);
+        bool walking = !Attacking && _locomotion.CanDrive && _hasGoal && offset.LengthSquared() > stop * stop;
         if (_hasGoal && _locomotion.CanDrive && !walking && !IsChasing && !shovePushing)
         { if (_investigation.Phase == InvestigationPhase.Travel) InvestigationArrived(); else Rest(); }
         Vector3 direction = walking ? offset.Normalized() : Vector3.Zero;
@@ -544,7 +551,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         UpdateVisionDebug();
         if (_stuck > 2)
         { if (IsInvestigating) FinishInvestigation(); else Rest(); _stuck = 0; }
-        if (!reacting && !recovering && (!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())
+        if (!Attacking && !reacting && !recovering && (!walking || !_hasGoal) && horizontal.LengthSquared() < 0.0001f && IsOnFloor())
         {
             Velocity = Vector3.Zero;
             if (_anchorPending) { _home = GlobalPosition; _anchorPending = false; }

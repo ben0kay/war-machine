@@ -68,7 +68,7 @@ public sealed class MeleeAttack
     // =========================================================
     // Call from the owner's existing physics tick only while IsActive. One hit per attack;
     // an active window crossed in a long frame still receives one collision opportunity.
-    public bool Advance(float delta, Vector3 origin, Vector3 aim, MeleeAimMode mode, out MeleeContact contact)
+    public bool Advance(float delta, Vector3 origin, Vector3 aim, MeleeAimMode mode, out MeleeContact contact, Node3D? intendedTarget = null)
     {
         contact = default;
         if (_profile == null) return false;
@@ -82,7 +82,7 @@ public sealed class MeleeAttack
         float recovery = Safe(_profile.RecoverySeconds, 0f, 1f);
         bool contactWindow = previous < windup + active && _elapsed >= windup;
         bool found = contactWindow && !_contactUsed
-            && TryFindContact(_profile, origin, aim, mode, out contact);
+            && TryFindContact(_profile, origin, aim, mode, out contact, intendedTarget);
         if (found) _contactUsed = true;
         if (_elapsed >= windup + active + recovery) Cancel();
         return found;
@@ -177,7 +177,7 @@ public sealed class MeleeAttack
     // Broad phase finds overlapping bodies; arc/height/reach and an occlusion ray
     // accept the closest eligible actor only. No damage/impact is dispatched in CM2-A.
     private bool TryFindContact(MeleeSettings profile, Vector3 origin, Vector3 aim,
-        MeleeAimMode mode, out MeleeContact contact)
+        MeleeAimMode mode, out MeleeContact contact, Node3D? intendedTarget)
     {
         contact = default;
         if (!Finite(origin) || !Finite(aim)) return false;
@@ -201,7 +201,7 @@ public sealed class MeleeAttack
             if (!result.ContainsKey("collider") || result["collider"].AsGodotObject() is not CollisionObject3D body
                 || !GodotObject.IsInstanceValid(body) || body.IsQueuedForDeletion()) continue;
             Node3D? actor = FindReceiver(body, _owner);
-            if (actor == null) continue;
+            if (actor == null || (intendedTarget != null && actor != intendedTarget)) continue;
             Vector3 centre = ContactCentre(body);
             Vector3 offset = centre - origin;
             if (!Finite(offset) || Mathf.Abs(offset.Y) > vertical) continue;
