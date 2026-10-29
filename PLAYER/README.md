@@ -1,3 +1,5 @@
+> **PH2 foundation (2026-10-29):** Sprint, jumping and accepted firearm shots now use one short-term stamina reserve. Walking is free; delayed recovery and sprint exhaustion hysteresis are shared by primary FPS and secondary top-down. One temporary bottom-right stamina meter is read-only. Hunger/satiation/thirst/fatigue and injury/accuracy effects remain later work. [Current rules/settings/local validation](IMPLEMENTATION_PLAN.md#ph2--stamina-and-exertion). Source implemented; build/runtime acceptance pending.
+
 > **FPS ownership:** Active FPS presentation is promoted out of DEBUG/TEST. See the [FPS ownership guide](../WORLD/FirstPerson/README.md). Shared gameplay and current tuning are unchanged; local validation pending.
 
 > **PSR0 implemented in source (2026-10-28), awaiting local validation:** PlayerController is now a small lifecycle/API coordinator with private plain helpers under [Input](Input/README.md), [Movement](Movement/README.md) and [Visuals](Visuals/README.md). Existing movement/stance/pose maths, door contact, FPS hooks, events, settings and idle sleep are preserved. Current source bindings: arrows, Shift, Right Ctrl crouch, `/` prone, RMB jump. No scene or terrain changes. [Refactor plan and checks](IMPLEMENTATION_PLAN.md#psr0--player-script-structure-refactor).
@@ -32,7 +34,7 @@ CM2-D now adds a two-handed side-on gun shove using the existing arm/elbow rig, 
 
 ## Health/vitals and visual feedback planning (2026-10-28)
 
-**PH0–PH5 remain Planned; no player HP/death logic added yet.** The detailed Codex-ready contract already exists in [PLAYER/IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) and has been updated for the new FEEDBACK ownership. [Stats/README.md](Stats/README.md) reserves the player-owned vitals location, but contains no scripts.
+**PH0/PH1 and the PH2 stamina foundation are implemented in source, awaiting local validation. PH3–PH5 remain planned.** The detailed Codex-ready contract already exists in [PLAYER/IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) and has been updated for the new FEEDBACK ownership. [Stats/README.md](Stats/README.md) describes current vitality, body-condition and stamina ownership.
 
 [FEEDBACK/](../FEEDBACK/README.md) is a **documentation/folder scaffold** for reusable health/defence bars and visual hit feedback; its [FB roadmap](../FEEDBACK/IMPLEMENTATION_PLAN.md) is separate from player-health implementation. PH0 first adds actual HP, healing and death plus a tiny diagnostic readout. A later approved FB1 (coordinated with PH1) creates the styled HUD bar under FEEDBACK, composed by UI/GameplayHUD. Enemy bars (FB2) and an actual shield resource/bar (FB3) remain independent.
 

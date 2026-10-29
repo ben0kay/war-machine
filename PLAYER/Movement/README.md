@@ -1,3 +1,5 @@
+> **PH2 foundation:** Shared movement now gates run speed via PlayerVitals.Stamina, charges eligible accepted jumps and reports actual grounded sprint travel after MoveAndSlide. Free walking/stance motion permits recovery; exhaustion preserves walk speed/acceleration. No extra movement callback or collision query. [Rules/settings/checks](../IMPLEMENTATION_PLAN.md). Awaiting local validation.
+
 > **ZD1:** Shared movement optionally applies cached corpse-area slowdown; PlayerMaster defaults CorpseSlowdownEnabled=false. No extra per-player callback/query. Both views use this shared hook.
 
 # Player movement and stance — PSR0

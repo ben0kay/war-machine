@@ -44,14 +44,20 @@ public partial class PlayerController
             // Consume the press once. Upward velocity naturally disables floor snapping; gravity
             // continues while airborne until _player.MoveAndSlide reports landing, then idle physics can sleep.
             bool jumping = _player._input._jumpRequested && _player.IsOnFloor() && !_player.GameplayInputBlocked
-                && _player._stance.Current == MovementStance.Standing && _player.GetWindow().HasFocus();
+                && _player._stance.Current == MovementStance.Standing && _player.GetWindow().HasFocus()
+                && _player.CanAcceptJumpInput() && _player._settings.JumpVelocity > 0;
             _player._input._jumpRequested = false;
+            jumping = jumping && _player.Vitals.Stamina.TryJump();
             Vector2 keys = !_player.GameplayInputBlocked && _player.GetWindow().HasFocus() ? _player.ReadMovementInput().Normalized() : Vector2.Zero;
             Vector3 direction = _player.GetMovementDirection(keys);
+            bool grounded = _player.IsOnFloor();
+            bool sprinting = keys != Vector2.Zero && _player.CurrentStance == MovementStance.Standing
+                && Input.IsPhysicalKeyPressed(Key.Shift) && _player.Vitals.Stamina.CanSprint
+                && _player._settings.RunMultiplier > 1f;
             float speed = Mathf.Max(0.1f, _player._settings.WalkSpeed) *
                 (_player.IsProne ? Mathf.Clamp(_player._settings.ProneSpeedMultiplier, 0.05f, 0.4f)
                 : _player.IsCrouching ? Mathf.Clamp(_player._settings.CrouchSpeedMultiplier, 0.1f, 1f)
-                : Input.IsPhysicalKeyPressed(Key.Shift) ? Mathf.Max(1f, _player._settings.RunMultiplier) : 1f);
+                : sprinting ? Mathf.Max(1f, _player._settings.RunMultiplier) : 1f);
             if (_player._lean.IsActive) speed *= Mathf.Clamp(_player._settings.LeanMoveMultiplier, 0.1f, 1f);
             if (_player.CorpseSlowdownEnabled) speed *= _player._corpseMovement.Multiplier;
             Vector3 horizontal = new(_player.Velocity.X, 0, _player.Velocity.Z);
@@ -67,6 +73,8 @@ public partial class PlayerController
             if (_reportMovementCollision) ReportMovementCollision();
             Vector3 travel = _player.GlobalPosition - before; travel.Y = 0;
             float actualSpeed = dt > 0 ? travel.Length() / dt : 0;
+            _player.Vitals.Stamina.RecordSprint(sprinting && grounded && _player.IsOnFloor()
+                && !jumping && actualSpeed > 0.1f, dt);
             _player._animation.Advance(travel, dt, actualSpeed);
             if (stanceAnimating || leanChanged) _player.RaiseWeaponPoseChanged();
             if (before.DistanceSquaredTo(_player.GlobalPosition) > 0.0000001f) _player.RaisePositionChanged();

@@ -75,6 +75,7 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
         if (GameplayInputBlocked == blocked) return;
         GameplayInputBlocked = blocked; _input._toggleCrouch = _input._toggleProne = false;
         if (blocked) { _input._jumpRequested = false; _lean.ClearHeld(); }
+        if (blocked && Vitals != null) Vitals.Stamina.RecordSprint(false, 0);
         if (blocked) Velocity = new Vector3(0, Velocity.Y, 0);
         SetPhysicsProcess(true); GameplayInputBlockChanged?.Invoke(blocked);
     }

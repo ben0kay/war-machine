@@ -20,8 +20,8 @@
 | **PH0** | Hidden vitality + six body-region condition values, shared damage/healing, death, events; compatible player receiver; no normal player HP bar | Codex / Work | **Implemented; Awaiting Validation** |
 | **PH1** | Compact six-region body silhouette and injury-state feedback in shared GameplayHUD; no new health calculations | UI design + Codex / Work | **Implemented; Awaiting Validation** |
 | **PH-HIT** | Accurate optional anatomy hurtboxes and region mapping for bullets/melee, collision-safe, separately approved | Codex / Work | **Future / not authorized** |
-| **PH2** | Stamina/exertion; future body-condition modifiers may consume this API | Codex / Work | **Planned** |
-| **PH3** | Hunger, thirst and slow survival consequences | Codex / Work | **Planned** |
+| **PH2** | Short-term stamina: sprint, jump, small firing costs, recovery and temporary bottom-right HUD | Codex / Work | **Foundation implemented; Awaiting Validation** |
+| **PH3** | Fullness, hidden satiation, thirst and later survival consequences | Codex / Work | **Planned** |
 | **PH4** | Fatigue, sleep and recovery | Codex / Work | **Planned** |
 | **PH5** | Later individual injuries, bleeding, fractures, environmental exposure and treatment hooks | Codex / Work | **Planned, subfeatures separately gated** |
 
@@ -50,7 +50,7 @@
 
 ## Verified starting point and ownership
 
-- The active game is `WORLD/World.tscn`; the FPS debug test inherits shared world/player plumbing. `PLAYER/Player.tscn` and `PlayerController.cs` currently handle movement, stance and equipment, **not health**. `PLAYER/PlayerSettings.cs` and `Configuration/PlayerMaster.tres` own exported defaults. The old LegacyFirstPerson player is parked.
+- The primary gameplay entry is `WORLD/FirstPerson/FirstPersonWorld.tscn`, inheriting `WORLD/World.tscn` shared composition and secondary top-down view. `PLAYER/Player.tscn` / `PlayerController.cs` own shared movement, stance, equipment and implemented PH0/PH1 vitals/death plumbing. `PLAYER/PlayerSettings.cs` and `Configuration/PlayerMaster.tres` own exported defaults. The old LegacyFirstPerson player is parked.
 - `ENTITIES/Shared/Combat/` owns `DamagePacket`, `DamageResult`, `DamageResolver`, `HealthSettings`, `HealthComponent` and `IDamageReceiver`. Zombies already receive hits this way. **Never replace this damage calculation with a player-specific formula.**
 - The generic enemy feedback overlay and `HealthBar.tscn` already exist. It subscribes to `HealthComponent.HealthChanged` and projects red bars for damaged actors. It also currently has code to show the *player* at lower-left; that **must be changed by PH0** to exclude the player, not reused as the new player health UI. NPC bar presentation remains intact.
 - `UI/GameplayHUD` composes Hotbar and Backpack/Inventory. `FEEDBACK/Bars/PlayerStatus` will own the PH1 body-condition widget; place one instance beside (not on top of) the hotbar, shared between overhead/FPS. A future inventory Health tab is outside PH1.
@@ -135,25 +135,43 @@ This is a **design**, not a claim that the scene nodes or code exist. Group the 
 
 ## PH2 — Stamina and exertion
 
-**Objective:** Add stamina with running cost and controlled regeneration, later usable for melee, dodging and climbing.
+**Foundation implemented in source (2026-10-29); awaiting local compilation, movement/weapon/HUD acceptance.** The owner authorized the start of PH2 and a small temporary bottom-right GUI. Hunger, satiation, thirst, fatigue and injury consequences remain later phases.
 
-**Dependencies:** PH0 stats container; current `PlayerController` running/crouching behavior.
+**Objective:** Short-term capacity for vigorous actions, separate from vitality, body condition and long-term fatigue.
 
-**Scope / ownership:** Add stamina current/max and exhaustion state to `PLAYER/Stats/`, with grouped stamina defaults in `PlayerVitalsSettings`. Expose narrow APIs such as `TrySpendStamina`, `StartExertion`, `StopExertion`; integrate run gating into movement without making vitals control player movement directly. Regen delay and rate configurable. UI can subscribe to changes.
+**Ownership:** PlayerVitals creates one Stats/PlayerStamina node at initialization. PlayerVitalsSettings embeds a typed PlayerStaminaSettings profile inside PlayerMaster; current reserve is runtime-only and initialization does not refill an existing player. PlayerMovement gates sprint/jump and reports collision-resolved ground sprint effort. Both existing weapon view adapters charge their shared accepted-shot event once, using FirearmSettings.StaminaCostPerShot. No NPC firearm behavior or damage formula is changed.
 
-**Out of scope:** Food/thirst/fatigue penalties, inventory weight, combat stamina costs, deep fitness skill trees.
+| Initial setting | Default |
+| --- | ---: |
+| Maximum | 100 |
+| Sprint drain | 10/s |
+| Jump cost | 15 |
+| Firearm cost | 0.5 per accepted shot, separately tunable per weapon |
+| Recovery delay | 1.5s after the latest actual exertion |
+| Recovery rate | 15/s |
+| Sprint unlock after depletion | 20% of maximum |
 
-**Preserve:** Camera-relative motion/animation, crouch and acceleration; run speed when stamina is available.
+**Rules:** Walking, crouching and crawling spend nothing and permit recovery. Standing sprint requires movement input, Shift, available stamina and a run multiplier above one; drain requires actual horizontal travel >0.1m/s and ground contact before/after movement. Shift alone, pushing immovably into a wall, airborne travel and blocked/menu input do not drain sprint stamina. A jump spends its exact cost only after standing/ground/focus/input-capture/positive-jump-velocity eligibility passes; insufficient stamina consumes neither the action nor reserve. Costs never change walking/stance speeds or bypass collision. Sprint exhaustion removes the run multiplier through existing acceleration and stays latched until the recovery threshold; holding Shift allows walking recovery and automatic sprint resumption afterward.
 
-**Performance:** Run/drain wakes only during exertion; regen wakes when below max and eligible, then turns off at full. Prefer one owned low-frequency timer or explicitly bounded movement-linked update, not perpetual per-frame idle work. When terrain/scene unloads, stop and unsubscribe.
+Firing spends up to the available reserve, so zero stamina never blocks firing. Empty/reloading/rejected attempts cost nothing. No accuracy/recoil/handling penalties yet. Jump and sprint costs exceed the initial per-shot cost. Sprint and shots may both contribute while simultaneous; accepted jumps replace ground-sprint drain on their launch tick. Failed actions do not restart the recovery delay; actual accepted shots at zero do restart it.
 
-**Pass:** Run consumes stamina; depletion stops sprint, recovery permits sprint again; no drain while not exerting, no update timer at full rest; movement remains smooth.
+**API:** TrySpend rejects invalid/nonfinite/negative or unaffordable exact costs; TryJump wraps the configured jump cost; SpendPartial handles accepted-shot/continuous costs; RecordSprint is the movement adapter; CanSprint/Exhausted and Changed supply read-only gating/feedback. Values are bounded; disabled stamina restores unrestricted existing sprint/jump and hides its meter. Death stops spending/recovery. No normal healing/respawn/save semantics are added.
 
-**Assistant:** Codex / Work for player-physics integration; Regular Chat can adjust exported tuning; Copilot for local movement feel.
+**Performance/time:** Drain uses the existing player movement callback. Only depleted non-sprinting stamina enables its own recovery physics callback (including the bounded recovery delay), stopping at full, death or unload. No timer, world search, polling while full, extra movement callback or stat per limb. Recovery can run while the player's movement sleeps. Physics delta uses gameplay seconds, not the accelerated day/night clock or wall time; tree pause stops it. Live-world menus/uncaptured FPS/focus release stop exertion and permit recovery. UI subscribes only to changes and viewport resize.
+
+**GUI:** One shared UI/GameplayHUD/Stamina card at bottom-right, numeric reserve/bar/status, always visible for now, exported corner margin and narrow-window relocation. Mouse-through, no health arithmetic or smoothing loop. A later layout move is separate.
+
+**Out of scope:** Hunger/satiation/thirst/fatigue, metabolism, weight, stamina costs for Q/bat/knife/dodge/climb, fitness, injury penalties, exhausted-firearm inaccuracy, healing, saved reserve and sleep.
+
+**Validation:** Source/diff/resource/loop review completed. Existing DEBUG/TEST/PlayerVitals smoke now checks actual stamina code for idle sleep, sprint/walking, delay crossing, recovery clamps, jump affordability, exhaustion hysteresis, invalid costs, shot spending, master immutability and death shutdown. It manually steps recovery synchronously; it does not prove real movement/weapon integration. No new test scene. dotnet/Godot are unavailable here, so compilation and smoke/runtime/visual/performance checks remain unverified.
+
+Locally run `dotnet build war-machine.csproj`, then `godot --headless --path . res://DEBUG/TEST/PlayerVitals/PlayerVitalsTest.tscn` using Godot .NET. In FirstPersonWorld, compare full-to-empty sprint (~10s of grounded effort), walking recovery, held-Shift resumption, stationary wall contact, jump press/hold/airborne/unaffordable cases, rifle/MG accepted shots and rejected empty/reload attempts, inventory/Escape/focus, death/reload and bottom-right layout at narrow/normal resolutions. Check secondary World and idle profiler behavior. No measured result is claimed.
+
+**Next:** Tune the foundation only after local acceptance. Later stamina modifiers remain explicit later work. One commit to implement-td0-td1; see Git history for delivery SHA.
 
 ## PH3 — Hunger and thirst
 
-**Objective:** Add slow world-time-aware nutrition/hydration values and modest configurable consequences.
+**Objective:** Add visible food fullness, a hidden satiation buffer consumed before fullness falls, and thirst. Eating restores fullness/satiation; foods may sustain the player differently. Time and activity consume reserves. Later explicit consequences can affect accuracy, running or stamina recovery; avoid uncontrolled stacking.
 
 **Dependencies:** PH0 (and preferably PH2 so penalties can target stamina). A single authoritative in-game time source must be chosen when rates are introduced.
 
@@ -171,7 +189,7 @@ This is a **design**, not a claim that the scene nodes or code exist. Group the 
 
 ## PH4 — Fatigue and rest
 
-**Objective:** Model tiredness, rest and sleep recovery without building a full sleeping/base system.
+**Objective:** Model longer-term fatigue (higher means more tired), distinct from short-term stamina. Sleep is the main recovery method; food may provide modest bounded relief but must not replace sleep. Eligible minor-injury sleep healing requires its own PH5 rules.
 
 **Dependencies:** PH3 shared survival update clock; PH2 stamina for optional tiredness effects.
 

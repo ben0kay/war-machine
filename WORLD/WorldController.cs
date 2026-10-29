@@ -352,6 +352,8 @@ public partial class WorldController : Node3D
         var body = GD.Load<PackedScene>("res://FEEDBACK/Bars/PlayerStatus/BodyConditionWidget.tscn").Instantiate<BodyConditionWidget>();
         hud.AddChild(body);
         body.Initialize(player.Vitals, GD.Load<FeedbackSettings>("res://FEEDBACK/Configuration/FeedbackMaster.tres"));
+        var stamina = GD.Load<PackedScene>("res://UI/GameplayHUD/Stamina/StaminaHud.tscn").Instantiate<StaminaHud>();
+        hud.AddChild(stamina); stamina.Initialize(player.Vitals.Stamina);
     }
 
     // =========================================================

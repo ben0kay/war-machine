@@ -97,6 +97,7 @@ public partial class FirstPersonWeapon : Node
     // The FPS burst budget is independent of RC0's smaller top-down recoil cap.
     private void OnShotAccepted()
     {
+        _player.Vitals.Stamina.SpendPartial(_weapon!.RuntimeSettings.StaminaCostPerShot);
         _visualRecoil?.Kick();
         FirearmSettings settings = _weapon!.RuntimeSettings;
         double now = Time.GetTicksMsec() * 0.001;

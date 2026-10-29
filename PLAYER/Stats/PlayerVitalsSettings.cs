@@ -1,10 +1,12 @@
-// Authored vitality/region maxima only. Runtime values never write back into this profile.
+// Authored vitality, region maxima and stamina defaults. Runtime values never write back into this profile.
 using Godot;
 
 [GlobalClass]
 public partial class PlayerVitalsSettings : Resource
 {
     [Export] public HealthSettings Health { get; set; } = new();
+    [ExportGroup("Stamina (PH2)")]
+    [Export] public PlayerStaminaSettings Stamina { get; set; } = new();
     [ExportGroup("Body condition maxima")]
     [Export(PropertyHint.Range, "1,1000,1")] public float Head { get; set; } = 100;
     [Export(PropertyHint.Range, "1,1000,1")] public float Torso { get; set; } = 100;

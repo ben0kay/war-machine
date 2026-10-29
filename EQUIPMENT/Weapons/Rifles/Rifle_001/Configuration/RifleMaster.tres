@@ -10,6 +10,7 @@ HearingRadiusMeters = 130.0
 Loudness = 1.0
 
 [resource]
+StaminaCostPerShot = 0.5
 script = ExtResource("1")
 DisplayName = "Rifle 001"
 ShotInterval = 0.65

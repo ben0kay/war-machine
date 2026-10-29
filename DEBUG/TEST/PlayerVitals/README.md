@@ -1,3 +1,5 @@
+> **PH2 extension:** The same smoke now checks stamina initialization/idle sleep, free walking, sprint drain, delay/recovery timing, exact jump costs/rejection, exhaustion threshold, invalid spending, small shot spending, immutable defaults and death shutdown. Recovery is manually stepped on the real stamina node in this synchronous fixture; world integration still needs FPS/top-down checks. Not run here: dotnet/Godot unavailable.
+
 # PH0 standalone smoke tests
 
 `PlayerVitalsTest.tscn` is a development-only scene exercising actual player/vitals/shared-health code. It never runs from World, adds no gameplay hotkey, changes no authored resources and exits with 0 on success or 1 on failure. The output starts `[PH0] PASS` or `[PH0] FAIL`.

@@ -103,6 +103,7 @@ public partial class PlayerWeaponController : Node
     // An accepted shot drives temporary gun/arm animation without modifying the muzzle or real ray.
     private void OnShotAccepted()
     {
+        _player.Vitals.Stamina.SpendPartial(_weapon!.RuntimeSettings.StaminaCostPerShot);
         _visualRecoil?.Kick();
         if (_visualRecoil?.IsActive == true) SetProcess(true);
     }

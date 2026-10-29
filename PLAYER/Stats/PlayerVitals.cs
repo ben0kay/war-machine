@@ -5,6 +5,7 @@ using System;
 public partial class PlayerVitals : Node
 {
     public HealthComponent Health { get; private set; } = null!;
+    public PlayerStamina Stamina { get; private set; } = null!;
     public BodyCondition Body { get; private set; } = null!;
     public float CurrentHealth => _configured ? Health.CurrentHealth : 0;
     public float MaxHealth => _configured ? Health.MaxHealth : 0;
@@ -24,6 +25,7 @@ public partial class PlayerVitals : Node
         var runtime = settings != null ? (PlayerVitalsSettings)settings.Duplicate(true) : new PlayerVitalsSettings();
         Health = GetNode<HealthComponent>("Health"); Body = GetNode<BodyCondition>("BodyCondition");
         Health.Configure(runtime.Health); Body.Initialize(runtime, Health);
+        Stamina = new PlayerStamina { Name = "Stamina" }; AddChild(Stamina); Stamina.Initialize(runtime.Stamina);
         Health.Died += OnDied; _configured = true;
     }
 
@@ -57,7 +59,7 @@ public partial class PlayerVitals : Node
     public float HealRegion(BodyRegion region, float amount) => CanChange ? Body.HealRegion(region, amount) : 0;
 
     // =========================================================
-    private void OnDied(DamagePacket hit) => Died?.Invoke();
+    private void OnDied(DamagePacket hit) { Stamina.Stop(); Died?.Invoke(); }
 
     // =========================================================
     public override void _ExitTree()

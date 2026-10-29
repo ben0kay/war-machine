@@ -4,12 +4,25 @@
 [ext_resource type="Script" uid="uid://d274w6cw6muei" path="res://ENTITIES/Shared/Combat/HealthSettings.cs" id="health_script"]
 [ext_resource type="Script" uid="uid://dxuwqkvtibfcv" path="res://PLAYER/Stats/PlayerVitalsSettings.cs" id="vitals_script"]
 
+[ext_resource type="Script" path="res://PLAYER/Stats/PlayerStaminaSettings.cs" id="stamina_script"]
+
+[sub_resource type="Resource" id="stamina"]
+script = ExtResource("stamina_script")
+Enabled = true
+Maximum = 100.0
+SprintDrainPerSecond = 10.0
+JumpCost = 15.0
+RecoveryPerSecond = 15.0
+RecoveryDelaySeconds = 1.5
+SprintResumeFraction = 0.2
+
 [sub_resource type="Resource" id="health"]
 script = ExtResource("health_script")
 
 [sub_resource type="Resource" id="vitals"]
 script = ExtResource("vitals_script")
 Health = SubResource("health")
+Stamina = SubResource("stamina")
 
 [resource]
 CorpseSlowdownEnabled = false
