@@ -88,6 +88,7 @@ public partial class PlayerController
             float footRoll = Mathf.DegToRad(Mathf.Clamp(_player._settings.FootRollDegrees, 0, 20)) * (1f - _player._stance._crouch) * Mathf.Sin(_phase);
             _leftFoot.Rotation = new Vector3(-_leftLeg.Rotation.X - _leftKnee.Rotation.X + footRoll * leftLift, 0, 0);
             _rightFoot.Rotation = new Vector3(-_rightLeg.Rotation.X - _rightKnee.Rotation.X - footRoll * rightLift, 0, 0);
+            _player._weapon.ResetBatBasePose();
             _player._weapon.ApplyShoveGrips();
             _player._weapon._recoilArmApplied = 0f; // Locomotion pose rewrote joint rotations above.
             _player._weapon.ApplyWeaponRecoilPose();

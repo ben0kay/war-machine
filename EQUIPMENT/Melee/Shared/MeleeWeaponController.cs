@@ -69,18 +69,28 @@ public partial class MeleeWeaponController : Node3D
         float active = Safe(RuntimeSettings.ActiveSeconds, 0.001f, 1);
         float recovery = Safe(RuntimeSettings.RecoverySeconds, 0.001f, 1);
         float half = Mathf.DegToRad(Safe(RuntimeSettings.ArcDegrees, 10, 180)) * 0.5f;
-        float holdPitch = Mathf.DegToRad(Safe(RuntimeSettings.HoldPitchDegrees, 0, 85));
-        float holdYaw = Mathf.DegToRad(Safe(RuntimeSettings.HoldYawDegrees, -90, 90));
         float yaw, pitch;
+        float swing;
         if (elapsed < windup)
-        { float t = Smooth(elapsed / windup); yaw = Mathf.Lerp(holdYaw, half, t); pitch = Mathf.Lerp(holdPitch, 0, t); }
+        {
+            float t = Smooth(elapsed / windup);
+            yaw = Mathf.Lerp(0f, half, t); pitch = Mathf.Lerp(0f, -0.28f, t); swing = -t;
+        }
         else if (elapsed < windup + active)
-        { float t = Mathf.Clamp((elapsed - windup) / active, 0, 1); yaw = Mathf.Lerp(half, -half, t); pitch = 0; }
+        {
+            float t = Mathf.Clamp((elapsed - windup) / active, 0f, 1f);
+            yaw = Mathf.Lerp(half, -half, t); pitch = -0.28f * (1f - t); swing = Mathf.Lerp(-1f, 1f, t);
+        }
         else
-        { float t = Smooth((elapsed - windup - active) / recovery); yaw = Mathf.Lerp(-half, holdYaw, t); pitch = Mathf.Lerp(0, holdPitch, t); }
-        // Yaw corresponds to the same horizontal angular sector used by AdvanceSweep.
-        GlobalBasis = Basis.LookingAt(_direction, Vector3.Up) * new Basis(Vector3.Up, yaw) * new Basis(Vector3.Right, pitch);
-        if (!_firstPerson) _player!.SetShoveGrip(this, 1);
+        {
+            float t = Smooth((elapsed - windup - active) / recovery);
+            yaw = Mathf.Lerp(-half, 0f, t); pitch = 0f; swing = 1f - t;
+        }
+        // Rotate around the held handle in the player's local socket space.
+        // Existing aimed WeaponMount sets forward; hand IK tracks this grip every active tick.
+        Transform = new Transform3D(_rest.Basis * new Basis(Vector3.Up, yaw)
+            * new Basis(Vector3.Right, pitch), _rest.Origin);
+        _player!.SetBatSwingPose(swing);
     }
 
     // =========================================================
@@ -95,7 +105,7 @@ public partial class MeleeWeaponController : Node3D
     private void RestorePose()
     {
         Transform = _rest;
-        if (!_firstPerson && IsInstanceValid(_player)) _player!.SetShoveGrip(null, 0);
+        if (!_firstPerson && IsInstanceValid(_player)) _player!.SetBatSwingPose(0f);
         _player = null;
     }
 

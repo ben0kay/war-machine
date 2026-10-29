@@ -6,13 +6,30 @@ public partial class PlayerController
     private sealed class PlayerWeaponPose
     {
         private readonly PlayerController _player;
+        private readonly PlayerBatPose _batPose;
+        public bool IsShovePoseActive => _shoveGrip > 0f;
         public bool _weaponPose;
         private Node3D? _shoveWeapon, _rightGrip, _leftGrip;
         private float _shoveGrip, _recoilArmAngle;
         public float _recoilArmApplied;
         // =========================================================
-        // Plain collaborator: only the controller owns engine callbacks.
-        public PlayerWeaponPose(PlayerController player) => _player = player;
+        // Plain collaborators: one cached player rig and one cached bat pose, no new Nodes.
+        public PlayerWeaponPose(PlayerController player) { _player = player; _batPose = new PlayerBatPose(player); }
+
+        // =========================================================
+        public void SetBatWeapon(Node3D? bat) => _batPose.Equip(bat);
+
+        // =========================================================
+        public void SetBatSwing(float amount) => _batPose.SetSwing(amount);
+
+        // =========================================================
+        public void ResetBatBasePose() => _batPose.BasePoseRebuilt();
+
+        // =========================================================
+        // The existing two-bone IK solver supports either Q's two-hand shove or the bat's right grip.
+        public void ReachBatGrip(Node3D grip)
+            => ReachGrip(_player._animation._rightArm, _player._animation._rightElbow,
+                grip.GlobalPosition, 1f, 1f);
 
         // =========================================================
         // Equipment selects the holding pose; the actor still owns its socket and joints.
@@ -31,6 +48,7 @@ public partial class PlayerController
             Vector3 direction = target - _player.WeaponMount.GlobalPosition;
             if (direction.LengthSquared() > 0.0001f && Mathf.Abs(direction.Normalized().Dot(Vector3.Up)) < 0.99f)
                 _player.WeaponMount.GlobalBasis = Basis.LookingAt(direction, Vector3.Up);
+            _batPose.Apply(); // Grip follows changed top-down aim even when the player is stationary.
         }
 
         // =========================================================
@@ -60,6 +78,7 @@ public partial class PlayerController
         // Preserve two-hand shove grip ownership and pre-initialization handling.
         public void SetShoveGrip(Node3D? weapon, float weight)
         {
+            _batPose.Suspend(); // Q shove temporarily owns both arms; it must not accumulate torso offsets.
             if (_shoveWeapon != weapon)
             {
                 _rightGrip = weapon?.GetNodeOrNull<Node3D>("GripRight");
@@ -77,15 +96,18 @@ public partial class PlayerController
         // Solve only active, valid weapon grip targets.
         public void ApplyShoveGrips()
         {
-            if (_shoveGrip <= 0 || !GodotObject.IsInstanceValid(_shoveWeapon)) return;
+            if (_shoveGrip <= 0 || !GodotObject.IsInstanceValid(_shoveWeapon))
+            { _batPose.Apply(); return; }
             ReachGrip(_player._animation._rightArm, _player._animation._rightElbow, GodotObject.IsInstanceValid(_rightGrip) ? _rightGrip!.GlobalPosition : _shoveWeapon!.ToGlobal(new Vector3(0, -0.10f, 0.02f)), 1);
             ReachGrip(_player._animation._leftArm, _player._animation._leftElbow, GodotObject.IsInstanceValid(_leftGrip) ? _leftGrip!.GlobalPosition : _shoveWeapon!.ToGlobal(new Vector3(0, -0.10f, -0.40f)), -1);
         }
 
         // =========================================================
         // Use the original two-bone arm geometry and reach limits.
-        private void ReachGrip(Node3D arm, Node3D elbow, Vector3 target, float side)
+        private void ReachGrip(Node3D arm, Node3D elbow, Vector3 target, float side, float forcedWeight = -1f)
         {
+            // Regular Q shove keeps its original blend; the equipped bat uses a full right-hand grip.
+            float weight = forcedWeight >= 0f ? Mathf.Clamp(forcedWeight, 0f, 1f) : _shoveGrip;
             const float upper = 0.32f, lower = 0.166f;
             Vector3 shoulder = arm.GlobalPosition, delta = target - shoulder;
             float distance = Mathf.Clamp(delta.Length(), 0.16f, upper + lower - 0.001f);
@@ -98,9 +120,9 @@ public partial class PlayerController
             float along = (upper * upper - lower * lower + distance * distance) / (2 * distance);
             Vector3 joint = shoulder + direction * along + bend * Mathf.Sqrt(Mathf.Max(0, upper * upper - along * along));
             Basis desired = ArmBasis(joint - shoulder, bend);
-            arm.GlobalBasis = arm.GlobalBasis.Slerp(desired, _shoveGrip);
+            arm.GlobalBasis = arm.GlobalBasis.Slerp(desired, weight);
             desired = ArmBasis(shoulder + direction * distance - elbow.GlobalPosition, bend);
-            elbow.GlobalBasis = elbow.GlobalBasis.Slerp(desired, _shoveGrip);
+            elbow.GlobalBasis = elbow.GlobalBasis.Slerp(desired, weight);
         }
 
         // =========================================================

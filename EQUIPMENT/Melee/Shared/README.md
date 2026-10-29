@@ -9,3 +9,8 @@ MeleeWeaponController duplicates its MeleeSettings once, retains a reusable Mele
 ## Camera-space sideways tilt — 2026-10-28
 
 The FPS-only `FirstPersonMeleeSwing` now applies a configurable camera-forward screen rotation to the composed swing orientation, tilting the long bat barrel sideways instead of merely twisting around its own length. The tilt interpolates up during wind-up and down during recovery and costs nothing at idle. `MeleeSettings.FirstPersonSideTiltDegrees` (default 90° for the bat) owns the tuning. Shared melee contacts, zombie impact rules and overhead visuals remain untouched. Local visual acceptance pending.
+
+
+## Top-down right-arm pose coupling — 2026-10-28
+
+Overhead `MeleeWeaponController.ApplyPose` now rotates the bat locally under the already-aimed player WeaponMount, sends an attack-phase cue into `PlayerController.SetBatSwingPose`, and restores the cue at completion/cancellation. `PLAYER/Visuals/PlayerBatPose` owns the visual shoulder/arm/torso response and maintains an IK right-hand grip on the existing bat `GripRight` marker; Q shove remains authoritative when active. FPS skips this cue and continues using `FirstPersonMeleeSwing`. No new hit/physics loops or changes to contact, cooldown, zombie displacement or equipment shared ownership. Local Godot build/visual tests pending.

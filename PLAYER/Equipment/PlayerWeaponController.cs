@@ -50,9 +50,15 @@ public partial class PlayerWeaponController : Node
         _weapon = _slots.Current; _melee = _slots.CurrentMelee;
         if (_melee != null)
         {
-            _melee.SetView(false); _aimQuery.CollisionMask = _melee.RuntimeSettings.HitMask;
+            _melee.SetView(false);
+            // Right-side one-hand hold at reachable distance from the existing shoulder.
+            // Gameplay sweep is still computed from the player, not the visual model offset.
+            _melee.Position = new Vector3(0.17f, -0.10f, 0.20f);
+            _player.SetBatWeapon(_melee);
+            _aimQuery.CollisionMask = _melee.RuntimeSettings.HitMask;
             RequestAim(); return;
         }
+        _player.SetBatWeapon(null);
         _visualRecoil = new TopDownWeaponRecoil(_player, _weapon);
         _weapon.ReadyToFire += OnReadyToFire; _weapon.ShotAccepted += OnShotAccepted;
         _aimQuery.CollisionMask = _weapon.RuntimeSettings.HitMask;
@@ -201,6 +207,7 @@ public partial class PlayerWeaponController : Node
     public override void _ExitTree()
     {
         CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); CancelVisualRecoil();
+        if (IsInstanceValid(_player)) _player.SetBatWeapon(null);
         if (!_initialized) return;
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.PositionChanged -= OnPlayerMoved; _player.WeaponPoseChanged -= RequestAim; _player.SetWeaponPose(false); }
         if (IsInstanceValid(_camera)) _camera.ViewChanged -= RequestAim;

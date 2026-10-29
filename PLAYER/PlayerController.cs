@@ -104,6 +104,9 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     public void SetWeaponAim(Vector3 target) => _weapon.SetWeaponAim(target);
     public void SetWeaponRecoilPose(float normalizedKick) => _weapon.SetWeaponRecoilPose(normalizedKick);
     public void SetShoveGrip(Node3D? weapon, float weight) => _weapon.SetShoveGrip(weapon, weight);
+    // Top-down visual-only bat integration. FPS keeps its separate camera-mounted hands and swing.
+    public void SetBatWeapon(Node3D? bat) => _weapon.SetBatWeapon(bat);
+    public void SetBatSwingPose(float amount) => _weapon.SetBatSwing(amount);
 
     // =========================================================
     // Events are raised by the coordinator, preserving their existing order and public identity.
