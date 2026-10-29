@@ -62,3 +62,22 @@ A single `MoveAndSlide` leaf contact still supplies movement direction, world-sp
 **Scope:** affects the *one existing rear convenience-store service door* and any future structure that instances the same master. No front door installation, handle pulling, locks, player movement, geometry, collision masks or hinge-axis edits. If custom copies later override the master, compare their exported values individually.
 
 **Validation pending locally:** `dotnet build war-machine.csproj`; run `DEBUG/Doors/DoorPhysicsTest.tscn` for contact, hinge and deterministic speed-response checks; play in top-down/FPS and nudge, walk and sprint into the rear door from both sides. Release movement immediately after a firm contact: the leaf should keep swinging and gradually damp, not freeze; a light tap should barely move it. Confirm stable upright hinge, no jamb collision, limits, no accidental oscillation, no desync in FPS and no character shoving through the door. Runtime feel and performance have **not** been measured here.
+
+## DOOR1.2 — lighter, freer swing after another owner playtest (2026-10-28)
+
+**Source tuning implemented; awaiting local Jolt/playtest confirmation.** The owner reported that 7kg still felt too stiff and requested **5kg**. The same shared `DoorMaster.tres` now uses:
+
+| Setting | Previous DOOR1.1 | New DOOR1.2 |
+| --- | ---: | ---: |
+| `MassKg` | 7 kg | **5 kg** |
+| `AngularDamping` | 0.65 | **0.40** |
+| `ContactSpeedReference` | 4.0 m/s | **3.5 m/s** |
+| `CharacterContactForce` | 52 | 52 (unchanged) |
+| `ContactSpeedExponent` | 1.65 | 1.65 (unchanged) |
+| `MaxContactSpeedMultiplier` | 2.5 | 2.5 (unchanged) |
+
+Decreasing mass reduces rotational inertia, so the same player contact accelerates the hinged door more quickly. **Lower mass alone does not guarantee longer coasting**; lower angular damping preserves more angular speed after release. The slightly lower reference speed raises ordinary walking contact impulse without adding a baseline kick to gentle nudges. With the existing curve, a 0.8m/s brush has ~0.087× contact scale, 3.5m/s produces 1× and 7m/s reaches the capped 2.5×. These are relative force multipliers, not opening angles.
+
+The hinge, physics bodies, player-contact adapter, scene, handle nodes, collision, swing limits and physics-loop sleeping are otherwise unchanged. This shared preset is used by the store rear service door and any future door instance that uses this master. It does not create new hinged doors in the police station.
+
+**Acceptance:** After building, approach the rear convenience-store leaf at low speed, normal speed and sprint from both sides. Compare opening acceleration and how far it continues to swing after contact ends. A light tap should produce only a small movement. Check it does not accelerate into the jamb, oscillate excessively, sag or clip. Test with the current Godot/Jolt backend; measured/runtime acceptance remains pending.
