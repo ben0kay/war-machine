@@ -2,7 +2,7 @@
 
 **Repository:** `ben0kay/war-machine`  
 **Working branch:** `implement-td0-td1` (never `main` without explicit instruction)  
-**Status:** **PLANNED ONLY** — documentation has been authored, **no forest runtime code, assets, world positions, saved terrain, lighting or scene changes have been made**.  
+**Status:** **DF0 implemented in source — awaiting local validation.** DF1–DF5 remain planned and not authorized. No canopy art, forest population, saved terrain or global lighting changes have been made.  
 **Priority:** Primary FPS view; retain shared-world/secondary top-down compatibility.  
 **Reference:** User's forest screenshots, especially the sunlit tall-trunk woodland with overlapping foliage high overhead (visual target, not a supplied asset/license).
 
@@ -10,7 +10,7 @@
 
 | Phase | Goal / deliverable | Recommended implementer | Status |
 | --- | --- | --- | --- |
-| **DF0** | Verify one east-side test footprint, document exclusions and add a reversible placement toggle | Regular Chat for survey/documentation; Codex/Work for world preflight integration | **Planned — not authorized** |
+| **DF0** | Survey east-side footprint, document exclusions and add reversible forest toggle | Regular Chat (contained integration) | **Implemented in source — awaiting local validation** |
 | **DF1** | Build one convincing tall canopy tree and a cheaper younger/filler variant | Codex/Work for procedural/imported tree pipeline; Regular Chat for limited asset/config docs | **Planned — not authorized** |
 | **DF2** | Seed dense, non-uniform trees within only this footprint using chunked MultiMeshes and trunk collision | Codex/Work (streaming, physics and shared world) | **Planned — not authorized** |
 | **DF3** | Interlocking crowns, selective real sun shadows, atmospheric depth and canopy-gap lighting | Codex/Work for shader/render integration; Regular Chat for simple authored tuning | **Planned — not authorized** |
@@ -173,3 +173,17 @@ WORLD/Configuration/WorldMaster.tres   [DF0 — authored zone, existing file]
 **Recommended next authorized job:** **DF0 only** — validate a reachable east-side footprint and its scene/terrain/robot/structure exclusions, then agree on a stable authored master config and reversible switch. Once DF0 is accepted, do DF1 (one tree visual) and then DF2 (dense patch). Only tackle DF3–DF5 after the basic silhouettes and density are visually approved. Regular Chat can own plans, README updates and isolated values; use Codex/ChatGPT Work for integration, rendering/collision and performance-sensitive work, and Copilot/owner for local engine/build checks.
 
 **Planning-task validation:** inspected existing repo source and docs; checked intended ownership and branch. No Godot/.NET runtime testing or forest rendering was done. The user supplied aesthetic screenshot as guidance only; do not commit it as an unlicensed in-game texture.
+
+## DF0 implementation and validation handoff (2026-10-29)
+
+**Current status:** source-implemented; local Godot build, terrain survey, visible footprint and performance checks **not performed**.
+
+- Authoritative location/toggle: `VEGETATION/Forest/Configuration/ForestMaster.tres`, referenced only through `WORLD/Configuration/WorldMaster.tres → DenseForest` and deep-duplicated by `WorldController` at startup. `Enabled=false` default, optional `ShowDebugOutline=false`, absolute `CenterXZ=(667,567)`, `SizeXZ=(96,96)`, `TransitionWidth=12`, `SurveyStep=8`, `MaximumSlope=0.75`.
+- `ForestZone.TrySurvey` is a single bounded *post-village-grading* startup survey: every sampled point across core+transition must have finite saved Terrain3D height and 2m local slope, at least 80% must meet the grade limit, and a 4m-step walk-in from the east village road to the western forest edge must be traversable. It rejects intersections with the **existing** pine reservations (actual site/building/road/robot corridors and player/zombie/deer clearing rectangles), and out-of-world locations. It prints detailed pass/fail messages. **This is a source-level runtime checker, not a remotely verified terrain survey.**
+- When `Enabled=true` **and survey passes**, WorldController adds one reserved `Rect2` to the existing PinePlacement exclusions before its first chunk build. When OFF or rejected, old pines are untouched. This is a **preview clearing, not yet a forest**. It deliberately does not alter grass, rocks, zombie spawns or persistent-world/WS2 streaming. The 12m transition band is surveyed but not cleared; DF2 can mix old pines there.
+- When `ShowDebugOutline=true`, one shared `ImmediateMesh` line outline is placed at sampled terrain perimeter on startup, even if `Enabled=false`; it has no collision or update callback. Use this to examine the candidate location in both FPS and top-down. OFF after inspection to remove it.
+- **Performance:** zero DF0 work in steady state when OFF; with preview ON the bounded survey runs once (roughly 250–300 terrain sample points, three height calls each, plus entry checks), followed by the existing pine startup rebuild only. No new `_Process`, `_PhysicsProcess`, tree actor, shadow or physics query.
+- **Local check:** `dotnet build war-machine.csproj` then F6 `WORLD/FirstPerson/FirstPersonWorld.tscn` and `WORLD/World.tscn` (F5 is legacy). Set `ForestMaster.tres → ShowDebugOutline=true`, keep `Enabled=false`, reload and walk east to inspect candidate border and console's DF0 terrain result. Then `Enabled=true`, reload: if approved, pines disappear **only** inside the preview square while surrounding trees/roads/robot/access remain. Revert false and reload to restore them. Ensure no errors, duplicated forest markers or blocked robot route. The full-sized area is **not** approved until user verifies the in-engine border, access and survey output.
+- **Limitations:** a rectangular terrain/slope/clearance preflight is not full physics walkability, view/cover validation or final placement density. A single centre can be relocated using `ForestMaster.tres` if the candidate fails. DF1 can start after accepting art direction; DF2 should not place dense trees until DF0 location is visually accepted. No new tree scenes or dedicated forest chunk streamer yet.
+
+**Changed owners:** `VEGETATION/Forest/ForestZone.cs`, `Configuration/ForestSettings.cs`, `Configuration/ForestMaster.tres`, `WORLD/WorldSettings.cs`, `WorldMaster.tres`, `WorldController.cs`, feature/parent READMEs. One commit on `implement-td0-td1`; SHA in Git history.

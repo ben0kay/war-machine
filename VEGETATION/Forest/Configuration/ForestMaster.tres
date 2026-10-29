@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ForestSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Forest/Configuration/ForestSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = false
+ShowDebugOutline = false
+CenterXZ = Vector2(667, 567)
+SizeXZ = Vector2(96, 96)
+TransitionWidth = 12.0
+SurveyStep = 8.0
+MaximumSlope = 0.75

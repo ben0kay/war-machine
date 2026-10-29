@@ -171,6 +171,22 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Fast);
         AddDeerPreviewClearing(_pines.ExclusionAreas);
+        // DF0: survey once, after village/robot/spawn reservations. Enabled reserves only the
+        // surveyed core for future canopy art; OFF or rejected restores original pine placement.
+        var forest = Settings.DenseForest;
+        if (forest != null && (forest.Enabled || forest.ShowDebugOutline))
+        {
+            bool safe = ForestZone.TrySurvey(data, forest, Settings, _pines.ExclusionAreas,
+                out Rect2 area, out string survey);
+            if (safe)
+            {
+                GD.Print($"DF0 forest site approved for preview: {survey}");
+                if (forest.Enabled) _pines.ExclusionAreas.Add(area);
+            }
+            else GD.PushWarning($"DF0 forest site rejected; original pines retained: {survey}");
+            if (forest.ShowDebugOutline && area.Size.X > 0 && area.Size.Y > 0)
+                ForestZone.ShowFootprint(GetNode<Node3D>("SystemsRoot/VegetationRoot"), data, area);
+        }
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
         _rocks = new ContentScatter { Name = "Rocks",

@@ -13,6 +13,8 @@ public partial class WorldSettings : Resource
     [Export] public WorldStreamingSettings Streaming { get; set; } = new();
     [ExportGroup("Fog-aware rendering (WS1)")]
     [Export] public WorldRenderSettings RenderPolicy { get; set; } = new();
+    [ExportGroup("Dense canopy forest test (DF0)")]
+    [Export] public ForestSettings DenseForest { get; set; } = new();
     [ExportGroup("Village layout")]
     [Export] public bool VillageEnabled { get; set; } = true;
     [Export] public Vector2 VillageOriginXZ { get; set; } = new(512, 512);
