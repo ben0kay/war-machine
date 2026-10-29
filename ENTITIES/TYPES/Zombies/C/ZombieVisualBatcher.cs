@@ -76,7 +76,8 @@ public static class ZombieVisualBatcher
             Basis normalBasis = transform.Basis.Inverse().Transposed();
             for (int s = 0; s < mesh.GetSurfaceCount(); s++)
             {
-                if (mesh.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles)
+                // PrimitiveMesh sources are triangle meshes; only ArrayMesh exposes this public API.
+                if (mesh is ArrayMesh arrayMesh && arrayMesh.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles)
                     continue;
                 var arrays = mesh.SurfaceGetArrays(s);
                 Vector3[] vertices = arrays[(int)Mesh.ArrayType.Vertex].AsVector3Array();

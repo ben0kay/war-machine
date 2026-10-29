@@ -352,7 +352,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         bool chasing = false;
         if (targetValid && _visibility != null && _sightTarget != null)
         {
-            Vector3 offset = _target.GlobalPosition - GlobalPosition; offset.Y = 0;
+            Vector3 offset = _target!.GlobalPosition - GlobalPosition; offset.Y = 0;
             float squared = offset.LengthSquared(), range = Mathf.Max(0, VisionRange);
             if (squared <= range * range)
             {
