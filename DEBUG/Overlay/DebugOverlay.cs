@@ -404,7 +404,7 @@ public partial class DebugOverlay : PanelContainer
             body.Visible = open;
             disclose.Text = (open ? "− " : "+ ") + title;
         };
-        toggle.Toggled += apply;
+        toggle.Toggled += value => apply(value);
         return body;
     }
 
