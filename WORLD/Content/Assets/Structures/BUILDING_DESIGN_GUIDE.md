@@ -57,6 +57,12 @@ A 3.2m tread extends only 1.6m to each side of the flight centre. Rail/post X co
 
 For below-ground detention corridors, author genuinely traversable central routes and actual cell door **openings** with corresponding *visual and physical* gaps. Do not replace jail fronts with a full invisible collider through a doorway, or end cell partitions short of their barred wall/back wall. Check that cell bars, service-room walls, foundation perimeter and rear hall connect without dangling stubs. Add functional doors, prisoners or furniture only in a separately authorized pass.
 
+## Open stair railings and structurally supported turns — PS1.8 (2026-10-31)
+
+A thick continuous stair `SideStringer` can unintentionally hide the lower half of every banister even when every post is generated. Keep the backing **thin and beneath the steps**, make balusters evenly spaced on both sides, and embed their ends in the backing/treads and handrail. Inspect from the stair sides and below, not only from the player eye height while climbing. Avoid railing posts extending past the actual first/last step.
+
+Dimension U-turn platforms to the **union of the adjacent stair-flight edges** rather than an arbitrary oversized width. For a landing suspended over the basement, align visible structural supports precisely from basement floor to platform underside; keep supports within the slab perimeter and out of stair traversal volume. Recheck all floor/ceiling interfaces, wall nubs, rail/slope joins, corner posts and collision visually after each geometry change.
+
 ## FPS surface readability — PS1.6 material contrast rule (2026-10-31)
 
 When a procedural building uses flat-shaded box meshes, **do not give the floor, underside of slab (ceiling), wall and stair treads nearly the same colour/value**. It can conceal tread depth and floor boundaries even when the collision meshes are correct. Use a deliberate hierarchy: ceiling brightest, walls lighter than floors, finished floors darker, stair treads clearly distinct from paler risers, and a thin coloured step nose on every tread. PoliceStation001 uses **muted dark blue** as an understated nosing accent, not hazard-yellow or emissive stripes.

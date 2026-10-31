@@ -27,6 +27,9 @@ public partial class PoliceStationMesh : Node3D
     // The doorway-to-first-riser landing and side approach are both at least 2m clear.
     private const float CoreWallX = 7f, StairEntryZ = 20.8f;
     private const float LowerFlightX = 11f, UpperFlightX = 15.3f;
+    private const float StairWidth = 3.2f;
+    private const float StairLandingWidth = UpperFlightX - LowerFlightX + StairWidth;
+    private const float StairLandingCenterX = (LowerFlightX + UpperFlightX) * 0.5f;
     private const float StairSouthZ = 23f, StairNorthZ = 28f;
     private const float ShaftMinX = 8.7f, ShaftMaxX = 18.2f, ShaftMinZ = 18f, ShaftMaxZ = 30.4f;
     private const float MinimumStairApproach = 2f, SideWindowWidth = 3.6f;
@@ -577,9 +580,9 @@ public partial class PoliceStationMesh : Node3D
         StairFlight(visuals, body, "Lower", LowerFlightX, StairSouthZ, StairNorthZ,
             0f, halfRise, tread, riser, rail, edge);
         StructureGeometry.Box(visuals, body, "TurnLanding",
-            new((LowerFlightX + UpperFlightX) * 0.5f, halfRise - 0.11f,
+            new(StairLandingCenterX, halfRise - 0.11f,
                 (StairNorthZ + ShaftMaxZ) * 0.5f),
-            new(8.6f, 0.22f, ShaftMaxZ - StairNorthZ), tread);
+            new(StairLandingWidth, 0.22f, ShaftMaxZ - StairNorthZ), tread);
         StairFlight(visuals, body, "Upper", UpperFlightX, StairNorthZ, StairSouthZ,
             halfRise, halfRise, tread, riser, rail, edge);
 
@@ -626,22 +629,18 @@ public partial class PoliceStationMesh : Node3D
         Material tread, Material riser, Material rail, Material edge)
     {
         const int count = 12;
-        const float width = 3.2f, treadThickness = 0.16f, railOffset = 1.52f;
+        const float width = StairWidth, treadThickness = 0.16f, railOffset = 1.50f;
         float run = Mathf.Abs(endZ - startZ), depth = run / count, dy = rise / count;
         bool north = endZ > startZ;
         float pitch = (north ? -1f : 1f) * Mathf.Atan2(rise, run);
         float length = Mathf.Sqrt(run * run + rise * rise);
         float midZ = (startZ + endZ) * 0.5f, midY = baseY + rise * 0.5f;
 
-        // The single inclined stair pan and its two side stringers give the
-        // thin individual treads a continuous, opaque underside. Visual only:
-        // the original one-shape smooth ramp remains the sole walking collider.
-        StructureGeometry.Box(visuals, null, name + "SolidUnderside",
-            new(x, midY - 0.36f, midZ), new(width, 0.30f, length), riser, pitch);
-        foreach (float stringerX in new[] { x - 1.55f, x + 1.55f })
-            StructureGeometry.Box(visuals, null, name + "SideStringer",
-                new(stringerX, midY - 0.10f, midZ),
-                new(0.14f, 0.50f, length), rail, pitch);
+        // Keep a slim stair underside, not the 50cm-tall side plates that
+        // concealed the bottom half of the railing balusters.
+        StructureGeometry.Box(visuals, null, name + "SlimUnderside",
+            new(x, midY - 0.19f, midZ),
+            new(width - 0.16f, 0.20f, length), riser, pitch);
 
         for (int i = 0; i < count; i++)
         {
@@ -665,25 +664,23 @@ public partial class PoliceStationMesh : Node3D
             Position = new(x, midY - 0.025f, midZ),
             Rotation = new(pitch, 0f, 0f), Shape = new BoxShape3D { Size = new(width, 0.14f, length) } });
 
-        // Both guard rails now sit above their side stringers *inside* the
-        // 3.2m stair width. Posts extend from each real tread/landing to the
-        // pitched handrail, with no fixed-length supports hanging in empty air.
+        // Nine evenly spaced open balusters on each side, entirely within
+        // the stair width. Their feet enter the stair pan and their tops join
+        // the inclined handrail, with flush first/last positions.
+        const int railIntervals = 8;
         foreach (float railX in new[] { x - railOffset, x + railOffset })
         {
-            StructureGeometry.Box(visuals, body, name + "Rail",
+            StructureGeometry.Box(visuals, body, name + "Handrail",
                 new(railX, midY + 0.90f, midZ),
                 new(0.10f, 0.11f, length), rail, pitch);
-            for (int post = 0; post <= 6; post++)
+            for (int postIndex = 0; postIndex <= railIntervals; postIndex++)
             {
-                int stepIndex = Mathf.Min(count - 1, post * 2);
-                float t = post == 0 ? 0f : post == 6 ? 1f : (stepIndex + 0.5f) / count;
-                float treadTop = post == 0 ? baseY :
-                    post == 6 ? baseY + rise : baseY + (stepIndex + 1) * dy;
-                float postBottom = treadTop - 0.10f;
-                float postTop = baseY + rise * t + 0.95f;
+                float t = postIndex / (float)railIntervals;
+                float slopeY = baseY + rise * t;
+                float postBottom = slopeY - 0.24f, postTop = slopeY + 0.95f;
                 StructureGeometry.Box(visuals, null, name + "RailPost",
                     new(railX, (postBottom + postTop) * 0.5f, Mathf.Lerp(startZ, endZ, t)),
-                    new(0.12f, postTop - postBottom, 0.12f), rail);
+                    new(0.095f, postTop - postBottom, 0.095f), rail);
             }
         }
     }
@@ -757,9 +754,20 @@ public partial class PoliceStationMesh : Node3D
         StairFlight(stairVisuals, stairBody, "BasementDownFirst", UpperFlightX,
             StairSouthZ, StairNorthZ, 0f, halfDrop, tread, riser, trim, edge);
         StructureGeometry.Box(stairVisuals, stairBody, "BasementTurnLanding",
-            new((LowerFlightX + UpperFlightX) * 0.5f, halfDrop - 0.11f,
+            new(StairLandingCenterX, halfDrop - 0.11f,
                 (StairNorthZ + ShaftMaxZ) * 0.5f),
-            new(8.6f, 0.22f, ShaftMaxZ - StairNorthZ), tread);
+            new(StairLandingWidth, 0.22f, ShaftMaxZ - StairNorthZ), tread);
+        // Support both northern corners from the real basement floor right up
+        // to the landing underside. Keep columns beyond the Z=28 stair runs.
+        float supportHeight = halfDrop - 0.22f - floorY;
+        if (supportHeight <= 0f) throw new System.InvalidOperationException(
+            "PoliceStation001: basement landing supports have invalid height.");
+        foreach (float supportX in new[] {
+            LowerFlightX - StairWidth * 0.5f + 0.28f,
+            UpperFlightX + StairWidth * 0.5f - 0.28f })
+            StructureGeometry.Box(stairVisuals, stairBody, "BasementLandingSupport",
+                new(supportX, floorY + supportHeight * 0.5f, ShaftMaxZ - 0.42f),
+                new(0.32f, supportHeight, 0.32f), trim);
         StairFlight(stairVisuals, stairBody, "BasementDownReturn", LowerFlightX,
             StairNorthZ, StairSouthZ, halfDrop, halfDrop, tread, riser, trim, edge);
 
