@@ -9,8 +9,8 @@ public static class WeaponVisualGeometry
     public static readonly Mesh TaperForward = Profile(0.76f, 1f);
     public static readonly Mesh TaperRear = Profile(1f, 0.78f);
     // More pronounced corner bevels for large rifle receiver/stock pieces; older profiles remain untouched.
-    public static readonly Mesh BroadChamfer = Profile(1f, 1f, 0.22f);
-    public static readonly Mesh BroadTaperRear = Profile(1f, 0.78f, 0.20f);
+    public static readonly Mesh BroadChamfer = Profile(1f, 1f, 0.18f);
+    public static readonly Mesh BroadTaperRear = Profile(1f, 0.78f, 0.16f);
     private static readonly CylinderMesh Round = new()
     { TopRadius = 0.5f, BottomRadius = 0.5f, Height = 1f, RadialSegments = 12 };
 

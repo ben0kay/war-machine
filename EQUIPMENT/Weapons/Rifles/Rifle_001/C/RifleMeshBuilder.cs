@@ -8,7 +8,7 @@ public partial class RifleMeshBuilder : Node3D
     private static readonly StandardMaterial3D Receiver = new()
     { AlbedoColor = new Color(0.20f, 0.225f, 0.235f), Metallic = 0.76f, Roughness = 0.36f };
     private static readonly StandardMaterial3D EdgeSteel = new()
-    { AlbedoColor = new Color(0.27f, 0.285f, 0.29f), Metallic = 0.82f, Roughness = 0.28f };
+    { AlbedoColor = new Color(0.245f, 0.26f, 0.27f), Metallic = 0.74f, Roughness = 0.39f };
     private static readonly StandardMaterial3D DarkSteel = new()
     { AlbedoColor = new Color(0.095f, 0.11f, 0.12f), Metallic = 0.65f, Roughness = 0.48f };
     private static readonly StandardMaterial3D Polymer = new()
@@ -85,8 +85,8 @@ public partial class RifleMeshBuilder : Node3D
         for (int side = -1; side <= 1; side += 2)
         {
             float x = side * 0.055f;
-            Part(part, "UpperBevelBand", new(x, 0.104f, -0.150f),
-                new(0.009f, 0.013f, 0.265f), EdgeSteel, Bevel);
+            Part(part, "UpperBevelBand", new(side * 0.0545f, 0.104f, -0.150f),
+                new(0.007f, 0.011f, 0.251f), EdgeSteel, Bevel);
             Part(part, "LowerSideInset", new(side * 0.052f, -0.013f, -0.130f),
                 new(0.006f, 0.044f, 0.176f), Polymer, Bevel);
             Part(part, "ReceiverRearLock", new(side * 0.055f, 0.010f, 0.015f),
@@ -146,8 +146,8 @@ public partial class RifleMeshBuilder : Node3D
             for (int i = 0; i < 3; i++)
                 Part(part, "VentRecess", new(side * 0.066f, 0.037f, -0.350f - i * 0.074f),
                     new(0.004f, 0.020f, 0.044f), DarkSteel, WeaponVisualGeometry.Box);
-            Part(part, "HandguardEdgeBand", new(side * 0.056f, 0.088f, -0.442f),
-                new(0.008f, 0.013f, 0.230f), EdgeSteel, Bevel);
+            Part(part, "HandguardEdgeBand", new(side * 0.0555f, 0.088f, -0.442f),
+                new(0.007f, 0.011f, 0.224f), EdgeSteel, Bevel);
         }
         // Rail anchors overlap the rear receiver spine and the fore-end, so no floating rail pieces.
         Part(part, "RailBase", new(0, 0.116f, -0.310f),
@@ -155,25 +155,31 @@ public partial class RifleMeshBuilder : Node3D
         Part(part, "RailUpperTrack", new(0, 0.135f, -0.310f),
             new(0.057f, 0.018f, 0.493f), Receiver, Bevel);
         for (int i = 0; i < 9; i++)
-            Part(part, "PicatinnyTooth", new(0, 0.147f, -0.075f - i * 0.052f),
-                new(0.081f, 0.015f, 0.015f), EdgeSteel, Bevel);
+            Part(part, "PicatinnyTooth", new(0, 0.148f, -0.075f - i * 0.052f),
+                new(0.076f, 0.012f, 0.015f), Receiver, Bevel);
     }
 
     // =========================================================
-    // Continuous metal path from the handguard to the muzzle face. Muzzle stays at local (0,.055,-.81).
+    // 16cm longer barrel: layered sleeve, collar and brake remain one overlapping assembly.
+    // The real Muzzle sibling in Rifle_001.tscn must stay at (0, 0.055, -0.968).
     private static void BuildBarrel(Node3D part)
     {
-        Tube(part, "BarrelCore", new(0, 0.055f, -0.647f), 0.052f, 0.281f, Receiver);
+        Tube(part, "BarrelCore", new(0, 0.055f, -0.719f), 0.052f, 0.430f, Receiver);
         Tube(part, "BarrelHeatShield", new(0, 0.055f, -0.619f), 0.069f, 0.190f, DarkSteel);
-        Tube(part, "GasBlock", new(0, 0.055f, -0.615f), 0.077f, 0.072f, Receiver);
-        Tube(part, "BarrelForwardCollar", new(0, 0.055f, -0.750f), 0.067f, 0.076f, EdgeSteel);
-        Tube(part, "MuzzleBrake", new(0, 0.055f, -0.781f), 0.069f, 0.057f, DarkSteel);
-        Tube(part, "MuzzleFrontRim", new(0, 0.055f, -0.801f), 0.071f, 0.015f, Receiver);
-        Tube(part, "BoreRecess", new(0, 0.055f, -0.809f), 0.028f, 0.002f, DarkSteel);
-        // Two slim muzzle slots on the sides, not detached floating fins.
+        Tube(part, "GasBlock", new(0, 0.055f, -0.638f), 0.077f, 0.075f, Receiver);
+        Tube(part, "ExposedBarrelSleeve", new(0, 0.055f, -0.758f), 0.057f, 0.178f, EdgeSteel);
+        Tube(part, "BarrelForwardCollar", new(0, 0.055f, -0.903f), 0.067f, 0.074f, EdgeSteel);
+        Tube(part, "MuzzleBrake", new(0, 0.055f, -0.935f), 0.069f, 0.058f, DarkSteel);
+        Tube(part, "MuzzleFrontRim", new(0, 0.055f, -0.954f), 0.071f, 0.014f, Receiver);
+        Tube(part, "BoreRecess", new(0, 0.055f, -0.965f), 0.028f, 0.002f, DarkSteel);
+        // Small flush ports and collar indexing marks; all seated against real metal.
         for (int side = -1; side <= 1; side += 2)
-            Part(part, "MuzzleBrakePort", new(side * 0.035f, 0.055f, -0.777f),
-                new(0.004f, 0.011f, 0.023f), Grip, WeaponVisualGeometry.Box);
+        {
+            Part(part, "MuzzleBrakePort", new(side * 0.034f, 0.055f, -0.938f),
+                new(0.004f, 0.010f, 0.021f), Grip, WeaponVisualGeometry.Box);
+            Part(part, "CollarWitnessMark", new(side * 0.032f, 0.055f, -0.881f),
+                new(0.004f, 0.009f, 0.007f), Marking, WeaponVisualGeometry.Box);
+        }
     }
 
     // =========================================================
@@ -194,15 +200,15 @@ public partial class RifleMeshBuilder : Node3D
         }
         Part(part, "RearSightBridge", new(0, 0.228f, -0.063f),
             new(0.079f, 0.014f, 0.036f), Receiver, Bevel);
-        // Front assembly sits over the barrel on a continuous bridge, not on air.
-        Part(part, "FrontSightBarrelClamp", new(0, 0.088f, -0.705f),
+        // Front sight moves forward onto the longer barrel sleeve, with the clamp still overlapping it.
+        Part(part, "FrontSightBarrelClamp", new(0, 0.088f, -0.812f),
             new(0.079f, 0.042f, 0.069f), Receiver, Bevel);
-        Part(part, "FrontSightBridge", new(0, 0.111f, -0.705f),
+        Part(part, "FrontSightBridge", new(0, 0.111f, -0.812f),
             new(0.078f, 0.023f, 0.055f), DarkSteel, Bevel);
         for (int side = -1; side <= 1; side += 2)
-            Part(part, "FrontSightGuard", new(side * 0.026f, 0.150f, -0.706f),
+            Part(part, "FrontSightGuard", new(side * 0.026f, 0.150f, -0.813f),
                 new(0.012f, 0.074f, 0.028f), Receiver, Bevel);
-        Part(part, "FrontSightPost", new(0, 0.155f, -0.706f),
+        Part(part, "FrontSightPost", new(0, 0.155f, -0.813f),
             new(0.008f, 0.071f, 0.012f), DarkSteel, WeaponVisualGeometry.Box);
     }
 
@@ -226,6 +232,26 @@ public partial class RifleMeshBuilder : Node3D
                     new(0.012f, 0.017f, 0.017f), EdgeSteel, Bevel);
         Part(part, "MagazineIndex", new(0.041f, -0.205f, -0.184f),
             new(0.004f, 0.008f, 0.056f), Marking, WeaponVisualGeometry.Box);
+
+        // Three tiny receiver identification ticks on the unobstructed left upper cheek.
+        for (int i = 0; i < 3; i++)
+            Part(part, "ReceiverIDTick", new(-0.056f, 0.064f, -0.240f + i * 0.021f),
+                new(0.004f, 0.004f, 0.012f - i * 0.002f),
+                Marking, WeaponVisualGeometry.Box);
+
+        // Short subdued finish stripe below vents, fully attached to each olive fore-end side panel.
+        for (int side = -1; side <= 1; side += 2)
+        {
+            Part(part, "ForeEndIndexStripe", new(side * 0.066f, 0.004f, -0.440f),
+                new(0.003f, 0.004f, 0.164f), Marking, WeaponVisualGeometry.Box);
+            Part(part, "ForeEndMountMark", new(side * 0.066f, -0.003f, -0.510f),
+                new(0.003f, 0.007f, 0.015f), EdgeSteel, WeaponVisualGeometry.Box);
+        }
+
+        // Low-key stock manufacturing marks, placed on the existing side inset rather than in mid-air.
+        for (int i = 0; i < 2; i++)
+            Part(part, "StockIndexTick", new(0.054f, 0.008f, 0.210f + i * 0.023f),
+                new(0.003f, 0.006f, 0.013f), Marking, WeaponVisualGeometry.Box);
     }
 
     #endregion

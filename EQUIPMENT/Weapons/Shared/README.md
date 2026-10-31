@@ -100,3 +100,7 @@ With the rifle's authored **0.40** hip exponent, the probability of a hit in the
 ## Rifle-only broader machined bevel profiles (2026-10-31)
 
 `WeaponVisualGeometry.BroadChamfer` / `BroadTaperRear` are two new cached mesh profiles used by the procedurally authored Rifle_001. Existing `Chamfer`, `TaperForward` and `TaperRear` meshes retain their exact old corner factor (0.105), so MachineGun_001 remains visually unchanged. The added corner factor is applied at the same one-time mesh creation; no shader, extra shot work, callbacks or scene changes. Verify large rifle edge readability and correct exterior face culling in Godot; source-only validation so far.
+
+## Rifle-only bevel cleanup (2026-10-31)
+
+`WeaponVisualGeometry.BroadChamfer` and `BroadTaperRear` now use more restrained **0.18/0.16** corner clips rather than 0.22/0.20, reducing prominent high-contrast corners on the rifle. The original shared `Chamfer`, `TaperForward`, `TaperRear` and `Profile` face winding are unchanged, so existing machine-gun visuals and other callers retain their geometry. The changes are one-time cached mesh construction only.
