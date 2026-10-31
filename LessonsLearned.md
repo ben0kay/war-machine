@@ -151,3 +151,16 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 **Prevent recurrence:** Whenever an environmental generator is expected to be testable from spawn, compare its placement constraints numerically with the player spawn and the nearest authored infrastructure. Use bounding masks that cover actual objects/roads rather than arbitrarily large no-content rectangles; add a local witness/test case and a distinguishable success/failure log. A CLI/editor scene exiting does not establish generated content, correct loading, or rendering.
 
 **Status:** the oversized exclusion is proven from source; revised material/preview rendering and in-game dirt visibility await user test.
+
+
+## LL009 — Lodge short interior wall, coplanar porch deck, roof gap, and non-colliding furniture (2026-10-31)
+
+**Observed:** Owner screenshots of Building002 after BL2.1 show a ground-floor partition stopping short at a front entrance joint, shimmering surfaces near the threshold, a triangular upper-level wall/roof mismatch plus unwanted chimney exposure inside, and benches facing the lodge instead of outdoors while the porch fence lacks collision. Owner additionally requested seat/back collision.
+
+**Confirmed code causes:** The exterior wall is 0.23m thick but lower partitions ended 0.25m before the outer centre plane, **13.5cm short of the inner face**. The decorative interior floor and veranda both finished at Y=0.12 and overlapped 14.5cm in Z. Upstairs roof and divider used independent flat-height formulas instead of matching the sloped roof; exterior gables were coupled to the roof visibility owner, and the chimney base extended below the peak region. Bench backs were at +Z beyond their seats, and both bench seats/backs and porch rail/balusters passed a null collider to the mesh helper.
+
+**Code correction (awaiting runtime verification):** Complete the partitions to the shell inner face with 5mm perpendicular overlap; shorten veranda/seams to start outside the facade and span a 16cm transition using one small raised threshold. Extend the upper front/rear wall tops to the roof underside, add one upper-bedroom partition gable and move existing exterior gable visuals into wall ownership without duplicate overlapping meshes. Move the chimney onto the ridge, embedded just into the ridge cap so no chimney passes through the roof into the interior. Move both bench backs toward the lodge so they face outward and add static collision for bench seats/backrests, fence rails and balusters.
+
+**Prevention:** Derive meeting surfaces from actual cross-sections (wall thickness/2, deck extents and slope envelope); never place full interior/exterior finished floor slabs across the same height at a doorway. Roof wall infills must be aligned to real pitch and built **only once** in the appropriate visibility group. Treat intended physical porch railings and furniture as solid or deliberately mark them as cosmetic; check collisions with the player's capsule. Confirm locally by C# build and walking, viewing the portal seams and upstairs roof from both sides.
+
+**Status:** source repair committed / C# build and owner FPS acceptance pending.

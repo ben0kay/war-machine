@@ -75,6 +75,16 @@ When a procedural building uses flat-shaded box meshes, **do not give the floor,
 
 Prefer **separate configurable material colours** to scattering constants in procedural mesh code. For a box slab where one material covers every face, place an **underside-only, visual-only finish** a small distance below the original physical slab rather than changing the upper walking surface or adding another collider. The underside finish must match all existing **shaft holes**, must inherit the correct upper-deck/roof visual ownership, and must not obstruct light fixtures, stairs or headroom. Likewise, step-edge strips should sit just above the tread, be *visual only*, and leave the existing tread/ramp collider completely untouched. Check from a **descending FPS player's eye height**, not only the overhead editor preview. See PoliceStation001 PS1.6 and root LessonsLearned LL003.
 
+## Lodge wall joins, deck ownership and porch collisions — Building002 BL2.2 (2026-10-31)
+
+A wall endpoint measured with a generic 0.25m inset can visibly stop short when its receiving shell is only 0.23m thick; end partitions at the **receiving wall's actual interior face** (half its thickness), with a tiny perpendicular intersection only if needed to hide cracks. Inspect near door returns, side-room joins and shared floor elevations. Do not cover true door/window openings with extra fix-up boxes.
+
+A decorative Terrain3D-supported interior floor and an exterior veranda must not share any opaque coplanar area at identical finished elevation. Stop each deck at a deliberate handoff plane and use a small intentionally raised threshold to bridge the seam. Resize decorative floorboard seams with their owning deck. Do **not** solve coplanar overlap using material z-offset or a second full-size floor.
+
+Upstairs flat walls beneath a gabled roof must follow the *actual* pitched eave/roof underside, not stop at a convenient fixed wall height. Close intentional solid partitions up into the gable with one triangle rather than multiple overlapping gables; keep exterior gable faces as **wall-owned** so roof hiding doesn't expose holes. Chimney/fascia should sit atop the roof plane/ridge, never protrude through an interior ceiling. Ensure the two roof parts have distinct ownership and no duplicated coplanar faces.
+
+If porch railing/bench geometry represents physical blockers in FPS, author corresponding collision for every seat, back, handrail and upright (or an intentional simplified enclosing proxy); don't leave collidable legs supporting ghost seats. Orient seat backs deliberately relative to the intended +Z outward viewing direction and check that they remain clear of walkway access.
+
 ## Lodge FPS circulation and finished wall tops — Building002 BL2.1 (2026-10-31)
 
 The Building002 first-person walkthrough reproduced preventable PoliceStation001 issues: **the first tread was too near the external door**, furniture crowded the entrance or blocked window sightlines, and ground-storey partitions did not reach the upper-floor deck. These are structural authoring failures even when the game builds.

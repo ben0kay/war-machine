@@ -120,8 +120,10 @@ public partial class Building002Mesh : Node3D
                 new(0.13f, doorT, 0.20f), trim);
         StructureGeometry.Box(detail, null, "DoorLintel", new(0, doorT + 0.04f, front + 0.14f),
             new(2.2f, 0.14f, 0.23f), trim);
-        StructureGeometry.Box(detail, null, "DoorThreshold", new(0, 0.06f, front + 0.2f),
-            new(2.1f, 0.08f, 0.50f), stone);
+        // One slightly raised visual threshold spans the deliberate floor-to-porch
+        // transition. It no longer shares an opaque face with either Y=0.12 deck.
+        StructureGeometry.Box(detail, null, "DoorThreshold", new(0, 0.143f, front - 0.005f),
+            new(2.06f, 0.04f, 0.50f), stone);
         // The door is propped inward and to the side, not blocking entry.
         StructureGeometry.Box(detail, null, "OpenDoorLeaf", new(-1.08f, 1.43f, front - 0.92f),
             new(0.10f, 2.76f, 1.75f), woodDark);
@@ -143,12 +145,18 @@ public partial class Building002Mesh : Node3D
         // Ground-storey partitions continue to the underside of the actual
         // Y=h upper deck with a 2cm reveal (not the old fixed Y=2.95m).
         const float dividingX = 2.7f, gapA = -0.8f, gapB = 1.35f;
-        StructureGeometry.WallZ(partitions, body, "PartitionRear", dividingX, -hz + 0.25f, gapA, 0, partitionTop, woodLight, 0.15f);
-        StructureGeometry.WallZ(partitions, body, "PartitionFront", dividingX, gapB, hz - 0.25f, 0, partitionTop, woodLight, 0.15f);
+        // Solid exterior walls are 0.23m thick. Meet their INNER faces
+        // (+/-0.115m), not the old 0.25m inset that left 13.5cm daylight.
+        const float exteriorInnerFace = 0.115f, jointOverlap = 0.005f;
+        StructureGeometry.WallZ(partitions, body, "PartitionRear", dividingX,
+            -hz + exteriorInnerFace - jointOverlap, gapA, 0, partitionTop, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, body, "PartitionFront", dividingX,
+            gapB, hz - exteriorInnerFace + jointOverlap, 0, partitionTop, woodLight, 0.15f);
         StructureGeometry.WallZ(partitions, body, "PartitionHeader", dividingX, gapA, gapB, 2.65f, partitionTop, woodLight, 0.15f);
         // Stop the rear partition at the receiving wall's near face so it does
         // not leave a narrow floating seam or project through the intersection.
-        StructureGeometry.WallX(partitions, body, "RearOfficeLeft", -hx + 0.25f, -4.8f,
+        StructureGeometry.WallX(partitions, body, "RearOfficeLeft",
+            -hx + exteriorInnerFace - jointOverlap, -4.8f,
             rearOfficeZ, 0, partitionTop, woodLight, 0.15f);
         StructureGeometry.WallX(partitions, body, "RearOfficeRight", -2.9f, dividingX - 0.075f,
             rearOfficeZ, 0, partitionTop, woodLight, 0.15f);
@@ -214,12 +222,17 @@ public partial class Building002Mesh : Node3D
             StructureGeometry.Box(detail, null, "CornerPostBack", new(x, h * 0.5f, -hz),
                 new(0.29f, h, 0.30f), trim);
         }
-        // Porch deck remains visually above level terrain but is deliberately non-colliding.
-        StructureGeometry.Box(detail, null, "FrontVeranda", new(0, 0.07f, front + 1.38f),
-            new(w - 1.8f, 0.10f, 3.25f), woodLight);
+        // The interior plank floor ends at front-0.10m and stays on Terrain3D.
+        // Begin the veranda OUTSIDE the facade, not 24.5cm inside it at the
+        // same Y as the interior floor (which caused first-person Z-fighting).
+        // The doorway's separate raised threshold covers this 16cm transition.
+        float porchNear = front + 0.06f, porchFar = front + 3.005f;
+        float porchCenter = (porchNear + porchFar) * 0.5f, porchDepth = porchFar - porchNear;
+        StructureGeometry.Box(detail, null, "FrontVeranda", new(0, 0.07f, porchCenter),
+            new(w - 1.8f, 0.10f, porchDepth), woodLight);
         for (float x = -hx + 0.75f; x < hx - 0.25f; x += 0.85f)
-            StructureGeometry.Box(detail, null, "VerandaBoard", new(x, 0.128f, front + 1.35f),
-                new(0.022f, 0.006f, 3.13f), woodDark);
+            StructureGeometry.Box(detail, null, "VerandaBoard", new(x, 0.128f, porchCenter),
+                new(0.022f, 0.006f, porchDepth - 0.12f), woodDark);
         foreach (float x in new[] { -hx + 1.05f, hx - 1.05f })
         {
             StructureGeometry.Box(detail, body, "PorchPost", new(x, 1.64f, front + 2.68f),
@@ -232,25 +245,35 @@ public partial class Building002Mesh : Node3D
         foreach (float side in new[] { -1f, 1f })
         {
             float x = side * (hx - 0.90f);
-            StructureGeometry.Box(detail, null, "PorchHandRail", new(x, 1.00f, front + 1.43f),
+            // These read as physical guards: give the rails and uprights their
+            // matching static colliders, using the existing lower-floor body.
+            StructureGeometry.Box(detail, body, "PorchHandRail", new(x, 1.00f, front + 1.43f),
                 new(0.14f, 0.12f, 2.50f), trim);
             for (int j = 0; j < 3; j++)
-                StructureGeometry.Box(detail, null, "PorchBaluster", new(x, 0.57f, front + 0.43f + j * 0.83f),
+                StructureGeometry.Box(detail, body, "PorchBaluster", new(x, 0.57f, front + 0.43f + j * 0.83f),
                     new(0.10f, 1.05f, 0.10f), woodDark);
         }
 
         StructureGeometry.GableRoof(_roof, upperBody, w, d, h + upperHeight, rise, slate, slateLight, 9);
-        StructureGeometry.GableEnd(_roof, "EastGable",  hx, hz, h + upperHeight, rise, wood);
-        StructureGeometry.GableEnd(_roof, "WestGable", -hx, hz, h + upperHeight, rise, wood);
+        // The gable ends are part of the upstairs exterior WALLS (built in
+        // BuildUpperFloor), not roof art. Duplicating them here Z-fights and
+        // hiding the roof must not open the upstairs exterior facade.
         // Flat lean-to roof over veranda, hidden with the main roof for top-down interior testing.
         StructureGeometry.Box(_roof, null, "PorchRoof", new(0, 3.52f, front + 1.48f),
             new(w - 1.55f, 0.22f, 3.44f), slate);
         StructureGeometry.Box(_roof, null, "PorchRoofFascia", new(0, 3.42f, front + 3.15f),
             new(w - 1.38f, 0.33f, 0.18f), trim);
-        StructureGeometry.Box(_roof, null, "ChimneyStack", new(-w * 0.25f, h + upperHeight + rise + 0.48f, -1.1f),
-            new(1.25f, 2.20f, 1.25f), stoneDark);
-        StructureGeometry.Box(_roof, null, "ChimneyCap", new(-w * 0.25f, h + upperHeight + rise + 1.65f, -1.1f),
-            new(1.54f, 0.19f, 1.53f), stone);
+        // Park the chimney on the roof RIDGE cap rather than letting the old
+        // stack descend 0.6m into the upper rooms through a sloping roof sheet.
+        // Ridge top = wall-top + rise + 0.11 + 0.21/2; embed 3cm for no seam.
+        float chimneyBase = h + upperHeight + rise + 0.185f, chimneyHeight = 1.55f;
+        float chimneyX = -w * 0.25f;
+        StructureGeometry.Box(_roof, null, "ChimneyStack",
+            new(chimneyX, chimneyBase + chimneyHeight * 0.5f, 0f),
+            new(1.12f, chimneyHeight, 1.12f), stoneDark);
+        StructureGeometry.Box(_roof, null, "ChimneyCap",
+            new(chimneyX, chimneyBase + chimneyHeight + 0.085f, 0f),
+            new(1.40f, 0.17f, 1.40f), stone);
         StructureGeometry.Box(detail, null, "RangerStationSign", new(0, 3.45f, front + 0.24f),
             new(3.6f, 0.43f, 0.13f), trim);
         for (int i = 0; i < 5; i++)
@@ -259,7 +282,7 @@ public partial class Building002Mesh : Node3D
         AddShowcaseDetails(_level0Visuals, body, s, hx, hz, h,
             ReceptionX, receptionZ, cabinetX, cabinetZ);
         BuildUpperFloor(generated, _level1Visuals, upperBody, w, d, h, upperHeight,
-            stairFront, stairRear,
+            stairFront, stairRear, rise,
             wood, woodLight, woodDark, slateLight, trim, glass, stone);
     }
 
@@ -281,7 +304,8 @@ public partial class Building002Mesh : Node3D
     // to the building. Upper floors and walls use dedicated solid collision that never fades.
     private static void BuildUpperFloor(Node3D generated, Node3D upperVisuals, StaticBody3D upperBody,
         float width, float depth, float floorY, float wallHeight,
-        float stairFront, float stairRear, Material wood, Material woodLight, Material woodDark, Material bedding, Material trim,
+        float stairFront, float stairRear, float roofRise,
+        Material wood, Material woodLight, Material woodDark, Material bedding, Material trim,
         Material glass, Material stone)
     {
         float hx = width * 0.5f, hz = depth * 0.5f, top = floorY + wallHeight;
@@ -289,6 +313,15 @@ public partial class Building002Mesh : Node3D
         var walls = StructureGeometry.Group(upperVisuals, "ExteriorWalls");
         var furnishings = StructureGeometry.Group(upperVisuals, "Furnishings");
         var partitions = StructureGeometry.Group(upperVisuals, "Partitions");
+
+        // The roof extends 0.5m beyond both Z eaves. The former flat upper
+        // end walls stopped a few centimetres short of the sloped roof underside.
+        float roofHalfDepth = hz + 0.5f;
+        float eaveRoofUnderside = top + roofRise * (0.5f / roofHalfDepth) - 0.07f;
+        float bedroomHalfDepth = hz - 0.12f;
+        float bedroomEave = top + roofRise *
+            (1f - bedroomHalfDepth / roofHalfDepth) - 0.07f;
+        float bedroomRidge = top + roofRise - 0.07f;
 
         // Reserve a genuine open stairwell. The upper deck has four independent solid spans,
         // not a complete floor with a hidden/uncollidable hole painted into it.
@@ -309,11 +342,16 @@ public partial class Building002Mesh : Node3D
         foreach (float z in new[] { -hz, hz })
         {
             string face = z > 0 ? "UpperFront" : "UpperRear";
-            StructureGeometry.WallX(walls, upperBody, face + "FarLeft", -hx, -5.2f, z, floorY, top, wood);
-            UpperWindow(walls, upperBody, face + "LeftWindow", -5.2f, -3.1f, z, floorY, top, wood, glass, trim);
-            StructureGeometry.WallX(walls, upperBody, face + "Middle", -3.1f, 3.1f, z, floorY, top, wood);
-            UpperWindow(walls, upperBody, face + "RightWindow", 3.1f, 5.2f, z, floorY, top, wood, glass, trim);
-            StructureGeometry.WallX(walls, upperBody, face + "FarRight", 5.2f, hx, z, floorY, top, wood);
+            StructureGeometry.WallX(walls, upperBody, face + "FarLeft", -hx, -5.2f,
+                z, floorY, eaveRoofUnderside, wood);
+            UpperWindow(walls, upperBody, face + "LeftWindow", -5.2f, -3.1f,
+                z, floorY, eaveRoofUnderside, wood, glass, trim);
+            StructureGeometry.WallX(walls, upperBody, face + "Middle", -3.1f, 3.1f,
+                z, floorY, eaveRoofUnderside, wood);
+            UpperWindow(walls, upperBody, face + "RightWindow", 3.1f, 5.2f,
+                z, floorY, eaveRoofUnderside, wood, glass, trim);
+            StructureGeometry.WallX(walls, upperBody, face + "FarRight", 5.2f, hx,
+                z, floorY, eaveRoofUnderside, wood);
             StructureGeometry.Box(walls, null, face + "SillTrim", new(0, floorY + 0.15f, z + (z > 0 ? 0.15f : -0.15f)),
                 new(width - 0.30f, 0.17f, 0.12f), trim);
         }
@@ -335,14 +373,28 @@ public partial class Building002Mesh : Node3D
                 new(0.10f, 1.25f, 0.08f), trim);
         }
 
-        // One upstairs bedroom and a common landing/workspace, divided by a genuine door opening.
-        const float roomX = -2.65f;
+        // The bedroom divider used to stop at a constant top, leaving a large
+        // triangular opening under the pitched roof. Close that opening at the
+        // real roof slope; the real doorway below Y=floorY+2.24 stays unchanged.
+        const float roomX = -2.65f, partitionThickness = 0.15f;
+        const float facadeThicknessHalf = 0.115f, wallJoin = 0.005f;
         StructureGeometry.WallZ(partitions, upperBody, "BedroomWallRear", roomX,
-            -hz + 0.25f, -1.20f, floorY, top - 0.15f, woodLight, 0.15f);
+            -hz + facadeThicknessHalf - wallJoin, -1.20f,
+            floorY, bedroomEave, woodLight, partitionThickness);
         StructureGeometry.WallZ(partitions, upperBody, "BedroomWallFront", roomX,
-            0.90f, hz - 0.25f, floorY, top - 0.15f, woodLight, 0.15f);
+            0.90f, hz - facadeThicknessHalf + wallJoin,
+            floorY, bedroomEave, woodLight, partitionThickness);
         StructureGeometry.WallZ(partitions, upperBody, "BedroomDoorHeader", roomX,
-            -1.20f, 0.90f, floorY + 2.24f, top - 0.15f, woodLight, 0.15f);
+            -1.20f, 0.90f, floorY + 2.24f, bedroomEave, woodLight, partitionThickness);
+        // GableEnd is a single solid-looking triangular SURFACE (two-sided),
+        // not a duplicate full-width wall, and does not create a phantom collider.
+        StructureGeometry.GableEnd(partitions, "BedroomRoofInfill",
+            roomX, bedroomHalfDepth, bedroomEave, bedroomRidge - bedroomEave, woodLight);
+
+        // Exterior triangular end panels are WALL-owned. Remove the former
+        // copies from the roof group so no overlapping faces exist.
+        StructureGeometry.GableEnd(walls, "EastGable", hx, hz, top, roofRise, wood);
+        StructureGeometry.GableEnd(walls, "WestGable", -hx, hz, top, roofRise, wood);
 
         // Upstairs furniture is deliberately off the landing and out of the staircase clearance.
         StructureGeometry.Box(furnishings, upperBody, "GuestBedFrame",
@@ -554,9 +606,11 @@ public partial class Building002Mesh : Node3D
                 new(0.13f, 0.71f, 0.45f), carved);
             StructureGeometry.Box(exterior, body, "PorchBenchLegB", new(x + 0.75f, 0.36f, hz + 1.98f),
                 new(0.13f, 0.71f, 0.45f), carved);
-            StructureGeometry.Box(exterior, null, "PorchBenchSeat", new(x, 0.76f, hz + 1.98f),
+            // Seat faces OUT toward +Z / the road; back is on the lodge side.
+            // Both seat and back now have the same static collision as the legs.
+            StructureGeometry.Box(exterior, body, "PorchBenchSeat", new(x, 0.76f, hz + 1.98f),
                 new(1.80f, 0.14f, 0.54f), pale);
-            StructureGeometry.Box(exterior, null, "PorchBenchBack", new(x, 1.12f, hz + 2.22f),
+            StructureGeometry.Box(exterior, body, "PorchBenchBack", new(x, 1.12f, hz + 1.74f),
                 new(1.80f, 0.68f, 0.14f), carved);
         }
         foreach (float x in new[] { -hx + 0.65f, hx - 0.65f })
