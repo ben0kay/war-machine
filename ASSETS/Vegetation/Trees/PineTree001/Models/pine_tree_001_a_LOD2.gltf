@@ -1,7 +1,7 @@
 {
   "asset": {
     "version": "2.0",
-    "generator": "Final Machine - PineTree001 stylized procedural meshes"
+    "generator": "Final Machine - PineTree001 stylized procedural meshes | leaf-color adjustment 2026-10-31"
   },
   "scene": 0,
   "scenes": [
@@ -199,6 +199,11 @@
       "foliage": 1200,
       "total": 1354
     },
-    "heightMeters": 22.64
+    "heightMeters": 22.64,
+    "foliage_rgb_multiplier": [
+      0.8799999952316284,
+      0.8199999928474426,
+      0.7400000095367432
+    ]
   }
 }
