@@ -16,7 +16,7 @@ Top-down currently uses the existing `WORLD/World.tscn`, `CAMERA/Camera.cs` and 
 
 ## Controls and validation
 
-Arrows move; Shift runs; Left Ctrl/C crouches; Right Ctrl goes prone; RMB jumps; mouse looks; LMB fires; Q shoves; R reloads. Escape releases the pointer; click the world to resume. Shared debug panels and inventory retain their current behaviour. Authored FPS tuning is unchanged.
+Arrows move; Shift runs; Left Ctrl/C crouches; Right Ctrl goes prone; RMB jumps; mouse looks; LMB fires; **MMB toggles ADS** for a firearm; Q shoves; R reloads. Escape releases the pointer; click the world to resume. Shared debug panels and inventory retain their current behaviour. Authored FPS tuning is unchanged.
 
 Promotion is source implemented, awaiting local build and World/FPS acceptance. No extra test scenes were added. Build `dotnet build war-machine.csproj`, then F6 this scene: verify capture/focus, movement/stances/jump, head bob, firing/recoil/reload/shove, terrain/content, fog/grass and UI. F6 `WORLD/World.tscn` to check top-down movement/aiming/fading. No terrain rebake. Check idle camera/player callbacks still sleep; no new callbacks or queries were introduced.
 

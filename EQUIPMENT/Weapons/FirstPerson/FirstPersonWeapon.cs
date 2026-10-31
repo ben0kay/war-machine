@@ -14,10 +14,10 @@ public partial class FirstPersonWeapon : Node
     private FirearmVisualRecoil? _visualRecoil;
     private float _pendingCameraRise, _burstCameraRise;
     private double _lastAcceptedShotSeconds = -1.0;
-    private bool _adsHeld, _adsInitialized;
+    private bool _adsActive, _adsInitialized;
     private float _adsAmount, _hipFov;
     private Vector3 _hipPosition, _hipRotationDegrees;
-    private bool AdsTransitioning => !Mathf.IsEqualApprox(_adsAmount, _adsHeld ? 1f : 0f);
+    private bool AdsTransitioning => !Mathf.IsEqualApprox(_adsAmount, _adsActive ? 1f : 0f);
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -61,20 +61,17 @@ public partial class FirstPersonWeapon : Node
         _weapon.Position = _camera.ViewSettings.WeaponOffset + _weapon.RuntimeSettings.FirstPersonOffset;
         _weapon.Scale = Vector3.One * Mathf.Clamp(_weapon.RuntimeSettings.FirstPersonScale, 0.4f, 1.5f);
         _hipPosition = _weapon.Position; _hipRotationDegrees = _weapon.RotationDegrees; _hipFov = _camera.Fov;
-        _adsAmount = 0f; _adsHeld = false; _adsInitialized = true;
+        _adsAmount = 0f; _adsActive = false; _adsInitialized = true;
         _visualRecoil = new FirearmVisualRecoil(_weapon);
         _query.CollisionMask = _weapon.RuntimeSettings.HitMask;
     }
 
     // =========================================================
-    // Observe release even when another UI/input adapter consumes it. Escape always cancels a held trigger.
+    // Observe left-trigger release even when UI consumes it. MMB release does not exit toggled ADS.
     public override void _Input(InputEvent input)
     {
-        if (input is InputEventMouseButton mouse)
-        {
-            if (mouse.ButtonIndex == MouseButton.Left && !mouse.Pressed) _held = false;
-            if (mouse.ButtonIndex == MouseButton.Middle && !mouse.Pressed) SetAdsHeld(false);
-        }
+        if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && !mouse.Pressed)
+            _held = false;
         if (input is InputEventKey key && key.Pressed && key.PhysicalKeycode == Key.Escape)
         { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); ResetAds(); CancelVisualRecoil(); _weapon?.CancelFeedback(); }
     }
@@ -88,12 +85,12 @@ public partial class FirstPersonWeapon : Node
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
         if (_player.InteractionModeActive) return;
-        // The GUI has first refusal. Only a captured, focused FPS firearm can enter held ADS.
+        // Toggle ADS on each accepted MMB press; mouse-up is intentionally ignored.
         if (input is InputEventMouseButton aim && aim.ButtonIndex == MouseButton.Middle && aim.Pressed)
         {
             if (_weapon != null && _shove?.IsActive != true && GetViewport().GuiGetFocusOwner() == null
                 && GetViewport().GuiGetHoveredControl() == null && GetWindow().HasFocus())
-                SetAdsHeld(true);
+                SetAdsActive(!_adsActive);
             GetViewport().SetInputAsHandled(); return;
         }
         // Manual R reload is handled by the currently selected shared firearm.
@@ -167,16 +164,16 @@ public partial class FirstPersonWeapon : Node
             SetProcess(false);
     }
 
-    #region ADS0 — FPS-only held aim presentation
+    #region ADS0 — FPS-only toggle aim presentation
 
     // =========================================================
-    // Movement penalty applies for the held state, independently of animation progress.
-    private void SetAdsHeld(bool held)
+    // Movement penalty applies while ADS is toggled on, regardless of animation progress.
+    private void SetAdsActive(bool active)
     {
-        if (!_adsInitialized || !IsInstanceValid(_weapon) || _adsHeld == held) return;
-        _adsHeld = held;
+        if (!_adsInitialized || !IsInstanceValid(_weapon) || _adsActive == active) return;
+        _adsActive = active;
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps))
-            fps.SetAdsMovementMultiplier(held ? _weapon!.RuntimeSettings.FpsAdsMovementMultiplier : 1f);
+            fps.SetAdsMovementMultiplier(active ? _weapon!.RuntimeSettings.FpsAdsMovementMultiplier : 1f);
         if (AdsTransitioning) SetProcess(true);
     }
 
@@ -189,7 +186,7 @@ public partial class FirstPersonWeapon : Node
         FirearmSettings settings = _weapon!.RuntimeSettings;
         float seconds = Mathf.Clamp(_camera.ViewSettings.AdsBaseTransitionSeconds, 0.05f, 1f);
         float speed = Mathf.Clamp(settings.FpsAdsAnimationSpeedMultiplier, 0.25f, 3f);
-        _adsAmount = Mathf.MoveToward(_adsAmount, _adsHeld ? 1f : 0f, dt * speed / seconds);
+        _adsAmount = Mathf.MoveToward(_adsAmount, _adsActive ? 1f : 0f, dt * speed / seconds);
         float t = _adsAmount * _adsAmount * (3f - 2f * _adsAmount);
         _weapon.Position = _hipPosition + settings.FpsAdsOffset * t;
         _weapon.RotationDegrees = _hipRotationDegrees + Vector3.Right * settings.FpsAdsPitchDegrees * t;
@@ -200,7 +197,7 @@ public partial class FirstPersonWeapon : Node
     // Hard interruption: no stuck FOV, movement penalty or transformed muzzle on reuse.
     private void ResetAds()
     {
-        _adsHeld = false; _adsAmount = 0f;
+        _adsActive = false; _adsAmount = 0f;
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps)) fps.SetAdsMovementMultiplier(1f);
         if (!_adsInitialized) return;
         if (IsInstanceValid(_weapon))

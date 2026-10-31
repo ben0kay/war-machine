@@ -21,7 +21,7 @@ The FPS camera now receives target lean from shared physics and blends its visib
 
 ## ADS0 — FPS-only movement modifier (2026-10-31)
 
-The FPS equipment adapter updates `FirstPersonPlayer.SetAdsMovementMultiplier` only on held ADS start/stop or cancellation. Shared `PlayerMovement` requests `GetMovementSpeedMultiplier()`, which defaults to 1.0 for top-down; the FPS override supplies the current ADS factor (rifle 0.70, MachineGun 0.85). This composes multiplicatively with stance, sprint, lean and corpse slowdown. The same physics driver wakes for movement changes; no second movement loop. See [ADS plan](../../EQUIPMENT/Weapons/ADS_IMPLEMENTATION_PLAN.md). Source implemented; local verification pending.
+The FPS equipment adapter updates `FirstPersonPlayer.SetAdsMovementMultiplier` only when MMB toggles ADS on/off or ADS is cancelled; MMB release alone does nothing. Shared `PlayerMovement` requests `GetMovementSpeedMultiplier()`, which defaults to 1.0 for top-down; the FPS override supplies the current ADS factor (rifle 0.70, MachineGun 0.85). This composes multiplicatively with stance, sprint, lean and corpse slowdown. The same physics driver wakes for movement changes; no second movement loop. See [ADS plan](../../EQUIPMENT/Weapons/ADS_IMPLEMENTATION_PLAN.md). Source implemented; local verification pending.
 
 ## ADS1 — independent carried firearm penalty (2026-10-31)
 
