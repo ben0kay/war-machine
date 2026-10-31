@@ -240,7 +240,7 @@ public partial class StylizedGrassPlacement : Node3D
         for (int i = 0; i < 3; i++) bin[i] = new List<Transform3D>();
         int patches = Mathf.Clamp(Settings.PatchesPerChunk, 0, 12);
         int members = Mathf.Clamp(Settings.ClumpsPerPatch, 1, 30);
-        float spread = Mathf.Clamp(Settings.PatchSpreadMultiplier, 1f, 5f);
+        float patchSpreadMultiplier = Mathf.Clamp(Settings.PatchSpreadMultiplier, 1f, 5f);
         for (int patch = 0; patch < patches; patch++)
         {
             if (rng.Randf() > Mathf.Clamp(Settings.PatchChance, 0f, 1f)) continue;
@@ -250,7 +250,7 @@ public partial class StylizedGrassPlacement : Node3D
             // grass clumps to disperse beyond the original small patch circles.
             float radius = rng.RandfRange(Mathf.Clamp(Settings.PatchRadiusMin, 0.6f, 4f),
                 Mathf.Clamp(Mathf.Max(Settings.PatchRadiusMin, Settings.PatchRadiusMax), 0.6f, 6f))
-                * spread;
+                * patchSpreadMultiplier;
             for (int j = 0; j < members; j++)
             {
                 float theta = rng.RandfRange(0f, Mathf.Tau);
