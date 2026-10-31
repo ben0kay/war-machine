@@ -17,6 +17,8 @@ public static class CanopyTreeMeshBuilder
         float trunkRadius = Mathf.Clamp(settings.TrunkBaseRadius, 0.2f, 0.9f) * rng.RandfRange(0.85f, 1.12f);
         float crownRadius = Mathf.Clamp(settings.CrownRadius, 2f, 5f);
         float leafScale = Mathf.Clamp(settings.FoliageSize, 0.5f, 1.8f);
+        // DF2.5: small silhouette leaf tips only in the near LOD; retain the established crown masses.
+        float edgeDetail = distant ? 0f : Mathf.Clamp(settings.LeafEdgeDetail, 0f, 0.25f);
         int branchCount = Mathf.Clamp(settings.BranchCount, 7, 20);
         int clusters = Mathf.Clamp(settings.CrownClustersPerBranch, 2, 5);
 
@@ -78,7 +80,7 @@ public static class CanopyTreeMeshBuilder
                 // Clump topology must not consume the skeleton RNG: near/far keep identical branches.
                 var detailRng = new RandomNumberGenerator { Seed = Mix(settings.Seed + variant * 101, branch, clump + 501) };
                 AddCrownClump(foliage, center, new Vector3(width, tall, depth) * scale,
-                    shade, detailRng, distant ? 6 : 8);
+                    shade, detailRng, distant ? 6 : 8, edgeDetail);
             }
         }
 
@@ -92,7 +94,7 @@ public static class CanopyTreeMeshBuilder
             Color topShade = settings.LeafColor.Lerp(settings.LeafAccentColor, rng.RandfRange(0.15f, 0.6f));
             var detailRng = new RandomNumberGenerator { Seed = Mix(settings.Seed + variant * 101, i, 901) };
             AddCrownClump(foliage, center, new Vector3(radius, radius * 0.76f, radius),
-                topShade, detailRng, distant ? 6 : 8);
+                topShade, detailRng, distant ? 6 : 8, edgeDetail);
         }
         var mesh = new ArrayMesh();
         bark.Commit(mesh); foliage.Commit(mesh);
@@ -104,9 +106,9 @@ public static class CanopyTreeMeshBuilder
     }
 
     // =========================================================
-    // A six/eight-sided low-poly, irregular rounded mass: fully opaque, no texture sorting or leaf nodes.
+    // Rounded low-poly crown stays intact; a few short pointed edge facets suggest leaves at near LOD.
     private static void AddCrownClump(SurfaceTool surface, Vector3 center, Vector3 radius,
-        Color color, RandomNumberGenerator random, int sides)
+        Color color, RandomNumberGenerator random, int sides, float edgeDetail)
     {
         var lower = new Vector3[sides]; var upper = new Vector3[sides];
         float phase = random.RandfRange(0f, Mathf.Tau);
@@ -130,6 +132,24 @@ public static class CanopyTreeMeshBuilder
             AddFace(surface, lower[i], upper[i], lower[next], shade * 0.94f);
             AddFace(surface, lower[next], upper[i], upper[next], shade);
             AddFace(surface, upper[i], top, upper[next], shade * 1.05f);
+        }
+        // Three subtle outer-edge leaf facets per near clump (~9% extra foliage triangles).
+        // The far LOD adds none; no new surfaces, cards, transparency or material variants.
+        if (edgeDetail <= 0f) return;
+        for (int i = 0; i < sides; i += 3)
+        {
+            int next = (i + 1) % sides;
+            Vector3 rim = (upper[i] + upper[next]) * 0.5f;
+            Vector3 outward = new(rim.X - center.X, 0f, rim.Z - center.Z);
+            if (outward.LengthSquared() < 0.001f) continue;
+            outward = outward.Normalized();
+            float length = (radius.X + radius.Z) * 0.5f * edgeDetail
+                * random.RandfRange(0.75f, 1.15f);
+            Vector3 tip = rim + outward * length
+                + Vector3.Up * radius.Y * edgeDetail * random.RandfRange(-0.3f, 0.5f);
+            Vector3 left = upper[i].Lerp(lower[i], 0.12f);
+            Vector3 right = upper[next].Lerp(lower[next], 0.12f);
+            AddFace(surface, left, tip, right, color * random.RandfRange(0.93f, 1.04f));
         }
     }
 

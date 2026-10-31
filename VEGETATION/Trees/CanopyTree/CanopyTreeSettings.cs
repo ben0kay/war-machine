@@ -14,6 +14,8 @@ public partial class CanopyTreeSettings : Resource
     [Export(PropertyHint.Range, "7,20,1")] public int BranchCount { get; set; } = 13;
     [Export(PropertyHint.Range, "2,5,1")] public int CrownClustersPerBranch { get; set; } = 4;
     [Export(PropertyHint.Range, "0.5,1.8,0.05")] public float FoliageSize { get; set; } = 1.0f;
+    // DF2.5: near-only micro-facets. Set zero to recover the original rounded clump mesh.
+    [Export(PropertyHint.Range, "0,0.25,0.01")] public float LeafEdgeDetail { get; set; } = 0.12f;
 
     [ExportGroup("Surface palette")]
     [Export] public Color BarkColor { get; set; } = new(0.53f, 0.51f, 0.43f);

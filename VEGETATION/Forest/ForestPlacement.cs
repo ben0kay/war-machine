@@ -20,6 +20,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private readonly Dictionary<Vector2I, List<Tree>> _layout = new();
     private readonly Dictionary<Vector2I, Chunk> _chunks = new();
     private readonly List<(Vector2 Point, float Gap)> _accepted = new();
+    private readonly List<Rect2> _reserved = new();
     private Vector2I _current = new(int.MinValue, int.MinValue), _requested;
     private bool _ready, _queued, _refreshQueued;
     private float _viewOffset;
@@ -44,10 +45,15 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 
     // =========================================================
     // Generate near and far meshes once for each of three DF1 silhouettes; scaled young trees share far art.
-    public void InitializeView(Node3D terrain, Node3D player, ForestSettings settings, Rect2 area)
+    public void InitializeView(Node3D terrain, Node3D player, ForestSettings settings, Rect2 area,
+        Godot.Collections.Array<Rect2> reservations)
     {
         _terrain = terrain.Get("data").AsGodotObject(); _player = player;
         _settings = settings; _area = area;
+        // Only startup candidate generation reads these; no per-frame area checks.
+        _reserved.Clear();
+        foreach (Rect2 reservation in reservations)
+            if (reservation.Intersects(area.Grow(2f))) _reserved.Add(reservation.Grow(2f));
         SetProcess(false); SetPhysicsProcess(false);
         var art = (CanopyTreeSettings)GD.Load<CanopyTreeSettings>(
             "res://VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeMaster.tres").Duplicate(true);
@@ -162,7 +168,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             var p = _area.Position + new Vector2(
                 (x + 0.5f + rng.RandfRange(-0.34f, 0.34f)) * dx,
                 (z + 0.5f + rng.RandfRange(-0.34f, 0.34f)) * dz);
-            if (!_area.HasPoint(p) || IsClearing(p)) continue;
+            if (!_area.HasPoint(p) || IsClearing(p) || IsReserved(p)) continue;
             float noiseValue = Mathf.Clamp(noise.GetNoise2D(p.X, p.Y) * 0.5f + 0.5f, 0f, 1f);
             if (rng.Randf() > Mathf.Min(1f, density * Mathf.Lerp(0.72f, 1.24f, noiseValue))) continue;
             bool farEnough = true;
@@ -188,15 +194,32 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
-    // Clear a roughly seven-metre wandering east-west trail and a pair of natural pocket clearings.
+    // DF2.5: retain the southern road-to-forest entry and add a gently meandering
+    // north-south trail parallel to the village, with two natural pocket clearings.
     private bool IsClearing(Vector2 p)
     {
-        float t = Mathf.Clamp((p.X - _area.Position.X) / _area.Size.X, 0f, 1f);
-        float trailZ = _area.GetCenter().Y + Mathf.Sin(t * Mathf.Pi * 1.7f) * 5.5f;
-        if (Mathf.Abs(p.Y - trailZ) < Mathf.Clamp(_settings.TrailWidth, 4f, 10f) * 0.5f) return true;
-        var a = _area.GetCenter() + new Vector2(-17f, 16f);
-        var b = _area.GetCenter() + new Vector2(23f, -19f);
+        float width = Mathf.Clamp(_settings.TrailWidth, 4f, 10f);
+        float entryZ = Mathf.Clamp(_settings.TrailEntryZ,
+            _area.Position.Y + 8f, _area.End.Y - 8f);
+        float across = Mathf.Clamp((p.X - _area.Position.X) / _area.Size.X, 0f, 1f);
+        float entryTrailZ = entryZ + Mathf.Sin(across * Mathf.Pi * 1.7f) * 5.5f;
+        if (Mathf.Abs(p.Y - entryTrailZ) < width * 0.5f) return true;
+        float along = (p.Y - entryZ) / Mathf.Max(_area.Size.Y, 1f);
+        float spineX = _area.GetCenter().X + Mathf.Sin(along * Mathf.Pi * 2.2f) * 6f;
+        if (Mathf.Abs(p.X - spineX) < width * 0.38f) return true;
+        var a = new Vector2(_area.GetCenter().X - 17f, entryZ + 16f);
+        var b = new Vector2(_area.GetCenter().X + 23f,
+            _area.Position.Y + _area.Size.Y * 0.30f);
         return p.DistanceSquaredTo(a) < 30.25f || p.DistanceSquaredTo(b) < 20.25f;
+    }
+
+    // =========================================================
+    // Extra safety for an extended rectangular forest alongside existing village clearings.
+    private bool IsReserved(Vector2 point)
+    {
+        foreach (Rect2 area in _reserved)
+            if (area.HasPoint(point)) return true;
+        return false;
     }
 
     // =========================================================

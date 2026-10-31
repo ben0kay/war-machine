@@ -12,6 +12,7 @@ TrunkBaseRadius = 0.39
 BranchCount = 13
 CrownClustersPerBranch = 4
 FoliageSize = 1.0
+LeafEdgeDetail = 0.12
 BarkColor = Color(0.53, 0.51, 0.43, 1)
 BarkScarColor = Color(0.25, 0.26, 0.22, 1)
 LeafColor = Color(0.13, 0.29, 0.12, 1)

@@ -1,14 +1,14 @@
 # Dense canopy forest — DF0/DF1/DF2
 
-**Status:** DF0–DF2 implemented in source; awaiting local Godot/.NET and visual validation. DF3–DF5 remain planned.
+**Status:** DF0–DF2 and DF2.5 implemented in source; local Godot/.NET and DF2.5 visual validation pending. DF3–DF5 remain planned.
 
-The shared World and FPS scenes now support a **conditional dense, high-canopy broadleaf patch** east of the village. The forest is now **enabled in `Configuration/ForestMaster.tres`** for DF2 preview testing. DF0 surveys the 96 × 96m footprint around X/Z (667,567), including terrain, entry approach and existing village/robot/actor reservations. If the survey fails, **no replacement trees are created and the old pines stay**.
+The shared World and FPS scenes now support a **conditional dense, high-canopy broadleaf strip** east of the village, extending north parallel to its other buildings. The forest is **enabled in `Configuration/ForestMaster.tres`**. DF2.5 extends the former 96 × 96m square to **96m east/west × 256m north/south**, centred at X/Z **(667,487)** (bounds X 619–715, Z 359–615); it keeps the original southern area and the original entry around Z 567. DF0 surveys Terrain3D and the road approach. Existing village/robot/actor reservations now reject individual tree candidates with a 2m safety margin rather than disabling the entire longer strip for a small overlap. If the site is unwalkable or mostly obstructed, **no new trees are created and old pines remain**.
 
 ## DF2 gameplay integration
 
 - `ForestPlacement.cs` builds an irregular, seeded layout from DF1's three tall canopy variants and smaller, simplified filler trees; mature/filler candidate spacings default to 7m/8m, with configurable densities and minimum trunk separations.
 - Trees are grouped into **32m chunks**, with shared near/far Mesh templates and `MultiMeshInstance3D` batches. Each loaded chunk owns one static body with capsule colliders only at trunks (same physics layer 5 as pines).
-- A winding **7m walking corridor** and two small clearings keep the zone traversable. Terrain3D height and slope are sampled once for candidate tree roots; no runtime terrain writing.
+- A winding **7m east–west entry corridor**, a narrower meandering **north–south interior route**, and two small clearings keep the longer zone traversable. Terrain3D height and slope are sampled once for candidate tree roots; no runtime terrain writing.
 - New canopy foliage uses one shared opaque shader, which permits **top-down-only per-tree camera fading**. FPS displays full leaves. Near trees cast shadows by default; far trees do not. DF3 will refine canopy light blocking.
 - The patch excludes old random pines **and random rocks only inside the successfully approved footprint**. Grass remains, ready for DF4 undergrowth integration.
 
@@ -31,3 +31,9 @@ Two separate screenshots showed the DF2 canopy and bark almost white despite pre
 **Crucial diagnostic:** Godot Output now prints one line at forest initialization: `DF2 COLOR CHECK [SAFE]: bark=StandardMaterial3D, leaves=StandardMaterial3D, base leaf=...`. This validates material attachment before creating chunks, and logs an error if one of two expected surfaces is missing. With safe mode OFF it prints `[SHADER]`. If the trees remain white, collect this line plus any red shader/import errors, because the issue would no longer be explained by the custom foliage shader alone. Local `dotnet build`/Godot visual acceptance pending.
 
 **GV1 shared visibility:** `ForestSettings.cs` and `ForestMaster.tres` no longer author DF2 visibility limits. Both broadleaf LOD batches use the shared `VegetationVisibilityPolicy` (LOD0 to 35%, LOD1 to opaque fog + 24m initial safety band). Increasing or decreasing FPS/World distance fog changes the actual loaded 32m chunks, ranges and GPU load through one event; placement and the safe-material DF2 recovery are unchanged. [Global master](../Configuration/README.md#gv1--one-global-fog-linked-vegetation-range-2026-10-31).
+
+## DF2.5 — leaf-edge refinement and northward forest extension (2026-10-31)
+
+**Implemented in source, awaiting local validation.** The tree layout uses the same seed, spacing, mature/young mix, collisions, 32m batches and shared GV1 fog/LOD policy, but expanding the authored zone changes the sampled candidate grid and therefore some individual DF2 trunk positions. Active chunks still load only around the player; more of the strip exists in the static seeded layout, not as always-active tree actors. The near-LOD foliage adds a few shallow leaf-like tips while preserving the familiar chunky crown and safe green/brown materials. Far meshes are unchanged. `LeafEdgeDetail=0` disables only the new tips; `ForestMaster.tres → SizeXZ=(96,96), CenterXZ=(667,567)` restores the old square footprint (the longitudinal trail remains unless separately changed).
+
+**Local test:** build, F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`, check Output for `DF0 forest site approved` and `DF2 forest: ... seeded trees`. Follow the east road into the southern entrance around X 619/Z 567; then walk north alongside the village to Z ~359. Check the fuel station, road reservations, collision, north-end terrain grades, near/far colour, tree silhouette, chunk loading and FPS. `ShowDebugOutline=true` can display the temporary strip boundary. If DF0 rejects it, examine the Output warning; do not disable protection to force trees into a road or building. No local Godot/.NET build was run by this implementation assistant.

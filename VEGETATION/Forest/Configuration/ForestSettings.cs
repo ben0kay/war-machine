@@ -8,8 +8,8 @@ public partial class ForestSettings : Resource
     [Export] public bool Enabled { get; set; } = false;
     [Export] public bool ShowDebugOutline { get; set; } = false;
     // Absolute world X/Z coordinates, independent of the moving player spawn.
-    [Export] public Vector2 CenterXZ { get; set; } = new(667f, 567f);
-    [Export] public Vector2 SizeXZ { get; set; } = new(96f, 96f);
+    [Export] public Vector2 CenterXZ { get; set; } = new(667f, 487f);
+    [Export] public Vector2 SizeXZ { get; set; } = new(96f, 256f);
     [Export(PropertyHint.Range, "0,24,1")] public float TransitionWidth { get; set; } = 12f;
     [Export(PropertyHint.Range, "2,12,1")] public float SurveyStep { get; set; } = 8f;
     [Export(PropertyHint.Range, "0.1,1.5,0.05")] public float MaximumSlope { get; set; } = 0.75f;
@@ -27,6 +27,8 @@ public partial class ForestSettings : Resource
     [Export(PropertyHint.Range, "0.4,0.85,0.05")] public float YoungScaleMin { get; set; } = 0.56f;
     [Export(PropertyHint.Range, "0.4,0.9,0.05")] public float YoungScaleMax { get; set; } = 0.74f;
     [Export(PropertyHint.Range, "4,10,0.5")] public float TrailWidth { get; set; } = 7f;
+    // Fixed southern road entry; extending the zone north must not move the entrance.
+    [Export] public float TrailEntryZ { get; set; } = 567f;
 
     [ExportGroup("DF2 chunk rendering / collision")]
     [Export(PropertyHint.Range, "32,64,16")] public int ChunkSize { get; set; } = 32;

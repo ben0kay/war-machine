@@ -211,6 +211,7 @@ public partial class WorldController : Node3D
         // surveyed core for future canopy art; OFF or rejected restores original pine placement.
         var forest = Settings.DenseForest;
         Rect2? approvedForestArea = null;
+        var forestReservations = new Godot.Collections.Array<Rect2>();
         if (forest != null && (forest.Enabled || forest.ShowDebugOutline))
         {
             bool safe = ForestZone.TrySurvey(data, forest, Settings, _pines.ExclusionAreas,
@@ -218,7 +219,13 @@ public partial class WorldController : Node3D
             if (safe)
             {
                 GD.Print($"DF0 forest site approved for preview: {survey}");
-                if (forest.Enabled) { _pines.ExclusionAreas.Add(area); approvedForestArea = area; }
+                if (forest.Enabled)
+                {
+                    // Keep the original reservations for DF2.5 per-tree checks before
+                    // excluding the full approved strip from ordinary pine placement.
+                    foreach (Rect2 blocked in _pines.ExclusionAreas) forestReservations.Add(blocked);
+                    _pines.ExclusionAreas.Add(area); approvedForestArea = area;
+                }
             }
             else GD.PushWarning($"DF0 forest site rejected; original pines retained: {survey}");
             if (forest.ShowDebugOutline && area.Size.X > 0 && area.Size.Y > 0)
@@ -250,7 +257,8 @@ public partial class WorldController : Node3D
         {
             _forestPlacement = new ForestPlacement { Name = "DenseForest", Visibility = _vegetationVisibility };
             GetNode("SystemsRoot/VegetationRoot").AddChild(_forestPlacement);
-            _forestPlacement.InitializeView(terrain, player, forest, approvedForestArea.Value);
+            _forestPlacement.InitializeView(terrain, player, forest, approvedForestArea.Value,
+                forestReservations);
             player.PositionChanged += _forestPlacement.UpdateAnchor;
         }
         InitializeOcclusion(camera, player);
