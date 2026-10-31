@@ -5,14 +5,14 @@
 **Owner:** `WORLD/Terrain/` for texture/material/authoring; `VEGETATION/Grass/Stylized/` for ground-cover placement.  
 **Visual target:** irregular, branching exposed-earth openings and faint tracks through the green forest floor, with gradual grass/plant thinning. The user reference is a visual target, not an existing source asset.
 
-> Scope: DTP0 is authorized. DTP1–DTP3 are planning only; never run a terrain rewrite or change vegetation density just because this plan exists. Prefer the primary FPS scene `WORLD/FirstPerson/FirstPersonWorld.tscn` for visual testing, with `WORLD/World.tscn` as the shared base. Do not change the F5 entry/legacy world.
+> Scope: **DTP0 and DTP1** have been authorized and implemented in source (awaiting local validation). **DTP2–DTP3** remain planning only. Never paint native source terrain or change vegetation density just because this plan exists. Prefer the primary FPS scene `WORLD/FirstPerson/FirstPersonWorld.tscn` for visual testing, with `WORLD/World.tscn` as the shared base. Do not change the F5 entry/legacy world.
 
 ## Phase overview
 
 | Phase | Goal | Suggested assistant | Status |
 | --- | --- | --- | --- |
 | **DTP0** | Prepare subtle dirt/grass colour harmony, verify resource paths and import expectations, and document visual checks | ChatGPT / regular chat | **Implemented in source; awaiting local Godot visual/import acceptance** |
-| **DTP1** | Explicit seeded, organic dirt **authoring** on the existing Terrain3D control maps; preserve authored land | Codex or ChatGPT Work | **Planned — not authorized** |
+| **DTP1** | One-shot seeded organic dirt authoring into an isolated native Terrain3D preview copy | Codex or ChatGPT Work | **Implemented in source; awaiting local .NET/Godot and visual validation** |
 | **DTP2** | Read painted soil coverage at ground-cover candidates and thin detailed/billboard grass, shrubs and ferns probabilistically | Codex or ChatGPT Work | **Planned — not authorized** |
 | **DTP3** | Expose dirt authoring controls/debug diagnostics and refresh only changed vegetation chunks | Codex or ChatGPT Work | **Planned — not authorized** |
 
@@ -50,7 +50,7 @@
 
 **Acceptance:** source resources parse/import; layer order 0/1/2 intact; temporary dirt looks suitably muted under FPS lighting; grass/cliffs unaffected. **Status: implementation in repository only, local import/render validation pending.**
 
-## DTP1 — Organic terrain dirt authoring (planned)
+## DTP1 — Organic terrain dirt authoring (source implemented; awaiting validation)
 
 **Objective:** paint large asymmetric, branching brown forest-floor openings resembling the supplied screenshot: subtle 1–4m satellites, irregular 5–18m openings, and longer ~15–45m meandering links, with colour blending at fuzzy boundaries. These are tunable starting size bands.
 
@@ -67,6 +67,17 @@
 **Performance:** bounded one-shot authoring pass over selected regions; no `_Process` or `_PhysicsProcess` when idle. Batch native map updates; never allocate full-world arrays per frame.
 
 **Validation/pass:** original saved region checksums preserved unless the owner explicitly saves a paint operation; consistent shapes and soft edges across region/chunk borders; material IDs and rock slopes remain correct; stable seed; no spillage across roads, building floors or basements; inspect FPS near/mid/far and fog.
+
+
+### DTP1 implemented-source handoff (2026-10-31)
+
+- **Owner/files:** `WORLD/Terrain/BakeDirtPreview.tscn` runs `DirtPatchAuthoring.cs` once; `DirtPatchField.cs` generates world-XZ deterministic shapes; `Configuration/DirtPatchSettings.cs` and `DirtPatchMaster.tres` expose seed/shape/density/feather/slope/village guard settings. `WorldController` only selects a valid preview; it does not paint or save on gameplay launch. `UsePreviewInGameplay=true` does nothing until the one-shot scene creates a valid copy.
+- **Workflow:** F6 `BakeDirtPreview.tscn` explicitly. The scene refuses an existing output or staging folder, copies original `Gameplay/*.res` files, records SHA-256 of every source file, loads only the copies, writes packed control maps, saves copies to staging, then moves the staging directory to `GameplayDirtPreview/`. A failed attempt does **not** publish a preview; inspect/clean only the staging folder. Then F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`. Change master seed/shape settings only after safely removing/regenerating the disposable preview.
+- **Native Terrain3D format:** control map = `Image.Format.Rf` with **raw little-endian uint32 bitfields**, not numeric floats. Existing automatic pixels are converted to manual *base slot 1 Grass* + *overlay slot 2 Forest Dirt*, with an 8-bit procedural blend weight. The authoring code changes only base/overlay/blend/autoshader bits; it preserves UV rotation/scale, hole, navigation and all reserved bits, and skips any prior manual pixels or holes. It calls native `region.set_map(1, Image)`, `data.update_maps(1, true, false)` and `data.save_directory(staging)`. Unpainted pixels keep the existing Grass/Cliff autoshader.
+- **Protected content:** authoring is limited to a world-space square centred at `WorldMaster.VillageOriginXZ`, with noise-distorted elliptical clusters, small satellites, and tapered multi-segment trails (no repeated tile geometry). The master safety rectangle defaults to X[-150,+155] / Z[-250,+110] relative to the village origin; roads/store/buildings/robot corridor in that region are excluded. The paint also fades out on steep **source** heights. This broad exclusion is conservative rather than a surveyed building mask; review it after moving or adding buildings. Source files remain unchanged, and the FPS runtime VW1 sculpt may alter slopes further after preview loading.
+- **Performance/lifecycle:** runs once only when the authoring scene is explicitly launched; no new per-frame CPU checks, new vegetation spawner, draw meshes or collider. A simple preview-validity file/hash check runs once on world initialization. 32m vegetation chunk streaming, global fog/LOD and vegetation densities are unaffected.
+- **Validation needed locally (not yet run here):** `dotnet build war-machine.csproj`; run `BakeDirtPreview.tscn` once; verify every `Gameplay/*.res` source checksum unchanged, preview directory has the same region count plus manifest, and DTP1 prints nonzero changed texels. F6 primary FPS scene; verify irregular soil shape, soft transitions, correct dirt texture ID, no holes/roads/structures painted, rock slopes outside patches and no visual repetition. Compare using `UsePreviewInGameplay=false`; confirm stale previews fall back after original source edits and that the bake refuses a second run without backup/removal. Check vegetation remains unchanged until DTP2 and measure FPS locally if needed.
+- **No claimed visual acceptance:** the assistant verified connector source changes only. Godot .NET compilation, native Terrain3D save/load, GPU texture-array imports and playtest have not run; do not mark DTP1 Accepted yet.
 
 ## DTP2 — Soil-aware ground cover (planned)
 

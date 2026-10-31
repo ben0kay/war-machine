@@ -1,5 +1,3 @@
-> **Current model (2026-10-31):** The gameplay wrapper now instances `Artwork/Rifle_001_ReferenceStyle.glb` as `Visual/RifleGLB`, replacing the C# procedural renderer without changing `FirearmController`, `RifleMaster.tres`, `Muzzle`, ADS/sway/recoil, ammo or damage. `C/RifleMeshBuilder.cs` remains in the repo as a rollback asset but is **not attached to the scene**. The new GLB has not yet been validated inside the user's running Godot game; check imported mesh scale, iron-sight alignment and FPS framing. See [GLB swap guide](Artwork/README_GLB_SWAP.md). Historical procedural-only sections below describe the former visual.
-
 # Rifle_001 — temporary usable low-poly rifle
 
 **Implemented, awaiting local validation.** Always equipped in the active top-down
