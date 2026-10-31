@@ -1,0 +1,17 @@
+{
+  "LOD1": {
+    "bark_triangles": 306,
+    "foliage_triangles": 4928,
+    "total_triangles": 5234
+  },
+  "LOD2": {
+    "bark_triangles": 154,
+    "foliage_triangles": 1200,
+    "total_triangles": 1354
+  },
+  "LOD3": {
+    "bark_triangles": 50,
+    "foliage_triangles": 96,
+    "total_triangles": 146
+  }
+}
