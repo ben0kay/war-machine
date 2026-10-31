@@ -30,6 +30,8 @@ public partial class DebugOverlay : PanelContainer
     private Label _hourLabel = null!;
     private ZombieVisionDebug? _visionDebug;
     private CheckButton? _visionToggle;
+    private ScrollContainer? _settingsScroll;
+    private VBoxContainer? _settingsRows;
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
@@ -42,12 +44,13 @@ public partial class DebugOverlay : PanelContainer
         SetProcess(false); SetPhysicsProcess(false);
         _copy = GetNode<Button>("Margin/Outer/Copy");
         GetNode<Label>("Margin/Outer/Hint").Text = view == null ? "Debug controls" : "Debug controls · Esc to use · click world to resume";
-        float maximumPanelHeight = Mathf.Clamp(GetViewportRect().Size.Y - 180, 180, 520);
-        var scroll = GetNode<ScrollContainer>("Margin/Outer/Scroll");
+        _settingsScroll = GetNode<ScrollContainer>("Margin/Outer/Scroll");
         var rows = GetNode<VBoxContainer>("Margin/Outer/Scroll/Rows");
         var rootRows = rows;
-        rootRows.MinimumSizeChanged += () => scroll.CustomMinimumSize = new Vector2(350,
-            Mathf.Clamp(rootRows.GetCombinedMinimumSize().Y, 120, maximumPanelHeight));
+        _settingsRows = rootRows;
+        rootRows.MinimumSizeChanged += UpdatePanelHeight;
+        GetViewport().SizeChanged += UpdatePanelHeight;
+        UpdatePanelHeight();
         if (_view == null)
         {
             rows = AddSection(rootRows, "Camera");
@@ -223,15 +226,13 @@ public partial class DebugOverlay : PanelContainer
         });
         rows.AddChild(new Label { Text = "0 = original colours · 1 = full tint · changes not saved" });
 
-        rows = AddSection(foliageRows, "Grass");
         if (_stylizedGrass != null)
         {
             var stylized = _stylizedGrass;
+            rows = AddToggleSection(foliageRows, "Grass", stylized.Settings.Enabled, value => {
+                stylized.Settings.Enabled = value; stylized.ApplySettings(); _copy.Text = "Copy settings";
+            });
             rows.AddChild(new Label { Text = "Imported grass patches · release sliders to regenerate" });
-            var enabled = new CheckButton { Text = "Stylized grass enabled",
-                ButtonPressed = stylized.Settings.Enabled, FocusMode = FocusModeEnum.None };
-            rows.AddChild(enabled);
-            enabled.Toggled += value => { stylized.Settings.Enabled = value; stylized.ApplySettings(); _copy.Text = "Copy settings"; };
             AddDeferredSlider(rows, "Patches / 32 m chunk", 0, 12, 1, stylized.Settings.PatchesPerChunk,
                 value => stylized.Settings.PatchesPerChunk = Mathf.RoundToInt(value), stylized.ApplySettings);
             AddDeferredSlider(rows, "Clumps / patch", 1, 30, 1, stylized.Settings.ClumpsPerPatch,
@@ -249,11 +250,10 @@ public partial class DebugOverlay : PanelContainer
         else
         {
             // Legacy system is still available if mesh patches are disabled in their master.
+            rows = AddToggleSection(foliageRows, "Grass (legacy)", grass.Settings.Enabled, value => {
+                grass.Settings.Enabled = value; grass.ApplySettings(); _copy.Text = "Copy settings";
+            });
             rows.AddChild(new Label { Text = "Legacy GPU particle grass (not the imported patches)" });
-            var enabled = new CheckButton { Text = "Legacy grass enabled",
-                ButtonPressed = grass.Settings.Enabled, FocusMode = FocusModeEnum.None };
-            rows.AddChild(enabled);
-            enabled.Toggled += value => { grass.Settings.Enabled = value; grass.ApplySettings(); _copy.Text = "Copy settings"; };
             AddDeferredSlider(rows, "Legacy grass density", 0, 2, 0.05, grass.Settings.Density,
                 value => grass.Settings.Density = value, grass.ApplySettings);
             AddDeferredSlider(rows, "Legacy grass height", 0.1, 1.5, 0.05, grass.Settings.Height,
@@ -267,14 +267,10 @@ public partial class DebugOverlay : PanelContainer
         {
             var placement = _stylizedGrass;
             var billboard = placement.FillerSettings;
-            var billboardRows = AddSection(foliageRows, "Billboard grass");
-            billboardRows.AddChild(new Label { Text = "Dense irregular billboard patches · release sliders to rebuild" });
-            var billboardEnabled = new CheckButton { Text = "Billboard grass enabled",
-                ButtonPressed = billboard.Enabled, FocusMode = FocusModeEnum.None };
-            billboardRows.AddChild(billboardEnabled);
-            billboardEnabled.Toggled += value => {
+            var billboardRows = AddToggleSection(foliageRows, "Billboard grass", billboard.Enabled, value => {
                 billboard.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
-            };
+            });
+            billboardRows.AddChild(new Label { Text = "Dense irregular billboard patches · release sliders to rebuild" });
             AddDeferredSlider(billboardRows, "Billboard patches / 32 m chunk", 0, 16, 1, billboard.PatchesPerChunk,
                 value => billboard.PatchesPerChunk = Mathf.RoundToInt(value), placement.ApplySettings);
             AddDeferredSlider(billboardRows, "Patch chance", 0, 1, 0.05, billboard.PatchChance,
@@ -306,13 +302,10 @@ public partial class DebugOverlay : PanelContainer
             foreach (var plant in placement.GroundCover.Plants)
             {
                 if (plant == null) continue;
-                var plantRows = AddSection(foliageRows, "Ground cover · " + plant.Label);
-                var toggle = new CheckButton { Text = plant.Label + " enabled",
-                    ButtonPressed = plant.Enabled, FocusMode = FocusModeEnum.None };
-                plantRows.AddChild(toggle);
-                toggle.Toggled += value => {
-                    plant.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
-                };
+                var plantRows = AddToggleSection(foliageRows, "Ground cover · " + plant.Label,
+                    plant.Enabled, value => {
+                        plant.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
+                    });
                 AddDeferredSlider(plantRows, plant.Label + " share", 0, 1, 0.05,
                     plant.Share, value => plant.Share = value, placement.ApplySettings);
                 AddDeferredSlider(plantRows, plant.Label + " spacing (m)", 0, 5, 0.25,
@@ -325,10 +318,10 @@ public partial class DebugOverlay : PanelContainer
                     plant.WindMultiplier, value => { plant.WindMultiplier = value; placement.ApplyWind(); });
             }
         }
-        rows = AddSection(foliageRows, "Pine trees");
+        rows = AddToggleSection(foliageRows, "Pine trees", pines.Settings.Enabled, value => {
+            pines.Settings.Enabled = value; pines.ApplySettings(); _copy.Text = "Copy settings";
+        });
         rows.AddChild(new Label { Text = "Release density/size to apply" });
-        var pineEnabled = new CheckButton { Text = "Pine trees enabled", ButtonPressed = pines.Settings.Enabled, FocusMode = FocusModeEnum.None };
-        rows.AddChild(pineEnabled); pineEnabled.Toggled += value => { pines.Settings.Enabled = value; pines.ApplySettings(); _copy.Text = "Copy settings"; };
         AddDeferredSlider(rows, "Pine density", 0, 1, 0.05, pines.Settings.Density,
             value => pines.Settings.Density = value, pines.ApplySettings);
         AddDeferredSlider(rows, "Pine size multiplier", 0.5, 1.5, 0.05, pines.Settings.HeightMultiplier,
@@ -375,6 +368,44 @@ public partial class DebugOverlay : PanelContainer
         }
         _copy.Pressed += CopySettings;
         if (_view == null) { _camera.SettingsChanged += Refresh; Refresh(); }
+    }
+
+    // =========================================================
+    // Size the existing scroll area to fit more controls while keeping the panel on screen.
+    // This only runs on layout/viewport changes, not gameplay frames.
+    private void UpdatePanelHeight()
+    {
+        if (_settingsScroll == null || _settingsRows == null) return;
+        float available = Mathf.Clamp(GetViewportRect().Size.Y - 260f, 160f, 650f);
+        _settingsScroll.CustomMinimumSize = new Vector2(350f,
+            Mathf.Clamp(_settingsRows.GetCombinedMinimumSize().Y, 120f, available));
+    }
+
+    // =========================================================
+    // For vegetation, disclosure and enable are independent clickable header controls.
+    // Toggling the right-hand switch does not expand/collapse the left-hand section.
+    private static VBoxContainer AddToggleSection(VBoxContainer parent, string title,
+        bool enabled, Action<bool> apply)
+    {
+        var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", 6);
+        var disclose = new Button { Text = "+ " + title, ToggleMode = true,
+            FocusMode = FocusModeEnum.None, Alignment = HorizontalAlignment.Left,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        var toggle = new CheckButton { Text = "On", ButtonPressed = enabled,
+            TooltipText = "Enable or disable " + title + " without expanding",
+            FocusMode = FocusModeEnum.None };
+        header.AddChild(disclose); header.AddChild(toggle);
+        var body = new VBoxContainer { Visible = false,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        body.AddThemeConstantOverride("separation", 6);
+        parent.AddChild(header); parent.AddChild(body);
+        disclose.Toggled += open => {
+            body.Visible = open;
+            disclose.Text = (open ? "− " : "+ ") + title;
+        };
+        toggle.Toggled += apply;
+        return body;
     }
 
     // =========================================================
@@ -661,6 +692,7 @@ public partial class DebugOverlay : PanelContainer
     // Remove the external subscription when the scene or panel unloads.
     public override void _ExitTree()
     {
+        GetViewport().SizeChanged -= UpdatePanelHeight;
         if (GodotObject.IsInstanceValid(_pines)) _pines.Visibility.Changed -= UpdateVegetationDistanceLabel;
         if (GodotObject.IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
             _clock.Disconnect("time_changed", _timeChanged);

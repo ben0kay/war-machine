@@ -21,6 +21,7 @@ public partial class BodyConditionWidget : Control
     private StyleBoxFlat _background = null!;
     private float _healthy, _severe;
     private bool _dead;
+    private float _rightMargin;
 
     // =========================================================
     public override void _Ready()
@@ -42,13 +43,26 @@ public partial class BodyConditionWidget : Control
         Unbind(); _vitals = vitals; _settings = (FeedbackSettings)settings.Duplicate(true);
         _healthy = float.IsFinite(_settings.BodyHealthyThreshold) ? Mathf.Clamp(_settings.BodyHealthyThreshold, 0.1f, 1) : 0.75f;
         _severe = float.IsFinite(_settings.BodySevereThreshold) ? Mathf.Clamp(_settings.BodySevereThreshold, 0.01f, _healthy) : 0.4f;
-        float margin = float.IsFinite(_settings.BodyHudMargin) ? Mathf.Clamp(_settings.BodyHudMargin, 8, 60) : 22;
-        // Keep above the hotbar even on narrow windows; anchors handle resize without a callback.
-        SetAnchorsPreset(LayoutPreset.BottomLeft);
-        OffsetLeft = margin; OffsetRight = margin + 244; OffsetTop = -306; OffsetBottom = -104;
+        _rightMargin = float.IsFinite(_settings.BodyHudMargin)
+            ? Mathf.Clamp(_settings.BodyHudMargin, 8f, 60f) : 22f;
+        // Body is aligned above Stamina, including its narrow-window raised position.
+        GetViewport().SizeChanged += Fit;
+        Fit();
         for (int i = 0; i < BodyCondition.RegionCount; i++) ReadRegion((BodyRegion)i);
         _dead = vitals.IsDead; UpdateState(); QueueRedraw(); Show();
         vitals.Body.ConditionChanged += OnConditionChanged; vitals.Died += OnDied;
+    }
+
+    // =========================================================
+    // Mirror the existing Stamina bottom-right layout; no frame/polling callbacks.
+    private void Fit()
+    {
+        float width = GetViewport().GetVisibleRect().Size.X;
+        float staminaBottom = StaminaHud.EffectiveBottomMargin(width, new Vector2(20f, 24f));
+        float bottom = staminaBottom + StaminaHud.CardHeight + 12f;
+        SetAnchorsPreset(LayoutPreset.BottomRight);
+        OffsetLeft = -_rightMargin - 244f; OffsetRight = -_rightMargin;
+        OffsetTop = -bottom - 202f; OffsetBottom = -bottom;
     }
 
     // =========================================================
@@ -112,5 +126,9 @@ public partial class BodyConditionWidget : Control
     }
 
     // =========================================================
-    public override void _ExitTree() => Unbind();
+    public override void _ExitTree()
+    {
+        GetViewport().SizeChanged -= Fit;
+        Unbind();
+    }
 }

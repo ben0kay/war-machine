@@ -4,7 +4,18 @@ using Godot;
 public partial class StaminaHud : Control
 {
     [Export] public Vector2 CornerMargin { get; set; } = new(20, 24);
-    private const float Width = 190, Height = 62;
+    public const float CardHeight = 62f;
+    private const float Width = 190f, Height = CardHeight;
+
+    // =========================================================
+    // Shared screen-space stacking rule, so BodyCondition stays above this meter
+    // when narrow windows raise Stamina above the central hotbar.
+    public static float EffectiveBottomMargin(float viewportWidth, Vector2 margin)
+    {
+        float right = Mathf.Max(0, margin.X), bottom = Mathf.Max(0, margin.Y);
+        return viewportWidth - Width - right < viewportWidth * 0.5f + 248f
+            ? Mathf.Max(bottom, 184f) : bottom;
+    }
     private PlayerStamina? _stamina;
     private Label _amount = null!, _status = null!;
     private ProgressBar _bar = null!;
@@ -52,9 +63,9 @@ public partial class StaminaHud : Control
     // Narrow windows lift the card above the hotbar/ammo row; the margin remains easy to relocate later.
     private void Fit()
     {
-        float marginX = Mathf.Max(0, CornerMargin.X), marginY = Mathf.Max(0, CornerMargin.Y);
+        float marginX = Mathf.Max(0, CornerMargin.X);
         float width = GetViewport().GetVisibleRect().Size.X;
-        if (width - Width - marginX < width * 0.5f + 248) marginY = Mathf.Max(marginY, 184);
+        float marginY = EffectiveBottomMargin(width, CornerMargin);
         SetAnchorsPreset(LayoutPreset.BottomRight);
         OffsetLeft = -Width - marginX; OffsetRight = -marginX;
         OffsetTop = -Height - marginY; OffsetBottom = -marginY;

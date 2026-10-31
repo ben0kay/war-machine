@@ -11,3 +11,7 @@ Local checks: build and run [PH0 smoke tests](../../../DEBUG/TEST/PlayerVitals/R
 ## AM1 ammo card placement (2026-10-28)
 
 The body silhouette remains anchored at x=margin…margin+244 near the bottom-left. The **AM1 ammo readout is a sibling**, positioned to its right and immediately to the left of the bottom-centred hotbar at desktop widths; at narrow widths it is moved above the hotbar. The body widget's pose, labels, health subscriptions and layout are unchanged; no numeric generic player health bar was introduced. Source only, visual layout QA pending.
+
+## UI4 — Body Condition stacked above Stamina on the right (2026-10-31)
+
+The existing read-only 244×202 px six-region BodyConditionWidget was moved from bottom-left to **bottom-right**, directly above the existing Stamina meter with a 12 px vertical gap, in both shared World and inherited FPS. The widget now responds to viewport resize rather than recalculating on gameplay frames. Its bottom margin uses `StaminaHud.EffectiveBottomMargin` so narrow layouts lift both together without covering the central hotbar; its right inset retains `FeedbackMaster.tres → BodyHudMargin` (currently 22 px, next to Stamina's 20 px). No silhouette sizes, anatomy events, region colours, gameplay health, stamina rules, other HUD positions or mouse interactions changed. Test both views at desktop and narrower resolutions; local Godot build/visual check pending.
