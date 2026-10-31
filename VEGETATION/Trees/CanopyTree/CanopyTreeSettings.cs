@@ -1,6 +1,8 @@
 // DF1: authoring values for one tall, high-crowned broadleaf tree; independent of world placement.
 using Godot;
 
+// The editor preview uses [Tool] and exports this typed resource; both must be tool-enabled.
+[Tool]
 [GlobalClass]
 public partial class CanopyTreeSettings : Resource
 {

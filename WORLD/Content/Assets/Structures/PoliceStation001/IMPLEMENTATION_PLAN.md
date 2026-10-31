@@ -6,10 +6,11 @@
 | --- | --- | --- | --- |
 | **PS0** | Standalone [Tool] scene, 48×64m shell, both floors, real apertures, stairs/landing/collision, semantic structure visibility, clearance, editor preview | Regular Chat / Codex integration; owner visual check | **Implemented in source; Awaiting Validation** |
 | **PS1** | Front-right lobby U-stair, connected upper landing, varied asymmetrical ground rooms | Regular Chat / Codex; owner visual validation | **Implemented in source; Awaiting Validation** |
+| **PS1.5** | Add a 48×32m standalone basement below the unchanged above-ground station, mirrored U-stair down, ground slab aperture, guards, collision, editor preview; terrain placement separate | Regular Chat; owner local inspection | **Implemented in source; Awaiting Validation** |
 | **PS2** | Selectively furnish accepted rooms with reusable models under safe clearance / floor ownership | Codex for integration, Regular Chat for simple placement | Planned |
 | **PS3** | Separate explicit world/site placement, culling/streaming integration and repeatable performance stress baseline | Codex + owner local profiler | Planned |
 
-Each phase requires separate authorization. PS0 and explicitly requested PS1 are implemented in source; PS2 and PS3 remain planned.
+Each phase requires separate authorization. PS0, the requested PS1 revisions and explicitly requested PS1.5 basement are implemented in source; PS2 and PS3 remain planned.
 
 ## PS0 — precise scope
 
@@ -54,3 +55,13 @@ Build `dotnet build war-machine.csproj` locally, open `PoliceStation001.tscn`, r
 ## PS1.4 — fill upper landing void, guard exposed shaft, reconnect walls (2026-10-29)
 
 **Explicit owner correction from four editor screenshots; implemented in source, awaiting local validation.** Move the upper floor cutout's south edge to the actual last stair tread at Z=23. Construct colliding floor across the previous uncovered Z=18..23 landing rather than retain the duplicate 4m-wide landing slab. Guard exposed south edge on either side of the upper stair exit with a 3.52m clear opening, while keeping side/north guardrails and physical walkable stair slopes. Eliminate the 0.41m free-ended upper corridor nubs: tie both hall walls into a front vestibule boundary at Z=18.5, with a 3.6m real doorway at the stair exit's X position connecting to upper offices. Reinforce upstairs stair cutout/exit validation and building authoring policy. No furniture, hinged door migration, AI, scene placement or looping work. Tests pending in Godot: top step → continuous apron, guarded shaft edges, both interior approaches, no crossing rails/walls, proper upper facade/windows and preview ownership.
+
+## PS1.5 — below-ground basement proof, 2026-10-31
+
+**Authorized by owner / source implemented / local validation pending.** Preserve all existing above-ground shell, windows, floors (outside the required basement stair cutout), doors, staircase geometry and roof, without advancing the FPS-only conversion phases. Cut the ground-floor slab as four collidable spans around the shared stair shaft and add a 48×32m front-half basement at Y=-4.2m. New stairs mirror the existing U footprint: first descent at X=15.3 / Z=23..28, 2.4m northern turn at Z=28..30.4, return at X=11 / Z=28..23. Existing ascending first flight remains at X=11 and untouched. Guard all hole edges except two full-width entrance lanes, leave a flat 2m+ approach, and retain slope colliders with visual risers only.
+
+**Ownership:** modify only the police station's `C/PoliceStationMesh.cs`, `Configuration/PoliceStationSettings.cs`, and local docs. Add a basement floor -1 with its own visual/collision roles and editor Basement preview. No FPS camera/controls, World scene, Terrain3D resources, terrain bake, building fade helper or startup changes. The master enables the basement by default; disabling restores the exact original single-slab shell. Generate once and sleep; no new per-frame work.
+
+**Terrain requirement:** when the station is later placed in Terrain3D, the chosen site needs a painted collision/visual hole beneath its basement footprint, and `UseTerrainSupport=false` to retain above-ground station slab collision. The standalone prefab cannot modify terrain and this phase deliberately does not select a world site or edit Terrain3D.
+
+**Validation:** Godot .NET build; editor preview all four modes; verify upper stair PS1.4 fixes, new mirror stair and guarded slab cutout; physically traverse both U-flights and the 2 basement door openings in an authorized play scene. No physical/render/performance acceptance or Terrain3D cutout has yet been established.
