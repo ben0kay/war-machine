@@ -43,3 +43,8 @@ Use the existing shared fog-driven vegetation range (`VEGETATION/Configuration/V
 ## Validation status
 
 Generated glTF mesh geometry, binary accessor byte bounds, mesh dimensions, LOD counts, normals/triangles, relative texture paths and ZIP CRC are verified offline. **Godot import/rendering, shader compilation, actual GPU frame time and in-world appearance remain for local validation.**
+
+
+## STG6 — world ground-cover registration (2026-10-31)
+
+**Integrated in War Machine source; waiting for local Godot build/visual validation.** `VEGETATION/Grass/Stylized/Configuration/ForestFern002Master.tres` registers this pack in the existing `GroundCoverMaster.tres` plant list at `Share=0.05` (**5%** of detailed grass candidate placements). Three authored mesh variations and **all three LODs** use the shared GV1 fog-driven LOD0/LOD1/draw envelope and 32m MultiMesh batches. Root positions follow final Terrain3D heights, slope/road/building exclusion masks and low-density intra-chunk spacing. The included wind shader receives existing environment wind and shared foliage tint via the common ground-cover owner. F1 offers this fern's separate enabled/share/spacing/size/wind controls automatically. Original GLTFs, .bin files, materials and preview scene were not altered.

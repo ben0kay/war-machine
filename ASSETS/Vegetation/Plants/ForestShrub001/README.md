@@ -48,3 +48,8 @@ Each mesh has **one indexed triangle primitive / one material surface**, with do
 Source was reviewed for glTF buffer/index consistency and asset paths. **Godot import, shader compilation, visually correct normals from every camera direction, shadows and performance have not been validated in the game.** Inspect the prefab in Godot before any mass scattering and make any art revisions in the included source rather than altering grass or existing shaders.
 
 **No gameplay or repository files were modified when this ZIP was produced.**
+
+
+## STG6 density adjustment (2026-10-31)
+
+The shared `ForestShrub001Master.tres` now defaults to `Share=0.10` (**10%** of the detailed-ground-cover candidate pool), alongside 5% each for ForestFern001 and ForestFern002; detailed grass keeps the remaining 80%. These percentages describe candidate selection, not guaranteed final instance counts. Billboard filler is independent. Shrub assets/materials are unchanged.

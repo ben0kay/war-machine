@@ -45,3 +45,8 @@ Load meshes/materials once, share them through the **existing** vegetation chunk
 ## Validation status
 
 Source geometry, glTF JSON/accessors, binary byte lengths, relative texture links, LOD pairs, vertex normals, and ZIP CRC verified offline. **Godot import, shader compilation, in-game colour/wind and actual performance remain to be checked locally.** No repository files, terrain or vegetation spawn systems were modified while creating the ZIP.
+
+
+## STG6 — world ground-cover registration (2026-10-31)
+
+**Integrated in War Machine source; waiting for local Godot build/visual validation.** `VEGETATION/Grass/Stylized/Configuration/ForestFern001Master.tres` registers this pack in the existing `GroundCoverMaster.tres` plant list at `Share=0.05` (**5%** of detailed grass candidate placements). Three authored mesh variations and **all three LODs** use the shared GV1 fog-driven LOD0/LOD1/draw envelope and 32m MultiMesh batches. Root positions follow final Terrain3D heights, slope/road/building exclusion masks and low-density intra-chunk spacing. The included wind shader receives existing environment wind and shared foliage tint via the common ground-cover owner. F1 offers this fern's separate enabled/share/spacing/size/wind controls automatically. Original GLTFs, .bin files, materials and preview scene were not altered.

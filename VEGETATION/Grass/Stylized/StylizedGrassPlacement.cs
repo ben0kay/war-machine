@@ -38,7 +38,8 @@ public partial class StylizedGrassPlacement : Node3D
     private sealed class PlantArt
     {
         public readonly GroundCoverPlantSettings Settings;
-        public Mesh[] Near = System.Array.Empty<Mesh>(), Far = System.Array.Empty<Mesh>();
+        // Lods[0] is near. Species may declare two or three authored levels.
+        public Mesh[][] Lods = System.Array.Empty<Mesh[]>();
         public ShaderMaterial? Material;
         public PlantArt(GroundCoverPlantSettings settings) { Settings = settings; }
     }
@@ -161,7 +162,7 @@ public partial class StylizedGrassPlacement : Node3D
 
     // =========================================================
     // Load a species using the same single-surface imported glTF + MultiMesh pipeline.
-    // Future plants only need a settings resource and a..l near/far model variants.
+    // Future plants only need a settings resource and lettered 2- or 3-LOD meshes.
     private bool LoadPlantTemplates(PlantArt art)
     {
         var species = art.Settings;
@@ -169,8 +170,10 @@ public partial class StylizedGrassPlacement : Node3D
         if (sourceMaterial == null) { GD.PushWarning("Missing ground-cover material: " + species.MaterialPath); return false; }
         var material = (ShaderMaterial)sourceMaterial.Duplicate();
         int count = Mathf.Clamp(species.VariantCount, 1, 12);
-        var near = new Mesh[count]; var far = new Mesh[count];
-        for (int i = 0; i < count; i++) for (int lod = 1; lod <= 2; lod++)
+        int lodCount = Mathf.Clamp(species.LodCount, 2, 3);
+        var meshes = new Mesh[lodCount][];
+        for (int lod = 0; lod < lodCount; lod++) meshes[lod] = new Mesh[count];
+        for (int i = 0; i < count; i++) for (int lod = 1; lod <= lodCount; lod++)
         {
             string path = species.ModelDirectory.TrimEnd('/') + "/" + species.ModelPrefix
                 + (char)('a' + i) + "_LOD" + lod + ".gltf";
@@ -187,11 +190,11 @@ public partial class StylizedGrassPlacement : Node3D
                 { GD.PushWarning("Ground-cover model needs one mesh surface: " + path); return false; }
                 var meshCopy = (ArrayMesh)source.Duplicate();
                 meshCopy.SurfaceSetMaterial(0, material);
-                if (lod == 1) near[i] = meshCopy; else far[i] = meshCopy;
+                meshes[lod - 1][i] = meshCopy;
             }
             finally { root.Free(); }
         }
-        art.Material = material; art.Near = near; art.Far = far;
+        art.Material = material; art.Lods = meshes;
         return true;
     }
 
@@ -235,14 +238,17 @@ public partial class StylizedGrassPlacement : Node3D
         _focusDistance = next;
         float far = Visibility.RenderDistance + _focusDistance;
         float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, far - 4f);
+        float lod1 = Mathf.Clamp(Visibility.Lod1End + _focusDistance, lod + 2f, far - 2f);
         foreach (var chunk in _active.Values)
             foreach (var instance in chunk.Nodes)
             {
                 string name = instance.Name.ToString();
+                bool mid = name.EndsWith("_Mid");
+                bool far3 = name.EndsWith("_Far3");
                 bool distant = name.EndsWith("_Far");
                 bool filler = name.StartsWith("BillboardFiller_");
-                instance.VisibilityRangeBegin = distant ? lod : 0f;
-                instance.VisibilityRangeEnd = distant || filler ? far : lod;
+                instance.VisibilityRangeBegin = far3 ? lod1 : distant || mid ? lod : 0f;
+                instance.VisibilityRangeEnd = far3 || distant || filler ? far : mid ? lod1 : lod;
                 instance.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, instance.VisibilityRangeEnd);
             }
     }
@@ -251,7 +257,7 @@ public partial class StylizedGrassPlacement : Node3D
     private bool HasLoadedPlants()
     {
         foreach (var art in _plants)
-            if (art.Near.Length > 0) return true;
+            if (art.Lods.Length > 0) return true;
         return false;
     }
 
@@ -374,7 +380,7 @@ public partial class StylizedGrassPlacement : Node3D
                     Mathf.Clamp(plant.ScaleMin, 0.25f, 2f),
                     Mathf.Clamp(Mathf.Max(plant.ScaleMin, plant.ScaleMax), 0.25f, 2f));
                 int plantVariant = details.RandiRange(0, plantBins[selected].Length - 1);
-                if (art.Near.Length == 0 || !plant.Enabled
+                if (art.Lods.Length == 0 || !plant.Enabled
                     || IsExcluded(point, Mathf.Max(0.5f, plant.EdgeClearance) * plantScale)
                     || !TryGround(point, plant.MinimumNormalY, out float plantHeight)) continue;
                 float spacing = Mathf.Clamp(plant.MinimumSpacing, 0f, 5f);
@@ -389,6 +395,7 @@ public partial class StylizedGrassPlacement : Node3D
             }
         }
         float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, end - 4f);
+        float lod1 = Mathf.Clamp(Visibility.Lod1End + _focusDistance, lod + 2f, end - 2f);
         Vector3 origin = new((key.X + 0.5f) * width, 0f, (key.Y + 0.5f) * width);
         if (_near.Length == 3)
             for (int i = 0; i < 3; i++)
@@ -403,15 +410,23 @@ public partial class StylizedGrassPlacement : Node3D
         for (int p = 0; p < _plants.Count; p++)
         {
             var art = _plants[p];
-            if (art.Near.Length == 0) continue;
-            for (int i = 0; i < art.Near.Length; i++)
+            if (art.Lods.Length == 0) continue;
+            for (int i = 0; i < art.Lods[0].Length; i++)
             {
                 if (plantBins[p][i].Count == 0) continue;
                 string name = "GroundPlant_" + p + "_" + key.X + "_" + key.Y + "_" + i;
-                chunk.Nodes.Add(BuildBatch(name + "_Near", art.Near[i],
+                chunk.Nodes.Add(BuildBatch(name + "_Near", art.Lods[0][i],
                     plantBins[p][i], origin, 0f, lod));
-                chunk.Nodes.Add(BuildBatch(name + "_Far", art.Far[i],
-                    plantBins[p][i], origin, lod, end));
+                if (art.Lods.Length == 2)
+                    chunk.Nodes.Add(BuildBatch(name + "_Far", art.Lods[1][i],
+                        plantBins[p][i], origin, lod, end));
+                else
+                {
+                    chunk.Nodes.Add(BuildBatch(name + "_Mid", art.Lods[1][i],
+                        plantBins[p][i], origin, lod, lod1));
+                    chunk.Nodes.Add(BuildBatch(name + "_Far3", art.Lods[2][i],
+                        plantBins[p][i], origin, lod1, end));
+                }
                 chunk.Plants += plantBins[p][i].Count;
             }
         }

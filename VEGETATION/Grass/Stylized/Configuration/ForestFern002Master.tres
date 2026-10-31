@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="GroundCoverPlantSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://VEGETATION/Grass/Stylized/Configuration/GroundCoverPlantSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+Label = "Forest fern 002"
+ModelDirectory = "res://ASSETS/Vegetation/Plants/ForestFern002/Models"
+ModelPrefix = "forest_fern_002_"
+MaterialPath = "res://ASSETS/Vegetation/Plants/ForestFern002/Materials/ForestFern002Wind.tres"
+VariantCount = 3
+LodCount = 3
+Share = 0.05
+ScaleMin = 0.8
+ScaleMax = 1.1
+MinimumSpacing = 4.5
+MinimumNormalY = 0.94
+EdgeClearance = 2.7
+WindMultiplier = 0.06
+WindSpeed = 1.1

@@ -13,6 +13,8 @@ public partial class GroundCoverPlantSettings : Resource
     [Export] public string MaterialPath { get; set; } =
         "res://ASSETS/Vegetation/Plants/ForestShrub001/Materials/ForestShrub001Wind.tres";
     [Export(PropertyHint.Range, "1,12,1")] public int VariantCount { get; set; } = 6;
+    // Shrubs keep two authored LODs; larger ferns can use all three via GV1 distances.
+    [Export(PropertyHint.Range, "2,3,1")] public int LodCount { get; set; } = 2;
 
     [ExportGroup("Detailed cover selection")]
     [Export(PropertyHint.Range, "0,1,0.05")] public float Share { get; set; } = 0.2f;
