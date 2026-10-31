@@ -10,6 +10,7 @@ public partial class PlayerWeaponController : Node
     private WeaponSlots _slots = null!;
     private PhysicsRayQueryParameters3D _aimQuery = null!;
     private bool _held, _shotRequested, _aimDirty, _initialized;
+    private MeleeStrikeKind _queuedMeleeStrike = MeleeStrikeKind.Sweep;
     private Vector3 _aimPoint;
     private PlayerQuickMelee? _shove;
     private TopDownWeaponRecoil? _visualRecoil;
@@ -97,8 +98,20 @@ public partial class PlayerWeaponController : Node
             return;
         }
         if (input is InputEventMouseMotion) RequestAim();
+        // On the top-down view MMB is only a melee alternate; firearm MMB remains unassigned.
+        if (input is InputEventMouseButton alternate && alternate.ButtonIndex == MouseButton.Middle
+            && alternate.Pressed && _melee?.RuntimeSettings.AlternateAttackEnabled == true)
+        {
+            if (_shove?.IsActive != true && GetViewport().GuiGetHoveredControl() == null
+                && GetViewport().GuiGetFocusOwner() == null)
+            { _queuedMeleeStrike = MeleeStrikeKind.Overhead; _shotRequested = true; RequestAim(); }
+            GetViewport().SetInputAsHandled(); return;
+        }
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
-        { _held = true; _shotRequested = true; RequestAim(); GetViewport().SetInputAsHandled(); }
+        {
+            _held = true; _queuedMeleeStrike = MeleeStrikeKind.Sweep;
+            _shotRequested = true; RequestAim(); GetViewport().SetInputAsHandled();
+        }
     }
 
     // =========================================================
@@ -168,7 +181,11 @@ public partial class PlayerWeaponController : Node
             _shotRequested = false;
             // Camera-up is the screen-up recoil reference: the crosshair stays fixed and
             // actual bullet/tracer direction climbs independently from ACC0 random spread.
-            if (_melee != null) _melee.TryStart(_player, _aimPoint - _player.GlobalPosition, false);
+            if (_melee != null)
+            {
+                _melee.TryStart(_player, _aimPoint - _player.GlobalPosition, false, _queuedMeleeStrike);
+                _queuedMeleeStrike = MeleeStrikeKind.Sweep;
+            }
             else _weapon!.TryFire(_aimPoint, _player.WeaponProbeOrigin, _camera.GlobalBasis.Y);
         }
         if (_melee?.IsAttacking == true)
@@ -195,7 +212,8 @@ public partial class PlayerWeaponController : Node
 
     // =========================================================
     // No stuck firing when tabbing away or moving a held click onto the debug sliders.
-    private void CancelTrigger() { _held = false; _shotRequested = false; }
+    private void CancelTrigger()
+    { _held = false; _shotRequested = false; _queuedMeleeStrike = MeleeStrikeKind.Sweep; }
 
     // =========================================================
     public override void _Notification(int what)

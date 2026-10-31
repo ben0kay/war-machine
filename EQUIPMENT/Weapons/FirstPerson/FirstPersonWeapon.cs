@@ -10,6 +10,7 @@ public partial class FirstPersonWeapon : Node
     private WeaponSlots _slots = null!;
     private PhysicsRayQueryParameters3D _query = null!;
     private bool _held, _requested;
+    private MeleeStrikeKind _queuedMeleeStrike = MeleeStrikeKind.Sweep;
     private PlayerQuickMelee? _shove;
     private FirearmVisualRecoil? _visualRecoil;
     private FirstPersonAimDebugLine? _aimDebugLine;
@@ -102,12 +103,17 @@ public partial class FirstPersonWeapon : Node
         int slot = WeaponSlots.RequestedSlot(input);
         if (slot >= 0) { SwitchWeapon(slot); GetViewport().SetInputAsHandled(); return; }
         if (_player.InteractionModeActive) return;
-        // Toggle ADS on each accepted MMB press; mouse-up is intentionally ignored.
+        // MMB is ADS for firearms, but a one-target heavy overhead strike for equipped melee.
         if (input is InputEventMouseButton aim && aim.ButtonIndex == MouseButton.Middle && aim.Pressed)
         {
-            if (_weapon != null && _shove?.IsActive != true && GetViewport().GuiGetFocusOwner() == null
+            if (_shove?.IsActive != true && GetViewport().GuiGetFocusOwner() == null
                 && GetViewport().GuiGetHoveredControl() == null && GetWindow().HasFocus())
-                SetAdsActive(!_adsActive);
+            {
+                if (_weapon != null) SetAdsActive(!_adsActive);
+                else if (_melee != null && !_melee.IsAttacking
+                    && _melee.RuntimeSettings.AlternateAttackEnabled)
+                { _queuedMeleeStrike = MeleeStrikeKind.Overhead; RequestShot(); }
+            }
             GetViewport().SetInputAsHandled(); return;
         }
         // Manual R reload is handled by the currently selected shared firearm.
@@ -128,7 +134,11 @@ public partial class FirstPersonWeapon : Node
             return;
         }
         if (input is InputEventMouseButton mouse && mouse.ButtonIndex == MouseButton.Left && mouse.Pressed)
-        { _held = true; RequestShot(); GetViewport().SetInputAsHandled(); }
+        {
+            _held = true;
+            _queuedMeleeStrike = MeleeStrikeKind.Sweep;
+            RequestShot(); GetViewport().SetInputAsHandled();
+        }
     }
 
     // =========================================================
@@ -293,7 +303,11 @@ public partial class FirstPersonWeapon : Node
     // =========================================================
     private void RequestShot() { _requested = true; SetPhysicsProcess(true); }
     private void OnReadyToFire() { if (_held && _weapon != null && _weapon.RuntimeSettings.Automatic) RequestShot(); }
-    private void CancelTrigger() { _held = false; _requested = false; SetPhysicsProcess(false); }
+    private void CancelTrigger()
+    {
+        _held = false; _requested = false; _queuedMeleeStrike = MeleeStrikeKind.Sweep;
+        SetPhysicsProcess(false);
+    }
 
     // =========================================================
     // Queries happen only for actual requested shots, never every frame while merely looking around.
@@ -308,7 +322,11 @@ public partial class FirstPersonWeapon : Node
         if (_requested && _shove?.IsActive != true)
         {
             _requested = false;
-            if (_melee != null) _melee.TryStart(_player, direction, true);
+            if (_melee != null)
+            {
+                _melee.TryStart(_player, direction, true, _queuedMeleeStrike);
+                _queuedMeleeStrike = MeleeStrikeKind.Sweep;
+            }
             else
             {
                 // Same unspread camera target used by the optional FPS aim debug line.

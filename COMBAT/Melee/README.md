@@ -23,3 +23,7 @@ Create one `MeleeAttack(actorCollisionBody)` per attacking actor when equipment/
 ## CM2-D — side-on shove
 
 Implemented: two-handed sideways gun push in overhead/FPS, driven by existing attack timing. Focus/menu/switch/unload cancels and restores the gun; pending fire waits for recovery. No idle pose processing. See ../README.md CM2-D handoff for tuning and deferred local build/visual checks. Prior no-animation statements are historical.
+
+## CM4 bat overhead move (2026-10-31)
+
+MMB with the equipped bat selects a runtime-duplicated narrow one-target attack profile through the **existing** `MeleeAttack.AdvanceSweep` method, retaining its bounded candidate scan, occlusion, anatomy-part selection, shared cooldown and per-attack dedup. No new attack/ray system is added to `COMBAT/Melee`; this common code stays unchanged. New per-weapon alternate-strike controls are authored in `MeleeSettings` and enabled only for the bat profile. See [BaseballBat_001](../../EQUIPMENT/Melee/BaseballBat_001/README.md#cm4--mmb-overhead-heavy-strike-2026-10-31). Source implementation awaits local Godot verification.

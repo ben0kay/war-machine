@@ -49,6 +49,39 @@ public static class FirstPersonMeleeSwing
     }
 
     // =========================================================
+    // Separate heavy overhead blow: the bat raises near the right shoulder, strikes down
+    // along camera centre, then settles. No new collision geometry or separate animation clock.
+    public static void ApplyOverhead(Node3D weapon, Transform3D rest, MeleeSettings settings, float elapsed)
+    {
+        float windup = SafeTime(settings.WindupSeconds), active = SafeTime(settings.ActiveSeconds);
+        float recovery = SafeTime(settings.RecoverySeconds);
+        Basis lifted = Orient(-12f, 78f, -8f), impact = Orient(8f, -57f, 8f);
+        Basis rotation;
+        Vector3 shift;
+        if (elapsed < windup)
+        {
+            float t = Smooth(elapsed / windup);
+            rotation = rest.Basis.Slerp(lifted, t);
+            shift = new Vector3(0.06f * t, 0.29f * t, 0.05f * t);
+        }
+        else if (elapsed < windup + active)
+        {
+            float t = Mathf.Clamp((elapsed - windup) / active, 0f, 1f);
+            rotation = lifted.Slerp(impact, t);
+            shift = new Vector3(Mathf.Lerp(0.06f, -0.04f, t),
+                Mathf.Lerp(0.29f, -0.23f, t), Mathf.Lerp(0.05f, -0.19f, t));
+        }
+        else
+        {
+            float t = Smooth((elapsed - windup - active) / recovery);
+            rotation = impact.Slerp(rest.Basis, t);
+            shift = new Vector3(Mathf.Lerp(-0.04f, 0f, t),
+                Mathf.Lerp(-0.23f, 0f, t), Mathf.Lerp(-0.19f, 0f, t));
+        }
+        weapon.Transform = new Transform3D(rotation, rest.Origin + shift);
+    }
+
+    // =========================================================
     // Local yaw/pitch shape the swing; this roll only twists the handle. Screen tilt is applied separately.
     private static Basis Orient(float yaw, float pitch, float roll)
         => new Basis(Vector3.Up, Mathf.DegToRad(yaw))

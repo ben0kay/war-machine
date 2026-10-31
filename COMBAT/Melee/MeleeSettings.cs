@@ -22,6 +22,18 @@ public partial class MeleeSettings : Resource
     [Export(PropertyHint.Range, "0.1,1.2,0.05")] public float FirstPersonWindupLeft { get; set; } = 0.85f;
     [Export(PropertyHint.Range, "0.1,1.2,0.05")] public float FirstPersonFollowRight { get; set; } = 0.70f;
     [Export(PropertyHint.Range, "0,135,1")] public float FirstPersonSideTiltDegrees { get; set; } = 90f;
+    [ExportGroup("Alternate overhead strike (MMB)")]
+    // A separate authored move, using the same one-active-attack timer and contact dispatcher.
+    // Default disabled so future melee weapons must opt into an MMB move explicitly.
+    [Export] public bool AlternateAttackEnabled { get; set; }
+    [Export(PropertyHint.Range, "0,200,1")] public float AlternateDamage { get; set; } = 20f;
+    [Export(PropertyHint.Range, "10,90,1")] public float AlternateArcDegrees { get; set; } = 28f;
+    [Export(PropertyHint.Range, "0.05,3,0.05")] public float AlternateVerticalTolerance { get; set; } = 0.75f;
+    [Export(PropertyHint.Range, "0.01,0.5,0.01")] public float AlternateSweepThickness { get; set; } = 0.12f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float AlternateWindupSeconds { get; set; } = 0.35f;
+    [Export(PropertyHint.Range, "0.01,1,0.01")] public float AlternateActiveSeconds { get; set; } = 0.14f;
+    [Export(PropertyHint.Range, "0,1,0.01")] public float AlternateRecoverySeconds { get; set; } = 0.46f;
+    [Export(PropertyHint.Range, "0.05,3,0.01")] public float AlternateCooldownSeconds { get; set; } = 1.05f;
     [ExportGroup("Attack timing")]
     [Export(PropertyHint.Range, "0,1,0.01")] public float WindupSeconds { get; set; } = 0.10f;
     [Export(PropertyHint.Range, "0.01,1,0.01")] public float ActiveSeconds { get; set; } = 0.12f;
