@@ -18,8 +18,12 @@ public partial class PoliceStationMesh : Node3D
     public Callable RefreshPreviewButton => Callable.From(RefreshPreview);
 
     private const float Width = 48f, Depth = 64f, CorridorHalfWidth = 2.5f;
-    // The underground shell fills the front half of the existing footprint.
-    private const float BasementRearZ = 0f, BasementFrontZ = 32f;
+    // PS1.7: the basement occupies the full building footprint. Above-grade
+    // geometry and its Terrain3D excavation footprint stay unchanged.
+    private const float BasementRearZ = -32f, BasementFrontZ = 32f;
+    private const float CellBlockRearZ = -26f, CellBlockFrontZ = -2f;
+    private const float CellCorridorHalfWidth = 3f, CellBackWallX = 12f;
+    private const int CellsPerSide = 4;
     // The doorway-to-first-riser landing and side approach are both at least 2m clear.
     private const float CoreWallX = 7f, StairEntryZ = 20.8f;
     private const float LowerFlightX = 11f, UpperFlightX = 15.3f;
@@ -615,53 +619,78 @@ public partial class PoliceStationMesh : Node3D
     }
 
     // =========================================================
-    // One cheap smooth slope collider per flight; each of twelve visual treads/risers is noncolliding.
+    // One cheap smooth slope collider per flight; the thick treads, closed
+    // risers, stair pan and rail posts are authored around that same walk ramp.
     private static void StairFlight(Node3D visuals, StaticBody3D body, string name,
         float x, float startZ, float endZ, float baseY, float rise,
         Material tread, Material riser, Material rail, Material edge)
     {
         const int count = 12;
-        const float width = 3.2f;
+        const float width = 3.2f, treadThickness = 0.16f, railOffset = 1.52f;
         float run = Mathf.Abs(endZ - startZ), depth = run / count, dy = rise / count;
         bool north = endZ > startZ;
+        float pitch = (north ? -1f : 1f) * Mathf.Atan2(rise, run);
+        float length = Mathf.Sqrt(run * run + rise * rise);
+        float midZ = (startZ + endZ) * 0.5f, midY = baseY + rise * 0.5f;
+
+        // The single inclined stair pan and its two side stringers give the
+        // thin individual treads a continuous, opaque underside. Visual only:
+        // the original one-shape smooth ramp remains the sole walking collider.
+        StructureGeometry.Box(visuals, null, name + "SolidUnderside",
+            new(x, midY - 0.36f, midZ), new(width, 0.30f, length), riser, pitch);
+        foreach (float stringerX in new[] { x - 1.55f, x + 1.55f })
+            StructureGeometry.Box(visuals, null, name + "SideStringer",
+                new(stringerX, midY - 0.10f, midZ),
+                new(0.14f, 0.50f, length), rail, pitch);
+
         for (int i = 0; i < count; i++)
         {
             float z = Mathf.Lerp(startZ, endZ, (i + 0.5f) / count);
             float y = baseY + (i + 1) * dy;
             StructureGeometry.Box(visuals, null, name + "Tread",
-                new(x, y - 0.035f, z), new(width, 0.07f, depth), tread);
+                new(x, y - treadThickness * 0.5f, z),
+                new(width, treadThickness, depth), tread);
+            // The riser belongs at the START of this tread, where it joins the
+            // previous elevation. The old far-edge placement left daylight gaps.
+            float riserZ = z - (north ? 1f : -1f) * (depth * 0.5f - 0.025f);
             StructureGeometry.Box(visuals, null, name + "Riser",
-                new(x, y - dy * 0.5f, z + (north ? 1f : -1f) * depth * 0.45f),
-                new(width, dy, 0.065f), riser);
-            // Visual-only matte blue tread nosing: 6cm front band, 1mm above the
-            // tread surface to avoid coplanar flicker. Collision remains the same ramp.
-            float edgeZ = z + (north ? 1f : -1f) * (depth * 0.5f - 0.035f);
+                new(x, y - dy * 0.5f, riserZ),
+                new(width, Mathf.Abs(dy) + 0.02f, 0.12f), riser);
+            float noseZ = z + (north ? 1f : -1f) * (depth * 0.5f - 0.035f);
             StructureGeometry.Box(visuals, null, name + "EdgeStrip",
-                new(x, y + 0.007f, edgeZ), new(width, 0.012f, 0.06f), edge);
+                new(x, y + 0.007f, noseZ), new(width, 0.012f, 0.06f), edge);
         }
-        float pitch = (north ? -1f : 1f) * Mathf.Atan2(rise, run);
-        float length = Mathf.Sqrt(run * run + rise * rise);
+
         body.AddChild(new CollisionShape3D { Name = name + "WalkableRamp",
-            Position = new(x, baseY + rise * 0.5f - 0.025f, (startZ + endZ) * 0.5f),
+            Position = new(x, midY - 0.025f, midZ),
             Rotation = new(pitch, 0f, 0f), Shape = new BoxShape3D { Size = new(width, 0.14f, length) } });
-        // Rail X coordinates must not shadow the "edge" nosing material parameter.
-        foreach (float railX in new[] { x - 1.76f, x + 1.76f })
+
+        // Both guard rails now sit above their side stringers *inside* the
+        // 3.2m stair width. Posts extend from each real tread/landing to the
+        // pitched handrail, with no fixed-length supports hanging in empty air.
+        foreach (float railX in new[] { x - railOffset, x + railOffset })
         {
             StructureGeometry.Box(visuals, body, name + "Rail",
-                new(railX, baseY + rise * 0.5f + 0.90f, (startZ + endZ) * 0.5f),
+                new(railX, midY + 0.90f, midZ),
                 new(0.10f, 0.11f, length), rail, pitch);
-            for (int i = 0; i <= 5; i++)
+            for (int post = 0; post <= 6; post++)
             {
-                float t = i / 5f;
-                StructureGeometry.Box(visuals, null, name + "Baluster",
-                    new(railX, baseY + rise * t + 0.43f, Mathf.Lerp(startZ, endZ, t)),
-                    new(0.10f, 0.85f, 0.10f), rail);
+                int stepIndex = Mathf.Min(count - 1, post * 2);
+                float t = post == 0 ? 0f : post == 6 ? 1f : (stepIndex + 0.5f) / count;
+                float treadTop = post == 0 ? baseY :
+                    post == 6 ? baseY + rise : baseY + (stepIndex + 1) * dy;
+                float postBottom = treadTop - 0.10f;
+                float postTop = baseY + rise * t + 0.95f;
+                StructureGeometry.Box(visuals, null, name + "RailPost",
+                    new(railX, (postBottom + postTop) * 0.5f, Mathf.Lerp(startZ, endZ, t)),
+                    new(0.12f, postTop - postBottom, 0.12f), rail);
             }
         }
     }
 
     // =========================================================
-    // PS1.5: self-contained half-footprint underground shell, using the existing U-core.
+    // PS1.7: self-contained full-footprint underground detention level, retaining
+    // the existing front U-core, ground entrance and completed stair opening.
     // The downward first flight uses the OTHER lane (X=15.3) so the original ascending
     // entry at X=11 and every above-ground stair component stay exactly where they are.
     private static void BuildBasement(Node3D basement, StaticBody3D groundBody, Node3D groundGuards,
@@ -691,8 +720,8 @@ public partial class PoliceStationMesh : Node3D
         StructureGeometry.WallX(WallGroup(walls, "BasementFrontWall"), body, "BasementFront",
             -xOuter, xOuter, zFront, floorY, wallTop, basementWall);
 
-        // One secure back room and one west utility room provide recognizable basement
-        // zones without furniture or alterations to the rooms directly overhead.
+        // Keep the original front secure entry and west utility room intact.
+        // A rear detention corridor and cells are added behind this entry.
         var secure = WallGroup(walls, "BasementSecurePartition");
         DoorPartitionX(secure, body, clear, "BasementSecureDoor", -Width * 0.5f, Width * 0.5f,
             8f, floorY, wallTop, 0f, 3.6f, partitions, trim, partitions);
@@ -711,6 +740,8 @@ public partial class PoliceStationMesh : Node3D
             floorY, utilityHalfDoor * 2f, floorY + 2.9f, trim);
         clear.Reserve("BasementUtilityDoor", new(utilityX, floorY + 1.45f, utilityDoorZ),
             new(3.6f, 2.9f, 3.6f));
+
+        BuildDetentionWing(walls, body, clear, floorY, wallTop, partitions, trim);
 
         var stairs = StructureGeometry.Group(basement, "Stairs_-1_to_0");
         stairs.SetMeta("connects_floor_from", -1); stairs.SetMeta("connects_floor_to", 0);
@@ -761,7 +792,7 @@ public partial class PoliceStationMesh : Node3D
         clear.Reserve("BasementMainRoute", new(11f, floorY + 1.4f, 15f),
             new(4f, 2.8f, 14f));
 
-        if (settings.CeilingLightsEnabled && settings.RoomLightsEnabled)
+        if (settings.CeilingLightsEnabled)
         {
             const string path = "res://ENVIRONMENT/Lighting/Fixtures/IndoorCeiling/IndoorCeilingLight.tscn";
             var lightScene = ResourceLoader.Load<PackedScene>(path);
@@ -769,14 +800,121 @@ public partial class PoliceStationMesh : Node3D
             else
             {
                 float ceilingY = wallTop - 0.08f;
-                foreach (Vector2 xz in new[] {
-                    new Vector2(-16f, 24f), new Vector2(-16f, 13f),
-                    new Vector2(0f, 24f), new Vector2(0f, 13f),
-                    new Vector2(16f, 13f), new Vector2(16f, 4f),
-                    new Vector2(0f, 4f) })
-                    AddCeilingFixture(lightScene, lighting, "BasementRoomLight",
-                        new(xz.X, ceilingY, xz.Y), false);
+                if (settings.CorridorLightsEnabled)
+                    foreach (float z in new[] { -23f, -15f, -7f, 1f })
+                        AddCeilingFixture(lightScene, lighting, "DetentionCorridorLight",
+                            new(0f, ceilingY, z), true);
+                if (settings.RoomLightsEnabled)
+                    foreach (Vector2 xz in new[] {
+                        new Vector2(-16f, 24f), new Vector2(-16f, 13f),
+                        new Vector2(0f, 24f), new Vector2(0f, 13f),
+                        new Vector2(16f, 13f), new Vector2(16f, 4f),
+                        new Vector2(0f, 4f), new Vector2(-8f, -19f),
+                        new Vector2(8f, -13f), new Vector2(-8f, -7f),
+                        new Vector2(8f, -25f), new Vector2(-18f, -14f),
+                        new Vector2(18f, -14f) })
+                        AddCeilingFixture(lightScene, lighting, "BasementRoomLight",
+                            new(xz.X, ceilingY, xz.Y), false);
             }
+        }
+    }
+
+    // =========================================================
+    // Eight accessible jail-style cells: four west, four east, arranged along
+    // a broad central corridor. Fronts use native collidable bars with true 1.9m
+    // open entrances; rear service wings are divided into reachable rooms.
+    // The detention wing is static, generated once, with no AI, doors or ticks.
+    private static void BuildDetentionWing(Node3D walls, StaticBody3D body, StructureClearance clear,
+        float floorY, float ceilingY, Material partition, Material bars)
+    {
+        const float cellDepth = 6f, doorHalf = 0.95f;
+        if (CellBlockRearZ + CellsPerSide * cellDepth != CellBlockFrontZ ||
+            CellCorridorHalfWidth < 2.5f || CellBackWallX <= CellCorridorHalfWidth + 3f ||
+            ceilingY - floorY < 3.4f || BasementRearZ > CellBlockRearZ - 3f)
+            throw new System.InvalidOperationException(
+                "PoliceStation001: invalid detention cell grid or rear service cross-hall.");
+
+        foreach (int side in new[] { -1, 1 })
+        {
+            string wingName = side < 0 ? "West" : "East";
+            float corridorX = side * CellCorridorHalfWidth;
+            float backX = side * CellBackWallX;
+            float roomMinX = Mathf.Min(corridorX, backX);
+            float roomMaxX = Mathf.Max(corridorX, backX);
+            var wing = WallGroup(walls, wingName + "DetentionWing");
+
+            // The continuous rear wall separates each cell from secure service
+            // rooms. Side partitions meet it and the barred corridor face flush.
+            StructureGeometry.WallZ(wing, body, wingName + "CellBack",
+                backX, CellBlockRearZ, CellBlockFrontZ, floorY, ceilingY, partition, 0.18f);
+            for (int cell = 0; cell < CellsPerSide; cell++)
+            {
+                float z0 = CellBlockRearZ + cell * cellDepth;
+                float z1 = z0 + cellDepth, doorZ = (z0 + z1) * 0.5f;
+                string cellName = wingName + "Cell" + (cell + 1);
+                StructureGeometry.WallX(wing, body, cellName + "RearDivider",
+                    roomMinX, roomMaxX, z0, floorY, ceilingY, partition, 0.18f);
+
+                BuildCellBarSpan(wing, body, cellName + "BarsA", corridorX,
+                    z0 + 0.10f, doorZ - doorHalf, floorY, ceilingY, bars);
+                BuildCellBarSpan(wing, body, cellName + "BarsB", corridorX,
+                    doorZ + doorHalf, z1 - 0.10f, floorY, ceilingY, bars);
+                DoorFrameZ(wing, cellName + "OpenDoor", corridorX, doorZ,
+                    floorY, doorHalf * 2f, floorY + 2.90f, bars);
+                clear.Reserve(cellName + "Entry",
+                    new(corridorX, floorY + 1.45f, doorZ),
+                    new(3.6f, 2.9f, doorHalf * 2f));
+            }
+
+            StructureGeometry.WallX(wing, body, wingName + "CellFrontDivider",
+                roomMinX, roomMaxX, CellBlockFrontZ,
+                floorY, ceilingY, partition, 0.18f);
+
+            // Two partitions per side make three large rear service rooms.
+            // They are entered from the front processing vestibule (Z=-2..8)
+            // and connected to one another through genuine framed apertures.
+            float sideMin = side < 0 ? -Width * 0.5f + ExteriorInsideFace :
+                CellBackWallX + PartitionHalfThickness;
+            float sideMax = side < 0 ? -CellBackWallX - PartitionHalfThickness :
+                Width * 0.5f - ExteriorInsideFace;
+            foreach (float dividerZ in new[] { -18f, -10f })
+            {
+                var divider = WallGroup(walls, wingName + "ServiceDivider");
+                DoorPartitionX(divider, body, clear, wingName + "ServiceEntry",
+                    sideMin, sideMax, dividerZ, floorY, ceilingY,
+                    side * 17.5f, 2.8f, partition, bars, partition);
+            }
+        }
+
+        clear.Reserve("BasementDetentionCorridor",
+            new(0f, floorY + 1.45f, -9f), new(5.5f, 2.9f, 34f));
+        clear.Reserve("BasementRearCrossHall",
+            new(0f, floorY + 1.45f, -29f),
+            new(Width - 0.8f, 2.9f, 5.5f));
+    }
+
+    // =========================================================
+    // Fixed square detention bars, with real individual colliders. No invisible
+    // full-width wall may cross a cell door opening; the player can enter each cell.
+    private static void BuildCellBarSpan(Node3D visual, StaticBody3D body, string name,
+        float x, float startZ, float endZ, float bottom, float top, Material material)
+    {
+        if (endZ <= startZ) throw new System.InvalidOperationException(
+            "PoliceStation001: detention bars would overlap the cell doorway.");
+        float span = endZ - startZ;
+        StructureGeometry.Box(visual, body, name + "LowerRail",
+            new(x, bottom + 0.08f, (startZ + endZ) * 0.5f),
+            new(0.12f, 0.16f, span), material);
+        StructureGeometry.Box(visual, body, name + "UpperRail",
+            new(x, top - 0.08f, (startZ + endZ) * 0.5f),
+            new(0.12f, 0.16f, span), material);
+        int intervals = Mathf.Max(1, Mathf.CeilToInt(span / 0.50f));
+        for (int i = 0; i <= intervals; i++)
+        {
+            float z = Mathf.Lerp(startZ, endZ, i / (float)intervals);
+            StructureGeometry.Box(visual, body, name + "VerticalBar",
+                new(x, (bottom + top) * 0.5f, z),
+                new(0.12f, top - bottom, 0.12f), material);
         }
     }
 

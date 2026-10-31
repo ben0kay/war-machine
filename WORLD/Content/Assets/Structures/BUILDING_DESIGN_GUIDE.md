@@ -49,6 +49,14 @@ The station was intended to be an early structural stress test, but it exposed r
 
 ## Original shell-and-circulation requirements (retained from the former mixed guide)
 
+## Closed stair construction and anchored rails — PS1.7 (2026-10-31)
+
+First-person structural stair inspection must include **side and underside views**: a flight may be walkable but still show daylight between thin treads or floating handrail posts. When steps use one smooth Godot slope collider beneath separate noncolliding step meshes, put each visual **riser at the elevation boundary between successive treads**, add thick visible treads and a continuous noncolliding backing/stringer, and never replace the walking ramp with dozens of abrupt step colliders just to close a visual gap. Preserve clearance at turns and room doorways.
+
+A 3.2m tread extends only 1.6m to each side of the flight centre. Rail/post X coordinates outside that envelope require intentional connecting structural stringers; otherwise posts float beside the stairs. Align rails over the tread/stringer, anchor posts at real stair or landing elevations, and compute their tops against the inclined handrail rather than using a fixed post height independent of rise direction. Verify both positive- and negative-rise flights, including bottom and top landing posts, rail collider contact and accessible stair width.
+
+For below-ground detention corridors, author genuinely traversable central routes and actual cell door **openings** with corresponding *visual and physical* gaps. Do not replace jail fronts with a full invisible collider through a doorway, or end cell partitions short of their barred wall/back wall. Check that cell bars, service-room walls, foundation perimeter and rear hall connect without dangling stubs. Add functional doors, prisoners or furniture only in a separately authorized pass.
+
 ## FPS surface readability — PS1.6 material contrast rule (2026-10-31)
 
 When a procedural building uses flat-shaded box meshes, **do not give the floor, underside of slab (ceiling), wall and stair treads nearly the same colour/value**. It can conceal tread depth and floor boundaries even when the collision meshes are correct. Use a deliberate hierarchy: ceiling brightest, walls lighter than floors, finished floors darker, stair treads clearly distinct from paler risers, and a thin coloured step nose on every tread. PoliceStation001 uses **muted dark blue** as an understated nosing accent, not hazard-yellow or emissive stripes.

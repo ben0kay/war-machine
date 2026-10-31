@@ -92,3 +92,15 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 **Prevention:** Before adding a new method parameter or local, scan its **complete method scope** for same-named variables (including `foreach` and nested scopes). Prefer descriptive identifiers such as `edgeMaterial` and `railX` rather than generic `edge`. Review the final diff and run **one initial Godot .NET build** whenever practical; balanced braces/static source checks are not proof of compilation.
 
 **Status:** Fix committed in source, actual Godot rebuild pending local user verification.
+
+## LL005 — Floating stair rails and daylight between thin step meshes (2026-10-31)
+
+**Observed:** After PS1.6, the owner supplied an FPS screenshot showing handrails/balusters visibly suspended beside PoliceStation001's U-stair and gaps through thin stair treads, despite successful walking.
+
+**Confirmed source cause:** `StairFlight()` generated each noncolliding tread as a 0.07m-thick plank in a **3.2m-wide** flight, but placed the railing centre lines **±1.76m** from the centre—outside the tread edges **±1.6m**. Posts used a fixed 0.85m height and a slope-calculated centre; their bottoms therefore did not reliably contact any physical-looking step, especially descending. Risers were placed near the far edge of their respective steps, rather than at the boundary to the preceding elevation, so the flight looked open-sided. The one smooth incline collider supported movement but did **not** create a visible stair backing.
+
+**Source correction pending owner validation:** Shift rail centres inwards to **±1.52m**, add continuous visual side stringers and a sloped underside pan, thicken treads to **0.16m**, position each riser at its entering edge and give each rail its own posts with bases derived from the exact chosen tread/landing height and tops from the matching sloped handrail. Retain the original four smooth walking ramp colliders, level changes, U-turns, blue nosing, deck shaft cutouts and collision semantics. Basement detention rooms introduced in the same PS1.7 phase must also maintain genuine open cell entrances and connected wall ends.
+
+**Prevent recurrence:** Every new FPS stair prefab must be inspected **from underneath and both sides**, not only top-down or by walking on it. Check tread width versus guard X offsets, real riser continuity on rising and descending flights, step-to-landing joints, baluster anchors, collision versus visual boundary and existence of a physically plausible support/soffit. Do not introduce dozens of individual step colliders for a visual gap; keep smooth ramps as the walking proxy when intended. See `BUILDING_DESIGN_GUIDE.md` PS1.7 for the reusable contract.
+
+**Status:** photographed original defect and source geometry confirmed; corrective source is implemented, but Godot build and FPS rendering/physics acceptance require the user's local test.
