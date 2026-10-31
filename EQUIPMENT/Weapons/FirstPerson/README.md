@@ -57,3 +57,12 @@ Press physical **R** while mouse is captured (and no UI input has focus). The se
 ## AM1 shared ammunition HUD (2026-10-28)
 
 The inherited FPS world displays the **same** AM1 `GameplayHUD/Ammo/AmmoHud` as top-down. `FirstPersonWorld.ResolveWeaponSlots` points the shared WorldController's one-time HUD binding at `FirstPersonEquipment/WeaponSlots`. It shows the currently selected gun's magazine / reserve, reloading status, and follows 1/2 weapon swaps without polling. Mouse capture and aim are unaffected because all Controls ignore mouse input. Inspect [AMMO_IMPLEMENTATION_PLAN.md](../AMMO_IMPLEMENTATION_PLAN.md) for layout/validation. No FPS-specific ammo counts or new firing logic.
+
+
+## ADS0 — held MMB aim-down-sights (2026-10-31)
+
+**Source implemented; local build/visual validation pending.** Hold MMB with a captured FPS mouse while a firearm is selected to move its entire root toward authored iron-sight alignment, with smooth FOV and pose interpolation. Releasing reverses the motion. Rifle ADS animation multiplier is **1.1×**, movement multiplier **0.70×**, FOV **65°**; MachineGun (future SMG) is **0.9×**, **0.85×**, **70°**. Base animation is **0.20s** in `FirstPersonMaster.tres`; a multiplier of 1.0× means that full duration. Each weapon's `FpsAdsOffset`, optional pitch, animation multiplier, movement multiplier and ADS FOV live in its existing master. Current aim offsets are preliminary, requiring owner sight-alignment checks.
+
+ADS only applies in FPS, does not change bullet spread or recoil strength, and leaves the shared damage/obstruction pipeline intact. Existing `Visual`-only recoil layers over the root/muzzle ADS pose. Camera pitch from accepted shots still requires mouse compensation. Animation shares the existing temporary recoil render callback, sleeping when settled; FPS movement penalty wakes shared player physics only on MMB state changes. Interaction focus, Q shove, Escape, lost focus, GUI blocking, switching and unload reset ADS. Slot-3 bat cannot ADS.
+
+See [ADS implementation plan](../ADS_IMPLEMENTATION_PLAN.md) for ADS0 acceptance and unapproved ADS1 carried-weapon weight / ADS2 polish phases.

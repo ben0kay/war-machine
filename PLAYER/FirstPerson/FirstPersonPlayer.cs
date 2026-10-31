@@ -5,12 +5,25 @@ public partial class FirstPersonPlayer : PlayerController
 {
     private FirstPersonCamera _view = null!;
     private FirstPersonSettings _fps = null!;
+    private float _adsMovementMultiplier = 1f;
+
+    // =========================================================
+    // Equipment updates only when ADS starts/stops. Wake shared locomotion for immediate speed changes.
+    public void SetAdsMovementMultiplier(float multiplier)
+    {
+        float next = float.IsFinite(multiplier) ? Mathf.Clamp(multiplier, 0.1f, 1f) : 1f;
+        if (Mathf.IsEqualApprox(next, _adsMovementMultiplier)) return;
+        _adsMovementMultiplier = next; SetPhysicsProcess(true);
+    }
+
+    // =========================================================
+    protected override float GetMovementSpeedMultiplier() => _adsMovementMultiplier;
 
     // =========================================================
     // Keep the existing actor identity for zombies, but hide its third-person art from the eye camera.
     public override void Initialize(PlayerSettings settings, Camera3D camera)
     {
-        _view = (FirstPersonCamera)camera; _fps = _view.ViewSettings;
+        _view = (FirstPersonCamera)camera; _fps = _view.ViewSettings; _adsMovementMultiplier = 1f;
         var movement = (PlayerSettings)settings.Duplicate(true);
         movement.WalkSpeed = Mathf.Max(0.1f, _fps.WalkSpeed);
         movement.RunMultiplier = Mathf.Max(1, _fps.RunMultiplier);

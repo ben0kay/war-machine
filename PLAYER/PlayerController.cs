@@ -121,6 +121,8 @@ public partial class PlayerController : CharacterBody3D, IPerceptionTarget, IDam
     protected virtual bool IsMovementKey(Key key) => PlayerInput.MovementKey(key);
     protected virtual Vector2 ReadMovementInput() => PlayerInput.MovementInput();
     protected virtual Vector3 GetMovementDirection(Vector2 keys) => _movement.Direction(keys);
+    // FPS equipment can add an ADS-only movement penalty without changing top-down locomotion.
+    protected virtual float GetMovementSpeedMultiplier() => 1f;
     protected virtual Vector3 UpdateHorizontalVelocity(Vector3 current, Vector3 target, float dt)
         => _movement.HorizontalVelocity(current, target, dt);
 

@@ -17,3 +17,8 @@ The FPS scene inherits the **same** player stance state, low capsule and slow cr
 ## L0a — render-frequency lean
 
 The FPS camera now receives target lean from shared physics and blends its visible camera roll and lateral offset on render frames with `LeanRenderSmoothingSeconds` (0.045s). This avoids the discrete physics-step rotation previously visible when leaning. Mouse yaw and recoil refresh a resting eye offset when already leaned. Weapons remain camera children. FPS authored tilt/shift increased to 16° / 0.20m; physics, stance and collision are unchanged. Local FPS visual and gun-recoil checks pending.
+
+
+## ADS0 — FPS-only movement modifier (2026-10-31)
+
+The FPS equipment adapter updates `FirstPersonPlayer.SetAdsMovementMultiplier` only on held ADS start/stop or cancellation. Shared `PlayerMovement` requests `GetMovementSpeedMultiplier()`, which defaults to 1.0 for top-down; the FPS override supplies the current ADS factor (rifle 0.70, MachineGun 0.85). This composes multiplicatively with stance, sprint, lean and corpse slowdown. The same physics driver wakes for movement changes; no second movement loop. See [ADS plan](../../EQUIPMENT/Weapons/ADS_IMPLEMENTATION_PLAN.md). Source implemented; local verification pending.

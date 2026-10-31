@@ -8,6 +8,7 @@ InvertMouseY = true
 MaximumPitch = 85.0
 EyeInset = 0.15
 WeaponOffset = Vector3(0.22, -0.22, -0.32)
+AdsBaseTransitionSeconds = 0.20
 InterpolateTranslation = true
 TeleportResetDistance = 8.0
 LeanCameraDegrees = 18.0

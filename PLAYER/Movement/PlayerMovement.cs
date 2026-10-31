@@ -60,6 +60,7 @@ public partial class PlayerController
                 : sprinting ? Mathf.Max(1f, _player._settings.RunMultiplier) : 1f);
             if (_player._lean.IsActive) speed *= Mathf.Clamp(_player._settings.LeanMoveMultiplier, 0.1f, 1f);
             if (_player.CorpseSlowdownEnabled) speed *= _player._corpseMovement.Multiplier;
+            speed *= Mathf.Clamp(_player.GetMovementSpeedMultiplier(), 0.1f, 1f);
             Vector3 horizontal = new(_player.Velocity.X, 0, _player.Velocity.Z);
             horizontal = _player.UpdateHorizontalVelocity(horizontal, direction * speed, dt);
             Vector3 before = _player.GlobalPosition;

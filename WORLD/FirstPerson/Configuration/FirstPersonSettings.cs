@@ -48,4 +48,6 @@ public partial class FirstPersonSettings : Resource
     [Export] public float CollisionSafeMargin { get; set; } = 0.01f;
     [ExportGroup("Held weapon")]
     [Export] public Vector3 WeaponOffset { get; set; } = new(0.22f, -0.22f, -0.32f);
+    [ExportGroup("Aim down sights (ADS0)")]
+    [Export(PropertyHint.Range, "0.05,1,0.01,suffix:s")] public float AdsBaseTransitionSeconds { get; set; } = 0.20f;
 }
