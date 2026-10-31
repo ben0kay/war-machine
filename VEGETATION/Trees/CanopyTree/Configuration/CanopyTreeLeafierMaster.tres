@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="CanopyTreeSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Seed = 90817
+MinimumHeight = 17.0
+MaximumHeight = 22.0
+CrownStartFraction = 0.49
+CrownRadius = 3.2
+TrunkBaseRadius = 0.40
+BranchCount = 14
+CrownClustersPerBranch = 4
+FoliageSize = 0.96
+LeafEdgeDetail = 0.20
+LeafSpraysPerClump = 2
+TrunkSegments = 8
+TrunkForks = 3
+BarkColor = Color(0.53, 0.51, 0.43, 1)
+BarkScarColor = Color(0.25, 0.26, 0.22, 1)
+LeafColor = Color(0.13, 0.29, 0.12, 1)
+LeafAccentColor = Color(0.31, 0.43, 0.16, 1)
+FarFoliageScale = 1.2

@@ -2,7 +2,7 @@
 [ext_resource type="Script" path="res://VEGETATION/VegetationConfig.cs" id="1"]
 [resource]
 script = ExtResource("1")
-Enabled = true
+Enabled = false
 Quality = 1
 Density = 0.9
 ParticleBudget = 120000

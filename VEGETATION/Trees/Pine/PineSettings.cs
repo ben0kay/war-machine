@@ -9,7 +9,6 @@ public partial class PineSettings : Resource
     [Export] public int Seed { get; set; } = 78341;
     [Export(PropertyHint.Range, "0,1,0.01")] public float Density { get; set; } = 0.55f;
     [Export(PropertyHint.Range, "8,40,1")] public float Spacing { get; set; } = 20f;
-    [Export(PropertyHint.Range, "64,512,16")] public float RenderDistance { get; set; } = 96f;
     [Export(PropertyHint.Range, "32,192,16")] public int ChunkSize { get; set; } = 32;
     [Export(PropertyHint.Range, "-1,1,0.01")] public float ForestThreshold { get; set; } = -1f;
     [Export(PropertyHint.Range, "0.0001,0.03,0.0001")] public float ForestNoiseFrequency { get; set; } = 0.003f;
@@ -49,8 +48,6 @@ public partial class PineSettings : Resource
     [Export(PropertyHint.Range, "0,1,0.05")] public float FoliageLayering { get; set; } = 0.85f;
     [ExportGroup("Distance / Quality")]
     [Export] public bool UseGeneratedLod { get; set; } = true;
-    [Export(PropertyHint.Range, "32,256,8")] public float LodDistance { get; set; } = 48f;
-    [Export(PropertyHint.Range, "4,48,2")] public float DistanceFadeMargin { get; set; } = 8f;
     [Export(PropertyHint.Range, "2,8,1")] public int FarLeafStride { get; set; } = 6;
     [Export] public bool FarCastShadows { get; set; }
 
@@ -64,8 +61,6 @@ public partial class PineSettings : Resource
     [Export] public bool UseStylizedPine { get; set; } = true;
     [Export(PropertyHint.Range, "0.25,2,0.05")] public float StylizedBaseScale { get; set; } = 0.8f;
     [Export(PropertyHint.Range, "0.1,1.5,0.05")] public float StylizedTrunkRadius { get; set; } = 0.64f;
-    [Export(PropertyHint.Range, "24,96,4")] public float StylizedLod1Distance { get; set; } = 40f;
-    [Export(PropertyHint.Range, "40,160,4")] public float StylizedLod2Distance { get; set; } = 70f;
 
     [ExportGroup("Imported GLB forest comparison")]
     // ON: extract the actual GLB mesh ONCE and use existing seeded MultiMesh forest placement.

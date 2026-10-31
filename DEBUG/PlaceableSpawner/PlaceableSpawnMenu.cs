@@ -1,11 +1,12 @@
-// F1 catalogue-driven placeable preview: canonical GLB wrappers, exported enum variations, no physics.
-// File scan runs once at startup. Key/button events only; no idle process or spawn-index switches.
+// Placeable preview panel: shared WorldController owns F1 and both debug panels' visibility.
+// File scan runs once at startup. This panel handles spawn/clear/close only; no idle processing.
 using Godot;
 using System.Collections.Generic;
 
 public partial class PlaceableSpawnMenu : CanvasLayer
 {
     private const int MaxInstances = 24;
+    public event System.Action? CloseRequested;
     private readonly List<PlaceableEntry> _entries = new();
     private PlayerController? _player;
     private Camera3D? _camera;
@@ -31,7 +32,7 @@ public partial class PlaceableSpawnMenu : CanvasLayer
         PopulateOptions();
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Spawn").Pressed += SpawnSelected;
         GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Clear").Pressed += ClearSpawned;
-        GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Close").Pressed += () => CloseMenu(true);
+        GetNode<Button>("Backdrop/Panel/Margin/Rows/Actions/Close").Pressed += () => CloseRequested?.Invoke();
     }
 
     // =========================================================
@@ -63,36 +64,32 @@ public partial class PlaceableSpawnMenu : CanvasLayer
     }
 
     // =========================================================
-    // F1 opens/closes; Escape closes and leaves FPS mouse released for normal recapture.
+    // Escape closes BOTH debug panels through the shared world owner. F1 is not handled here.
     public override void _Input(InputEvent input)
     {
-        if (input is not InputEventKey key || !key.Pressed || key.Echo) return;
-        bool toggle = key.Keycode == Key.F1 || key.PhysicalKeycode == Key.F1;
-        if (toggle)
+        if (!_backdrop.Visible || input is not InputEventKey key || !key.Pressed || key.Echo) return;
+        if (key.Keycode != Key.Escape && key.PhysicalKeycode != Key.Escape) return;
+        CloseRequested?.Invoke();
+        GetViewport().SetInputAsHandled();
+    }
+
+    // =========================================================
+    // Called only from WorldController. Mouse release/capture is one reversible transition.
+    public void SetMenuVisible(bool open)
+    {
+        if (open == _backdrop.Visible) return;
+        if (open)
         {
-            if (_backdrop.Visible) CloseMenu(true);
-            else if (_player != null && _camera != null) OpenMenu();
-            GetViewport().SetInputAsHandled();
+            if (_player == null || _camera == null) return;
+            _wasCaptured = Input.MouseMode == Input.MouseModeEnum.Captured;
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+            _status.Text = _entries.Count == 0 ? "No eligible GLB object scenes found."
+                : "Temporary placeables · solid collision follows each prefab";
+            _backdrop.Show();
+            return;
         }
-        else if (_backdrop.Visible && (key.Keycode == Key.Escape || key.PhysicalKeycode == Key.Escape))
-        { CloseMenu(false); GetViewport().SetInputAsHandled(); }
-    }
-
-    // =========================================================
-    // Backdrop intercepts mouse clicks so spawning cannot also fire weapons or recapture FPS aiming.
-    private void OpenMenu()
-    {
-        _wasCaptured = Input.MouseMode == Input.MouseModeEnum.Captured;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
-        _status.Text = _entries.Count == 0 ? "No eligible GLB object scenes found." : "Temporary placeables · solid collision follows each prefab";
-        _backdrop.Show();
-    }
-
-    // =========================================================
-    private void CloseMenu(bool restoreCapture)
-    {
         _backdrop.Hide();
-        if (restoreCapture && _wasCaptured) Input.MouseMode = Input.MouseModeEnum.Captured;
+        if (_wasCaptured) Input.MouseMode = Input.MouseModeEnum.Captured;
         _wasCaptured = false;
     }
 

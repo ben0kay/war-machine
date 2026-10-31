@@ -14,8 +14,8 @@ public static class ForestZone
         report = "";
         Vector2 center = settings.CenterXZ, size = settings.SizeXZ;
         if (!center.IsFinite() || !size.IsFinite() || size.X < 16f || size.Y < 16f
-            || size.X > 192f || size.Y > 192f)
-        { report = "Invalid centre or size (16–192m per axis)."; return false; }
+            || size.X > 192f || size.Y > 320f)
+        { report = "Invalid centre or size (width 16–192m, north/south length 16–320m)."; return false; }
         footprint = new Rect2(center - size * 0.5f, size);
         float band = Mathf.Clamp(settings.TransitionWidth, 0f, 24f);
         Rect2 sampleArea = footprint.Grow(band);
@@ -25,12 +25,9 @@ public static class ForestZone
             || sampleArea.End.Y >= WorldSettings.TerrainSize - edgeMargin)
         { report = "Footprint/transition leaves the 1024m gameplay terrain."; return false; }
 
-        // Any authored hard-surface/patrol/actor clearing blocks the dedicated dense forest core.
-        foreach (Rect2 exclusion in reserved)
-            if (footprint.Intersects(exclusion))
-            { report = $"Footprint overlaps existing world reservation at {exclusion}."; return false; }
-
-        int valid = 0, steep = 0, total = 0;
+        // DF2.5: a long forest can border village lots or roads. Those reservations exclude
+        // individual tree candidates; a small edge overlap must not reject the whole strip.
+        int valid = 0, steep = 0, total = 0, excluded = 0;
         float min = float.PositiveInfinity, max = float.NegativeInfinity, worstSlope = 0f;
         float step = Mathf.Clamp(settings.SurveyStep, 2f, 12f);
         float allowedSlope = Mathf.Clamp(settings.MaximumSlope, 0.1f, 1.5f);
@@ -39,18 +36,24 @@ public static class ForestZone
         for (int z = 0; z <= nz; z++) for (int x = 0; x <= nx; x++)
         {
             Vector2 p = sampleArea.Position + new Vector2(sampleArea.Size.X * x / nx, sampleArea.Size.Y * z / nz);
+            if (IsReserved(p, reserved)) { excluded++; continue; }
             if (!TryTerrainSample(data, p, out float h, out float slope))
             { report = $"Missing Terrain3D data at XZ {p}."; return false; }
             min = Mathf.Min(min, h); max = Mathf.Max(max, h);
             worstSlope = Mathf.Max(worstSlope, slope); total++;
             if (slope > allowedSlope) steep++; else valid++;
         }
-        // A few steeper edge/rock spots are acceptable, but not an inaccessible forest plateau.
+        // Preserve enough actual forest area; don't approve a strip dominated by reservations.
+        if (total < Mathf.CeilToInt((total + excluded) * 0.4f))
+        { report = $"Too little open forest ground ({total}/{total + excluded} free samples)."; return false; }
         if (valid < Mathf.CeilToInt(total * 0.8f))
-        { report = $"Terrain too steep over {steep}/{total} samples (slope limit {allowedSlope:F2})."; return false; }
+        { report = $"Terrain too steep over {steep}/{total} open samples (slope limit {allowedSlope:F2})."; return false; }
 
-        // Start at the village's authored eastern road, not from current/player-relative position.
-        Vector2 entrance = footprint.Position + new Vector2(0, size.Y * 0.5f);
+        // Keep the original eastern-road entrance near the southern forest, rather than
+        // moving it north when the same strip is extended along the village buildings.
+        float entranceZ = Mathf.Clamp(settings.TrailEntryZ,
+            footprint.Position.Y + 8f, footprint.End.Y - 8f);
+        Vector2 entrance = new(footprint.Position.X, entranceZ);
         Vector2 approach = world.VillageEnabled ? world.VillageOriginXZ + new Vector2(35, 35) : world.SpawnXZ;
         float length = approach.DistanceTo(entrance);
         int sections = Mathf.Max(1, Mathf.CeilToInt(length / 4f));
@@ -61,8 +64,17 @@ public static class ForestZone
             { report = $"Village-to-forest approach not walkable at XZ {p} (max slope {allowedSlope:F2})."; return false; }
         }
         report = $"XZ {center}, size {size}, extent {footprint}, terrain {min:F1}–{max:F1}m, "
-            + $"slope max {worstSlope:F2}, suitable {valid}/{total}, access {length:F0}m.";
+            + $"slope max {worstSlope:F2}, suitable {valid}/{total}, reserved {excluded}, access {length:F0}m.";
         return true;
+    }
+
+    // =========================================================
+    // Shared point test: retain village buildings, roads, robot paths and spawn clearings.
+    private static bool IsReserved(Vector2 point, Godot.Collections.Array<Rect2> reserved)
+    {
+        foreach (Rect2 blocked in reserved)
+            if (blocked.HasPoint(point)) return true;
+        return false;
     }
 
     // =========================================================

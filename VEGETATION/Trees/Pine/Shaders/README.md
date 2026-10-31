@@ -8,3 +8,5 @@ Both shaders are used in `PinePlacement`'s existing `MultiMesh` batches. No per-
 ## Stylized PineTree001 runtime adapter (PINE-ST1)
 
 `StylizedPineFoliage.gdshader` is used only by the **world's seeded stylized-pine batches**. Loads source vertex colour tint parameters from `ASSETS/Vegetation/Trees/PineTree001/Materials/PineTree001Foliage.tres`, applies palette/luminance matching, keeps wind tied to existing weather sliders, and supports ordered top-down per-tree fade through `INSTANCE_CUSTOM.r` on **LOD1, LOD2 and LOD3**. Bark uses the pack's unchanged material; preview pack shaders are not edited. One shared shader material per forest, zero per-tree CPU callbacks.
+
+**STG1:** StylizedPineFoliage now uses the genuine Godot shader-global `wm_foliage_tint` and `wm_foliage_tint_strength` for unified pine/grass/DF2 canopy palette, while preserving the existing 4×4 top-down fade, GPU wind and local palette response. Project globals are authored in `project.godot`, changeable under Project Settings → Shader Globals; old original imported pine source shader and other modes unchanged.

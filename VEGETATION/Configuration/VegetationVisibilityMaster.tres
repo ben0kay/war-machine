@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="VegetationVisibilitySettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Configuration/VegetationVisibilitySettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+NoFogDistance = 160.0
+FogSafetyBuffer = 24.0
+Lod0EndFraction = 0.35
+Lod1EndFraction = 0.70
+LodTransitionMargin = 6.0

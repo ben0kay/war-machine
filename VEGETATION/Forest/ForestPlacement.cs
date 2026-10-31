@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 {
+    public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
     public event System.Action? OcclusionChanged;
     public int TotalTrees { get; private set; }
     public int ActiveTrees { get; private set; }
@@ -13,10 +14,15 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private GodotObject _terrain = null!;
     private Node3D _player = null!;
     private Rect2 _area;
+    // Six slots per style: three tall variants and three young fillers using far art.
+    private const int VariantsPerStyle = 6;
     private Mesh[] _near = System.Array.Empty<Mesh>(), _far = System.Array.Empty<Mesh>();
+    private StandardMaterial3D? _safeLeafMaterial;
+    private Color _baseLeafColor;
     private readonly Dictionary<Vector2I, List<Tree>> _layout = new();
     private readonly Dictionary<Vector2I, Chunk> _chunks = new();
     private readonly List<(Vector2 Point, float Gap)> _accepted = new();
+    private readonly List<Rect2> _reserved = new();
     private Vector2I _current = new(int.MinValue, int.MinValue), _requested;
     private bool _ready, _queued, _refreshQueued;
     private float _viewOffset;
@@ -24,10 +30,12 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private readonly struct Tree
     {
         public readonly Vector3 Origin;
-        public readonly float Scale, Yaw;
+        public readonly float Scale, Yaw, TiltAxis, TiltRadians;
         public readonly int Variant;
-        public Tree(Vector3 position, float scale, float yaw, int variant)
-        { Origin = position; Scale = scale; Yaw = yaw; Variant = variant; }
+        public Tree(Vector3 position, float scale, float yaw, float tiltAxis,
+            float tiltRadians, int variant)
+        { Origin = position; Scale = scale; Yaw = yaw;
+            TiltAxis = tiltAxis; TiltRadians = tiltRadians; Variant = variant; }
     }
     private sealed class Chunk
     {
@@ -41,28 +49,112 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 
     // =========================================================
     // Generate near and far meshes once for each of three DF1 silhouettes; scaled young trees share far art.
-    public void InitializeView(Node3D terrain, Node3D player, ForestSettings settings, Rect2 area)
+    public void InitializeView(Node3D terrain, Node3D player, ForestSettings settings, Rect2 area,
+        Godot.Collections.Array<Rect2> reservations)
     {
         _terrain = terrain.Get("data").AsGodotObject(); _player = player;
         _settings = settings; _area = area;
+        // Only startup candidate generation reads these; no per-frame area checks.
+        _reserved.Clear();
+        foreach (Rect2 reservation in reservations)
+            if (reservation.Intersects(area.Grow(2f))) _reserved.Add(reservation.Grow(2f));
         SetProcess(false); SetPhysicsProcess(false);
         var art = (CanopyTreeSettings)GD.Load<CanopyTreeSettings>(
             "res://VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeMaster.tres").Duplicate(true);
-        var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
-        var foliage = new ShaderMaterial {
-            Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyFoliage.gdshader")
-        };
-        _near = new Mesh[6]; _far = new Mesh[6];
-        for (int i = 0; i < 3; i++)
+        // DF2 white-tree recovery: a known-good native palette is the default until we
+        // can verify the custom shaders on the player's GPU. Do not let shader errors
+        // silently display white bark/leaves again.
+        Material bark, foliage;
+        _safeLeafMaterial = null;
+        _baseLeafColor = art.LeafColor.Lerp(art.LeafAccentColor, 0.35f);
+        if (_settings.UseSafePaletteMaterials)
         {
-            _near[i] = CanopyTreeMeshBuilder.Create(art, i, bark, foliage);
-            _far[i] = CanopyTreeMeshBuilder.Create(art, i, bark, foliage, true);
-            _near[i + 3] = _far[i]; _far[i + 3] = _far[i];
+            bark = new StandardMaterial3D {
+                AlbedoColor = art.BarkColor.Lerp(art.BarkScarColor, 0.13f),
+                VertexColorUseAsAlbedo = false, Roughness = 1f
+            };
+            _safeLeafMaterial = new StandardMaterial3D {
+                AlbedoColor = _baseLeafColor,
+                VertexColorUseAsAlbedo = false, Roughness = 0.95f,
+                CullMode = BaseMaterial3D.CullModeEnum.Disabled
+            };
+            foliage = _safeLeafMaterial;
+            // One initial palette read, never polling RenderingServer in gameplay.
+            ApplySharedTint(
+                RenderingServer.GlobalShaderParameterGet("wm_foliage_tint").AsColor(),
+                RenderingServer.GlobalShaderParameterGet("wm_foliage_tint_strength").AsSingle());
         }
+        else
+        {
+            var shaderBark = new ShaderMaterial {
+                Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyBark.gdshader")
+            };
+            shaderBark.SetShaderParameter("bark_fallback_color", art.BarkColor);
+            var shaderFoliage = new ShaderMaterial {
+                Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyFoliage.gdshader")
+            };
+            shaderFoliage.SetShaderParameter("leaf_fallback_color", art.LeafColor);
+            bark = shaderBark; foliage = shaderFoliage;
+        }
+        // DF2.6: duplicate the original authored tree family, keeping its exact source
+        // config intact and adding a slightly leafier high-crown/trunk art resource.
+        var leafier = (CanopyTreeSettings)GD.Load<CanopyTreeSettings>(
+            "res://VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeLeafierMaster.tres").Duplicate(true);
+        _near = new Mesh[VariantsPerStyle * 2]; _far = new Mesh[VariantsPerStyle * 2];
+        for (int style = 0; style < 2; style++)
+        {
+            var source = style == 0 ? art : leafier;
+            int offset = style * VariantsPerStyle;
+            for (int i = 0; i < 3; i++)
+            {
+                _near[offset + i] = CanopyTreeMeshBuilder.Create(source, i, bark, foliage);
+                _far[offset + i] = CanopyTreeMeshBuilder.Create(source, i, bark, foliage, true);
+                // Young fill trees stay cheaper and share their own style's far mesh.
+                _near[offset + i + 3] = _far[offset + i];
+                _far[offset + i + 3] = _far[offset + i];
+            }
+        }
+        // One log at startup, not per chunk: proves whether both surface materials exist.
+        LogMaterialCheck((ArrayMesh)_near[0]);
         BuildLayout();
         _terrain.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
+        Visibility.Changed += OnVisibilityChanged;
         _ready = true;
         UpdateAnchor(_player.GlobalPosition);
+    }
+
+    // =========================================================
+    // Safe-mode palette follows the same F1 global tint controls used by stylized grass and pines.
+    // Native StandardMaterial3D cannot read a shader global directly; update one shared material.
+    public void ApplySharedTint(Color tint, float strength)
+    {
+        if (_safeLeafMaterial == null) return;
+        float luma = _baseLeafColor.R * 0.2126f + _baseLeafColor.G * 0.7152f + _baseLeafColor.B * 0.0722f;
+        float target = Mathf.Max(0.05f, tint.R * 0.2126f + tint.G * 0.7152f + tint.B * 0.0722f);
+        float ratio = luma / target;
+        var matched = new Color(Mathf.Clamp(tint.R * ratio, 0f, 1f),
+            Mathf.Clamp(tint.G * ratio, 0f, 1f),
+            Mathf.Clamp(tint.B * ratio, 0f, 1f), 1f);
+        _safeLeafMaterial.AlbedoColor = _baseLeafColor.Lerp(matched, Mathf.Clamp(strength * 0.85f, 0f, 1f));
+    }
+
+    // =========================================================
+    // Material diagnostics to distinguish missing shader/surface bindings from art colour.
+    private void LogMaterialCheck(ArrayMesh mesh)
+    {
+        if (mesh.GetSurfaceCount() != 2)
+        {
+            GD.PushError($"DF2 COLOR CHECK: expected 2 surfaces, got {mesh.GetSurfaceCount()}.");
+            return;
+        }
+        var bark = mesh.SurfaceGetMaterial(0);
+        var leaves = mesh.SurfaceGetMaterial(1);
+        string mode = _settings.UseSafePaletteMaterials ? "SAFE" : "SHADER";
+        GD.Print($"DF2 COLOR CHECK [{mode}]: bark={bark?.GetType().Name ?? "MISSING"}, " +
+            $"leaves={leaves?.GetType().Name ?? "MISSING"}, " +
+            $"base leaf={_baseLeafColor}, chunks remain deterministic.");
+        if (bark == null || leaves == null)
+            GD.PushError("DF2 COLOR CHECK: surface material missing; check CanopyTreeMeshBuilder.Create.");
     }
 
     // =========================================================
@@ -72,7 +164,12 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         _layout.Clear(); _accepted.Clear(); TotalTrees = 0;
         using var noise = new FastNoiseLite { Seed = _settings.Seed + 313, Frequency = 0.021f };
         PlaceLayer(false, noise); PlaceLayer(true, noise);
-        GD.Print($"DF2 forest: {TotalTrees} seeded trees, {_layout.Count} occupied chunks at {_area}.");
+        int leafierCount = 0;
+        foreach (var pair in _layout)
+            foreach (var tree in pair.Value)
+                if (tree.Variant >= VariantsPerStyle) leafierCount++;
+        GD.Print($"DF2 forest: {TotalTrees} seeded trees, {_layout.Count} occupied chunks at {_area}; "
+            + $"DF2.6 canopy: {TotalTrees - leafierCount} original / {leafierCount} leafier.");
     }
 
     // =========================================================
@@ -91,7 +188,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             var p = _area.Position + new Vector2(
                 (x + 0.5f + rng.RandfRange(-0.34f, 0.34f)) * dx,
                 (z + 0.5f + rng.RandfRange(-0.34f, 0.34f)) * dz);
-            if (!_area.HasPoint(p) || IsClearing(p)) continue;
+            if (!_area.HasPoint(p) || IsClearing(p) || IsReserved(p)) continue;
             float noiseValue = Mathf.Clamp(noise.GetNoise2D(p.X, p.Y) * 0.5f + 0.5f, 0f, 1f);
             if (rng.Randf() > Mathf.Min(1f, density * Mathf.Lerp(0.72f, 1.24f, noiseValue))) continue;
             bool farEnough = true;
@@ -107,8 +204,19 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
                     Mathf.Clamp(Mathf.Max(_settings.YoungScaleMin, _settings.YoungScaleMax), 0.4f, 0.9f))
                 : rng.RandfRange(Mathf.Clamp(_settings.MatureScaleMin, 0.7f, 1.3f),
                     Mathf.Clamp(Mathf.Max(_settings.MatureScaleMin, _settings.MatureScaleMax), 0.7f, 1.4f));
+            float yaw = rng.RandfRange(0f, Mathf.Tau);
+            // Independent hash: changing the 50/50 visual mix does not move any trees,
+            // consume the placement RNG, or change trunk collisions/chunk membership.
+            float selection = (Mix(_settings.Seed + 4171, x, z) & 0xffffUL) / 65535f;
+            int style = selection < Mathf.Clamp(_settings.LeafierShare, 0f, 1f) ? 1 : 0;
+            // Independent seeded tilt: no change to tree positions, size, yaw or style
+            // selection when this art-only setting is edited (0 = perfectly upright).
+            ulong lean = Mix(_settings.Seed + (young ? 9029 : 9011), x, z);
+            float maxTilt = Mathf.DegToRad(Mathf.Clamp(_settings.MaxTiltDegrees, 0f, 2f));
+            float tiltAxis = (lean & 0xffffUL) * (Mathf.Tau / 65535f);
+            float tiltRadians = ((lean >> 16) & 0xffffUL) * (maxTilt / 65535f);
             var tree = new Tree(new Vector3(p.X, height - 0.1f, p.Y), scale,
-                rng.RandfRange(0f, Mathf.Tau), variant + (young ? 3 : 0));
+                yaw, tiltAxis, tiltRadians, variant + (young ? 3 : 0) + style * VariantsPerStyle);
             int chunk = Mathf.Clamp(_settings.ChunkSize, 32, 64);
             var key = new Vector2I(Mathf.FloorToInt(p.X / chunk), Mathf.FloorToInt(p.Y / chunk));
             if (!_layout.TryGetValue(key, out var list)) { list = new List<Tree>(); _layout.Add(key, list); }
@@ -117,15 +225,32 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
-    // Clear a roughly seven-metre wandering east-west trail and a pair of natural pocket clearings.
+    // DF2.5: retain the southern road-to-forest entry and add a gently meandering
+    // north-south trail parallel to the village, with two natural pocket clearings.
     private bool IsClearing(Vector2 p)
     {
-        float t = Mathf.Clamp((p.X - _area.Position.X) / _area.Size.X, 0f, 1f);
-        float trailZ = _area.GetCenter().Y + Mathf.Sin(t * Mathf.Pi * 1.7f) * 5.5f;
-        if (Mathf.Abs(p.Y - trailZ) < Mathf.Clamp(_settings.TrailWidth, 4f, 10f) * 0.5f) return true;
-        var a = _area.GetCenter() + new Vector2(-17f, 16f);
-        var b = _area.GetCenter() + new Vector2(23f, -19f);
+        float width = Mathf.Clamp(_settings.TrailWidth, 4f, 10f);
+        float entryZ = Mathf.Clamp(_settings.TrailEntryZ,
+            _area.Position.Y + 8f, _area.End.Y - 8f);
+        float across = Mathf.Clamp((p.X - _area.Position.X) / _area.Size.X, 0f, 1f);
+        float entryTrailZ = entryZ + Mathf.Sin(across * Mathf.Pi * 1.7f) * 5.5f;
+        if (Mathf.Abs(p.Y - entryTrailZ) < width * 0.5f) return true;
+        float along = (p.Y - entryZ) / Mathf.Max(_area.Size.Y, 1f);
+        float spineX = _area.GetCenter().X + Mathf.Sin(along * Mathf.Pi * 2.2f) * 6f;
+        if (Mathf.Abs(p.X - spineX) < width * 0.38f) return true;
+        var a = new Vector2(_area.GetCenter().X - 17f, entryZ + 16f);
+        var b = new Vector2(_area.GetCenter().X + 23f,
+            _area.Position.Y + _area.Size.Y * 0.30f);
         return p.DistanceSquaredTo(a) < 30.25f || p.DistanceSquaredTo(b) < 20.25f;
+    }
+
+    // =========================================================
+    // Extra safety for an extended rectangular forest alongside existing village clearings.
+    private bool IsReserved(Vector2 point)
+    {
+        foreach (Rect2 area in _reserved)
+            if (area.HasPoint(point)) return true;
+        return false;
     }
 
     // =========================================================
@@ -171,7 +296,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         _current = _requested;
         int size = Mathf.Clamp(_settings.ChunkSize, 32, 64);
         var viewer = new Vector2((_current.X + 0.5f) * size, (_current.Y + 0.5f) * size);
-        float reach = Mathf.Clamp(_settings.RenderDistance, 64f, 256f) + size * 1.4f;
+        float reach = Visibility.RenderDistance + _viewOffset + size * 1.4f;
         var wanted = new HashSet<Vector2I>();
         foreach (var pair in _layout)
         {
@@ -200,21 +325,26 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         } : null;
         foreach (var tree in trees)
         {
+            // Apply one tiny rigid lean from the root: all LOD meshes share the transform.
+            // The same rotation is used below for the short physical trunk capsule.
+            var axis = new Vector3(Mathf.Cos(tree.TiltAxis), 0f, Mathf.Sin(tree.TiltAxis));
+            var tilt = new Basis(new Quaternion(axis, tree.TiltRadians));
             bins[tree.Variant].Add(new Transform3D(
-                new Basis(Vector3.Up, tree.Yaw).Scaled(Vector3.One * tree.Scale), tree.Origin));
+                (tilt * new Basis(Vector3.Up, tree.Yaw)).Scaled(Vector3.One * tree.Scale), tree.Origin));
             if (body == null) continue;
             float radius = 0.39f * Mathf.Clamp(_settings.TrunkRadiusMultiplier, 0.6f, 1.8f) * tree.Scale;
             float height = Mathf.Max(radius * 2.2f, _settings.TrunkCollisionHeight * tree.Scale);
             body.AddChild(new CollisionShape3D {
-                Position = tree.Origin + Vector3.Up * (height * 0.5f),
+                Transform = new Transform3D(tilt,
+                    tree.Origin + tilt * (Vector3.Up * (height * 0.5f))),
                 Shape = new CapsuleShape3D { Radius = radius, Height = height }
             });
         }
         if (body != null) { AddChild(body); group.Trunks = body; }
         int size = Mathf.Clamp(_settings.ChunkSize, 32, 64);
-        float end = Mathf.Clamp(_settings.RenderDistance, 64f, 256f) + _viewOffset;
-        float lod = Mathf.Min(end - 4f, Mathf.Clamp(_settings.LodDistance + _viewOffset, 24f, 150f));
-        float margin = Mathf.Clamp(_settings.DistanceFadeMargin, 2f, 28f);
+        float end = Visibility.RenderDistance + _viewOffset;
+        float lod = Mathf.Clamp(Visibility.Lod0End + _viewOffset, 8f, end - 4f);
+        float margin = Visibility.TransitionMargin;
         for (int i = 0; i < bins.Length; i++)
         {
             if (bins[i].Count == 0) continue;
@@ -246,12 +376,13 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         float begin, float end, float margin, bool shadows)
     {
         var multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
-            UseCustomData = true, Mesh = mesh };
+            UseColors = true, UseCustomData = true, Mesh = mesh };
         multimesh.InstanceCount = trees.Count;
         for (int i = 0; i < trees.Count; i++)
         {
             var pose = trees[i]; pose.Origin -= anchor;
             multimesh.SetInstanceTransform(i, pose);
+            multimesh.SetInstanceColor(i, Colors.White); // Preserve geometry vertex colours without instance tint.
             multimesh.SetInstanceCustomData(i, new Color(1f, 0f, 0f, 0f));
         }
         var node = new MultiMeshInstance3D {
@@ -270,17 +401,29 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     private void SetRange(MultiMeshInstance3D node, bool far)
     {
-        float end = Mathf.Clamp(_settings.RenderDistance, 64f, 256f) + _viewOffset;
-        float lod = Mathf.Min(end - 4f, Mathf.Clamp(_settings.LodDistance + _viewOffset, 24f, 150f));
+        float end = Visibility.RenderDistance + _viewOffset;
+        float lod = Mathf.Clamp(Visibility.Lod0End + _viewOffset, 8f, end - 4f);
         node.VisibilityRangeBegin = far ? lod : 0f;
         node.VisibilityRangeEnd = far ? end : lod;
         node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, node.VisibilityRangeEnd);
     }
 
     // =========================================================
+    // The common fog profile drives all native LOD ranges and loaded zone chunks.
+    private void OnVisibilityChanged()
+    {
+        if (!_ready) return;
+        UpdateView(_viewOffset);
+        _current = new Vector2I(int.MinValue, int.MinValue);
+        UpdateAnchor(_player.GlobalPosition);
+    }
+
+    // =========================================================
     // Existing top-down CameraOcclusion provider fades crowns; FPS intentionally retains full foliage.
     public void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results)
     {
+        // StandardMaterial3D has no per-instance dither hook; do not perform wasted fade work.
+        if (_settings.UseSafePaletteMaterials) return;
         foreach (var chunk in _chunks.Values)
         {
             if (!chunk.HasBounds || !CameraOcclusionMath.Intersects(from, to, chunk.Bounds, radius)) continue;
@@ -350,6 +493,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     public override void _ExitTree()
     {
+        Visibility.Changed -= OnVisibilityChanged;
         if (_ready && GodotObject.IsInstanceValid(_terrain))
             _terrain.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));
         _ready = false;

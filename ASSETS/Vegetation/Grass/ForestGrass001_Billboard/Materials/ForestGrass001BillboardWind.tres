@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+[ext_resource type="Shader" path="res://ASSETS/Vegetation/Grass/ForestGrass001_Billboard/Materials/forest_grass_001_billboard_wind.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://ASSETS/Vegetation/Grass/ForestGrass001_Billboard/Textures/forest_grass_001_billboard_shared_atlas.png" id="2"]
+[resource]
+shader = ExtResource("1")
+shader_parameter/grass_atlas = ExtResource("2")
+shader_parameter/alpha_cutoff = 0.24
+shader_parameter/wind_strength = 0.025
+shader_parameter/wind_speed = 0.9
+shader_parameter/wind_direction = Vector2(0.82, 0.57)
+shader_parameter/distance_fade_enabled = false
+shader_parameter/sparse_distance = 44.0
+shader_parameter/end_distance = 68.0

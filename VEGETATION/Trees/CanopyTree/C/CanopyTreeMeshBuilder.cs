@@ -17,6 +17,9 @@ public static class CanopyTreeMeshBuilder
         float trunkRadius = Mathf.Clamp(settings.TrunkBaseRadius, 0.2f, 0.9f) * rng.RandfRange(0.85f, 1.12f);
         float crownRadius = Mathf.Clamp(settings.CrownRadius, 2f, 5f);
         float leafScale = Mathf.Clamp(settings.FoliageSize, 0.5f, 1.8f);
+        // DF2.5: small silhouette leaf tips only in the near LOD; retain the established crown masses.
+        float edgeDetail = distant ? 0f : Mathf.Clamp(settings.LeafEdgeDetail, 0f, 0.25f);
+        int sprays = distant ? 0 : Mathf.Clamp(settings.LeafSpraysPerClump, 0, 4);
         int branchCount = Mathf.Clamp(settings.BranchCount, 7, 20);
         int clusters = Mathf.Clamp(settings.CrownClustersPerBranch, 2, 5);
 
@@ -26,7 +29,7 @@ public static class CanopyTreeMeshBuilder
         bark.SetMaterial(barkMaterial); foliage.SetMaterial(leafMaterial);
 
         // Segmented trunk has slight bends and pale bark with irregular dark patches.
-        var points = new Vector3[7];
+        var points = new Vector3[Mathf.Clamp(settings.TrunkSegments, 6, 10) + 1];
         for (int i = 0; i < points.Length; i++)
         {
             float t = i / (float)(points.Length - 1);
@@ -39,6 +42,22 @@ public static class CanopyTreeMeshBuilder
                 Mathf.Lerp(trunkRadius, trunkRadius * 0.16f, from),
                 Mathf.Lerp(trunkRadius, trunkRadius * 0.16f, to),
                 settings.BarkColor, settings.BarkScarColor, rng, 9);
+        }
+
+        // Optional subtle high-trunk twig forks for the leafier authored style only.
+        // Original master defaults to zero, so its bark geometry and RNG are unchanged.
+        int forkCount = Mathf.Clamp(settings.TrunkForks, 0, 5);
+        for (int fork = 0; fork < forkCount; fork++)
+        {
+            float t = Mathf.Lerp(Mathf.Max(0.3f, startY / height - 0.06f), 0.82f,
+                (fork + 0.5f) / forkCount);
+            float angle = variant * 0.73f + fork * 2.3999632f;
+            Vector3 side = new(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+            Vector3 start = points[0].Lerp(points[^1], t);
+            Vector3 tip = start + side * rng.RandfRange(0.36f, 0.72f)
+                + Vector3.Up * rng.RandfRange(0.28f, 0.64f);
+            AddTaper(bark, start, tip, trunkRadius * 0.085f, 0.014f,
+                settings.BarkColor, settings.BarkScarColor, rng, 5);
         }
 
         // Branches start above eye level and fan outward/upward into an open, uneven crown.
@@ -78,7 +97,7 @@ public static class CanopyTreeMeshBuilder
                 // Clump topology must not consume the skeleton RNG: near/far keep identical branches.
                 var detailRng = new RandomNumberGenerator { Seed = Mix(settings.Seed + variant * 101, branch, clump + 501) };
                 AddCrownClump(foliage, center, new Vector3(width, tall, depth) * scale,
-                    shade, detailRng, distant ? 6 : 8);
+                    shade, detailRng, distant ? 6 : 8, edgeDetail, sprays);
             }
         }
 
@@ -92,17 +111,21 @@ public static class CanopyTreeMeshBuilder
             Color topShade = settings.LeafColor.Lerp(settings.LeafAccentColor, rng.RandfRange(0.15f, 0.6f));
             var detailRng = new RandomNumberGenerator { Seed = Mix(settings.Seed + variant * 101, i, 901) };
             AddCrownClump(foliage, center, new Vector3(radius, radius * 0.76f, radius),
-                topShade, detailRng, distant ? 6 : 8);
+                topShade, detailRng, distant ? 6 : 8, edgeDetail, sprays);
         }
         var mesh = new ArrayMesh();
         bark.Commit(mesh); foliage.Commit(mesh);
+        // Explicit post-commit binding: the two surfaces MUST retain different materials
+        // when reused by MultiMesh, regardless of SurfaceTool's material state.
+        mesh.SurfaceSetMaterial(0, barkMaterial);
+        mesh.SurfaceSetMaterial(1, leafMaterial);
         return mesh;
     }
 
     // =========================================================
-    // A six/eight-sided low-poly, irregular rounded mass: fully opaque, no texture sorting or leaf nodes.
+    // Rounded low-poly crown stays intact; a few short pointed edge facets suggest leaves at near LOD.
     private static void AddCrownClump(SurfaceTool surface, Vector3 center, Vector3 radius,
-        Color color, RandomNumberGenerator random, int sides)
+        Color color, RandomNumberGenerator random, int sides, float edgeDetail, int sprays)
     {
         var lower = new Vector3[sides]; var upper = new Vector3[sides];
         float phase = random.RandfRange(0f, Mathf.Tau);
@@ -126,6 +149,45 @@ public static class CanopyTreeMeshBuilder
             AddFace(surface, lower[i], upper[i], lower[next], shade * 0.94f);
             AddFace(surface, lower[next], upper[i], upper[next], shade);
             AddFace(surface, upper[i], top, upper[next], shade * 1.05f);
+        }
+        // Retain the old DF2.5 tips exactly for the original master (no extra RNG work).
+        if (edgeDetail > 0f)
+        {
+            for (int i = 0; i < sides; i += 3)
+            {
+                int next = (i + 1) % sides;
+                Vector3 rim = (upper[i] + upper[next]) * 0.5f;
+                Vector3 outward = new(rim.X - center.X, 0f, rim.Z - center.Z);
+                if (outward.LengthSquared() < 0.001f) continue;
+                outward = outward.Normalized();
+                float length = (radius.X + radius.Z) * 0.5f * edgeDetail
+                    * random.RandfRange(0.75f, 1.15f);
+                Vector3 tip = rim + outward * length
+                    + Vector3.Up * radius.Y * edgeDetail * random.RandfRange(-0.3f, 0.5f);
+                Vector3 left = upper[i].Lerp(lower[i], 0.12f);
+                Vector3 right = upper[next].Lerp(lower[next], 0.12f);
+                AddFace(surface, left, tip, right, color * random.RandfRange(0.93f, 1.04f));
+            }
+        }
+        // Leafier style only: small two-facet pointed sprays break the blob silhouette
+        // without translucent cards, per-leaf nodes or a realistic high-poly canopy.
+        for (int spray = 0; spray < sprays; spray++)
+        {
+            int i = (spray * sides / sprays + 1) % sides, next = (i + 1) % sides;
+            Vector3 a = upper[i].Lerp(lower[i], 0.24f);
+            Vector3 b = upper[next].Lerp(lower[next], 0.24f);
+            Vector3 middle = (a + b) * 0.5f;
+            Vector3 outward = new(middle.X - center.X, 0f, middle.Z - center.Z);
+            if (outward.LengthSquared() < 0.001f) continue;
+            outward = outward.Normalized();
+            float span = (radius.X + radius.Z) * 0.5f;
+            float reach = span * random.RandfRange(0.20f, 0.29f);
+            Vector3 crease = middle + outward * reach * 0.45f + Vector3.Up * radius.Y * 0.12f;
+            Vector3 tip = middle + outward * reach
+                + Vector3.Up * radius.Y * random.RandfRange(-0.18f, 0.23f);
+            Color shade = color * random.RandfRange(0.94f, 1.07f);
+            AddFace(surface, a, crease, tip, shade);
+            AddFace(surface, b, tip, crease, shade * 0.93f);
         }
     }
 

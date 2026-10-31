@@ -18,6 +18,12 @@ public partial class DebugOverlay : PanelContainer
     private SkyController _sky = null!;
     private PinePlacement _pines = null!;
     private TerrainGrass _grass = null!;
+    private StylizedGrassPlacement? _stylizedGrass;
+    private WorldColorGrade? _colorGrade;
+    private ForestPlacement? _forestPlacement;
+    private Color _sharedFoliageTint;
+    private float _sharedFoliageStrength;
+    private Label? _vegetationDistanceLabel;
     private EnvironmentConfig _environment = null!;
     private Node _clock = null!;
     private Callable _timeChanged;
@@ -28,10 +34,14 @@ public partial class DebugOverlay : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null, StylizedGrassPlacement? stylizedGrass = null, WorldColorGrade? colorGrade = null, ForestPlacement? forestPlacement = null)
     {
         _view = view; _renderCulling = renderCulling;
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
+        _stylizedGrass = stylizedGrass; _colorGrade = colorGrade; _forestPlacement = forestPlacement;
+        // Read each global once at panel creation; shader parameter GET synchronizes render thread.
+        _sharedFoliageTint = RenderingServer.GlobalShaderParameterGet("wm_foliage_tint").AsColor();
+        _sharedFoliageStrength = RenderingServer.GlobalShaderParameterGet("wm_foliage_tint_strength").AsSingle();
         SetProcess(false); SetPhysicsProcess(false);
         _copy = GetNode<Button>("Margin/Outer/Copy");
         GetNode<Label>("Margin/Outer/Hint").Text = view == null ? "Debug controls" : "Debug controls · Esc to use · click world to resume";
@@ -58,6 +68,29 @@ public partial class DebugOverlay : PanelContainer
             _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
             _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
                 Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
+        }
+        if (_colorGrade != null)
+        {
+            var grading = _colorGrade;
+            var gradeRows = AddSection(rootRows, "Colour grading");
+            gradeRows.AddChild(new Label { Text = "Whole game image · HUD and debug panels unaffected" });
+            var gradeEnabled = new CheckButton {
+                Text = "Enable global grade", ButtonPressed = grading.Settings.Enabled,
+                FocusMode = FocusModeEnum.None
+            };
+            gradeRows.AddChild(gradeEnabled);
+            gradeEnabled.Toggled += value => {
+                grading.Settings.Enabled = value; grading.ApplySettings(); _copy.Text = "Copy settings";
+            };
+            AddBoundSlider(gradeRows, "Hue shift (°)", -180, 180, 1, grading.Settings.HueDegrees,
+                value => { grading.Settings.HueDegrees = value; grading.ApplySettings(); });
+            AddBoundSlider(gradeRows, "Saturation", 0, 2, 0.01, grading.Settings.Saturation,
+                value => { grading.Settings.Saturation = value; grading.ApplySettings(); });
+            AddBoundSlider(gradeRows, "Contrast", 0.5, 1.5, 0.01, grading.Settings.Contrast,
+                value => { grading.Settings.Contrast = value; grading.ApplySettings(); });
+            AddBoundSlider(gradeRows, "Brightness", 0.5, 1.5, 0.01, grading.Settings.Brightness,
+                value => { grading.Settings.Brightness = value; grading.ApplySettings(); });
+            gradeRows.AddChild(new Label { Text = "Neutral: hue 0 · saturation / contrast / brightness 1" });
         }
         var environmentRows = AddSection(rootRows, "Environment");
         if (_view != null) _view.BuildControls(environmentRows, rootRows);
@@ -142,10 +175,10 @@ public partial class DebugOverlay : PanelContainer
         AddBoundSlider(rows, "Airborne motes", 0, 1, 0.01, _environment.AirborneIntensity,
             value => { _environment.AirborneIntensity = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Wind strength", 0, 2, 0.01, _environment.GrassWindStrength,
-            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
+            value => { _environment.GrassWindStrength = value; weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); _stylizedGrass?.ApplyWind(); });
         AddBoundSlider(rows, "Wind heading (degrees)", 0, 360, 1, _environment.WindHeading,
             value => { _environment.WindHeading = value; float angle = Mathf.DegToRad(value);
-                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); });
+                _environment.WindDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)); weather.ApplySettings(); groundHaze?.ApplySettings(); grass.ApplyAppearance(); pines.ApplyWind(); _stylizedGrass?.ApplyWind(); });
         AddBoundSlider(rows, "Gusts", 0, 1, 0.01, _environment.WeatherGusts,
             value => { _environment.WeatherGusts = value; weather.ApplySettings(); });
         AddBoundSlider(rows, "Turbulence", 0, 2, 0.01, _environment.WeatherTurbulence,
@@ -170,16 +203,102 @@ public partial class DebugOverlay : PanelContainer
                 value => { renderCulling.Settings.ShadowBuffer = value; renderCulling.ApplySettings(); });
         }
         var foliageRows = AddSection(rootRows, "Foliage");
+        var globalVisibilityRows = AddSection(foliageRows, "Shared fog-driven visibility");
+        _vegetationDistanceLabel = new Label();
+        globalVisibilityRows.AddChild(_vegetationDistanceLabel);
+        _pines.Visibility.Changed += UpdateVegetationDistanceLabel;
+        UpdateVegetationDistanceLabel();
+        rows = AddSection(foliageRows, "Shared tree + grass tint");
+        rows.AddChild(new Label { Text = "Changes stylized pines, grass and DF2 crown colours live." });
+        var foliageColour = new ColorPickerButton { Text = "Foliage colour", Color = _sharedFoliageTint,
+            EditAlpha = false, FocusMode = FocusModeEnum.None };
+        rows.AddChild(foliageColour);
+        foliageColour.ColorChanged += color => {
+            _sharedFoliageTint = color;
+            RenderingServer.GlobalShaderParameterSet("wm_foliage_tint", color);
+            _forestPlacement?.ApplySharedTint(color, _sharedFoliageStrength);
+            _copy.Text = "Copy settings";
+        };
+        AddBoundSlider(rows, "Shared tint strength", 0, 1, 0.01, _sharedFoliageStrength, value => {
+            _sharedFoliageStrength = value;
+            RenderingServer.GlobalShaderParameterSet("wm_foliage_tint_strength", value);
+            _forestPlacement?.ApplySharedTint(_sharedFoliageTint, value);
+        });
+        rows.AddChild(new Label { Text = "0 = original colours · 1 = full tint · changes not saved" });
+
         rows = AddSection(foliageRows, "Grass");
-        rows.AddChild(new Label { Text = "Release density/height to apply" });
-        var grassEnabled = new CheckButton { Text = "Grass enabled", ButtonPressed = grass.Settings.Enabled, FocusMode = FocusModeEnum.None };
-        rows.AddChild(grassEnabled); grassEnabled.Toggled += value => { grass.Settings.Enabled = value; grass.ApplySettings(); _copy.Text = "Copy settings"; };
-        AddDeferredSlider(rows, "Grass density", 0, 2, 0.05, grass.Settings.Density,
-            value => grass.Settings.Density = value, grass.ApplySettings);
-        AddDeferredSlider(rows, "Grass height", 0.1, 1.5, 0.05, grass.Settings.Height,
-            value => grass.Settings.Height = value, grass.ApplyAppearance);
-        AddBoundSlider(rows, "Grass wind multiplier", 0, 2, 0.05, grass.Settings.WindMultiplier,
-            value => { grass.Settings.WindMultiplier = value; grass.ApplyAppearance(); });
+        if (_stylizedGrass != null)
+        {
+            var stylized = _stylizedGrass;
+            rows.AddChild(new Label { Text = "Imported grass patches · release sliders to regenerate" });
+            var enabled = new CheckButton { Text = "Stylized grass enabled",
+                ButtonPressed = stylized.Settings.Enabled, FocusMode = FocusModeEnum.None };
+            rows.AddChild(enabled);
+            enabled.Toggled += value => { stylized.Settings.Enabled = value; stylized.ApplySettings(); _copy.Text = "Copy settings"; };
+            AddDeferredSlider(rows, "Patches / 32 m chunk", 0, 12, 1, stylized.Settings.PatchesPerChunk,
+                value => stylized.Settings.PatchesPerChunk = Mathf.RoundToInt(value), stylized.ApplySettings);
+            AddDeferredSlider(rows, "Clumps / patch", 1, 30, 1, stylized.Settings.ClumpsPerPatch,
+                value => stylized.Settings.ClumpsPerPatch = Mathf.RoundToInt(value), stylized.ApplySettings);
+            AddDeferredSlider(rows, "Patch spread max (m)", 1, 6, 0.1, stylized.Settings.PatchRadiusMax,
+                value => stylized.Settings.PatchRadiusMax = value, stylized.ApplySettings);
+            AddDeferredSlider(rows, "Grass size max", 0.5, 2.5, 0.05, stylized.Settings.ScaleMax,
+                value => stylized.Settings.ScaleMax = value, stylized.ApplySettings);
+            AddBoundSlider(rows, "Stylized grass wind", 0, 2, 0.05, stylized.Settings.WindMultiplier,
+                value => { stylized.Settings.WindMultiplier = value; stylized.ApplyWind(); });
+        }
+        else
+        {
+            // Legacy system is still available if mesh patches are disabled in their master.
+            rows.AddChild(new Label { Text = "Legacy GPU particle grass (not the imported patches)" });
+            var enabled = new CheckButton { Text = "Legacy grass enabled",
+                ButtonPressed = grass.Settings.Enabled, FocusMode = FocusModeEnum.None };
+            rows.AddChild(enabled);
+            enabled.Toggled += value => { grass.Settings.Enabled = value; grass.ApplySettings(); _copy.Text = "Copy settings"; };
+            AddDeferredSlider(rows, "Legacy grass density", 0, 2, 0.05, grass.Settings.Density,
+                value => grass.Settings.Density = value, grass.ApplySettings);
+            AddDeferredSlider(rows, "Legacy grass height", 0.1, 1.5, 0.05, grass.Settings.Height,
+                value => grass.Settings.Height = value, grass.ApplyAppearance);
+            AddBoundSlider(rows, "Legacy grass wind", 0, 2, 0.05, grass.Settings.WindMultiplier,
+                value => { grass.Settings.WindMultiplier = value; grass.ApplyAppearance(); });
+        }
+        // STG3C: independently tune large billboard patches without touching the original grass settings.
+        // Density/geometry changes rebuild only after the user releases a slider.
+        if (_stylizedGrass != null && _stylizedGrass.FillerSettings != null)
+        {
+            var placement = _stylizedGrass;
+            var billboard = placement.FillerSettings;
+            var billboardRows = AddSection(foliageRows, "Billboard grass");
+            billboardRows.AddChild(new Label { Text = "Dense irregular billboard patches · release sliders to rebuild" });
+            var billboardEnabled = new CheckButton { Text = "Billboard grass enabled",
+                ButtonPressed = billboard.Enabled, FocusMode = FocusModeEnum.None };
+            billboardRows.AddChild(billboardEnabled);
+            billboardEnabled.Toggled += value => {
+                billboard.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
+            };
+            AddDeferredSlider(billboardRows, "Billboard patches / 32 m chunk", 0, 16, 1, billboard.PatchesPerChunk,
+                value => billboard.PatchesPerChunk = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Patch chance", 0, 1, 0.05, billboard.PatchChance,
+                value => billboard.PatchChance = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Minimum billboards / patch", 1, 100, 1, billboard.MinPerPatch,
+                value => billboard.MinPerPatch = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum billboards / patch", 1, 120, 1, billboard.MaxPerPatch,
+                value => billboard.MaxPerPatch = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Minimum patch radius (m)", 0.8, 10, 0.1, billboard.PatchRadiusMin,
+                value => billboard.PatchRadiusMin = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum patch radius (m)", 0.8, 12, 0.1, billboard.PatchRadiusMax,
+                value => billboard.PatchRadiusMax = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Minimum billboard scale", 0.3, 2, 0.05, billboard.ScaleMin,
+                value => billboard.ScaleMin = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum billboard scale", 0.3, 2.5, 0.05, billboard.ScaleMax,
+                value => billboard.ScaleMax = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Extra tilt chance", 0, 1, 0.05, billboard.TiltChance,
+                value => billboard.TiltChance = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum extra tilt (degrees)", 0, 8, 0.5, billboard.MaxTiltDegrees,
+                value => billboard.MaxTiltDegrees = value, placement.ApplySettings);
+            AddBoundSlider(billboardRows, "Billboard grass wind", 0, 2, 0.05, billboard.WindMultiplier,
+                value => { billboard.WindMultiplier = value; placement.ApplyWind(); });
+            billboardRows.AddChild(new Label { Text = "Live preview only; Copy settings for saved values." });
+        }
         rows = AddSection(foliageRows, "Pine trees");
         rows.AddChild(new Label { Text = "Release density/size to apply" });
         var pineEnabled = new CheckButton { Text = "Pine trees enabled", ButtonPressed = pines.Settings.Enabled, FocusMode = FocusModeEnum.None };
@@ -350,6 +469,12 @@ public partial class DebugOverlay : PanelContainer
             [nameof(_environment.GroundHazeCoverageRadius)] = _environment.GroundHazeCoverageRadius,
             [nameof(_environment.GroundHazeColor)] = new[] { _environment.GroundHazeColor.R, _environment.GroundHazeColor.G, _environment.GroundHazeColor.B, _environment.GroundHazeColor.A },
             [nameof(_environment.WindDirection)] = new[] { _environment.WindDirection.X, _environment.WindDirection.Y },
+            ["SharedFoliageTint"] = new[] { _sharedFoliageTint.R, _sharedFoliageTint.G, _sharedFoliageTint.B, _sharedFoliageTint.A },
+            ["SharedFoliageTintStrength"] = _sharedFoliageStrength,
+            ["VegetationRenderDistance"] = _pines.Visibility.RenderDistance,
+            ["VegetationLod0End"] = _pines.Visibility.Lod0End,
+            ["VegetationLod1End"] = _pines.Visibility.Lod1End,
+            ["VegetationFogDriven"] = _pines.Visibility.IsFogDriven,
             ["PineEnabled"] = _pines.Settings.Enabled,
             ["PineDensity"] = _pines.Settings.Density,
             ["PineHeightMultiplier"] = _pines.Settings.HeightMultiplier,
@@ -391,6 +516,38 @@ public partial class DebugOverlay : PanelContainer
             [nameof(_environment.WeatherFallSpeed)] = _environment.WeatherFallSpeed,
             [nameof(_environment.WeatherQuality)] = _environment.WeatherQuality
         };
+        if (_colorGrade != null)
+        {
+            values["GlobalGradeEnabled"] = _colorGrade.Settings.Enabled;
+            values["GlobalHueDegrees"] = _colorGrade.Settings.HueDegrees;
+            values["GlobalSaturation"] = _colorGrade.Settings.Saturation;
+            values["GlobalContrast"] = _colorGrade.Settings.Contrast;
+            values["GlobalBrightness"] = _colorGrade.Settings.Brightness;
+        }
+        if (_stylizedGrass != null)
+        {
+            values["StylizedGrassEnabled"] = _stylizedGrass.Settings.Enabled;
+            values["StylizedGrassPatchesPerChunk"] = _stylizedGrass.Settings.PatchesPerChunk;
+            values["StylizedGrassClumpsPerPatch"] = _stylizedGrass.Settings.ClumpsPerPatch;
+            values["StylizedGrassPatchRadiusMax"] = _stylizedGrass.Settings.PatchRadiusMax;
+            values["StylizedGrassScaleMax"] = _stylizedGrass.Settings.ScaleMax;
+        }
+        if (_stylizedGrass?.FillerSettings != null)
+        {
+            var billboard = _stylizedGrass.FillerSettings;
+            values["BillboardGrassEnabled"] = billboard.Enabled;
+            values["BillboardGrassPatchesPerChunk"] = billboard.PatchesPerChunk;
+            values["BillboardGrassPatchChance"] = billboard.PatchChance;
+            values["BillboardGrassMinPerPatch"] = billboard.MinPerPatch;
+            values["BillboardGrassMaxPerPatch"] = billboard.MaxPerPatch;
+            values["BillboardGrassPatchRadiusMin"] = billboard.PatchRadiusMin;
+            values["BillboardGrassPatchRadiusMax"] = billboard.PatchRadiusMax;
+            values["BillboardGrassScaleMin"] = billboard.ScaleMin;
+            values["BillboardGrassScaleMax"] = billboard.ScaleMax;
+            values["BillboardGrassTiltChance"] = billboard.TiltChance;
+            values["BillboardGrassMaxTiltDegrees"] = billboard.MaxTiltDegrees;
+            values["BillboardGrassWindMultiplier"] = billboard.WindMultiplier;
+        }
         if (_renderCulling != null)
         {
             values["WS1Enabled"] = _renderCulling.Settings.Enabled;
@@ -405,9 +562,23 @@ public partial class DebugOverlay : PanelContainer
     }
 
     // =========================================================
+    // One event-driven readout for the actual FPS/top-down fog envelope (no per-frame polling).
+    private void UpdateVegetationDistanceLabel()
+    {
+        if (_vegetationDistanceLabel == null) return;
+        var shared = _pines.Visibility;
+        _vegetationDistanceLabel.Text =
+            $"All active foliage to {shared.RenderDistance:0} m " +
+            $"({(shared.IsFogDriven ? "fog + safety buffer" : "fog OFF fallback")})\n" +
+            $"LOD0→LOD1 {shared.Lod0End:0} m · LOD1→LOD2 {shared.Lod1End:0} m\n" +
+            "Change Fog fully opaque (m) to update all three families.";
+    }
+
+    // =========================================================
     // Remove the external subscription when the scene or panel unloads.
     public override void _ExitTree()
     {
+        if (GodotObject.IsInstanceValid(_pines)) _pines.Visibility.Changed -= UpdateVegetationDistanceLabel;
         if (GodotObject.IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
             _clock.Disconnect("time_changed", _timeChanged);
         if (_visionDebug != null && IsInstanceValid(_visionDebug)) _visionDebug.VisibilityChanged -= OnVisionDebugChanged;

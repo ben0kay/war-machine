@@ -8,14 +8,20 @@ public partial class ForestSettings : Resource
     [Export] public bool Enabled { get; set; } = false;
     [Export] public bool ShowDebugOutline { get; set; } = false;
     // Absolute world X/Z coordinates, independent of the moving player spawn.
-    [Export] public Vector2 CenterXZ { get; set; } = new(667f, 567f);
-    [Export] public Vector2 SizeXZ { get; set; } = new(96f, 96f);
+    [Export] public Vector2 CenterXZ { get; set; } = new(667f, 487f);
+    [Export] public Vector2 SizeXZ { get; set; } = new(96f, 256f);
     [Export(PropertyHint.Range, "0,24,1")] public float TransitionWidth { get; set; } = 12f;
     [Export(PropertyHint.Range, "2,12,1")] public float SurveyStep { get; set; } = 8f;
     [Export(PropertyHint.Range, "0.1,1.5,0.05")] public float MaximumSlope { get; set; } = 0.75f;
 
     [ExportGroup("DF2 tree layout")]
     [Export] public int Seed { get; set; } = 72199;
+    [ExportGroup("DF2.6 canopy art mix")]
+    // The same seed keeps forest coordinates/scale/yaw unchanged when mixing styles.
+    [Export(PropertyHint.Range, "0,1,0.05")] public float LeafierShare { get; set; } = 0.5f;
+    // DF2.7: gentle deterministic lean applied to visual meshes and trunk capsules alike.
+    [Export(PropertyHint.Range, "0,2,0.1")] public float MaxTiltDegrees { get; set; } = 1.5f;
+    [ExportGroup("DF2 tree layout")]
     [Export(PropertyHint.Range, "5,12,0.25")] public float MatureSpacing { get; set; } = 7f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float MatureDensity { get; set; } = 0.95f;
     [Export(PropertyHint.Range, "3,9,0.25")] public float MatureMinSeparation { get; set; } = 5.2f;
@@ -27,12 +33,14 @@ public partial class ForestSettings : Resource
     [Export(PropertyHint.Range, "0.4,0.85,0.05")] public float YoungScaleMin { get; set; } = 0.56f;
     [Export(PropertyHint.Range, "0.4,0.9,0.05")] public float YoungScaleMax { get; set; } = 0.74f;
     [Export(PropertyHint.Range, "4,10,0.5")] public float TrailWidth { get; set; } = 7f;
+    // Fixed southern road entry; extending the zone north must not move the entrance.
+    [Export] public float TrailEntryZ { get; set; } = 567f;
 
     [ExportGroup("DF2 chunk rendering / collision")]
     [Export(PropertyHint.Range, "32,64,16")] public int ChunkSize { get; set; } = 32;
-    [Export(PropertyHint.Range, "64,256,8")] public float RenderDistance { get; set; } = 160f;
-    [Export(PropertyHint.Range, "24,150,8")] public float LodDistance { get; set; } = 64f;
-    [Export(PropertyHint.Range, "2,28,2")] public float DistanceFadeMargin { get; set; } = 8f;
+    // Safe visible palette mode uses native StandardMaterial3D rather than unverified custom shaders.
+    // Turn OFF only after checking DF2 shader compilation; shader mode retains top-down leaf fade.
+    [Export] public bool UseSafePaletteMaterials { get; set; } = true;
     [Export] public bool NearCastShadows { get; set; } = true;
     [Export] public bool FarCastShadows { get; set; } = false;
     [Export] public bool TrunkCollisionEnabled { get; set; } = true;

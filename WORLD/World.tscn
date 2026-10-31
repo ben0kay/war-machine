@@ -75,28 +75,44 @@ Settings = SubResource("RobotStartup")
 [node name="Controls" type="CanvasLayer" parent="DebugUIRoot"]
 [node name="DebugOverlay" parent="DebugUIRoot/Controls" instance=ExtResource("debug_overlay")]
 
-[node name="FPS" type="Label" parent="DebugUIRoot/Controls"]
-offset_left = 18.0
-offset_top = 112.0
-offset_right = 158.0
-offset_bottom = 137.0
-mouse_filter = 2
-theme_override_font_sizes/font_size = 18
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-text = "FPS: —"
-script = ExtResource("fps_counter")
-Settings = ExtResource("debug_master")
-
 [node name="Status" type="Label" parent="DebugUIRoot/Controls"]
-offset_left = 16.0
+offset_left = 204.0
 offset_top = 16.0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 text = "Loading saved preview terrain…"
 mouse_filter = 2
+
+[node name="PerformanceHud" type="CanvasLayer" parent="DebugUIRoot"]
+layer = 5
+
+[node name="FPS" type="Label" parent="DebugUIRoot/PerformanceHud"]
+offset_left = 12.0
+offset_top = 6.0
+offset_right = 164.0
+offset_bottom = 26.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "FPS: —"
+script = ExtResource("fps_counter")
+Settings = ExtResource("debug_master")
+
+[node name="Triangles" type="Label" parent="DebugUIRoot/PerformanceHud/FPS"]
+offset_left = 0.0
+offset_top = 18.0
+offset_right = 180.0
+offset_bottom = 35.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.88, 0.93, 0.89, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "TRIS: —"
 
 [node name="PersistentPropsRoot" type="Node3D" parent="WorldActorsRoot"]
 [node name="Structures" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
