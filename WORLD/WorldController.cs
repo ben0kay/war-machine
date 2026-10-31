@@ -14,6 +14,7 @@ public partial class WorldController : Node3D
     protected PinePlacement _pines = null!;
     protected ForestPlacement? _forestPlacement;
     protected TerrainGrass _grass = null!;
+    private StylizedGrassPlacement? _stylizedGrass;
     private PlayerController _player = null!;
     protected WorldAudio _audio = null!;
     protected WeatherBridge _weather = null!;
@@ -161,6 +162,22 @@ public partial class WorldController : Node3D
         _grass.SetExclusionAreas(grassClearings);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
+        // STG1: original GPU particles are OFF in both masters; new imported grass uses
+        // the same road/structure masks and streams lightweight MultiMesh patches.
+        var stylizedConfig = GD.Load<StylizedGrassSettings>(
+            "res://VEGETATION/Grass/Stylized/Configuration/StylizedGrassMaster.tres");
+        if (stylizedConfig != null && stylizedConfig.Enabled)
+        {
+            _stylizedGrass = new StylizedGrassPlacement {
+                Name = "StylizedGrass",
+                Settings = (StylizedGrassSettings)stylizedConfig.Duplicate(true),
+                EnvironmentSettings = EnvironmentSettings
+            };
+            foreach (Rect2 exclusion in grassClearings) _stylizedGrass.ExclusionAreas.Add(exclusion);
+            GetNode("SystemsRoot/VegetationRoot").AddChild(_stylizedGrass);
+            _stylizedGrass.InitializeView(terrain, player, WorldSettings.TerrainSize);
+            player.PositionChanged += _stylizedGrass.UpdateAnchor;
+        }
         _pines = new PinePlacement { Name = "Pines",
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
@@ -676,6 +693,7 @@ public partial class WorldController : Node3D
     {
         _weather.SetOrthographicCoverage(_camera.ViewHeight);
         _grass.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);
+        _stylizedGrass?.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);
         _pines.UpdateView(CameraSettings.CameraDistance);
         _forestPlacement?.UpdateView(CameraSettings.CameraDistance);
     }
@@ -683,6 +701,8 @@ public partial class WorldController : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        if (IsInstanceValid(_player) && IsInstanceValid(_stylizedGrass))
+            _player.PositionChanged -= _stylizedGrass!.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_forestPlacement))
             _player.PositionChanged -= _forestPlacement!.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_rocks)) _player.PositionChanged -= _rocks.UpdateAnchor;

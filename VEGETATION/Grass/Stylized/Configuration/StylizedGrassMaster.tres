@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="StylizedGrassSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Grass/Stylized/Configuration/StylizedGrassSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+Seed = 49117
+PatchesPerChunk = 6
+PatchChance = 0.82
+ClumpsPerPatch = 12
+PatchRadiusMin = 1.7
+PatchRadiusMax = 3.6
+ScaleMin = 0.75
+ScaleMax = 1.15
+MinimumNormalY = 0.87
+EdgeClearance = 0.9
+WindMultiplier = 0.06
+WindSpeed = 1.1
+ChunkSize = 32
+RenderDistance = 64
+LodDistance = 28

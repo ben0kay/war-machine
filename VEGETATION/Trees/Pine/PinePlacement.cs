@@ -125,8 +125,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         { GD.PushWarning("Stylized pine materials unavailable; falling back to original pines."); return false; }
 
         var foliage = new ShaderMaterial { Shader = shader };
-        foreach (string parameter in new[] { "forest_tint", "forest_tint_strength",
-            "palette_response", "foliage_roughness" })
+        foreach (string parameter in new[] { "palette_response", "foliage_roughness" })
             foliage.SetShaderParameter(parameter, palette.GetShaderParameter(parameter));
         foliage.SetShaderParameter("use_camera_occlusion", true);
 
