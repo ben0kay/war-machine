@@ -10,7 +10,9 @@ public partial class WeatherBridge : Node
     private WildernessCave _cave = null!;
     private EnvironmentConfig _settings = null!;
     private bool _sheltered, _initialized;
-    private float _coverage;
+    private float _coverage, _lastSplashHeight = float.NaN;
+    private Node3D? _splash;
+    private PlayerController? _splashPlayer;
 
     // =========================================================
     // Instantiate the existing addon components with project-owned configuration and environment ownership.
@@ -20,6 +22,7 @@ public partial class WeatherBridge : Node
         _explorer = explorer; _cave = cave;
         InitializeView(_camera, _camera, settings);
         _explorer.ViewPositionChanged += OnMoved;
+        SetSplashGround(_explorer.GlobalPosition);
     }
 
     // =========================================================
@@ -31,6 +34,10 @@ public partial class WeatherBridge : Node
         _effects.Set("camera", _camera);
         _effects.Set("effect_target", anchor);
         AddChild(_effects); _initialized = true;
+        _splash = _effects.GetNodeOrNull<Node3D>("RainSplashes");
+        if (anchor is PlayerController player)
+        { _splashPlayer = player; player.PositionChanged += SetSplashGround; }
+        SetSplashGround(_explorer != null ? _explorer.GlobalPosition : anchor.GlobalPosition);
         ApplySettings(); SetProcess(false); SetPhysicsProcess(false);
     }
 
@@ -77,11 +84,14 @@ public partial class WeatherBridge : Node
             ["fall_speed_scale"] = _settings.WeatherFallSpeed
         };
         _effects.Call("set_quality", Mathf.Clamp(Mathf.RoundToInt(_settings.WeatherQuality), 0, 2));
+        if (_splash != null) _splash.Set("splash_scale", Mathf.Clamp(_settings.RainSplashSize, 0.5f, 1.5f));
         _effects.Call("apply_preview", state);
         bool precipitation = outdoors && (_settings.RainIntensity > 0.001f || _settings.SnowIntensity > 0.001f);
         bool atmosphere = outdoors && (_settings.LocalMistIntensity > 0.001f || _settings.AirborneIntensity > 0.001f);
         SetActive(_effects.GetNode<Node3D>("Precipitation"), precipitation);
         SetActive(_effects.GetNode<Node3D>("AtmosphereParticles"), atmosphere);
+        if (_splash != null)
+            SetActive(_splash, outdoors && _settings.RainSplashesEnabled && _settings.RainIntensity > 0.001f);
         if (!precipitation && !atmosphere) _effects.ProcessMode = ProcessModeEnum.Disabled;
     }
 
@@ -101,9 +111,21 @@ public partial class WeatherBridge : Node
     }
 
     // =========================================================
-    // Shelter is tested only on actual movement; state is reapplied only when crossing the cave boundary.
+    // The player/explorer origin is foot-level. Keep the local impact plane near their feet, but
+    // do not call GDScript on every horizontal movement tick; sloped terrain is approximate.
+    private void SetSplashGround(Vector3 position)
+    {
+        if (_splash == null || !float.IsFinite(position.Y)) return;
+        float height = position.Y + 0.035f;
+        if (float.IsFinite(_lastSplashHeight) && Mathf.Abs(_lastSplashHeight - height) < 0.035f) return;
+        _lastSplashHeight = height; _splash.Call("set_ground_height", height);
+    }
+
+    // =========================================================
+    // Legacy cave shelter remains separate from future FPS building rain masks.
     private void OnMoved(Vector3 position)
     {
+        SetSplashGround(position);
         bool sheltered = _cave.IsSheltered(_camera.GlobalPosition);
         if (sheltered == _sheltered) return;
         _sheltered = sheltered; ApplySettings();
@@ -111,5 +133,9 @@ public partial class WeatherBridge : Node
 
     // =========================================================
     public override void _ExitTree()
-    { if (_initialized && IsInstanceValid(_explorer)) _explorer.ViewPositionChanged -= OnMoved; }
+    {
+        if (IsInstanceValid(_explorer)) _explorer!.ViewPositionChanged -= OnMoved;
+        if (IsInstanceValid(_splashPlayer)) _splashPlayer!.PositionChanged -= SetSplashGround;
+        _splash = null; _splashPlayer = null;
+    }
 }

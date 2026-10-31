@@ -70,6 +70,9 @@ public partial class EnvironmentConfig : Resource
     [Export(PropertyHint.Range, "0.1,3,0.05")] public float WeatherParticleSize { get; set; } = 1;
     [Export(PropertyHint.Range, "0.1,3,0.05")] public float WeatherFallSpeed { get; set; } = 1;
     [Export(PropertyHint.Range, "0,360,1")] public float WindHeading { get; set; } = 22;
+    [ExportGroup("Rain splash impacts")]
+    [Export] public bool RainSplashesEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0.5,1.5,0.05")] public float RainSplashSize { get; set; } = 1f;
     [ExportGroup("Shared Wind")]
     [Export] public Vector2 WindDirection { get; set; } = new(1, 0.4f);
     [Export] public float GrassWindStrength { get; set; } = 1f;

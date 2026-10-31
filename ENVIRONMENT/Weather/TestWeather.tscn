@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 [ext_resource type="Script" path="res://ENVIRONMENT/Weather/TestWeatherController.gd" id="1"]
 [ext_resource type="Script" path="res://addons/weather_atmosphere/components/precipitation_3d.gd" id="2"]
 [ext_resource type="Script" path="res://addons/weather_atmosphere/components/atmosphere_particles_3d.gd" id="3"]
+[ext_resource type="Script" path="res://ENVIRONMENT/Weather/RainSplashPreview.gd" id="4"]
 [node name="WeatherEffects" type="Node3D"]
 script = ExtResource("1")
 manage_environment = false
@@ -14,3 +15,8 @@ follow_camera_height = true
 [node name="AtmosphereParticles" type="Node3D" parent="."]
 script = ExtResource("3")
 follow_camera_height = true
+
+[node name="RainSplashes" type="Node3D" parent="."]
+script = ExtResource("4")
+follow_radius = 4.5
+intensity_multiplier = 0.62
