@@ -5,13 +5,13 @@
 script = ExtResource("1")
 Enabled = true
 Seed = 49117
-PatchesPerChunk = 8
+PatchesPerChunk = 12
 PatchChance = 0.9
-ClumpsPerPatch = 15
+ClumpsPerPatch = 30
 PatchRadiusMin = 2.1
 PatchRadiusMax = 4.7
 ScaleMin = 0.85
-ScaleMax = 1.5
+ScaleMax = 2.3
 MinimumNormalY = 0.87
 EdgeClearance = 0.9
 WindMultiplier = 0.06
