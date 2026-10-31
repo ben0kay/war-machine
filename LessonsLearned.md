@@ -79,3 +79,16 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 **Prevent recurrence:** Before authoring or approving any stairs or basement, inspect the material **value hierarchy** from standing and descending FPS camera height. Flat procedural primitives need intentional surface separation, not only a uniformly believable architectural colour. Visual underside overlays must never cover a real stair opening, share a coplanar surface, create duplicate colliders or break floor/roof preview/fading ownership. Nosing is a surface cue, not a physics step or obstacle. Keep colour choices editable in the building master resource. Validate in local Godot—source-level review alone cannot prove visual legibility or lighting.
 
 **Validation status:** original screenshot and material-reuse cause confirmed; new visual pass source-implemented and awaits local Godot C# build, camera/stair walkthrough and Z-fighting inspection.
+
+
+## LL004 — C# stair edge material shadowed a rail-coordinate local (2026-10-31)
+
+**Observed:** The Godot C# build after PoliceStation001 PS1.6 failed in `PoliceStationMesh.cs` with **CS0136**: `A local or parameter named 'edge' cannot be declared in this scope because that name is used in an enclosing local scope`. The screenshot also showed a separate nullable-reference warning in the debug player, which is not caused by this compiler error and is not addressed here.
+
+**Cause:** PS1.6 introduced a `Material edge` parameter for the new blue stair-nosing strips in `StairFlight(...)`. The pre-existing rail construction in the same method used `foreach (float edge in ...)`, redeclaring `edge` within the parameter's scope. This is a C# compile-time identifier collision, not a mesh/collision or Terrain3D failure.
+
+**Fix:** Rename only the rail coordinate loop variable and its two geometric uses to `railX`. Keep the `Material edge` parameter, the stair-nosing visual, all four stair flights, rail geometry/collision and settings unchanged.
+
+**Prevention:** Before adding a new method parameter or local, scan its **complete method scope** for same-named variables (including `foreach` and nested scopes). Prefer descriptive identifiers such as `edgeMaterial` and `railX` rather than generic `edge`. Review the final diff and run **one initial Godot .NET build** whenever practical; balanced braces/static source checks are not proof of compilation.
+
+**Status:** Fix committed in source, actual Godot rebuild pending local user verification.

@@ -644,16 +644,17 @@ public partial class PoliceStationMesh : Node3D
         body.AddChild(new CollisionShape3D { Name = name + "WalkableRamp",
             Position = new(x, baseY + rise * 0.5f - 0.025f, (startZ + endZ) * 0.5f),
             Rotation = new(pitch, 0f, 0f), Shape = new BoxShape3D { Size = new(width, 0.14f, length) } });
-        foreach (float edge in new[] { x - 1.76f, x + 1.76f })
+        // Rail X coordinates must not shadow the "edge" nosing material parameter.
+        foreach (float railX in new[] { x - 1.76f, x + 1.76f })
         {
             StructureGeometry.Box(visuals, body, name + "Rail",
-                new(edge, baseY + rise * 0.5f + 0.90f, (startZ + endZ) * 0.5f),
+                new(railX, baseY + rise * 0.5f + 0.90f, (startZ + endZ) * 0.5f),
                 new(0.10f, 0.11f, length), rail, pitch);
             for (int i = 0; i <= 5; i++)
             {
                 float t = i / 5f;
                 StructureGeometry.Box(visuals, null, name + "Baluster",
-                    new(edge, baseY + rise * t + 0.43f, Mathf.Lerp(startZ, endZ, t)),
+                    new(railX, baseY + rise * t + 0.43f, Mathf.Lerp(startZ, endZ, t)),
                     new(0.10f, 0.85f, 0.10f), rail);
             }
         }
