@@ -1,4 +1,4 @@
-// DF0/DF2: single authored forest footprint and bounded streamed-tree placement settings.
+// DF0/DF2: one authored forest footprint and bounded streamed-tree placement settings.
 using Godot;
 
 [GlobalClass]
@@ -7,6 +7,8 @@ public partial class ForestSettings : Resource
     [ExportGroup("DF0 test footprint")]
     [Export] public bool Enabled { get; set; } = false;
     [Export] public bool ShowDebugOutline { get; set; } = false;
+    // Keep the old village entrance check only for forests that explicitly request it.
+    [Export] public bool RequireVillageApproach { get; set; } = true;
     // Absolute world X/Z coordinates, independent of the moving player spawn.
     [Export] public Vector2 CenterXZ { get; set; } = new(667f, 487f);
     [Export] public Vector2 SizeXZ { get; set; } = new(96f, 256f);

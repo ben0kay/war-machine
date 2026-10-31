@@ -49,22 +49,27 @@ public static class ForestZone
         if (valid < Mathf.CeilToInt(total * 0.8f))
         { report = $"Terrain too steep over {steep}/{total} open samples (slope limit {allowedSlope:F2})."; return false; }
 
-        // Keep the original eastern-road entrance near the southern forest, rather than
-        // moving it north when the same strip is extended along the village buildings.
-        float entranceZ = Mathf.Clamp(settings.TrailEntryZ,
-            footprint.Position.Y + 8f, footprint.End.Y - 8f);
-        Vector2 entrance = new(footprint.Position.X, entranceZ);
-        Vector2 approach = world.VillageEnabled ? world.VillageOriginXZ + new Vector2(35, 35) : world.SpawnXZ;
-        float length = approach.DistanceTo(entrance);
-        int sections = Mathf.Max(1, Mathf.CeilToInt(length / 4f));
-        for (int i = 0; i <= sections; i++)
+        // The original village-side forest retains its historical access route test.
+        // Independent woods survey local terrain, without requiring a cross-map straight path.
+        float length = 0f;
+        if (settings.RequireVillageApproach)
         {
-            Vector2 p = approach.Lerp(entrance, (float)i / sections);
-            if (!TryTerrainSample(data, p, out _, out float slope) || slope > allowedSlope)
-            { report = $"Village-to-forest approach not walkable at XZ {p} (max slope {allowedSlope:F2})."; return false; }
+            float entranceZ = Mathf.Clamp(settings.TrailEntryZ,
+                footprint.Position.Y + 8f, footprint.End.Y - 8f);
+            Vector2 entrance = new(footprint.Position.X, entranceZ);
+            Vector2 approach = world.VillageEnabled ? world.VillageOriginXZ + new Vector2(35, 35) : world.SpawnXZ;
+            length = approach.DistanceTo(entrance);
+            int sections = Mathf.Max(1, Mathf.CeilToInt(length / 4f));
+            for (int i = 0; i <= sections; i++)
+            {
+                Vector2 p = approach.Lerp(entrance, (float)i / sections);
+                if (!TryTerrainSample(data, p, out _, out float slope) || slope > allowedSlope)
+                { report = $"Village-to-forest approach not walkable at XZ {p} (max slope {allowedSlope:F2})."; return false; }
+            }
         }
         report = $"XZ {center}, size {size}, extent {footprint}, terrain {min:F1}–{max:F1}m, "
-            + $"slope max {worstSlope:F2}, suitable {valid}/{total}, reserved {excluded}, access {length:F0}m.";
+            + $"slope max {worstSlope:F2}, suitable {valid}/{total}, reserved {excluded}, "
+            + (settings.RequireVillageApproach ? $"access {length:F0}m." : "independent woodland.");
         return true;
     }
 

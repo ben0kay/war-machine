@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ForestSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Forest/Configuration/ForestSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+CenterXZ = Vector2(365, 690)
+SizeXZ = Vector2(144, 160)
+RequireVillageApproach = false
+Seed = 81141
+TrailEntryZ = 690.0
+MatureDensity = 0.82
+YoungDensity = 0.65
+LeafierShare = 0.5
+MaxTiltDegrees = 1.5
+UseSafePaletteMaterials = true

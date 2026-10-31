@@ -13,7 +13,9 @@ public partial class WorldSettings : Resource
     [Export] public WorldStreamingSettings Streaming { get; set; } = new();
     [ExportGroup("Fog-aware rendering (WS1)")]
     [Export] public WorldRenderSettings RenderPolicy { get; set; } = new();
-    [ExportGroup("Dense canopy forest test (DF0)")]
+    [ExportGroup("Dense canopy forest zones (DF2)")]
+    // Backward compatibility: a world without ForestZones falls back to its DenseForest.
+    [Export] public ForestZonesSettings? ForestZones { get; set; }
     [Export] public ForestSettings DenseForest { get; set; } = new();
     [ExportGroup("Village layout")]
     [Export] public bool VillageEnabled { get; set; } = true;
