@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DirtPatchSettings" format=3]
+[ext_resource type="Script" path="res://WORLD/Terrain/Configuration/DirtPatchSettings.cs" id="1"]
+[resource]
+script = ExtResource("1")
+UsePreviewInGameplay = true
+Seed = 73421
+AreaHalfExtent = 380.0
+ClusterCount = 125
+MinBlotches = 2
+MaxBlotches = 5
+TrailCount = 12
+FeatherMetres = 1.7
+WarpMetres = 2.2
+MinimumNormalY = 0.92
+Strength = 0.92
+ProtectedMin = Vector2(-150, -250)
+ProtectedMax = Vector2(155, 110)

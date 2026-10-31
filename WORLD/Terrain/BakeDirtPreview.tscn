@@ -1,0 +1,6 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://WORLD/Terrain/DirtPatchAuthoring.cs" id="1"]
+[ext_resource type="Resource" path="res://WORLD/Terrain/Configuration/DirtPatchMaster.tres" id="2"]
+[node name="BakeDirtPreview" type="Node"]
+script = ExtResource("1")
+Settings = ExtResource("2")

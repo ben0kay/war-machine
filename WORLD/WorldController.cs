@@ -67,11 +67,20 @@ public partial class WorldController : Node3D
     public void InitializeWorld()
     {
         var status = DebugControls.GetNode<Label>("Status");
-        string directory = ProjectSettings.GlobalizePath(WorldSettings.TerrainDirectory);
+        // DTP1 preview is an explicit authoring result, never a runtime paint or saved-terrain mutation.
+        string terrainDirectory = WorldSettings.TerrainDirectory;
+        var dirt = GD.Load<DirtPatchSettings>("res://WORLD/Terrain/Configuration/DirtPatchMaster.tres");
+        if (dirt != null && dirt.UsePreviewInGameplay)
+        {
+            if (DirtPatchAuthoring.HasCurrentPreview())
+            { terrainDirectory = DirtPatchAuthoring.PreviewDirectory; GD.Print("DTP1: isolated dirt preview active."); }
+            else GD.Print("DTP1: no current dirt preview; original gameplay terrain active.");
+        }
+        string directory = ProjectSettings.GlobalizePath(terrainDirectory);
         if (!Directory.Exists(directory) || Directory.GetFiles(directory, "*.res").Length == 0)
         { status.Text = "Preview terrain not baked.\nRun WORLD/Generation/BakeGameplayTerrain.tscn once (F6),\nthen run this scene again. The main world is unchanged."; GD.PushWarning(status.Text); return; }
         var terrain = GetNode<Node3D>("TerrainRoot/Terrain3D");
-        terrain.Set("data_directory", WorldSettings.TerrainDirectory);
+        terrain.Set("data_directory", terrainDirectory);
         if (!BindTerrainAppearance(terrain, out string appearanceError))
         { status.Text = appearanceError; GD.PushError(appearanceError); return; }
         var data = terrain.Get("data").AsGodotObject();
