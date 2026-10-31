@@ -1,0 +1,165 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "War Machine ForestFern001 original mesh author"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "forest_fern_001_b_LOD2",
+      "mesh": 0
+    }
+  ],
+  "meshes": [
+    {
+      "name": "forest_fern_001_b_LOD2",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2,
+            "COLOR_0": 3
+          },
+          "indices": 4,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "ForestFern001_OpaqueGeometricFoliage",
+      "doubleSided": true,
+      "alphaMode": "OPAQUE",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.93
+      }
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 33071,
+      "wrapT": 33071
+    }
+  ],
+  "images": [
+    {
+      "uri": "../Textures/forest_fern_001_atlas.png"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "forest_fern_001_b_LOD2.bin",
+      "byteLength": 184200
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 44208,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 44208,
+      "byteLength": 44208,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 88416,
+      "byteLength": 29472,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 117888,
+      "byteLength": 58944,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 176832,
+      "byteLength": 7368,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 3684,
+      "type": "VEC3",
+      "min": [
+        -1.2432711124420166,
+        -0.0022448189556598663,
+        -1.4975694417953491
+      ],
+      "max": [
+        1.2942347526550293,
+        2.3616085052490234,
+        0.9305848479270935
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 3684,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 3684,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 3684,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5123,
+      "count": 3684,
+      "type": "SCALAR"
+    }
+  ],
+  "extras": {
+    "variant": "B",
+    "lod": 2,
+    "triangle_count": 1228,
+    "no_alpha_billboards": true,
+    "wind_pivot_y": 0,
+    "foliage_vertex_color_alpha_mask": true
+  }
+}

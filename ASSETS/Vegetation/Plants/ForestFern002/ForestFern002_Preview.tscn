@@ -1,0 +1,42 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://ASSETS/Vegetation/Plants/ForestFern002/Models/forest_fern_002_a_LOD1.gltf" id="1"]
+[ext_resource type="PackedScene" path="res://ASSETS/Vegetation/Plants/ForestFern002/Models/forest_fern_002_b_LOD1.gltf" id="2"]
+[ext_resource type="PackedScene" path="res://ASSETS/Vegetation/Plants/ForestFern002/Models/forest_fern_002_c_LOD1.gltf" id="3"]
+
+[sub_resource type="PlaneMesh" id="ground"]
+size = Vector2(21, 10)
+
+[sub_resource type="StandardMaterial3D" id="groundmat"]
+albedo_color = Color(0.16, 0.18, 0.14, 1)
+roughness = 1.0
+
+[node name="ForestFern002Preview" type="Node3D"]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("ground")
+surface_material_override/0 = SubResource("groundmat")
+position = Vector3(0, -0.04, 0)
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, 32, 0)
+light_energy = 1.6
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+position = Vector3(0, 3.25, 11.0)
+rotation_degrees = Vector3(-16, 0, 0)
+projection = 1
+size = 11.5
+
+[node name="Fern_A_Low_spreading_rosette" parent="." instance=ExtResource("1")]
+position = Vector3(-6.200, 0, 0)
+
+
+[node name="Fern_B_Wide_asymmetric_fan" parent="." instance=ExtResource("2")]
+position = Vector3(0.000, 0, 0)
+
+
+[node name="Fern_C_Dense_groundcover_crown" parent="." instance=ExtResource("3")]
+position = Vector3(6.200, 0, 0)
+
