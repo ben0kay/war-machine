@@ -1,11 +1,11 @@
 # Rifle_001 — grounded tactical GLB visual (first-pass)
 
-This package is designed for the existing War Machine `implement-td0-td1` branch's `Rifle_001` wrapper. It replaces only procedural generated Visual art with a low-poly **actual GLB** inspired by the owner's first reference screenshot, **without the holographic sight**. More practical styling than sci-fi: brushed/dark matte metal, muted olive polymer, rail segments, compact front and rear iron sights, receiver seams, vented handguard, stock/grip/magazine.
+The GLB is now wired into the repository's `Rifle_001.tscn` on the `implement-td0-td1` branch. The original ZIP installation instructions below are retained for manual or rollback use. It replaces only procedural generated Visual art with a low-poly **actual GLB** inspired by the owner's first reference screenshot, **without the holographic sight**. More practical styling than sci-fi: brushed/dark matte metal, muted olive polymer, rail segments, compact front and rear iron sights, receiver seams, vented handguard, stock/grip/magazine.
 
 ## Install
 
 1. Back up or commit your original `EQUIPMENT/Weapons/Rifles/Rifle_001/Rifle_001.tscn`.
-2. Extract this zip's `EQUIPMENT/` folder into the root of the Godot project; preserve paths. This will replace **only the `.tscn` scene file** and add model/art documentation/source. Do not delete any other files.
+2. If you pulled the current GitHub branch, the GLB and corrected `Rifle_001.tscn` are **already included** — do not extract the old ZIP over this scene. If installing from an offline archive instead, preserve the entire `EQUIPMENT/` folder structure and include both the model and scene file.
 3. Let Godot import `Artwork/Rifle_001_ReferenceStyle.glb`. Build C# if Godot prompts you and run the FPS scene with F6: `WORLD/FirstPerson/FirstPersonWorld.tscn`.
 4. Inspect hip-fire and MMB ADS framing, sight height, recoil visual kick and cyan aim line. The first-pass model was generated offline and **has not been test-run inside Godot**. It may need a visual-offset / optic alignment tweak.
 
