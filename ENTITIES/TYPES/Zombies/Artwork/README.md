@@ -1,46 +1,84 @@
-# Zombie imported artwork — first pass
+# Zombie imported artwork — current organic zombie
 
-Implemented, awaiting local Godot import, compilation and visual/gameplay validation.
+**Source integrated; local Godot compilation, import and gameplay validation pending.**
 
-`ZombieFirstPass.glb` is original, generated segmented character artwork: tapered torso/limbs,
-shaped jaw/nose/ears/brows, fingers, boots, scalp and an embedded 768×512 opaque grime/fabric/face atlas.
-It is a first-pass stylized asset, not a finished sculpt or a smoothly skinned humanoid.
+The current `ZombieFirstPass.glb` is the **Organic Rebuild V3**: the textured,
+segmented zombie with shoulder overlap and hip/upper-thigh repairs.
+The file is self-contained, with embedded textures. The uploaded V3 is
+approximately **40,915 triangles**, **11 mesh groups**, and **23 glTF nodes**.
+The original low-poly C# procedural zombie is **not deleted**.
 
-Standard zombies use it by default. Set `ImportedArtworkEnabled = false` in
-`../Configuration/ZombieMaster.tres` to restore procedural art. Runners retain their own procedural model.
-The two appearances can coexist; there is no additional runtime animation callback.
+## Select the model or restore the old one
+
+Standard zombies read `ImportedArtworkEnabled` from
+`../Configuration/ZombieMaster.tres` (currently **true**):
+
+- **true** — try `ZombieFirstPass.glb` first. When import or rig validation fails,
+  fall back to the cached C# procedural mesh.
+- **false** — always use the original C# procedural mesh from
+  `../C/ZombieMeshBuilder.cs` and its shared helpers.
+
+After changing the setting, restart the running scene so existing zombie instances
+are reconstructed. `Zombie_002` runners keep their separate procedural art;
+this switch does not replace runner visuals.
+
+The loader now searches the imported scene tree recursively instead of assuming
+the model is at a single wrapper depth. It tolerates importer-generated numeric
+suffixes on the required pivot names and normalizes **only the instance's**
+validated joints to the names expected by gameplay.
 
 ## Compatibility contract
 
-The GLB supplies `UpperBody` at (0,.85,0), its `Head`, `LeftArm/Elbow`, `RightArm/Elbow`,
-and root `LeftLeg/Knee`, `RightLeg/Knee`. Shoulder/hip/knee/head positions match the current rig.
-`UpperBody/Hips` remains independently movable for the corpse pelvis.
-`ZombieImportedVisual` loads the PackedScene once and moves its rig children into the existing visual root.
-Meshes and the atlas are shared resources; transforms remain per actor.
-
-C# gait, attack, flinch, injury poses, deferred anatomy boxes, limb hiding/stumps and articulated corpse
-handoff continue to drive these same nodes. No AnimationPlayer clips or Skeleton3D are supplied.
-This retains existing movement, including its limitations: joints rotate rigid segments, they do not
-bend continuous skin. A future skinned GLB needs a node-to-bone pose adapter and skeleton-aware
-sever/corpse integration; arbitrary downloaded humanoids are not drop-in compatible.
-
-Imported mesh names intentionally do not use the procedural palette categories, so the existing
-appearance pass leaves the authored atlas intact. Imported colour variation is deferred.
-The GLB has 11 mesh surfaces and 4,832 triangles. Godot's importer can generate LOD; the procedural
-ZM-PERF2B buffers do not apply to this asset. No measured frame-rate improvement is claimed.
-
-## Authoring and validation
-
-Rebuild deterministically with Python 3 and Pillow:
-
-```sh
-python ENTITIES/TYPES/Zombies/Artwork/Source/build_zombie.py
+```text
+VisualRoot
+├─ UpperBody (waist pivot)
+│  ├─ Hips
+│  ├─ Head
+│  ├─ LeftArm
+│  │  └─ Elbow
+│  └─ RightArm
+│     └─ Elbow
+├─ LeftLeg
+│  └─ Knee
+└─ RightLeg
+   └─ Knee
 ```
 
-The source is self-contained, with no downloaded assets or external textures. Reimport the GLB in Godot,
-then `dotnet build war-machine.csproj`. Open the FPS world and inspect nearby faces/clothing, walking,
-pursuit, horizontal attacks, flinches, both leg injuries, limb removal, deaths and settled corpse piles.
-Check secondary view, crowd cost and toggling back to procedural art. No terrain rebake is needed.
+These pivots remain under the existing standard-zombie animation, damage,
+dismemberment and corpse system. The code transfers the three validated imported
+rig roots to `VisualRoot` and discards import-only wrapper nodes. It does not
+replace the AI, collision, attacks, hit regions, physics or corpse logic.
+No skeletal skinning is used; rigid limb posing can still reveal overlapping seams
+at extreme animations.
 
-Source validation covers binary structure, triangle indices, bounds, pivot paths, deterministic generation
-and whitespace. Compilation, Godot import and runtime checks are deferred because Godot/.NET are unavailable.
+Imported mesh names deliberately differ from procedural palette names, preserving
+the authored textures. Imported art does not yet receive procedural colour variation.
+Godot may generate mesh LODs on import; `ZM-PERF2B` runtime-generated
+procedural LOD meshes do not replace the imported artwork's surfaces.
+
+## Diagnosing an unchanged zombie
+
+1. Pull `implement-td0-td1`, allow Godot to finish importing the GLB, and rebuild
+   the C# solution.
+2. Run `WORLD/FirstPerson/FirstPersonWorld.tscn` and check Godot's **Output**.
+3. **Success:** `[ZombieArtwork] ZombieFirstPass.glb active ...` appears once.
+4. **Fallback:** `[ZombieArtwork]` warning states if the GLB could not load, or
+   prints the actual imported node paths if the expected rig was not found.
+5. If the setting is false, only procedural visuals are intentionally constructed.
+   The cached procedural template remains available even when the GLB is present.
+
+Test nearby standing/walking poses, chase attacks, both arm and leg removals,
+limping/crawling, death/corpses and the runner. Review performance with a comparable
+crowd: V3 is substantially heavier than the earlier 4,832-triangle first-pass GLB.
+
+**Legacy source warning:** `Source/build_zombie.py` generates the *old* 4,832-triangle
+first-pass art and would overwrite the current V3 GLB if run unchanged. It is
+retained as historical source/fallback reference, **not** the builder for V3.
+The editable V3 model/texture package was produced separately.
+
+## Verification status
+
+The uploaded V3 glTF hierarchy has the named gameplay pivots; imported wrapper
+structure, Godot engine behaviour, C# compilation and the living zombie's visual
+and dismemberment states still require validation in the owner's Godot editor.
+No change to the procedural C# builders or the runner was made in this loader fix.
