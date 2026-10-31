@@ -50,4 +50,7 @@ public partial class FirstPersonSettings : Resource
     [Export] public Vector3 WeaponOffset { get; set; } = new(0.22f, -0.22f, -0.32f);
     [ExportGroup("Aim down sights (ADS0)")]
     [Export(PropertyHint.Range, "0.05,1,0.01,suffix:s")] public float AdsBaseTransitionSeconds { get; set; } = 0.20f;
+    [ExportGroup("Debug aim visualization (FPS only)")]
+    // Development aid: one continuously updated muzzle-to-camera-target line, never shot spread.
+    [Export] public bool DebugAimLineEnabled { get; set; } = true;
 }

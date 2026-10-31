@@ -12,6 +12,7 @@ public partial class FirstPersonWeapon : Node
     private bool _held, _requested;
     private PlayerQuickMelee? _shove;
     private FirearmVisualRecoil? _visualRecoil;
+    private FirstPersonAimDebugLine? _aimDebugLine;
     private float _pendingCameraRise, _burstCameraRise;
     private double _lastAcceptedShotSeconds = -1.0;
     private bool _adsActive, _adsInitialized;
@@ -32,6 +33,13 @@ public partial class FirstPersonWeapon : Node
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
         _slots.Initialize(equipment, player, camera, camera.ViewSettings.WeaponOffset, audio);
+        // Development-only continuous tracer. Keep it independent of the recoil/ADS sleep loop.
+        if (camera.ViewSettings.DebugAimLineEnabled)
+        {
+            _aimDebugLine = new FirstPersonAimDebugLine { Name = "UnspreadAimDebugLine" };
+            camera.AddChild(_aimDebugLine);
+            _aimDebugLine.Initialize(player, camera);
+        }
         SwitchWeapon(0);
         if (_weapon != null) { _shove = new PlayerQuickMelee(player); player.GameplayInputBlockChanged += OnInputBlocked; player.InteractionModeChanged += OnInputBlocked; }
     }
@@ -45,6 +53,7 @@ public partial class FirstPersonWeapon : Node
         if (IsInstanceValid(previous))
         { previous!.ReadyToFire -= OnReadyToFire; previous.ShotAccepted -= OnShotAccepted; }
         _weapon = _slots.Current; _melee = _slots.CurrentMelee;
+        _aimDebugLine?.SetWeapon(_weapon);
         // ADS1: held firearm weight is applied on selection, not each physics/render frame.
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps))
             fps.SetEquippedWeaponMovementMultiplier(_weapon?.RuntimeSettings.EquippedMovementMultiplier ?? 1f);
@@ -239,9 +248,9 @@ public partial class FirstPersonWeapon : Node
             if (_melee != null) _melee.TryStart(_player, direction, true);
             else
             {
-                _query.From = origin; _query.To = origin + direction * _weapon!.RuntimeSettings.Range;
-                var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_query);
-                Vector3 aim = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
+                // Same unspread camera target used by the optional FPS aim debug line.
+                Vector3 aim = FirstPersonAimTarget.Resolve(_player, _query, origin, direction,
+                    _weapon!.RuntimeSettings.Range);
                 // The FPS camera itself is already tilted upward by cumulative recoil.
                 // FPS camera recoil already affects aim; hip fire adds only random spread,
                 // never a second recoil rotation. ADS retains the original base spread.
@@ -283,5 +292,6 @@ public partial class FirstPersonWeapon : Node
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps)) fps.SetEquippedWeaponMovementMultiplier(1f);
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.InteractionModeChanged -= OnInputBlocked; }
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
+        if (IsInstanceValid(_aimDebugLine)) _aimDebugLine!.QueueFree();
     }
 }
