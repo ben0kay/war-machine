@@ -1,6 +1,6 @@
 # PineTree001 — stylized faceted conifer (comparison asset)
 
-**Status:** New independent art family, *not yet replacing* the existing PineTree002 forest. Source design references the user's PineTree002 models and the stylized, low-/mid-poly forest concept approved 2026-10-30. The generated meshes are new geometry with a similar planted origin and approximately 22.45 m height; they are **not a decimation or texture conversion** of the original tree.
+**Status:** Used by the current War Machine scattered-pine forest through the new PINE-ST1 loader (source implemented; Godot validation pending). The original art-pack text below describes its earlier separate role in Final Machine. Source design references the user's PineTree002 models and the stylized, low-/mid-poly forest concept approved 2026-10-30. The generated meshes are new geometry with a similar planted origin and approximately 22.45 m height; they are **not a decimation or texture conversion** of the original tree.
 
 ## Look and geometry
 
@@ -38,10 +38,14 @@ The preview PNGs are simple software projections of the generated geometry, not 
 
 Then use this `ShaderMaterial` on **surface 1** of the imported PineTree001 models (as done by `PineForest.PrepareNeedleMaterial`). `PineTree001PreviewVisual.gd` demonstrates binding both materials. No extra Godot global shader parameter, per-tree process function, or new palette system is needed. The global **effect** comes from the shared F1 palette updating shared material resources; it is not the Godot Project Settings Shader Globals feature.
 
-**Do not replace PineTree002 in the existing world until visually accepted.** If the owner chooses to switch later, add a single configurable model/material selector in `PineForest` and retain its 70/280/600m switching, batching, collision, shadow and pine placements. This asset pack does not change `PineForest.cs` or test.tscn.
+**Historical Final Machine note (does not govern War Machine's PINE-ST1 replacement):** Do not replace PineTree002 in that project's forest until visually accepted. If the owner chooses to switch later, add a single configurable model/material selector in `PineForest` and retain its 70/280/600m switching, batching, collision, shadow and pine placements. This asset pack does not change `PineForest.cs` or test.tscn.
 
 ## Validation
 
 - Confirmed glTF+bin byte lengths, source attribute counts, face winding, normals, triangle counts, surface order and vertex-colour ranges using the authored generator.
 - Source normals are geometric flat-face normals; no reversed triangles or zero-area faces were intended. Software preview checks silhouettes, not Godot material/culling behaviour.
 - **Not tested in Godot:** actual render, material uniform palette changes, light/front/back behaviour, imported glTF surface colours, shadowing, LOD transitions or FPS. Verify before changing the main forest.
+
+## War Machine world integration — PINE-ST1 (2026-10-30)
+
+**Authorized replacement is now implemented in source.** The world uses `VEGETATION/Trees/Pine/PinePlacement.cs` and `PineMaster.tres → UseStylizedPine=true` to render this exact `ASSETS/Vegetation/Trees/PineTree001/Models/` family at pre-existing randomly seeded pine positions. LOD1/LOD2/LOD3 are shared MultiMeshes; the two vertex-colour surfaces use source bark plus a War Machine-compatible foliage palette/wind/top-down fade shader. This repository contains both the canonical `ASSETS/...` files and a duplicated ZIP-extraction copy under `VEGETATION/Trees/PineTree001/`; the active world intentionally references **only ASSETS**. The older Final Machine / PineTree002 instructions above are historical information about asset origin, not active War Machine scene wiring. No grass or DF2 forest changes. See [PINE-ST1 implementation handoff](../Pine/README.md#pine-st1--stylized-pinetree001-model-source-switch-2026-10-30).

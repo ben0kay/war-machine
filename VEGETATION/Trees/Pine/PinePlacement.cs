@@ -10,9 +10,9 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     [Export] public PineSettings Settings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
 
-    private ShaderMaterial? _foliage;
+    private ShaderMaterial? _foliage, _stylizedFoliage;
     private ShaderMaterial[] _glbFoliage = System.Array.Empty<ShaderMaterial>();
-    private bool _usingPineGlb;
+    private bool _usingPineGlb, _usingStylizedPine;
     private GodotObject _data = null!;
     private ExplorationController _explorer = null!;
     private Node3D _anchor = null!;
@@ -20,7 +20,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     private Vector2 _spawn;
     private float _focusDistance;
     private FastNoiseLite _forest = null!;
-    private Mesh[] _meshes = System.Array.Empty<Mesh>(), _farMeshes = System.Array.Empty<Mesh>();
+    private Mesh[] _meshes = System.Array.Empty<Mesh>(), _farMeshes = System.Array.Empty<Mesh>(),
+        _thirdMeshes = System.Array.Empty<Mesh>();
     private sealed class TreeChunk
     {
         public readonly List<MultiMeshInstance3D> Nodes = new();
@@ -64,8 +65,10 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         foreach (var chunk in _active.Values) ReleaseChunk(chunk);
         OcclusionChanged?.Invoke();
         _active.Clear(); _center = new Vector2I(int.MinValue, int.MinValue); ActiveTrees = 0;
-        _meshes = _farMeshes = System.Array.Empty<Mesh>();
-        _foliage = null; _glbFoliage = System.Array.Empty<ShaderMaterial>(); _usingPineGlb = false;
+        _meshes = _farMeshes = _thirdMeshes = System.Array.Empty<Mesh>();
+        _foliage = _stylizedFoliage = null;
+        _glbFoliage = System.Array.Empty<ShaderMaterial>();
+        _usingPineGlb = _usingStylizedPine = false;
         if (!_initialized || Settings == null || !Settings.Enabled || Settings.Density <= 0) return;
 
         _chunkSize = Mathf.Clamp(Settings.ChunkSize, 32, 192);
@@ -74,11 +77,13 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         _forest = new FastNoiseLite { Seed = Settings.Seed + 17, Frequency = Mathf.Max(0.0001f, Settings.ForestNoiseFrequency) };
         // The GLB is read once when changing modes/building the forest, never once per tree.
         // The seed/terrain/exclusion/streaming path below stays identical for both sources.
-        Mesh? glbMesh = Settings.UsePineGlb ? LoadPineGlbMesh() : null;
+        bool stylized = Settings.UseStylizedPine && LoadStylizedPineMeshes();
+        Mesh? glbMesh = !stylized && Settings.UsePineGlb ? LoadPineGlbMesh() : null;
         var imported = new List<Mesh>();
         foreach (Mesh candidate in Settings.ImportedMeshes)
             if (candidate != null) imported.Add(candidate);
-        if (glbMesh != null) { _meshes = new Mesh[] { glbMesh }; _usingPineGlb = true; }
+        if (stylized) { /* Three stylized LODs were loaded as shared mesh templates. */ }
+        else if (glbMesh != null) { _meshes = new Mesh[] { glbMesh }; _usingPineGlb = true; }
         else if (imported.Count > 0) _meshes = imported.ToArray();
         else
         {
@@ -105,6 +110,55 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         }
         ApplyWind();
         UpdateAnchor(_anchor.GlobalPosition);
+    }
+
+    // =========================================================
+    // Extract the three authored stylized glTF LODs once per forest rebuild, not once per tree.
+    // Retain the original vertex colours and material surface order; no preview assets are modified.
+    private bool LoadStylizedPineMeshes()
+    {
+        const string root = "res://ASSETS/Vegetation/Trees/PineTree001/";
+        var bark = GD.Load<Material>(root + "Materials/PineTree001Bark.tres");
+        var palette = GD.Load<ShaderMaterial>(root + "Materials/PineTree001Foliage.tres");
+        var shader = GD.Load<Shader>("res://VEGETATION/Trees/Pine/Shaders/StylizedPineFoliage.gdshader");
+        if (bark == null || palette == null || shader == null)
+        { GD.PushWarning("Stylized pine materials unavailable; falling back to original pines."); return false; }
+
+        var foliage = new ShaderMaterial { Shader = shader };
+        foreach (string parameter in new[] { "forest_tint", "forest_tint_strength",
+            "palette_response", "foliage_roughness" })
+            foliage.SetShaderParameter(parameter, palette.GetShaderParameter(parameter));
+        foliage.SetShaderParameter("use_camera_occlusion", true);
+
+        var lods = new Mesh[3];
+        for (int lod = 1; lod <= 3; lod++)
+        {
+            string path = root + $"Models/pine_tree_001_a_LOD{lod}.gltf";
+            var scene = GD.Load<PackedScene>(path);
+            if (scene == null)
+            { GD.PushWarning($"Stylized pine missing {path}; falling back to original pines."); return false; }
+            Node instance = scene.Instantiate();
+            try
+            {
+                MeshInstance3D? visual = instance as MeshInstance3D;
+                if (visual == null)
+                    foreach (Node child in instance.FindChildren("*", "MeshInstance3D", true, false))
+                        if (child is MeshInstance3D mesh) { visual = mesh; break; }
+                if (visual?.Mesh is not ArrayMesh source || source.GetSurfaceCount() != 2)
+                {
+                    GD.PushWarning($"Stylized pine LOD{lod} must contain one mesh with two surfaces (bark, foliage); reverting to original pines.");
+                    return false;
+                }
+                var copy = (ArrayMesh)source.Duplicate();
+                copy.SurfaceSetMaterial(0, bark);
+                copy.SurfaceSetMaterial(1, foliage);
+                lods[lod - 1] = copy;
+            }
+            finally { instance.Free(); }
+        }
+        _meshes = new[] { lods[0] }; _farMeshes = new[] { lods[1] }; _thirdMeshes = new[] { lods[2] };
+        _stylizedFoliage = foliage; _usingStylizedPine = true;
+        return true;
     }
 
     // =========================================================
@@ -151,7 +205,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     // Update the shared GPU material directly; wind sliders never regenerate geometry.
     public void ApplyWind()
     {
-        if (_foliage == null && _glbFoliage.Length == 0) return;
+        if (_foliage == null && _stylizedFoliage == null && _glbFoliage.Length == 0) return;
         Vector2 direction = EnvironmentSettings.WindDirection.Normalized();
         if (direction.LengthSquared() < 0.0001f) direction = Vector2.Right;
         float strength = Settings.LeafWindStrength * EnvironmentSettings.GrassWindStrength;
@@ -162,6 +216,12 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
             _foliage.SetShaderParameter("wind_strength", strength);
             _foliage.SetShaderParameter("wind_speed", speed);
         }
+        if (_stylizedFoliage != null)
+        {
+            _stylizedFoliage.SetShaderParameter("wind_direction", direction);
+            _stylizedFoliage.SetShaderParameter("wind_strength", strength);
+            _stylizedFoliage.SetShaderParameter("wind_speed", speed);
+        }
         foreach (ShaderMaterial material in _glbFoliage)
         {
             material.SetShaderParameter("wind_direction", direction);
@@ -171,21 +231,36 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
-    // Native distance ranges include the elevated camera offset; explicit zoom edits update batches, not geometry.
+    // Preserve the old generated/GLB ranges; three stylized LODs use two editable thresholds.
+    private void GetDrawRanges(out float nearEnd, out float midEnd, out float end, out float margin)
+    {
+        end = Mathf.Clamp(Settings.RenderDistance, 64f, 512f) + _focusDistance;
+        margin = Mathf.Min(end * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4f, 48f));
+        nearEnd = _usingStylizedPine
+            ? Mathf.Clamp(Settings.StylizedLod1Distance + _focusDistance, 24f, end - 16f)
+            : Mathf.Clamp(Settings.LodDistance + _focusDistance, 32f, end - margin);
+        midEnd = _usingStylizedPine
+            ? Mathf.Clamp(Settings.StylizedLod2Distance + _focusDistance, nearEnd + 4f, end - margin)
+            : end;
+    }
+
+    // =========================================================
+    // Native distance ranges include the elevated camera offset; zoom edits update batches, not geometry.
     public void UpdateView(float focusDistance)
     {
         if (Mathf.IsEqualApprox(_focusDistance, focusDistance)) return;
         _focusDistance = Mathf.Max(0, focusDistance);
-        float end = Mathf.Clamp(Settings.RenderDistance, 64, 512) + _focusDistance;
-        float margin = Mathf.Min(end * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4, 48));
-        float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 32, end - margin);
+        GetDrawRanges(out float nearCut, out float midCut, out float end, out _);
+        bool triple = _thirdMeshes.Length == _meshes.Length;
+        bool doubleLod = _farMeshes.Length == _meshes.Length;
         foreach (var chunk in _active.Values)
             foreach (var node in chunk.Nodes)
             {
                 bool far = node.Name.ToString().EndsWith("_Far");
-                bool hasLod = _farMeshes.Length == _meshes.Length;
-                node.VisibilityRangeBegin = far ? lod : 0;
-                node.VisibilityRangeEnd = far || !hasLod ? end : lod;
+                bool mid = node.Name.ToString().EndsWith("_Mid");
+                node.VisibilityRangeBegin = triple ? (far ? midCut : mid ? nearCut : 0f) : (far ? nearCut : 0f);
+                node.VisibilityRangeEnd = triple ? (far ? end : mid ? midCut : nearCut)
+                    : far || !doubleLod ? end : nearCut;
                 node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, node.VisibilityRangeEnd);
             }
     }
@@ -260,11 +335,12 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 float scale = random.RandfRange(minScale, maxScale);
                 // Consume the same variant roll as the original 3-variant forest. This keeps
                 // positions, rotations and size RNG identical when switching GLB/mesh art.
-                int variantRoll = random.RandiRange(0, _usingPineGlb
+                int variantRoll = random.RandiRange(0, _usingPineGlb || _usingStylizedPine
                     ? Mathf.Clamp(Settings.Variants, 1, 12) - 1 : _meshes.Length - 1);
-                int variant = _usingPineGlb ? 0 : variantRoll;
-                float modelScale = _usingPineGlb
-                    ? Mathf.Max(0.1f, Settings.PineGlbBaseScale * Settings.HeightMultiplier) : 1f;
+                int variant = _usingPineGlb || _usingStylizedPine ? 0 : variantRoll;
+                float modelScale = _usingStylizedPine
+                    ? Mathf.Clamp(Settings.StylizedBaseScale, 0.25f, 2f)
+                    : _usingPineGlb ? Mathf.Max(0.1f, Settings.PineGlbBaseScale * Settings.HeightMultiplier) : 1f;
                 var basis = new Basis(Vector3.Up, random.RandfRange(0, Mathf.Tau))
                     .Scaled(Vector3.One * scale * modelScale);
                 bins[variant].Add(new Transform3D(basis, new Vector3(x, height - 0.1f, z)));
@@ -276,34 +352,42 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
             if (bins[i].Count == 0) continue;
             if (Settings.TrunkCollisionEnabled && chunk.Trunks == null)
             { chunk.Trunks = new StaticBody3D { Name = $"Trunks_{key.X}_{key.Y}", CollisionLayer = TrunkLayer, CollisionMask = 0 }; AddChild(chunk.Trunks); }
-            float distance = Mathf.Clamp(Settings.RenderDistance, 64, 512) + _focusDistance;
-            float margin = Mathf.Min(distance * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4, 48));
-            float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 32, distance - margin);
+            GetDrawRanges(out float nearCut, out float midCut, out float distance, out float margin);
             bool hasLod = _farMeshes.Length == _meshes.Length;
+            bool hasThird = _thirdMeshes.Length == _meshes.Length;
             float averageHeight = 0;
             foreach (var transform in bins[i]) averageHeight += transform.Origin.Y;
             var anchor = new Vector3((key.X + 0.5f) * _chunkSize, averageHeight / bins[i].Count, (key.Y + 0.5f) * _chunkSize);
-            var near = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor, 0, hasLod ? lod : distance, margin, Settings.CastShadows);
+            var near = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor,
+                0, hasLod ? nearCut : distance, margin, Settings.CastShadows);
             chunk.Nodes.Add(near);
-            MultiMeshInstance3D? far = null;
+            MultiMeshInstance3D? far = null, third = null;
             if (hasLod)
             {
-                far = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Far", _farMeshes[i], bins[i], anchor, lod, distance, margin,
+                far = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_{(hasThird ? "Mid" : "Far")}", _farMeshes[i], bins[i],
+                    anchor, nearCut, hasThird ? midCut : distance, margin,
                     Settings.CastShadows && Settings.FarCastShadows);
                 chunk.Nodes.Add(far);
             }
+            if (hasThird)
+            {
+                third = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Far", _thirdMeshes[i], bins[i],
+                    anchor, midCut, distance, margin, false);
+                chunk.Nodes.Add(third);
+            }
             // Both generated foliage and our imported GLB adapter share per-instance canopy fade data.
             // Generic ImportedMeshes without the adapter retain their existing non-fading behaviour.
-            if (_foliage != null || _glbFoliage.Length > 0)
+            if (_foliage != null || _stylizedFoliage != null || _glbFoliage.Length > 0)
             {
                 Aabb localCanopy = _meshes[i].GetAabb();
                 if (hasLod) localCanopy = localCanopy.Merge(_farMeshes[i].GetAabb());
+                if (hasThird) localCanopy = localCanopy.Merge(_thirdMeshes[i].GetAabb());
                 localCanopy.Position += Vector3.Up * localCanopy.Size.Y * 0.18f;
                 localCanopy.Size = new Vector3(localCanopy.Size.X, localCanopy.Size.Y * 0.82f, localCanopy.Size.Z);
                 for (int j = 0; j < bins[i].Count; j++)
                 {
                     Aabb bounds = CameraOcclusionMath.TransformBounds(localCanopy, GlobalTransform * bins[i][j]);
-                    chunk.Occluders.Add(new PineFadeTarget(near.Multimesh, far?.Multimesh, j, bounds));
+                    chunk.Occluders.Add(new PineFadeTarget(near.Multimesh, far?.Multimesh, third?.Multimesh, j, bounds));
                     chunk.Bounds = chunk.HasBounds ? chunk.Bounds.Merge(bounds) : bounds; chunk.HasBounds = true;
                 }
             }
@@ -311,7 +395,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
                 foreach (var transform in bins[i])
                 {
                     float scale = transform.Basis.X.Length();
-                    float radius = (_usingPineGlb ? Mathf.Clamp(Settings.PineGlbTrunkRadius, 0.1f, 1.5f)
+                    float radius = (_usingStylizedPine ? Mathf.Clamp(Settings.StylizedTrunkRadius, 0.1f, 1.5f)
+                        : _usingPineGlb ? Mathf.Clamp(Settings.PineGlbTrunkRadius, 0.1f, 1.5f)
                         : PineMeshBuilder.GetTrunkRadius(Settings, i)) * scale;
                     float height = Mathf.Max(radius * 2, Settings.TrunkCollisionHeight * scale);
                     chunk.Trunks.AddChild(new CollisionShape3D { Position = transform.Origin + Vector3.Up * (height * 0.5f),
@@ -373,13 +458,13 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     private sealed class PineFadeTarget : ICameraFadeTarget
     {
         private readonly MultiMesh _near;
-        private readonly MultiMesh? _far;
+        private readonly MultiMesh? _far, _third;
         private readonly int _index;
         public readonly Aabb Bounds;
         public bool Alive = true;
         public bool IsValid => Alive && GodotObject.IsInstanceValid(_near);
-        public PineFadeTarget(MultiMesh near, MultiMesh? far, int index, Aabb bounds)
-        { _near = near; _far = far; _index = index; Bounds = bounds; }
+        public PineFadeTarget(MultiMesh near, MultiMesh? far, MultiMesh? third, int index, Aabb bounds)
+        { _near = near; _far = far; _third = third; _index = index; Bounds = bounds; }
 
         // =========================================================
         // Update one tree in both LOD batches; bark uses an opaque material and ignores this channel.
@@ -389,6 +474,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
             var value = new Color(opacity, 0, 0, 0);
             _near.SetInstanceCustomData(_index, value);
             if (GodotObject.IsInstanceValid(_far)) _far!.SetInstanceCustomData(_index, value);
+            if (GodotObject.IsInstanceValid(_third)) _third!.SetInstanceCustomData(_index, value);
         }
     }
 

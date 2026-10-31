@@ -11,6 +11,8 @@
 
 > **Object render/debug status:** Shared per-asset `ShadowMode` (Inherit / Disabled / Enabled) is implemented in source as the shadow-only subset of SOC1A. [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render caps, F1 inspection, malformed-GLB checks and performance cost reports. Runtime validation pending.
 
+> **Stylized scattered pines (PINE-ST1, source implemented):** [Pine art replacement](VEGETATION/Trees/Pine/README.md#pine-st1--stylized-pinetree001-model-source-switch-2026-10-30) now selects the new `ASSETS/Vegetation/Trees/PineTree001` glTF pack for the regular randomly spawned village-area pines, with three authored LOD ranges (40/70/96m), preserving placements/collision/top-down fade/chunk streaming. Set `PineMaster.tres → UseStylizedPine=false` to restore old procedural trees; grass and DF2 broadleaf forest unchanged. Godot compilation/render/FPS validation pending.
+
 > **Dense woodland prototype — DF0–DF2 source implemented, awaiting validation:** [Forest phases](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) include an enabled east-side test region (subject to DF0 survey approval), three DF1 broadleaf tree variants and **DF2 seeded/streamed MultiMesh canopy placement with trunk collision** when DF0 preflight approves. `VEGETATION/Forest/Configuration/ForestMaster.tres → Enabled` is now true for FPS/World F6 testing; set false to revert. No saved terrain edits, global lighting or undergrowth work. DF3–DF5 remain planned; runtime visuals and frame time unverified.
 
 ## Game vision

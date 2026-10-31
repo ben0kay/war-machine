@@ -59,6 +59,14 @@ public partial class PineSettings : Resource
     [Export(PropertyHint.Range, "0,6,0.1")] public float LeafWindSpeed { get; set; } = 1.8f;
     [Export(PropertyHint.Range, "0,2,0.05")] public float LeafFlutter { get; set; } = 0f;
 
+    [ExportGroup("Stylized pine art (new PineTree001 glTF pack)")]
+    // This source wins over the older GLB switch; both disabled restores procedural pines.
+    [Export] public bool UseStylizedPine { get; set; } = true;
+    [Export(PropertyHint.Range, "0.25,2,0.05")] public float StylizedBaseScale { get; set; } = 0.8f;
+    [Export(PropertyHint.Range, "0.1,1.5,0.05")] public float StylizedTrunkRadius { get; set; } = 0.64f;
+    [Export(PropertyHint.Range, "24,96,4")] public float StylizedLod1Distance { get; set; } = 40f;
+    [Export(PropertyHint.Range, "40,160,4")] public float StylizedLod2Distance { get; set; } = 70f;
+
     [ExportGroup("Imported GLB forest comparison")]
     // ON: extract the actual GLB mesh ONCE and use existing seeded MultiMesh forest placement.
     // OFF: restore the procedural pines (or the pre-existing explicit ImportedMeshes override).
