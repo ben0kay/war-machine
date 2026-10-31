@@ -24,6 +24,14 @@ Use a stable `<Building>/<Building>.tscn`, `C/` for mesh construction, `Artwork/
 - Upper floor is split only around the **actual flight and turn**, and the safe approach is one continuous collidable slab up to the top step. Guard exposed edges with physical railings **except** the full-width stair exit; put upper rails in upper floor ownership. Don't make an overlapping second slab for a landing after filling the original hole.
 - Structural acceptance includes the neighboring window, wall end, corridor route and slab after **every** moved partition. The fixed facade-window bands in `PoliceStation001` are a project-specific example, not a generic validation algorithm for all irregular buildings.
 
+## Terrain3D placement contract — collidable ground floors, cutouts and basements
+
+An isolated project test revealed repeatable integration mistakes: see root [LessonsLearned.md](../../../../LessonsLearned.md) **LL002**. A procedural building's finished Y=0 collidable ground slab must not be co-planar with an uncut Terrain3D surface: the two z-fight even when both meshes and materials are valid. Where a structure owns its floor collision, remove overlapping terrain beneath the **actual building floor coverage**, not merely the basement area, or use a deliberately offset and validated grade without leaving visible or colliding terrain inside rooms. A basement cutout alone is not sufficient when other ground-floor rooms share the terrain's elevation.
+
+Terrain3D's hole paint operates on height/control-map **vertices**, with terrain triangles discarded when any vertex of the triangle is marked. Account for this expansion at the *outer* building footprint rather than putting a hole bit on the outermost wall vertex and cutting one extra cell outside the facade. Verify the surface meets the actual facade/window/door threshold and that exterior approaches are collidable and free of Z-fighting. Site-owned entrance thresholds may bridge the required small join while remaining separate from the building's reusable shell.
+
+Respect saved terrain state. A one-time generator with `*.res` data **does not retroactively apply new hole bounds** after an old region is saved; choose an explicitly new versioned test directory or ask for controlled migration. Do not rewrite main world terrain to correct a standalone test scene. Validate **ground corridors**, **front/rear entrances**, **full perimeter**, **terrain collision** and **basement traversal**, not only the hole centre.
+
 ## Technical reference sections (retained)
 
 ## DOOR1 — author real swinging doors without compromising openings

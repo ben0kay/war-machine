@@ -1,10 +1,23 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="PackedScene" path="res://DEBUG/Scenes/BuildingTestPlayer.tscn" id="player"]
 [ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Structures/PoliceStation001/PoliceStation001.tscn" id="building"]
 [ext_resource type="Script" path="res://DEBUG/Scenes/BuildingTerrainTest.cs" id="terrain_bootstrap"]
 [ext_resource type="Terrain3DAssets" path="res://WORLD/Terrain/TerrainAssets.tres" id="terrain_assets"]
 [ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="terrain_material"]
+
+[sub_resource type="BoxMesh" id="EntranceApronMesh"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="FrontApronCollider"]
+size = Vector3(5.2, 0.12, 3)
+
+[sub_resource type="BoxShape3D" id="RearApronCollider"]
+size = Vector3(3.4, 0.12, 3)
+
+[sub_resource type="StandardMaterial3D" id="EntranceApronMaterial"]
+albedo_color = Color(0.46, 0.47, 0.46, 1)
+roughness = 0.93
 
 [sub_resource type="Environment" id="TestEnvironment"]
 background_mode = 1
@@ -32,9 +45,36 @@ region_size = 256
 collision_mode = 3
 collision_layer = 1
 collision_mask = 1
-data_directory = "res://DEBUG/Scenes/TerrainData"
+data_directory = "res://DEBUG/Scenes/TerrainData/V2"
 assets = ExtResource("terrain_assets")
 material = ExtResource("terrain_material")
+
+[node name="EntranceThresholds" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+# Dedicated site-owned door aprons bridge the one-cell terrain-hole edge.
+# Their top is 4 cm ABOVE terrain/floor, avoiding a second Z-fighting overlap.
+# This is not part of the police-station mesh.
+[node name="FrontApron" type="MeshInstance3D" parent="EntranceThresholds"]
+position = Vector3(128, -0.02, 160.35)
+scale = Vector3(5.2, 0.12, 3)
+mesh = SubResource("EntranceApronMesh")
+material_override = SubResource("EntranceApronMaterial")
+
+[node name="FrontCollider" type="CollisionShape3D" parent="EntranceThresholds"]
+position = Vector3(128, -0.02, 160.35)
+shape = SubResource("FrontApronCollider")
+
+[node name="RearApron" type="MeshInstance3D" parent="EntranceThresholds"]
+position = Vector3(128, -0.02, 95.65)
+scale = Vector3(3.4, 0.12, 3)
+mesh = SubResource("EntranceApronMesh")
+material_override = SubResource("EntranceApronMaterial")
+
+[node name="RearCollider" type="CollisionShape3D" parent="EntranceThresholds"]
+position = Vector3(128, -0.02, 95.65)
+shape = SubResource("RearApronCollider")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-48, 28, 0)
