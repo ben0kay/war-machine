@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ForestZonesSettings" load_steps=5 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Forest/Configuration/ForestZonesSettings.cs" id="1"]
+[ext_resource type="Resource" path="res://VEGETATION/Forest/Configuration/ForestMaster.tres" id="2"]
+[ext_resource type="Resource" path="res://VEGETATION/Forest/Configuration/ForestWestWoodMaster.tres" id="3"]
+[ext_resource type="Resource" path="res://VEGETATION/Forest/Configuration/ForestSouthEastWoodMaster.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+Zones = Array[Resource("res://VEGETATION/Forest/Configuration/ForestSettings.cs")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

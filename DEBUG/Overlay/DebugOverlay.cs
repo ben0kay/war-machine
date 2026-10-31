@@ -20,7 +20,7 @@ public partial class DebugOverlay : PanelContainer
     private TerrainGrass _grass = null!;
     private StylizedGrassPlacement? _stylizedGrass;
     private WorldColorGrade? _colorGrade;
-    private ForestPlacement? _forestPlacement;
+    private ForestZonesPlacement? _forestZones;
     private Color _sharedFoliageTint;
     private float _sharedFoliageStrength;
     private Label? _vegetationDistanceLabel;
@@ -34,11 +34,11 @@ public partial class DebugOverlay : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null, StylizedGrassPlacement? stylizedGrass = null, WorldColorGrade? colorGrade = null, ForestPlacement? forestPlacement = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null, StylizedGrassPlacement? stylizedGrass = null, WorldColorGrade? colorGrade = null, ForestZonesPlacement? forestZones = null)
     {
         _view = view; _renderCulling = renderCulling;
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
-        _stylizedGrass = stylizedGrass; _colorGrade = colorGrade; _forestPlacement = forestPlacement;
+        _stylizedGrass = stylizedGrass; _colorGrade = colorGrade; _forestZones = forestZones;
         // Read each global once at panel creation; shader parameter GET synchronizes render thread.
         _sharedFoliageTint = RenderingServer.GlobalShaderParameterGet("wm_foliage_tint").AsColor();
         _sharedFoliageStrength = RenderingServer.GlobalShaderParameterGet("wm_foliage_tint_strength").AsSingle();
@@ -216,13 +216,13 @@ public partial class DebugOverlay : PanelContainer
         foliageColour.ColorChanged += color => {
             _sharedFoliageTint = color;
             RenderingServer.GlobalShaderParameterSet("wm_foliage_tint", color);
-            _forestPlacement?.ApplySharedTint(color, _sharedFoliageStrength);
+            _forestZones?.ApplySharedTint(color, _sharedFoliageStrength);
             _copy.Text = "Copy settings";
         };
         AddBoundSlider(rows, "Shared tint strength", 0, 1, 0.01, _sharedFoliageStrength, value => {
             _sharedFoliageStrength = value;
             RenderingServer.GlobalShaderParameterSet("wm_foliage_tint_strength", value);
-            _forestPlacement?.ApplySharedTint(_sharedFoliageTint, value);
+            _forestZones?.ApplySharedTint(_sharedFoliageTint, value);
         });
         rows.AddChild(new Label { Text = "0 = original colours · 1 = full tint · changes not saved" });
 

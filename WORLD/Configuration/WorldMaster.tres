@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://digvqdyh6nn8a" path="res://WORLD/Streaming/WorldSectionSettings.cs" id="sections_script"]
 [ext_resource type="Script" uid="uid://x1pkera3orby" path="res://WORLD/Streaming/WorldStreamingSettings.cs" id="streaming_script"]
 [ext_resource type="Resource" path="res://VEGETATION/Forest/Configuration/ForestMaster.tres" id="dense_forest"]
+[ext_resource type="Resource" path="res://VEGETATION/Forest/Configuration/ForestZonesMaster.tres" id="forest_zones"]
 
 [sub_resource type="Resource" id="render_policy"]
 script = ExtResource("render_script")
@@ -22,4 +23,5 @@ Sections = SubResource("sections")
 Streaming = SubResource("streaming")
 RenderPolicy = SubResource("render_policy")
 DenseForest = ExtResource("dense_forest")
+ForestZones = ExtResource("forest_zones")
 Relief = 0.15

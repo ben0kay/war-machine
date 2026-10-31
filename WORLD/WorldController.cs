@@ -12,7 +12,7 @@ public partial class WorldController : Node3D
     [ExportGroup("Debug")]
     [Export] public bool ShowZombieSightConesOnStart { get; set; } = false;
     protected PinePlacement _pines = null!;
-    protected ForestPlacement? _forestPlacement;
+    protected ForestZonesPlacement? _forestZones;
     protected TerrainGrass _grass = null!;
     private StylizedGrassPlacement? _stylizedGrass;
     private VegetationVisibilityPolicy _vegetationVisibility = null!;
@@ -207,30 +207,11 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Slow);
         AddZombieSpawnClearings(_pines.ExclusionAreas, horde.Fast);
         AddDeerPreviewClearing(_pines.ExclusionAreas);
-        // DF0: survey once, after village/robot/spawn reservations. Enabled reserves only the
-        // surveyed core for future canopy art; OFF or rejected restores original pine placement.
-        var forest = Settings.DenseForest;
-        Rect2? approvedForestArea = null;
-        var forestReservations = new Godot.Collections.Array<Rect2>();
-        if (forest != null && (forest.Enabled || forest.ShowDebugOutline))
-        {
-            bool safe = ForestZone.TrySurvey(data, forest, Settings, _pines.ExclusionAreas,
-                out Rect2 area, out string survey);
-            if (safe)
-            {
-                GD.Print($"DF0 forest site approved for preview: {survey}");
-                if (forest.Enabled)
-                {
-                    // Keep the original reservations for DF2.5 per-tree checks before
-                    // excluding the full approved strip from ordinary pine placement.
-                    foreach (Rect2 blocked in _pines.ExclusionAreas) forestReservations.Add(blocked);
-                    _pines.ExclusionAreas.Add(area); approvedForestArea = area;
-                }
-            }
-            else GD.PushWarning($"DF0 forest site rejected; original pines retained: {survey}");
-            if (forest.ShowDebugOutline && area.Size.X > 0 && area.Size.Y > 0)
-                ForestZone.ShowFootprint(GetNode<Node3D>("SystemsRoot/VegetationRoot"), data, area);
-        }
+        // DF2.8: survey all independent canopy zones before pine/rock placement.
+        // Zone 1 is the unchanged original DF2 village forest resource.
+        _forestZones = new ForestZonesPlacement { Name = "ForestZones", Visibility = _vegetationVisibility };
+        GetNode("SystemsRoot/VegetationRoot").AddChild(_forestZones);
+        _forestZones.PrepareZones(data, Settings, _pines.ExclusionAreas);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _pines.UpdateAnchor;
         _rocks = new ContentScatter { Name = "Rocks",
@@ -245,21 +226,18 @@ public partial class WorldController : Node3D
         AddZombieSpawnClearings(_rocks.ExclusionAreas, horde.Fast);
         AddDeerPreviewClearing(_rocks.ExclusionAreas);
         // DF2: avoid accidental random boulders through the approved new tree trunks.
-        if (approvedForestArea.HasValue) _rocks.ExclusionAreas.Add(approvedForestArea.Value);
+        foreach (Rect2 area in _forestZones.ApprovedAreas) _rocks.ExclusionAreas.Add(area);
         // Keep the giant's route and foot corridor free of new solid boulders.
         if (_village == null)
             _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
         GetNode("WorldActorsRoot/PersistentPropsRoot").AddChild(_rocks);
         _rocks.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
         player.PositionChanged += _rocks.UpdateAnchor;
-        // DF2 only activates after DF0's shared terrain/structure/patrol survey succeeds.
-        if (approvedForestArea.HasValue && forest != null)
+        // Reuse the same DF2 placement and 32m streaming independently for each approved region.
+        if (_forestZones.ApprovedCount > 0)
         {
-            _forestPlacement = new ForestPlacement { Name = "DenseForest", Visibility = _vegetationVisibility };
-            GetNode("SystemsRoot/VegetationRoot").AddChild(_forestPlacement);
-            _forestPlacement.InitializeView(terrain, player, forest, approvedForestArea.Value,
-                forestReservations);
-            player.PositionChanged += _forestPlacement.UpdateAnchor;
+            _forestZones.InitializeView(terrain, player);
+            player.PositionChanged += _forestZones.UpdateAnchor;
         }
         InitializeOcclusion(camera, player);
         _environmentScene.InitializeView(terrain, player, camera);
@@ -330,7 +308,7 @@ public partial class WorldController : Node3D
     {
         var occlusion = new CameraOcclusion { Name = "Occlusion" }; camera.AddChild(occlusion);
         occlusion.Initialize(camera, player, CameraSettings); occlusion.RegisterProvider(_pines);
-        if (_forestPlacement != null) occlusion.RegisterProvider(_forestPlacement);
+        if (_forestZones != null && _forestZones.ApprovedCount > 0) occlusion.RegisterProvider(_forestZones);
         occlusion.RegisterStructures(GetNode("WorldActorsRoot/PersistentPropsRoot/Structures"));
     }
 
@@ -362,7 +340,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses, _stylizedGrass, _colorGrade, _forestPlacement);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses, _stylizedGrass, _colorGrade, _forestZones);
     }
 
     // =========================================================
@@ -746,7 +724,7 @@ public partial class WorldController : Node3D
         _grass.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);
         _stylizedGrass?.UpdateView(_camera.ViewHeight, CameraSettings.CameraDistance);
         _pines.UpdateView(CameraSettings.CameraDistance);
-        _forestPlacement?.UpdateView(CameraSettings.CameraDistance);
+        _forestZones?.UpdateView(CameraSettings.CameraDistance);
     }
 
     // =========================================================
@@ -756,8 +734,8 @@ public partial class WorldController : Node3D
         if (IsInstanceValid(_spawnMenu)) _spawnMenu!.CloseRequested -= CloseDebugPanels;
         if (IsInstanceValid(_player) && IsInstanceValid(_stylizedGrass))
             _player.PositionChanged -= _stylizedGrass!.UpdateAnchor;
-        if (IsInstanceValid(_player) && IsInstanceValid(_forestPlacement))
-            _player.PositionChanged -= _forestPlacement!.UpdateAnchor;
+        if (IsInstanceValid(_player) && IsInstanceValid(_forestZones))
+            _player.PositionChanged -= _forestZones!.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_rocks)) _player.PositionChanged -= _rocks.UpdateAnchor;
         if (IsInstanceValid(_camera))
         {
