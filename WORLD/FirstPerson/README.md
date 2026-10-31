@@ -33,3 +33,7 @@ Hold Numpad 1 left / Numpad 2 right; releasing either smoothly levels the FPS vi
 ## Unspread FPS firearm aim line (debug only, 2026-10-31)
 
 `Configuration/FirstPersonMaster.tres → DebugAimLineEnabled=true` (default for testing) draws a thin bright cyan line continuously from the equipped gun's real muzzle toward the camera's current unspread aim target. It shows where the shot would go with **zero random spread**, not a crosshair and not the muzzle mesh's raw -Z axis. Regular projectiles still apply configured hip/ADS spread and recoil; this visualization does not steer shots. The helper sleeps for melee/disabled config and hides during UI/focus interruptions. Set false and restart the FPS scene to switch off its render/update and one debug raycast per active frame. See [FPS weapons README](../../EQUIPMENT/Weapons/FirstPerson/README.md#fps-unspread-aim-debug-ray-2026-10-31).
+
+## DBG-Z0 — FPS-only temporary 0-key zombie tester (2026-10-31)
+
+The optional `DebugUIRoot/DebugZombieSpawner` child is from `DEBUG/ZombieSpawner/DebugZombieSpawner.tscn`. With gameplay mouse captured, tap 0 at supported terrain to spawn exactly one test zombie: normal 90%, runner 10%. It uses existing AI/hearing/corpse/target/debug services, up to 20 live debug zombies. Remove the scene child to unplug or turn its Enabled flag off; `InitializeControls` binds it via `GetNodeOrNull`. This does not affect the shared World.tscn or regular zombie encounters. Source implemented, pending Godot C# build/F6 testing; [details](../../DEBUG/ZombieSpawner/README.md).

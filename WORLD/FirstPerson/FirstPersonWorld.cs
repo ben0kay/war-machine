@@ -4,7 +4,7 @@ using Godot;
 public partial class FirstPersonWorld : WorldController
 {
     private FirstPersonFog _fpsFog = null!;
-    protected override string ControlsHelp => "FIRST PERSON · arrows walk · Shift run · Right Ctrl crouch · / prone · Right click jump\nMouse look · Hold E + LMB interact · Left click fire · Q shove · Esc: use left debug controls · Click world: resume";
+    protected override string ControlsHelp => "FIRST PERSON · arrows walk · Shift run · Right Ctrl crouch · / prone · Right click jump\nMouse look · Hold E + LMB interact · Left click fire · Q shove · 0 debug zombie · Esc: use left debug controls · Click world: resume";
     protected override IDebugOverlayView? OverlayView => _fpsFog;
 
     // =========================================================
@@ -57,6 +57,16 @@ public partial class FirstPersonWorld : WorldController
         crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center);
         crosshair.OffsetLeft = -10; crosshair.OffsetRight = 10; crosshair.OffsetTop = -14; crosshair.OffsetBottom = 14;
         base.InitializeControls(camera);
+        // Optional FPS-only test scene; deleting this child unplugs the hotkey.
+        var debugSpawner = GetNodeOrNull<DebugZombieSpawner>("DebugUIRoot/DebugZombieSpawner");
+        if (debugSpawner != null)
+            debugSpawner.Initialize(
+                GetNode<PlayerController>("WorldActorsRoot/PersistentEntitiesRoot/Player"),
+                (FirstPersonCamera)camera,
+                GetNode<Node3D>("TerrainRoot/Terrain3D").Get("data").AsGodotObject(),
+                GetNode<Node3D>("WorldActorsRoot/PersistentEntitiesRoot/Zombies"),
+                _audio, GetNode<ZombieVisionDebug>("DebugUIRoot/ZombieVisionDebug"),
+                GetNodeOrNull<CorpseManager>("SystemsRoot/CorpseManager"));
     }
 
     // =========================================================
