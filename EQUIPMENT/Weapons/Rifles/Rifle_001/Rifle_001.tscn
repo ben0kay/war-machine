@@ -9,4 +9,4 @@ Muzzle = NodePath("Muzzle")
 [node name="Visual" type="Node3D" parent="."]
 script = ExtResource("3")
 [node name="Muzzle" type="Marker3D" parent="."]
-position = Vector3(0, 0.055, -0.968)
+position = Vector3(0, 0.055, -1.033)

@@ -160,24 +160,24 @@ public partial class RifleMeshBuilder : Node3D
     }
 
     // =========================================================
-    // 16cm longer barrel: layered sleeve, collar and brake remain one overlapping assembly.
-    // The real Muzzle sibling in Rifle_001.tscn must stay at (0, 0.055, -0.968).
+    // Additional 15% barrel length over the 0.430m revision; muzzle parts stay connected.
+    // The real Muzzle sibling in Rifle_001.tscn is now at (0, 0.055, -1.033).
     private static void BuildBarrel(Node3D part)
     {
-        Tube(part, "BarrelCore", new(0, 0.055f, -0.719f), 0.052f, 0.430f, Receiver);
+        Tube(part, "BarrelCore", new(0, 0.055f, -0.7515f), 0.052f, 0.495f, Receiver);
         Tube(part, "BarrelHeatShield", new(0, 0.055f, -0.619f), 0.069f, 0.190f, DarkSteel);
         Tube(part, "GasBlock", new(0, 0.055f, -0.638f), 0.077f, 0.075f, Receiver);
-        Tube(part, "ExposedBarrelSleeve", new(0, 0.055f, -0.758f), 0.057f, 0.178f, EdgeSteel);
-        Tube(part, "BarrelForwardCollar", new(0, 0.055f, -0.903f), 0.067f, 0.074f, EdgeSteel);
-        Tube(part, "MuzzleBrake", new(0, 0.055f, -0.935f), 0.069f, 0.058f, DarkSteel);
-        Tube(part, "MuzzleFrontRim", new(0, 0.055f, -0.954f), 0.071f, 0.014f, Receiver);
-        Tube(part, "BoreRecess", new(0, 0.055f, -0.965f), 0.028f, 0.002f, DarkSteel);
+        Tube(part, "ExposedBarrelSleeve", new(0, 0.055f, -0.7905f), 0.057f, 0.243f, EdgeSteel);
+        Tube(part, "BarrelForwardCollar", new(0, 0.055f, -0.968f), 0.067f, 0.074f, EdgeSteel);
+        Tube(part, "MuzzleBrake", new(0, 0.055f, -1.000f), 0.069f, 0.058f, DarkSteel);
+        Tube(part, "MuzzleFrontRim", new(0, 0.055f, -1.019f), 0.071f, 0.014f, Receiver);
+        Tube(part, "BoreRecess", new(0, 0.055f, -1.030f), 0.028f, 0.002f, DarkSteel);
         // Small flush ports and collar indexing marks; all seated against real metal.
         for (int side = -1; side <= 1; side += 2)
         {
-            Part(part, "MuzzleBrakePort", new(side * 0.034f, 0.055f, -0.938f),
+            Part(part, "MuzzleBrakePort", new(side * 0.034f, 0.055f, -1.003f),
                 new(0.004f, 0.010f, 0.021f), Grip, WeaponVisualGeometry.Box);
-            Part(part, "CollarWitnessMark", new(side * 0.032f, 0.055f, -0.881f),
+            Part(part, "CollarWitnessMark", new(side * 0.032f, 0.055f, -0.946f),
                 new(0.004f, 0.009f, 0.007f), Marking, WeaponVisualGeometry.Box);
         }
     }
