@@ -24,6 +24,9 @@ public partial class WorldSettings : Resource
     [Export(PropertyHint.Range, "6,30,1")] public float VillageBlendWidth { get; set; } = 18;
     [Export(PropertyHint.Range, "4,8,0.5")] public float VillageRoadWidth { get; set; } = 6;
     [Export(PropertyHint.Range, "0,2,0.1")] public float VillageHillScale { get; set; } = 1;
+    // VW1: extra hillside relief and shallow basins, independent of the three existing hills.
+    [Export] public bool VillageOutskirtsEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "0,2,0.1")] public float VillageOutskirtsScale { get; set; } = 1f;
     [Export(PropertyHint.Range, "4,12,0.5")] public float VillageZombieWanderRadius { get; set; } = 8;
     [ExportGroup("Terrain generation")]
     [Export] public int Seed { get; set; } = 48193;

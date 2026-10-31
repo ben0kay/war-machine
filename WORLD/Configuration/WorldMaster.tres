@@ -24,4 +24,6 @@ Streaming = SubResource("streaming")
 RenderPolicy = SubResource("render_policy")
 DenseForest = ExtResource("dense_forest")
 ForestZones = ExtResource("forest_zones")
+VillageOutskirtsEnabled = true
+VillageOutskirtsScale = 1.0
 Relief = 0.15

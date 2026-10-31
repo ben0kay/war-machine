@@ -15,6 +15,8 @@
 
 > **Dense woodland prototype — DF0–DF2.5 source implemented, awaiting validation:** [Forest phases](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) include an enabled eastern village-parallel **96 × 256m** forest strip (subject to DF0 survey approval), three DF1 broadleaf variants, **DF2 seeded/streamed MultiMesh canopy placement with trunk collision**, and **DF2.5's tiny near-only leaf-edge detail**. **DF2.6** retains the original tree and adds a slightly leafier duplicate in a configurable **50/50** seeded mix (`ForestMaster.tres → LeafierShare`). `VEGETATION/Forest/Configuration/ForestMaster.tres → Enabled` is now true for FPS/World F6 testing; set false to revert. No saved terrain edits, global lighting or undergrowth work. DF3–DF5 remain planned; runtime visuals and frame time unverified.
 
+> **VW1 terrain outskirts (source-implemented, awaiting local validation):** the village has optional broad hills and shallow dips beyond the built area; existing roads, building foundations and the full robot patrol corridor remain protected. Toggle `WORLD/Configuration/WorldMaster.tres → VillageOutskirtsEnabled` or tune `VillageOutskirtsScale`. [Generation details](WORLD/Generation/README.md#vw1--rolling-village-outskirts-2026-10-31).
+
 ## Game vision
 
 War Machine takes place on a recognizably earthly but unsettling world: misty forests, rolling terrain, cliffs, roads, abandoned businesses and houses, caves, changing light and weather, and signs of a science-fiction intrusion. **Zombies and imposing mechanical entities** are current threat foundations; other hostile life, wildlife and environmental dangers may broaden the setting later.
