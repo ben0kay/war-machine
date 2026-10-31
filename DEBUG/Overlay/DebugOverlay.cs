@@ -261,6 +261,44 @@ public partial class DebugOverlay : PanelContainer
             AddBoundSlider(rows, "Legacy grass wind", 0, 2, 0.05, grass.Settings.WindMultiplier,
                 value => { grass.Settings.WindMultiplier = value; grass.ApplyAppearance(); });
         }
+        // STG3C: independently tune large billboard patches without touching the original grass settings.
+        // Density/geometry changes rebuild only after the user releases a slider.
+        if (_stylizedGrass != null && _stylizedGrass.FillerSettings != null)
+        {
+            var placement = _stylizedGrass;
+            var billboard = placement.FillerSettings;
+            var billboardRows = AddSection(foliageRows, "Billboard grass");
+            billboardRows.AddChild(new Label { Text = "Dense irregular billboard patches · release sliders to rebuild" });
+            var billboardEnabled = new CheckButton { Text = "Billboard grass enabled",
+                ButtonPressed = billboard.Enabled, FocusMode = FocusModeEnum.None };
+            billboardRows.AddChild(billboardEnabled);
+            billboardEnabled.Toggled += value => {
+                billboard.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
+            };
+            AddDeferredSlider(billboardRows, "Billboard patches / 32 m chunk", 0, 16, 1, billboard.PatchesPerChunk,
+                value => billboard.PatchesPerChunk = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Patch chance", 0, 1, 0.05, billboard.PatchChance,
+                value => billboard.PatchChance = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Minimum billboards / patch", 1, 100, 1, billboard.MinPerPatch,
+                value => billboard.MinPerPatch = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum billboards / patch", 1, 120, 1, billboard.MaxPerPatch,
+                value => billboard.MaxPerPatch = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Minimum patch radius (m)", 0.8, 10, 0.1, billboard.PatchRadiusMin,
+                value => billboard.PatchRadiusMin = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum patch radius (m)", 0.8, 12, 0.1, billboard.PatchRadiusMax,
+                value => billboard.PatchRadiusMax = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Minimum billboard scale", 0.3, 2, 0.05, billboard.ScaleMin,
+                value => billboard.ScaleMin = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum billboard scale", 0.3, 2.5, 0.05, billboard.ScaleMax,
+                value => billboard.ScaleMax = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Extra tilt chance", 0, 1, 0.05, billboard.TiltChance,
+                value => billboard.TiltChance = value, placement.ApplySettings);
+            AddDeferredSlider(billboardRows, "Maximum extra tilt (degrees)", 0, 8, 0.5, billboard.MaxTiltDegrees,
+                value => billboard.MaxTiltDegrees = value, placement.ApplySettings);
+            AddBoundSlider(billboardRows, "Billboard grass wind", 0, 2, 0.05, billboard.WindMultiplier,
+                value => { billboard.WindMultiplier = value; placement.ApplyWind(); });
+            billboardRows.AddChild(new Label { Text = "Live preview only; Copy settings for saved values." });
+        }
         rows = AddSection(foliageRows, "Pine trees");
         rows.AddChild(new Label { Text = "Release density/size to apply" });
         var pineEnabled = new CheckButton { Text = "Pine trees enabled", ButtonPressed = pines.Settings.Enabled, FocusMode = FocusModeEnum.None };
@@ -493,6 +531,22 @@ public partial class DebugOverlay : PanelContainer
             values["StylizedGrassClumpsPerPatch"] = _stylizedGrass.Settings.ClumpsPerPatch;
             values["StylizedGrassPatchRadiusMax"] = _stylizedGrass.Settings.PatchRadiusMax;
             values["StylizedGrassScaleMax"] = _stylizedGrass.Settings.ScaleMax;
+        }
+        if (_stylizedGrass?.FillerSettings != null)
+        {
+            var billboard = _stylizedGrass.FillerSettings;
+            values["BillboardGrassEnabled"] = billboard.Enabled;
+            values["BillboardGrassPatchesPerChunk"] = billboard.PatchesPerChunk;
+            values["BillboardGrassPatchChance"] = billboard.PatchChance;
+            values["BillboardGrassMinPerPatch"] = billboard.MinPerPatch;
+            values["BillboardGrassMaxPerPatch"] = billboard.MaxPerPatch;
+            values["BillboardGrassPatchRadiusMin"] = billboard.PatchRadiusMin;
+            values["BillboardGrassPatchRadiusMax"] = billboard.PatchRadiusMax;
+            values["BillboardGrassScaleMin"] = billboard.ScaleMin;
+            values["BillboardGrassScaleMax"] = billboard.ScaleMax;
+            values["BillboardGrassTiltChance"] = billboard.TiltChance;
+            values["BillboardGrassMaxTiltDegrees"] = billboard.MaxTiltDegrees;
+            values["BillboardGrassWindMultiplier"] = billboard.WindMultiplier;
         }
         if (_renderCulling != null)
         {
