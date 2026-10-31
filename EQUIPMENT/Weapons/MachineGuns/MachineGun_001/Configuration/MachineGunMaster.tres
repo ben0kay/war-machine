@@ -65,3 +65,7 @@ FpsAdsAnimationSpeedMultiplier = 0.9
 FpsAdsMovementMultiplier = 0.85
 FpsAdsFieldOfView = 72.0
 EquippedMovementMultiplier = 0.97
+FpsPhysicalSwayEnabled = true
+FpsSwayAmplitudeDegrees = 0.25
+FpsSwayFrequencyHz = 0.95
+FpsAdsSwayMultiplier = 0.70

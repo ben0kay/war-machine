@@ -4,6 +4,8 @@ using Godot;
 public partial class FirstPersonCamera : Camera
 {
     [Export] public FirstPersonSettings ViewSettings { get; set; } = null!;
+    // One-shot notification; FPS weapon sway wakes only when mouse capture resumes.
+    public event System.Action<bool>? MouseCaptureChanged;
     private PlayerController _actor = null!;
     private bool _ready;
     private Vector3 _previousEye, _currentEye;
@@ -38,7 +40,7 @@ public partial class FirstPersonCamera : Camera
         { ReleaseMouse(); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseButton mouse && mouse.Pressed && mouse.ButtonIndex == MouseButton.Left
             && Input.MouseMode != Input.MouseModeEnum.Captured && GetViewport().GuiGetHoveredControl() == null)
-        { Input.MouseMode = Input.MouseModeEnum.Captured; _actor.SetPhysicsProcess(true); GetViewport().SetInputAsHandled(); }
+        { Input.MouseMode = Input.MouseModeEnum.Captured; _actor.SetPhysicsProcess(true); MouseCaptureChanged?.Invoke(true); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
             float sensitivity = Mathf.Clamp(ViewSettings.MouseSensitivity, 0.01f, 1);
@@ -136,9 +138,11 @@ public partial class FirstPersonCamera : Camera
     // =========================================================
     private void ReleaseMouse()
     {
+        bool wasCaptured = Input.MouseMode == Input.MouseModeEnum.Captured;
         Input.MouseMode = Input.MouseModeEnum.Visible;
         _headBob.Stop(); if (_headBob.NeedsUpdate) SetProcess(true);
         _actor.SetPhysicsProcess(true);
+        if (wasCaptured) MouseCaptureChanged?.Invoke(false);
     }
 
     // =========================================================

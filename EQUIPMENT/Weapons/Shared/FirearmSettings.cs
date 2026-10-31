@@ -82,6 +82,13 @@ public partial class FirearmSettings : Resource
     // Multiplies the equipped-weapon factor while ADS is held, not a replacement for it.
     [Export(PropertyHint.Range, "0.1,1,0.01")] public float FpsAdsMovementMultiplier { get; set; } = 1f;
     [Export(PropertyHint.Range, "40,110,1,suffix:°")] public float FpsAdsFieldOfView { get; set; } = 75f;
+    [ExportGroup("Physical sway (FPS only, ADS2 foundation)")]
+    // Runtime-togglable in the FPS adapter; future debug overlay can call SetPhysicalSwayEnabled.
+    [Export] public bool FpsPhysicalSwayEnabled { get; set; }
+    // Maximum angular drift in degrees. Zero disables movement; ADS scales it down smoothly.
+    [Export(PropertyHint.Range, "0,1,0.01,suffix:°")] public float FpsSwayAmplitudeDegrees { get; set; }
+    [Export(PropertyHint.Range, "0.1,3,0.05,suffix:Hz")] public float FpsSwayFrequencyHz { get; set; } = 0.85f;
+    [Export(PropertyHint.Range, "0.1,1,0.05")] public float FpsAdsSwayMultiplier { get; set; } = 0.65f;
     [ExportGroup("FPS camera recoil (FPS only)")]
     // The recoil offset is physically applied to the FPS camera, NOT applied again to the bullet ray.
     [Export(PropertyHint.Range, "1,90,1")] public float FpsCameraRecoilFollowDegreesPerSecond { get; set; } = 16f;

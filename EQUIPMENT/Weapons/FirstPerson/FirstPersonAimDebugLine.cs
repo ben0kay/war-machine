@@ -5,6 +5,7 @@ public partial class FirstPersonAimDebugLine : Node3D
 {
     private PlayerController _player = null!;
     private FirstPersonCamera _camera = null!;
+    private FirstPersonWeapon _aimSource = null!;
     private FirearmController? _weapon;
     private PhysicsRayQueryParameters3D _query = null!;
     private MeshInstance3D _line = null!;
@@ -14,9 +15,9 @@ public partial class FirstPersonAimDebugLine : Node3D
 
     // =========================================================
     // Allocate one reusable cylinder and material. No shot pipeline or world content changes.
-    public void Initialize(PlayerController player, FirstPersonCamera camera)
+    public void Initialize(PlayerController player, FirstPersonCamera camera, FirstPersonWeapon aimSource)
     {
-        _player = player; _camera = camera;
+        _player = player; _camera = camera; _aimSource = aimSource;
         _query = new PhysicsRayQueryParameters3D { HitFromInside = true,
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
 
@@ -62,6 +63,9 @@ public partial class FirstPersonAimDebugLine : Node3D
         Vector3 target = FirstPersonAimTarget.Resolve(_player, _query, origin, forward,
             _weapon.RuntimeSettings.Range);
         Vector3 start = _weapon.Muzzle.GlobalPosition;
+        // The line now follows physical sway but intentionally excludes per-shot random spread.
+        target = FirstPersonAimTarget.ApplyPhysicalSway(target, start,
+            _camera.GlobalBasis, _aimSource.CurrentPhysicalSwayDegrees);
         Vector3 path = target - start;
         float distance = path.Length();
         if (!float.IsFinite(distance) || distance < 0.001f)

@@ -17,8 +17,14 @@ public partial class FirstPersonWeapon : Node
     private double _lastAcceptedShotSeconds = -1.0;
     private bool _adsActive, _adsInitialized;
     private float _adsAmount, _hipFov;
+    private Vector2 _swayDegrees;
     private Vector3 _hipPosition, _hipRotationDegrees;
     private bool AdsTransitioning => !Mathf.IsEqualApprox(_adsAmount, _adsActive ? 1f : 0f);
+    private bool PhysicalSwayEnabled => IsInstanceValid(_weapon)
+        && _weapon!.RuntimeSettings.FpsPhysicalSwayEnabled
+        && _weapon.RuntimeSettings.FpsSwayAmplitudeDegrees > 0f;
+    // Reused by the existing debug line. This is physical pre-spread aim, not random dispersion.
+    public Vector2 CurrentPhysicalSwayDegrees => _swayDegrees;
 
     // =========================================================
     public override void _Ready() { SetProcess(false); SetPhysicsProcess(false); }
@@ -29,6 +35,7 @@ public partial class FirstPersonWeapon : Node
     {
         _player = player; _camera = camera;
         if (!equipment.Enabled || equipment.DefaultWeaponScene == null) return;
+        camera.MouseCaptureChanged += OnMouseCaptureChanged;
         _query = new PhysicsRayQueryParameters3D { HitFromInside = true,
             Exclude = new Godot.Collections.Array<Rid> { player.GetRid() } };
         _slots = new WeaponSlots { Name = "WeaponSlots" }; AddChild(_slots);
@@ -38,7 +45,7 @@ public partial class FirstPersonWeapon : Node
         {
             _aimDebugLine = new FirstPersonAimDebugLine { Name = "UnspreadAimDebugLine" };
             camera.AddChild(_aimDebugLine);
-            _aimDebugLine.Initialize(player, camera);
+            _aimDebugLine.Initialize(player, camera, this);
         }
         SwitchWeapon(0);
         if (_weapon != null) { _shove = new PlayerQuickMelee(player); player.GameplayInputBlockChanged += OnInputBlocked; player.InteractionModeChanged += OnInputBlocked; }
@@ -73,6 +80,7 @@ public partial class FirstPersonWeapon : Node
         _adsAmount = 0f; _adsActive = false; _adsInitialized = true;
         _visualRecoil = new FirearmVisualRecoil(_weapon);
         _query.CollisionMask = _weapon.RuntimeSettings.HitMask;
+        SetProcess(PhysicalSwayEnabled);
     }
 
     // =========================================================
@@ -163,13 +171,15 @@ public partial class FirstPersonWeapon : Node
         if (applied > 0f) _camera.ApplyWeaponRecoilKick(applied);
 
         AdvanceAds(dt);
+        // Enabled physical sway is the only reason this existing render callback stays awake at rest.
+        UpdatePhysicalSway();
         _visualRecoil?.Advance(dt);
         // Sustained model pitch remains temporary; the camera's achieved rise does not recover.
         float extraRise = _weapon.RecoilOffsetDegrees.Y
             * Mathf.Clamp(_weapon.RuntimeSettings.FpsVisualClimbMultiplier, 0f, 2f);
         _visualRecoil?.SetSustainedRise(extraRise);
         if (_pendingCameraRise <= 0.0001f && _visualRecoil?.IsActive != true
-            && _weapon.RecoilOffsetDegrees.Y <= 0.0001f && !AdsTransitioning)
+            && _weapon.RecoilOffsetDegrees.Y <= 0.0001f && !AdsTransitioning && !PhysicalSwayEnabled)
             SetProcess(false);
     }
 
@@ -206,12 +216,65 @@ public partial class FirstPersonWeapon : Node
     // Hard interruption: no stuck FOV, movement penalty or transformed muzzle on reuse.
     private void ResetAds()
     {
-        _adsActive = false; _adsAmount = 0f;
+        _adsActive = false; _adsAmount = 0f; _swayDegrees = Vector2.Zero;
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps)) fps.SetAdsMovementMultiplier(1f);
         if (!_adsInitialized) return;
         if (IsInstanceValid(_weapon))
         { _weapon!.Position = _hipPosition; _weapon.RotationDegrees = _hipRotationDegrees; }
         if (IsInstanceValid(_camera)) _camera.Fov = _hipFov;
+    }
+
+    #endregion
+
+    #region FPS physical weapon sway — ADS2 foundation
+
+    // =========================================================
+    // Tunable runtime switch for the future weapon debug overlay, without a new global manager.
+    // Current weapon instances keep their own toggle across slot changes.
+    public void SetPhysicalSwayEnabled(bool enabled)
+    {
+        if (!IsInstanceValid(_weapon)) return;
+        _weapon!.RuntimeSettings.FpsPhysicalSwayEnabled = enabled;
+        if (!enabled) _swayDegrees = Vector2.Zero;
+        if (_adsInitialized)
+        {
+            float t = _adsAmount * _adsAmount * (3f - 2f * _adsAmount);
+            _weapon.RotationDegrees = _hipRotationDegrees
+                + new Vector3(_weapon.RuntimeSettings.FpsAdsPitchDegrees * t, 0f, 0f);
+        }
+        if (enabled && Input.MouseMode == Input.MouseModeEnum.Captured) SetProcess(true);
+        else if (!enabled && _pendingCameraRise <= 0.0001f && _visualRecoil?.IsActive != true
+            && !AdsTransitioning) SetProcess(false);
+    }
+
+    // =========================================================
+    // The authored gun root and real muzzle sway together. Camera look/recoil remain untouched.
+    // One deterministic oscillator controls both visible gun motion and physical bullet aim.
+    private void UpdatePhysicalSway()
+    {
+        if (!_adsInitialized || !IsInstanceValid(_weapon)) return;
+        FirearmSettings settings = _weapon!.RuntimeSettings;
+        _swayDegrees = PhysicalSwayEnabled
+            ? FirstPersonAimTarget.SamplePhysicalSway(settings, _adsAmount, Time.GetTicksMsec() * 0.001)
+            : Vector2.Zero;
+        float t = _adsAmount * _adsAmount * (3f - 2f * _adsAmount);
+        // Local +X pitches the barrel upward; local -Y yaws it to camera right.
+        _weapon.RotationDegrees = _hipRotationDegrees
+            + new Vector3(settings.FpsAdsPitchDegrees * t + _swayDegrees.Y, -_swayDegrees.X, 0f);
+    }
+
+    // =========================================================
+    // The FPS camera owns pointer capture. Only resume continuous sway after capture returns.
+    private void OnMouseCaptureChanged(bool captured)
+    {
+        if (captured)
+        {
+            if (PhysicalSwayEnabled && !_player.GameplayInputBlocked && !_player.InteractionModeActive)
+                SetProcess(true);
+            return;
+        }
+        CancelTrigger(); _shove?.Cancel(); _melee?.Cancel();
+        ResetAds(); CancelVisualRecoil(); _weapon?.CancelFeedback();
     }
 
     #endregion
@@ -251,6 +314,10 @@ public partial class FirstPersonWeapon : Node
                 // Same unspread camera target used by the optional FPS aim debug line.
                 Vector3 aim = FirstPersonAimTarget.Resolve(_player, _query, origin, direction,
                     _weapon!.RuntimeSettings.Range);
+                // Physical gun sway redirects the real muzzle-to-target shot before random spread.
+                // Recoil is already in the FPS camera's current pitch; do not reapply it.
+                aim = FirstPersonAimTarget.ApplyPhysicalSway(aim, _weapon.Muzzle.GlobalPosition,
+                    _camera.GlobalBasis, _swayDegrees);
                 // The FPS camera itself is already tilted upward by cumulative recoil.
                 // FPS camera recoil already affects aim; hip fire adds only random spread,
                 // never a second recoil rotation. ADS retains the original base spread.
@@ -276,7 +343,11 @@ public partial class FirstPersonWeapon : Node
 
     // =========================================================
     private void OnInputBlocked(bool blocked)
-    { if (blocked) { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); ResetAds(); CancelVisualRecoil(); _weapon?.CancelFeedback(); } }
+    {
+        if (blocked)
+        { CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); ResetAds(); CancelVisualRecoil(); _weapon?.CancelFeedback(); }
+        else if (PhysicalSwayEnabled && Input.MouseMode == Input.MouseModeEnum.Captured) SetProcess(true);
+    }
 
     // =========================================================
     public override void _Notification(int what)
@@ -292,6 +363,7 @@ public partial class FirstPersonWeapon : Node
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps)) fps.SetEquippedWeaponMovementMultiplier(1f);
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.InteractionModeChanged -= OnInputBlocked; }
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
+        if (IsInstanceValid(_camera)) _camera.MouseCaptureChanged -= OnMouseCaptureChanged;
         if (IsInstanceValid(_aimDebugLine)) _aimDebugLine!.QueueFree();
     }
 }

@@ -17,7 +17,7 @@
 | --- | --- | --- |
 | **ADS0 — toggled sight alignment** | MMB toggle animation, camera FOV, per-gun animation/movement multipliers, transition cancellation and existing recoil compatibility | **Implemented in source; awaiting local validation** |
 | **ADS1 — weapon carrying weight** | An independent, always-equipped weapon movement penalty per firearm, composed with ADS/stance/lean/corpse/sprint without double-applying | **Implemented in source; awaiting local validation** |
-| **ADS2 — optics/accuracy polish** | Future optics/SMG replacements, sway and optional accuracy modifiers; decide sprint/ADS rules, reticles and head-bob treatment | **Planned; not authorized** |
+| **ADS2 — optics/accuracy polish** | Basic physical sway is source-implemented separately; remaining optics, player stats, movement accuracy, reticles and head-bob decisions remain future work | **Partial: physical sway source-implemented; remainder planned** |
 
 ## ADS0: implementation contract
 
@@ -81,3 +81,16 @@ Iron-sight centres were estimated from the current procedural builders; retune `
 ADS now has a relative precision advantage because it omits the new hip-fire-only extra angle, **but does not have a dedicated ADS spread multiplier yet**. That can be considered as the later ADS2a balance pass. Do not duplicate spread randomization, double-apply camera recoil or change top-down accuracy. This is first-person, shot-only work: idle cost remains zero, no new timers/nodes and no update loop.
 
 **Validation:** Build C#, F6 FPS compare hip/ADS patterns at a consistent wall range with several shots, test rifle/MG bursts and near-cover muzzle obstruction, then F6 top-down to verify its spread stays at the original base. Source complete; compilation and runtime tests still pending.
+
+## ADS2 physical-sway foundation (2026-10-31)
+
+**Source implemented; local validation pending.** A first, isolated physical sway pass operates only on FPS firearms. `FirstPersonAimTarget.SamplePhysicalSway` computes two smooth, deterministic yaw/pitch offsets with per-weapon amplitude, frequency and ADS strength reduction. `FirstPersonWeapon` updates the real gun root/muzzle visually and, when firing, moves the resolved intended aim point using `FirstPersonAimTarget.ApplyPhysicalSway` before it is passed to `FirearmController`. The same swayed point is used by the existing cyan pre-spread debug line; ordinary per-shot `ShotSpread`, hit tracing, recoil, muzzle obstruction and top-down mechanics remain unchanged.
+
+| Gun | Max sway angle | Frequency | ADS strength |
+| --- | ---: | ---: | ---: |
+| Rifle_001 | 0.18° | 0.80Hz | 65% of hip sway |
+| MachineGun_001 | 0.25° | 0.95Hz | 70% of hip sway |
+
+The selected firearm's `FpsPhysicalSwayEnabled` setting is editable in its existing master and via `FirstPersonWeapon.SetPhysicalSwayEnabled(bool)` at runtime. A future **F1 Weapon debug category** can call this setter and independently toggle spread, recoil and sway without adding another aiming owner; **the category itself is not built**. The existing equipment-movement slowdown (0.90/0.97), ADS slowdown (0.70/0.85), recoil, per-shot stamina cost and ammo stats are already connected at their respective interfaces but are independently authored values. No actual weapon-mass stat, condition-based steadiness, fatigue-modulated sway, moving sway, crouch-prone bonuses, limb effects or attachment effects are connected in this pass. A later combat-handling profile can calculate input factors once and feed these existing tunable interfaces, rather than stacking new aiming managers.
+
+**Performance:** Continuous existing FPS weapon render processing only while physical sway is enabled and the gun is selected/captured; it sleeps when disabled, on bat selection or capture interruption. Bullet-angle calculation remains only for accepted shot attempts; existing cyan debugging performs its previously-authorized one raycast per visible frame, with no second sway-specific raycast. Build and FPS/top-down regression tests are pending.
