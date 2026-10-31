@@ -1,6 +1,6 @@
-# PoliceStation001 — PS1 two-storey police-station shell
+# PoliceStation001 — police-station shell with PS1.5 basement prototype
 
-**Branch:** `implement-td0-td1` · **PS1.2 cleanup and lights:** implemented in source; local Godot preview, stair/wall-junction inspection and lighting performance checks pending.
+**Branch:** `implement-td0-td1` · **PS1.5 half-footprint basement:** implemented in source; local C# build, editor preview, walking clearance and collision validation pending. Earlier PS1.2–PS1.4 fixes remain in place.
 
 **Shared future-building lessons:** [architectural design guide and PoliceStation001 failure register](../BUILDING_DESIGN_GUIDE.md) · [technical building authoring guide](../BUILDING_AUTHORING_README.md). Check both before repeating shell revisions.
 
@@ -12,6 +12,7 @@
    - **GroundFloor (default):** upper deck/walls and roof are hidden in the editor, so you can inspect ground rooms and stairs from overhead.
    - **UpperFloor:** upper deck, offices and the open stairwell are visible; roof is hidden.
    - **Exterior:** the complete two-storey facade and flat roof are visible.
+   - **Basement (new):** hides the ground and upper level and original upward stairs to expose the underground floor, room shell and descending U-stair. This is editor inspection only.
 4. Under the same Inspector group, click **Build / Refresh Preview** once if the 3D view is blank, particularly after pulling new scripts or compiling while the scene was already open. The **Output** dock should report `[PoliceStation001] Editor shell generated`. If it reports a C# exception instead, copy the first error.
 5. Orbit/pan/zoom the **3D editor viewport** (press **F** after selecting the root to focus near its centre). The `[Tool]` generator creates `Generated` on scene load; the refresh button rebuilds it explicitly and the selector changes only visual visibility. **Saving the scene does not bake the procedural mesh/collision children into its .tscn**; only a lightweight `Generated` anchor may persist. Geometry changes in `PoliceStationMaster.tres` can be applied by clicking Refresh.
 
@@ -19,7 +20,7 @@
 
 ## Dimensions / shell layout
 
-Footprint **48 × 64m = 3,072m²**, exactly **eight times** ConvenienceStore001's 24 × 16m (384m²) footprint. Ground elevation is 0; upper slab walking plane is **Y=4.2m** by default; upper walls top at **Y=8.0m**. Front/public entrance faces **+Z**, rear service exit **-Z**.
+Footprint **48 × 64m = 3,072m²**, exactly **eight times** ConvenienceStore001's 24 × 16m (384m²) footprint. Ground elevation is 0; upper slab walking plane is **Y=4.2m** by default; upper walls top at **Y=8.0m**. The optional basement occupies the front **48 × 32m** of the same footprint, with its finished floor at **Y=-4.2m** by default. Front/public entrance faces **+Z**, rear service exit **-Z**.
 
 | Level | Shell zones, excluding later furniture |
 | --- | --- |
@@ -93,3 +94,19 @@ Owner's four Godot screenshots exposed three related flaws. The second-floor sla
 **Upstairs partitions:** both central hallway walls are trimmed to the connecting cross-wall at Z=18.5 instead of extending a 0.41m nub or ending unsupported. A cross-wall on the east side joins the corridor to the exterior with a real 3.6m doorway at X=15.3, giving the stair landing an accessible route into the east offices and down the main corridor. Existing west room divider at Z=18.5 still joins the west hall. Wall geometry and collision are generated together; no new runtime tick, furnished room, active door, world placement or change to the ground-floor lobby.
 
 **Acceptance:** refresh `PoliceStation001.tscn` in **UpperFloor** editor preview. View from above and at walking height; the stair exit must have solid decking all the way to the open upper lobby, and barriers cannot obstruct movement at the upper tread. Inspect the west/east upstairs hall termini and vestibule doorway, then walk both stair flights after separately authorizing world placement. Preview geometry/physics still need local Godot acceptance; static checks do not prove visual perfection.
+
+## PS1.5 — aligned half-footprint basement prototype (2026-10-31)
+
+**Source implemented / awaiting local validation.** Adds a **48 × 32m (1,536m²)** enclosed basement beneath the front half (X=-24..24, Z=0..32) of the existing station. The basement floor is **Y=-4.2m** by default and has simple concrete perimeter walls, one back secure-room divider, a side utility-room divider, real door apertures, matched static collision, reusable low-cost ceiling fixtures and clearance reservations. No furnishings, interacting doors, zombies or terrain/world placement.
+
+The existing ground-to-upper U-stair geometry, upper-floor deck cutout, fixtures, rooms, walls and facade remain unchanged. The ground floor's previous single slab is replaced by four equivalent collidable spans **only** to expose a real opening **X=8.7..18.2, Z=23..30.4**. All other ground-floor slab coordinates/elevations remain identical. This opening serves both stairs: the original upward first flight starts **X=11, Z=23**; the new **downward** first flight starts next to it at **X=15.3, Z=23**, goes toward +Z, turns across the same 2.4m-deep north landing footprint, then returns south at **X=11** to the basement floor. Each U-stair owns independent physical ramps and visual treads/rails. Separate ground-level guard segments protect the shaft rim without blocking either south entrance. Both original and descending entrances retain their flat approach.
+
+**Configuration and preview:** `PoliceStationMaster.tres → BasementEnabled` defaults to true; turn it off and click **Build / Refresh Preview** to restore the exact original continuous ground slab with no new basement geometry. `BasementLevelDepth` defaults to 4.2m (range 3.8–5.2m). The new `Basement` editor preview is appended to the existing GroundFloor / UpperFloor / Exterior enum, preserving saved Inspector numeric values. Runtime always generates all enabled floors and stair geometry; no per-frame processing is added. The basement is floor level **-1** with dedicated `deck`, `walls` and `contents` role owners, while the downward stairs retain `stairs` semantics. Ground/upper editor previews hide basement visuals.
+
+**Terrain3D boundary:** this standalone police-station prefab does **not** contain Terrain3D and is not yet placed in `WORLD/World.tscn`. To walk into a basement at a future placed site, paint a Terrain3D hole/collision hole **under the basement footprint** (with a small authored tolerance) so terrain does not block the underground passage; the building itself supplies the floors/side walls/physical steps, not Terrain3D. Keep `UseTerrainSupport=false` to preserve the station's own solid ground deck above the terrain hole. The Terrain3D site cutout, world placement, grading and streaming are **not** performed in PS1.5; these depend on a separately chosen/authorized site location.
+
+**Local acceptance checklist (not yet executed):**
+1. Build the Godot C# project, open the standalone station, click Refresh; inspect `Basement`, `GroundFloor`, `UpperFloor` and `Exterior`. Check the original station is visually identical except for the basement entry/opening.
+2. Inspect eye-level headroom, both independent flat approaches, each U-turn, the lower return landing, all ground/upper shaft guards and the back/utility-room doors; look for missing floor strips or overlapping/coplanar ramp/collider pieces.
+3. In a permitted player test scene, walk ground → upstairs → ground → basement → ground with collisions, check gun rays and walls, and make sure old PS1.4 upper-floor repairs are unaffected.
+4. When a terrain site is separately approved, paint the site hole and confirm Terrain3D's **visual and physics** holes match; test ground support and absence of terrain collision in the basement. Validate FPS, lighting and performance locally; source inspection is not visual acceptance.
