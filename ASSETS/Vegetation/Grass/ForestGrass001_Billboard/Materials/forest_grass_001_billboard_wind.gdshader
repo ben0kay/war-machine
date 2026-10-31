@@ -1,5 +1,7 @@
 shader_type spatial;
 render_mode cull_disabled;
+global uniform vec4 wm_foliage_tint;
+global uniform float wm_foliage_tint_strength;
 uniform sampler2D grass_atlas : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform float alpha_cutoff : hint_range(0.05,0.7) = 0.24;
 uniform float wind_strength : hint_range(0.0,0.2) = 0.025;
@@ -22,7 +24,12 @@ void vertex() {
 void fragment() {
     if (presence < 0.001) discard;
     vec4 t = texture(grass_atlas, UV);
-    ALBEDO = t.rgb * COLOR.rgb;
+    vec3 original = t.rgb * COLOR.rgb;
+    vec3 weights = vec3(0.2126, 0.7152, 0.0722);
+    float luminance = dot(original, weights);
+    float target_luminance = max(dot(wm_foliage_tint.rgb, weights), 0.05);
+    vec3 remapped = clamp(wm_foliage_tint.rgb * (luminance / target_luminance), vec3(0.0), vec3(1.0));
+    ALBEDO = mix(original, remapped, clamp(wm_foliage_tint_strength * 0.85, 0.0, 1.0));
     ALPHA = t.a * COLOR.a;
     ALPHA_SCISSOR_THRESHOLD = alpha_cutoff;
     ROUGHNESS = 0.94;

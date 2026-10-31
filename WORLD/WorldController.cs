@@ -180,11 +180,14 @@ public partial class WorldController : Node3D
         // the same road/structure masks and streams lightweight MultiMesh patches.
         var stylizedConfig = GD.Load<StylizedGrassSettings>(
             "res://VEGETATION/Grass/Stylized/Configuration/StylizedGrassMaster.tres");
-        if (stylizedConfig != null && stylizedConfig.Enabled)
+        var fillerConfig = GD.Load<BillboardGrassSettings>(
+            "res://VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres");
+        if (stylizedConfig != null && fillerConfig != null && (stylizedConfig.Enabled || fillerConfig.Enabled))
         {
             _stylizedGrass = new StylizedGrassPlacement {
                 Name = "StylizedGrass",
                 Settings = (StylizedGrassSettings)stylizedConfig.Duplicate(true),
+                FillerSettings = (BillboardGrassSettings)fillerConfig.Duplicate(true),
                 EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility
             };
             foreach (Rect2 exclusion in grassClearings) _stylizedGrass.ExclusionAreas.Add(exclusion);

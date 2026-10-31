@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BillboardGrassSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Grass/Stylized/Configuration/BillboardGrassSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+Seed = 90641
+CellSize = 1.8
+Coverage = 0.82
+ScaleMin = 0.75
+ScaleMax = 1.15
+MinimumNormalY = 0.87
+EdgeClearance = 0.65
+WindMultiplier = 0.06
+WindSpeed = 1.1

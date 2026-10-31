@@ -7,14 +7,17 @@ public partial class StylizedGrassPlacement : Node3D
 {
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
     [Export] public StylizedGrassSettings Settings { get; set; } = null!;
+    [Export] public BillboardGrassSettings FillerSettings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
     public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
     public int ActiveChunks => _active.Count;
     public int ActiveClumps { get; private set; }
+    public int ActiveFiller { get; private set; }
 
     private readonly Dictionary<Vector2I, GrassChunk> _active = new();
     private Mesh[] _near = System.Array.Empty<Mesh>(), _far = System.Array.Empty<Mesh>();
-    private ShaderMaterial? _material;
+    private Mesh[] _billboards = System.Array.Empty<Mesh>();
+    private ShaderMaterial? _material, _billboardMaterial;
     private GodotObject _terrain = null!;
     private Node3D _anchor = null!;
     private Vector2I _center = new(int.MinValue, int.MinValue);
@@ -25,7 +28,7 @@ public partial class StylizedGrassPlacement : Node3D
     private sealed class GrassChunk
     {
         public readonly List<MultiMeshInstance3D> Nodes = new();
-        public int Clumps;
+        public int Clumps, Filler;
     }
 
     // =========================================================
@@ -44,11 +47,15 @@ public partial class StylizedGrassPlacement : Node3D
     public void ApplySettings()
     {
         foreach (var chunk in _active.Values) ReleaseChunk(chunk);
-        _active.Clear(); ActiveClumps = 0;
+        _active.Clear(); ActiveClumps = 0; ActiveFiller = 0;
         _center = new Vector2I(int.MinValue, int.MinValue);
-        _near = _far = System.Array.Empty<Mesh>(); _material = null;
-        if (!_initialized || Settings == null || !Settings.Enabled || Settings.PatchesPerChunk <= 0) return;
-        if (!LoadTemplates()) return;
+        _near = _far = _billboards = System.Array.Empty<Mesh>(); _material = _billboardMaterial = null;
+        if (!_initialized) return;
+        if (Settings != null && Settings.Enabled && Settings.PatchesPerChunk > 0 && !LoadTemplates())
+            _near = _far = System.Array.Empty<Mesh>();
+        if (FillerSettings != null && FillerSettings.Enabled && FillerSettings.Coverage > 0f && !LoadBillboards())
+            _billboards = System.Array.Empty<Mesh>();
+        ApplyWind();
         UpdateAnchor(_anchor.GlobalPosition);
     }
 
@@ -93,16 +100,62 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
+    // One material and three small crossed-card meshes shared by every filler MultiMesh chunk.
+    // The billboard atlas is different from the stylized clump atlas and must not be mixed.
+    private bool LoadBillboards()
+    {
+        const string root = "res://ASSETS/Vegetation/Grass/ForestGrass001_Billboard/";
+        var sourceMaterial = GD.Load<ShaderMaterial>(root + "Materials/ForestGrass001BillboardWind.tres");
+        if (sourceMaterial == null)
+        { GD.PushWarning("Billboard filler: material missing; filler disabled."); return false; }
+        _billboardMaterial = (ShaderMaterial)sourceMaterial.Duplicate();
+        var meshes = new Mesh[3];
+        for (int i = 0; i < meshes.Length; i++)
+        {
+            string path = root + "Models/forest_grass_001_billboard_" + (char)('a' + i) + ".gltf";
+            var packed = GD.Load<PackedScene>(path);
+            if (packed == null)
+            { GD.PushWarning("Billboard filler: missing " + path); return false; }
+            Node rootNode = packed.Instantiate();
+            try
+            {
+                MeshInstance3D? meshNode = rootNode as MeshInstance3D;
+                if (meshNode == null)
+                    foreach (Node child in rootNode.FindChildren("*", "MeshInstance3D", true, false))
+                        if (child is MeshInstance3D instance) { meshNode = instance; break; }
+                if (meshNode?.Mesh is not ArrayMesh source || source.GetSurfaceCount() != 1)
+                { GD.PushWarning("Billboard filler: invalid mesh in " + path); return false; }
+                var mesh = (ArrayMesh)source.Duplicate();
+                mesh.SurfaceSetMaterial(0, _billboardMaterial);
+                meshes[i] = mesh;
+            }
+            finally { rootNode.Free(); }
+        }
+        _billboards = meshes;
+        return true;
+    }
+
+    // =========================================================
     // Only on setup or explicit weather-setting changes; the GPU animates the shared foliage shader.
     public void ApplyWind()
     {
-        if (_material == null || EnvironmentSettings == null) return;
+        if (EnvironmentSettings == null) return;
         Vector2 dir = EnvironmentSettings.WindDirection;
         dir = dir.LengthSquared() > 0.0001f ? dir.Normalized() : Vector2.Right;
-        _material.SetShaderParameter("wind_direction", dir);
-        _material.SetShaderParameter("wind_strength", Mathf.Clamp(
-            EnvironmentSettings.GrassWindStrength * Settings.WindMultiplier, 0f, 0.2f));
-        _material.SetShaderParameter("wind_speed", Mathf.Max(0f, Settings.WindSpeed));
+        if (_material != null && Settings != null)
+        {
+            _material.SetShaderParameter("wind_direction", dir);
+            _material.SetShaderParameter("wind_strength", Mathf.Clamp(
+                EnvironmentSettings.GrassWindStrength * Settings.WindMultiplier, 0f, 0.2f));
+            _material.SetShaderParameter("wind_speed", Mathf.Max(0f, Settings.WindSpeed));
+        }
+        if (_billboardMaterial != null && FillerSettings != null)
+        {
+            _billboardMaterial.SetShaderParameter("wind_direction", dir);
+            _billboardMaterial.SetShaderParameter("wind_strength", Mathf.Clamp(
+                EnvironmentSettings.GrassWindStrength * FillerSettings.WindMultiplier, 0f, 0.2f));
+            _billboardMaterial.SetShaderParameter("wind_speed", Mathf.Max(0f, FillerSettings.WindSpeed));
+        }
     }
 
     // =========================================================
@@ -117,9 +170,11 @@ public partial class StylizedGrassPlacement : Node3D
         foreach (var chunk in _active.Values)
             foreach (var instance in chunk.Nodes)
             {
-                bool distant = instance.Name.ToString().EndsWith("_Far");
+                string name = instance.Name.ToString();
+                bool distant = name.EndsWith("_Far");
+                bool filler = name.StartsWith("BillboardFiller_");
                 instance.VisibilityRangeBegin = distant ? lod : 0f;
-                instance.VisibilityRangeEnd = distant ? far : lod;
+                instance.VisibilityRangeEnd = distant || filler ? far : lod;
                 instance.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, instance.VisibilityRangeEnd);
             }
     }
@@ -128,8 +183,8 @@ public partial class StylizedGrassPlacement : Node3D
     // Move only on integer 32m chunk crossings. Existing chunks are reused without polling.
     public void UpdateAnchor(Vector3 position)
     {
-        if (_near.Length != 3 || Settings == null || !Settings.Enabled) return;
-        int width = Mathf.Clamp(Settings.ChunkSize, 16, 64);
+        if (_near.Length != 3 && _billboards.Length != 3) return;
+        int width = Mathf.Clamp(Settings?.ChunkSize ?? 32, 16, 64);
         var next = new Vector2I(Mathf.FloorToInt(position.X / width),
             Mathf.FloorToInt(position.Z / width));
         if (next == _center) return;
@@ -147,7 +202,7 @@ public partial class StylizedGrassPlacement : Node3D
         }
         var remove = new List<Vector2I>();
         foreach (var old in _active)
-            if (!wanted.Contains(old.Key)) { ReleaseChunk(old.Value); ActiveClumps -= old.Value.Clumps; remove.Add(old.Key); }
+            if (!wanted.Contains(old.Key)) { ReleaseChunk(old.Value); ActiveClumps -= old.Value.Clumps; ActiveFiller -= old.Value.Filler; remove.Add(old.Key); }
         foreach (var key in remove) _active.Remove(key);
         foreach (var key in wanted) if (!_active.ContainsKey(key)) CreateChunk(key, width);
     }
@@ -163,9 +218,21 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // Deterministic patch centres, then small irregular groups of original imported grass clumps.
-    // Every individual root is terrain-tested and checked against roads/footprints with edge clearance.
+    // The original stylized patches and widespread billboard filler share residency and masks.
+    // =========================================================
     private void CreateChunk(Vector2I key, int width)
+    {
+        var chunk = new GrassChunk();
+        float end = Visibility.RenderDistance + _focusDistance;
+        if (_near.Length == 3) CreatePatchClumps(key, width, end, chunk);
+        if (_billboards.Length == 3) CreateFiller(key, width, end, chunk);
+        _active.Add(key, chunk);
+        ActiveClumps += chunk.Clumps; ActiveFiller += chunk.Filler;
+    }
+
+    // =========================================================
+    // Preserve existing clustered stylized-grass scatter and its seed.
+    private void CreatePatchClumps(Vector2I key, int width, float end, GrassChunk chunk)
     {
         var rng = new RandomNumberGenerator { Seed = Mix(Settings.Seed, key.X, key.Y) };
         var bin = new List<Transform3D>[3];
@@ -188,16 +255,13 @@ public partial class StylizedGrassPlacement : Node3D
                     Mathf.Clamp(Mathf.Max(Settings.ScaleMin, Settings.ScaleMax), 0.3f, 2.5f));
                 if (point.X < 2 || point.Y < 2 || point.X >= _worldSize - 2 || point.Y >= _worldSize - 2
                     || IsExcluded(point, Mathf.Max(0.6f, Settings.EdgeClearance) * scale)) continue;
-                if (!TryGround(point, out float height)) continue;
+                if (!TryGround(point, Settings.MinimumNormalY, out float height)) continue;
                 int variant = rng.RandiRange(0, 2);
                 bin[variant].Add(new Transform3D(
                     new Basis(Vector3.Up, rng.RandfRange(0f, Mathf.Tau)).Scaled(Vector3.One * scale),
                     new Vector3(point.X, height - 0.035f, point.Y)));
             }
         }
-
-        var chunk = new GrassChunk();
-        float end = Visibility.RenderDistance + _focusDistance;
         float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, end - 4f);
         for (int i = 0; i < 3; i++)
         {
@@ -210,11 +274,46 @@ public partial class StylizedGrassPlacement : Node3D
             chunk.Nodes.Add(near); chunk.Nodes.Add(far);
             chunk.Clumps += bin[i].Count;
         }
-        _active.Add(key, chunk); ActiveClumps += chunk.Clumps;
     }
 
     // =========================================================
-    // World-space road/structure masks are shared with old grass; allow for half-width of each model.
+    // Jittered independent cells give broad irregular ground coverage, not a second patch pattern.
+    // A separately seeded stream cannot change the original stylized patch positions.
+    private void CreateFiller(Vector2I key, int width, float end, GrassChunk chunk)
+    {
+        var rng = new RandomNumberGenerator { Seed = Mix(FillerSettings.Seed, key.X, key.Y) };
+        int cells = Mathf.Clamp(Mathf.CeilToInt(width / Mathf.Clamp(FillerSettings.CellSize, 0.9f, 5f)), 1, 40);
+        float spacing = (float)width / cells;
+        var bin = new List<Transform3D>[3];
+        for (int i = 0; i < 3; i++) bin[i] = new List<Transform3D>();
+        for (int z = 0; z < cells; z++) for (int x = 0; x < cells; x++)
+        {
+            if (rng.Randf() > Mathf.Clamp(FillerSettings.Coverage, 0f, 1f)) continue;
+            Vector2 point = new((key.X * width) + (x + rng.Randf()) * spacing,
+                (key.Y * width) + (z + rng.Randf()) * spacing);
+            float scale = rng.RandfRange(Mathf.Clamp(FillerSettings.ScaleMin, 0.3f, 2f),
+                Mathf.Clamp(Mathf.Max(FillerSettings.ScaleMin, FillerSettings.ScaleMax), 0.3f, 2.5f));
+            if (point.X < 2 || point.Y < 2 || point.X >= _worldSize - 2 || point.Y >= _worldSize - 2
+                || IsExcluded(point, Mathf.Max(0.5f, FillerSettings.EdgeClearance) * scale)) continue;
+            if (!TryGround(point, FillerSettings.MinimumNormalY, out float height)) continue;
+            int variant = rng.RandiRange(0, 2);
+            bin[variant].Add(new Transform3D(
+                new Basis(Vector3.Up, rng.RandfRange(0f, Mathf.Tau)).Scaled(Vector3.One * scale),
+                new Vector3(point.X, height - 0.035f, point.Y)));
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            if (bin[i].Count == 0) continue;
+            Vector3 origin = new((key.X + 0.5f) * width, 0f, (key.Y + 0.5f) * width);
+            var node = BuildBatch("BillboardFiller_" + key.X + "_" + key.Y + "_" + i,
+                _billboards[i], bin[i], origin, 0f, end);
+            chunk.Nodes.Add(node);
+            chunk.Filler += bin[i].Count;
+        }
+    }
+
+    // =========================================================
+        // World-space road/structure masks are shared with old grass; allow for half-width of each model.
     private bool IsExcluded(Vector2 p, float margin)
     {
         foreach (Rect2 rectangle in ExclusionAreas)
@@ -224,7 +323,7 @@ public partial class StylizedGrassPlacement : Node3D
 
     // =========================================================
     // Saved Terrain3D is authoritative. Steep/missing areas become naturally bare ground.
-    private bool TryGround(Vector2 p, out float height)
+    private bool TryGround(Vector2 p, float minimumNormalY, out float height)
     {
         height = _terrain.Call("get_height", new Vector3(p.X, 0f, p.Y)).AsSingle();
         float east = _terrain.Call("get_height", new Vector3(p.X + 1f, 0f, p.Y)).AsSingle();
@@ -232,7 +331,7 @@ public partial class StylizedGrassPlacement : Node3D
         if (!float.IsFinite(height) || !float.IsFinite(east) || !float.IsFinite(south)) return false;
         float normalY = 1f / Mathf.Sqrt(1f + (east - height) * (east - height)
             + (south - height) * (south - height));
-        return normalY >= Mathf.Clamp(Settings.MinimumNormalY, 0.5f, 1f);
+        return normalY >= Mathf.Clamp(minimumNormalY, 0.5f, 1f);
     }
 
     // =========================================================
