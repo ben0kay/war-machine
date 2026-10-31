@@ -1,0 +1,60 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://DEBUG/Scenes/BuildingTestPlayer.tscn" id="player"]
+[ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Structures/PoliceStation001/PoliceStation001.tscn" id="building"]
+[ext_resource type="Script" path="res://DEBUG/Scenes/BuildingTerrainTest.cs" id="terrain_bootstrap"]
+[ext_resource type="Terrain3DAssets" path="res://WORLD/Terrain/TerrainAssets.tres" id="terrain_assets"]
+[ext_resource type="Terrain3DMaterial" path="res://WORLD/Terrain/TerrainMaterial.tres" id="terrain_material"]
+
+[sub_resource type="Environment" id="TestEnvironment"]
+background_mode = 1
+background_color = Color(0.63, 0.72, 0.79, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.76, 0.81, 0.84, 1)
+ambient_light_energy = 0.45
+
+[node name="BuildingTerrainTest" type="Node3D"]
+script = ExtResource("terrain_bootstrap")
+
+[node name="BuildingSlot" type="Node3D" parent="."]
+position = Vector3(128, 0, 128)
+
+[node name="PoliceStation001" parent="BuildingSlot" instance=ExtResource("building")]
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+position = Vector3(128, 0.3, 166)
+
+[node name="BuildingTestPlayer" parent="." instance=ExtResource("player")]
+position = Vector3(128, 0.3, 166)
+
+[node name="Terrain3D" type="Terrain3D" parent="."]
+region_size = 256
+collision_mode = 3
+collision_layer = 1
+collision_mask = 1
+data_directory = "res://DEBUG/Scenes/TerrainData"
+assets = ExtResource("terrain_assets")
+material = ExtResource("terrain_material")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, 28, 0)
+light_energy = 0.85
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("TestEnvironment")
+
+[node name="Help" type="CanvasLayer" parent="."]
+
+[node name="Controls" type="Label" parent="Help"]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 650.0
+offset_bottom = 82.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 14
+text = "BUILDING + TERRAIN3D TEST  •  Arrows / WASD move  •  Shift sprint  •  RMB jump\nC / Ctrl crouch  •  / prone  •  Inverted vertical mouse look\nEsc release mouse  •  Left click recapture"
