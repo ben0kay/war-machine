@@ -114,6 +114,32 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 text = "TRIS: —"
 
+[node name="Coordinates" type="Label" parent="DebugUIRoot/PerformanceHud/FPS"]
+offset_left = 0.0
+offset_top = 36.0
+offset_right = 264.0
+offset_bottom = 53.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.88, 0.93, 0.89, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "POS: X —  Y —  Z —"
+
+[node name="MovementSpeed" type="Label" parent="DebugUIRoot/PerformanceHud/FPS"]
+offset_left = 0.0
+offset_top = 54.0
+offset_right = 200.0
+offset_bottom = 71.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.88, 0.93, 0.89, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "SPEED: — m/s"
+
 [node name="PersistentPropsRoot" type="Node3D" parent="WorldActorsRoot"]
 [node name="Structures" type="Node3D" parent="WorldActorsRoot/PersistentPropsRoot"]
 [node name="ConvenienceStoreSite001" parent="WorldActorsRoot/PersistentPropsRoot/Structures" instance=ExtResource("village_site")]

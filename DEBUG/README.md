@@ -30,3 +30,19 @@ The existing 0.5s timer updates **both** counters. Godot's `RenderingServer.View
 ## DBG-Z0 — isolated 0-key FPS zombie spawn tester (2026-10-31)
 
 `DEBUG/ZombieSpawner/DebugZombieSpawner.tscn` is optionally instanced under FPS `DebugUIRoot`; it spawns 90% regular/10% fast real zombies at the crosshair's supported terrain, with a one-shot physics query, max 20 live debug spawns and no idle loop. F1 UI and released mouse suppress the key. Remove/disable the FPS debug node to uninstall; shared world/player/zombie behavior is unchanged. Local Godot build and F6 acceptance pending. See [README](ZombieSpawner/README.md).
+
+
+## Top-left position and player-speed readouts (2026-10-31)
+
+The existing `DEBUG/FpsCounter.cs` performance HUD now also updates optional **`Coordinates`** and **`MovementSpeed`** labels directly under the FPS and TRIS labels in `WORLD/World.tscn`. Both are inherited by `WORLD/FirstPerson/FirstPersonWorld.tscn`, remain visible with F1 closed, and retain the same small pale lettering with shadows. Example:
+
+```
+FPS: 60
+TRIS: 125,430
+POS: X 512.0  Y 4.0  Z 550.0
+SPEED: 4.5 m/s
+```
+
+**Coordinate semantics:** actual player `GlobalPosition` in Godot world units (X/Y/Z; shown to 0.1m). **SPEED** is the length of the player's current horizontal (`Velocity.X/Z`) character movement vector in metres per second, excluding jumping/falling vertical speed. It is the post-locomotion physics velocity rather than a smoothed displacement measurement; movement into a hard obstruction can temporarily differ from actual ground distance travelled.
+
+The original `DebugMaster.FpsUpdateSeconds` timer updates all four rows (default **0.5 seconds**). There is no new timer, `_Process`, `_PhysicsProcess`, physics query, input change or player acceleration change. To keep the old FPS-only `DEBUG/FpsCounter` valid in other scenes, both new labels and the player binding are optional. The existing `ShowFps` control hides and sleeps the entire performance readout. Verify with F6 in both the shared World and FPS scene: while moving toward the DTP1 reference patch (approximately world X492,Z542), X/Z values change and speed returns to 0 when stationary. Source change awaits Godot/.NET build and on-screen validation.
