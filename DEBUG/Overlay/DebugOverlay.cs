@@ -23,6 +23,7 @@ public partial class DebugOverlay : PanelContainer
     private ForestPlacement? _forestPlacement;
     private Color _sharedFoliageTint;
     private float _sharedFoliageStrength;
+    private Label? _vegetationDistanceLabel;
     private EnvironmentConfig _environment = null!;
     private Node _clock = null!;
     private Callable _timeChanged;
@@ -202,6 +203,11 @@ public partial class DebugOverlay : PanelContainer
                 value => { renderCulling.Settings.ShadowBuffer = value; renderCulling.ApplySettings(); });
         }
         var foliageRows = AddSection(rootRows, "Foliage");
+        var globalVisibilityRows = AddSection(foliageRows, "Shared fog-driven visibility");
+        _vegetationDistanceLabel = new Label();
+        globalVisibilityRows.AddChild(_vegetationDistanceLabel);
+        _pines.Visibility.Changed += UpdateVegetationDistanceLabel;
+        UpdateVegetationDistanceLabel();
         rows = AddSection(foliageRows, "Shared tree + grass tint");
         rows.AddChild(new Label { Text = "Changes stylized pines, grass and DF2 crown colours live." });
         var foliageColour = new ColorPickerButton { Text = "Foliage colour", Color = _sharedFoliageTint,
@@ -427,6 +433,10 @@ public partial class DebugOverlay : PanelContainer
             [nameof(_environment.WindDirection)] = new[] { _environment.WindDirection.X, _environment.WindDirection.Y },
             ["SharedFoliageTint"] = new[] { _sharedFoliageTint.R, _sharedFoliageTint.G, _sharedFoliageTint.B, _sharedFoliageTint.A },
             ["SharedFoliageTintStrength"] = _sharedFoliageStrength,
+            ["VegetationRenderDistance"] = _pines.Visibility.RenderDistance,
+            ["VegetationLod0End"] = _pines.Visibility.Lod0End,
+            ["VegetationLod1End"] = _pines.Visibility.Lod1End,
+            ["VegetationFogDriven"] = _pines.Visibility.IsFogDriven,
             ["PineEnabled"] = _pines.Settings.Enabled,
             ["PineDensity"] = _pines.Settings.Density,
             ["PineHeightMultiplier"] = _pines.Settings.HeightMultiplier,
@@ -483,7 +493,6 @@ public partial class DebugOverlay : PanelContainer
             values["StylizedGrassClumpsPerPatch"] = _stylizedGrass.Settings.ClumpsPerPatch;
             values["StylizedGrassPatchRadiusMax"] = _stylizedGrass.Settings.PatchRadiusMax;
             values["StylizedGrassScaleMax"] = _stylizedGrass.Settings.ScaleMax;
-            values["StylizedGrassRenderDistance"] = _stylizedGrass.Settings.RenderDistance;
         }
         if (_renderCulling != null)
         {
@@ -499,9 +508,23 @@ public partial class DebugOverlay : PanelContainer
     }
 
     // =========================================================
+    // One event-driven readout for the actual FPS/top-down fog envelope (no per-frame polling).
+    private void UpdateVegetationDistanceLabel()
+    {
+        if (_vegetationDistanceLabel == null) return;
+        var shared = _pines.Visibility;
+        _vegetationDistanceLabel.Text =
+            $"All active foliage to {shared.RenderDistance:0} m " +
+            $"({(shared.IsFogDriven ? "fog + safety buffer" : "fog OFF fallback")})\n" +
+            $"LOD0→LOD1 {shared.Lod0End:0} m · LOD1→LOD2 {shared.Lod1End:0} m\n" +
+            "Change Fog fully opaque (m) to update all three families.";
+    }
+
+    // =========================================================
     // Remove the external subscription when the scene or panel unloads.
     public override void _ExitTree()
     {
+        if (GodotObject.IsInstanceValid(_pines)) _pines.Visibility.Changed -= UpdateVegetationDistanceLabel;
         if (GodotObject.IsInstanceValid(_clock) && _clock.IsConnected("time_changed", _timeChanged))
             _clock.Disconnect("time_changed", _timeChanged);
         if (_visionDebug != null && IsInstanceValid(_visionDebug)) _visionDebug.VisibilityChanged -= OnVisionDebugChanged;

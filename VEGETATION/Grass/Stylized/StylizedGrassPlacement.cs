@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public partial class StylizedGrassPlacement : Node3D
 {
+    public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
     [Export] public StylizedGrassSettings Settings { get; set; } = null!;
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
     public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
@@ -33,6 +34,7 @@ public partial class StylizedGrassPlacement : Node3D
     {
         _terrain = terrain.Get("data").AsGodotObject(); _anchor = anchor; _worldSize = worldSize;
         _terrain.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
+        Visibility.Changed += OnVisibilityChanged;
         _initialized = true; SetProcess(false); SetPhysicsProcess(false);
         ApplySettings();
     }
@@ -105,14 +107,13 @@ public partial class StylizedGrassPlacement : Node3D
 
     // =========================================================
     // Camera/zoom range changes are native renderer properties, not re-scattered grass.
-    public void UpdateView(float viewHeight, float focusDistance)
+    public void UpdateView(float viewHeight, float focusDistance, bool force = false)
     {
         float next = Mathf.Max(0f, focusDistance);
-        if (Mathf.IsEqualApprox(next, _focusDistance)) return;
+        if (!force && Mathf.IsEqualApprox(next, _focusDistance)) return;
         _focusDistance = next;
-        float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 8f,
-            Settings.RenderDistance + _focusDistance - 8f);
-        float far = Mathf.Clamp(Settings.RenderDistance, 24f, 128f) + _focusDistance;
+        float far = Visibility.RenderDistance + _focusDistance;
+        float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, far - 4f);
         foreach (var chunk in _active.Values)
             foreach (var instance in chunk.Nodes)
             {
@@ -133,7 +134,7 @@ public partial class StylizedGrassPlacement : Node3D
             Mathf.FloorToInt(position.Z / width));
         if (next == _center) return;
         _center = next;
-        float render = Mathf.Clamp(Settings.RenderDistance, 24f, 128f) + _focusDistance;
+        float render = Visibility.RenderDistance + _focusDistance;
         int range = Mathf.CeilToInt((render + width * 1.5f) / width);
         var wanted = new HashSet<Vector2I>();
         Vector2 eye = new((next.X + 0.5f) * width, (next.Y + 0.5f) * width);
@@ -149,6 +150,16 @@ public partial class StylizedGrassPlacement : Node3D
             if (!wanted.Contains(old.Key)) { ReleaseChunk(old.Value); ActiveClumps -= old.Value.Clumps; remove.Add(old.Key); }
         foreach (var key in remove) _active.Remove(key);
         foreach (var key in wanted) if (!_active.ContainsKey(key)) CreateChunk(key, width);
+    }
+
+    // =========================================================
+    // Reapply the single fog-derived envelope and add/remove only chunks whose residency changed.
+    private void OnVisibilityChanged()
+    {
+        if (!_initialized) return;
+        UpdateView(0f, _focusDistance, true);
+        _center = new Vector2I(int.MinValue, int.MinValue);
+        UpdateAnchor(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -186,8 +197,8 @@ public partial class StylizedGrassPlacement : Node3D
         }
 
         var chunk = new GrassChunk();
-        float end = Mathf.Clamp(Settings.RenderDistance, 24f, 128f) + _focusDistance;
-        float lod = Mathf.Clamp(Settings.LodDistance + _focusDistance, 8f, end - 8f);
+        float end = Visibility.RenderDistance + _focusDistance;
+        float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, end - 4f);
         for (int i = 0; i < 3; i++)
         {
             if (bin[i].Count == 0) continue;
@@ -282,6 +293,7 @@ public partial class StylizedGrassPlacement : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        Visibility.Changed -= OnVisibilityChanged;
         if (_initialized && GodotObject.IsInstanceValid(_terrain))
             _terrain.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));
         _initialized = false;

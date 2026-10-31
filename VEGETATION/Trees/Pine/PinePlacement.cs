@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public partial class PinePlacement : Node3D, ICameraOcclusionProvider
 {
+    // One shared visibility owner for every active vegetation family. No per-pine distances.
+    public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
     public const uint TrunkLayer = 1u << 4; // Physics layer 5: small actors/weapon rays; giant robot ignores it.
     public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
     public event System.Action? OcclusionChanged;
@@ -53,6 +55,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     {
         _data = terrain.Get("data").AsGodotObject(); _anchor = anchor; _worldSize = worldSize; _spawn = spawn;
         _data.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
+        Visibility.Changed += OnVisibilityChanged;
         _initialized = true;
         SetProcess(false); SetPhysicsProcess(false);
         ApplySettings();
@@ -230,24 +233,21 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
-    // Preserve the old generated/GLB ranges; three stylized LODs use two editable thresholds.
+    // Every pine source (stylized, generated, imported GLB) shares the same fog-derived
+    // global LOD boundaries. Sources with fewer meshes simply skip unsupported levels.
     private void GetDrawRanges(out float nearEnd, out float midEnd, out float end, out float margin)
     {
-        end = Mathf.Clamp(Settings.RenderDistance, 64f, 512f) + _focusDistance;
-        margin = Mathf.Min(end * 0.25f, Mathf.Clamp(Settings.DistanceFadeMargin, 4f, 48f));
-        nearEnd = _usingStylizedPine
-            ? Mathf.Clamp(Settings.StylizedLod1Distance + _focusDistance, 24f, end - 16f)
-            : Mathf.Clamp(Settings.LodDistance + _focusDistance, 32f, end - margin);
-        midEnd = _usingStylizedPine
-            ? Mathf.Clamp(Settings.StylizedLod2Distance + _focusDistance, nearEnd + 4f, end - margin)
-            : end;
+        end = Mathf.Max(24f, Visibility.RenderDistance + _focusDistance);
+        margin = Visibility.TransitionMargin;
+        nearEnd = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, end - 12f);
+        midEnd = Mathf.Clamp(Visibility.Lod1End + _focusDistance, nearEnd + 4f, end - 4f);
     }
 
     // =========================================================
     // Native distance ranges include the elevated camera offset; zoom edits update batches, not geometry.
-    public void UpdateView(float focusDistance)
+    public void UpdateView(float focusDistance, bool force = false)
     {
-        if (Mathf.IsEqualApprox(_focusDistance, focusDistance)) return;
+        if (!force && Mathf.IsEqualApprox(_focusDistance, focusDistance)) return;
         _focusDistance = Mathf.Max(0, focusDistance);
         GetDrawRanges(out float nearCut, out float midCut, out float end, out _);
         bool triple = _thirdMeshes.Length == _meshes.Length;
@@ -272,7 +272,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         var next = new Vector2I(Mathf.FloorToInt(position.X / _chunkSize), Mathf.FloorToInt(position.Z / _chunkSize));
         if (next == _center) return;
         _center = next;
-        float distance = Mathf.Clamp(Settings.RenderDistance, 64f, 512f);
+        float distance = Visibility.RenderDistance + _focusDistance;
         int radius = Mathf.CeilToInt((distance + _chunkSize * 1.5f) / _chunkSize);
         var wanted = new HashSet<Vector2I>();
         var chunkCenter = new Vector2((next.X + 0.5f) * _chunkSize, (next.Y + 0.5f) * _chunkSize);
@@ -298,6 +298,17 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         foreach (var key in wanted)
             if (!_active.ContainsKey(key)) CreateChunk(key);
         OcclusionChanged?.Invoke();
+    }
+
+    // =========================================================
+    // Fog distance changes update active native ranges, then reconcile streamed chunk residency.
+    // Geometry generation is never repeated for chunks that remain in the active dictionary.
+    private void OnVisibilityChanged()
+    {
+        if (!_initialized) return;
+        UpdateView(_focusDistance, true);
+        _center = new Vector2I(int.MinValue, int.MinValue);
+        UpdateAnchor(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -522,6 +533,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     // No lingering signal subscriptions when testworld is closed.
     public override void _ExitTree()
     {
+        Visibility.Changed -= OnVisibilityChanged;
         if (_initialized) DisconnectSignals();
         _initialized = false;
         foreach (var chunk in _active.Values) foreach (var target in chunk.Occluders) target.Alive = false;

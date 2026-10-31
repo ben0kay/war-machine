@@ -1,6 +1,6 @@
 # PineMaster — forest source and distribution
 
-The active world and inherited FPS test both use `Configuration/PineMaster.tres` via `PineSettings`. This master retains the original seed, 0.55 density, 20m spacing, 32m chunk streaming, slope/terrain filters, site/spawn exclusions, and 96m render distance.
+The active world and inherited FPS test both use `Configuration/PineMaster.tres` via `PineSettings`. This master retains the original seed, 0.55 density, 20m spacing, 32m chunk streaming, slope/terrain filters and site/spawn exclusions. **Rendering range and LOD thresholds now come exclusively from VegetationVisibilityMaster.tres**, dynamically linked to fog.
 
 ## Earlier GLB comparison (available, no longer selected by default)
 
@@ -16,4 +16,4 @@ One model shared by all trees; **no new per-tree scenes, scripts, update loops o
 
 ## PINE-ST1 — active stylized glTF art selector (2026-10-30)
 
-`UseStylizedPine=true` is now the default. It takes priority over `UsePineGlb` and loads the **three uploaded stylized glTF LODs** from `ASSETS/Vegetation/Trees/PineTree001/` via `PinePlacement`. It does not affect the existing random seed, trunk layout, density, spacing, slope filters or exclusions; no grass source changes. New exported fields: `StylizedBaseScale=0.8`, `StylizedTrunkRadius=0.64`, `StylizedLod1Distance=40`, `StylizedLod2Distance=70`. LOD3 renders until `RenderDistance=96`, then the existing WS1 policy applies. **To restore the procedural version**, set `UseStylizedPine=false` (and leave `UsePineGlb=false`) and restart World/FPS. The old GLB selector remains available. Compilation and visual comparison pending.
+`UseStylizedPine=true` is now the default. It takes priority over `UsePineGlb` and loads the **three uploaded stylized glTF LODs** from `ASSETS/Vegetation/Trees/PineTree001/` via `PinePlacement`. It does not affect the existing random seed, trunk layout, density, spacing, slope filters or exclusions; no grass source changes. Current exported stylized art fields are `StylizedBaseScale=0.8` and `StylizedTrunkRadius=0.64`. Historical 40/70/96m LOD/render values are **removed** in GV1; all three stylized mesh levels use shared fog-linked fractions (LOD0 35%, LOD1 70%, LOD2 until fog + buffer). **To restore the procedural version**, set `UseStylizedPine=false` (and leave `UsePineGlb=false`) and restart World/FPS. The old GLB selector remains available. Compilation and visual comparison pending.

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 {
+    public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
     public event System.Action? OcclusionChanged;
     public int TotalTrees { get; private set; }
     public int ActiveTrees { get; private set; }
@@ -96,6 +97,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         LogMaterialCheck((ArrayMesh)_near[0]);
         BuildLayout();
         _terrain.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
+        Visibility.Changed += OnVisibilityChanged;
         _ready = true;
         UpdateAnchor(_player.GlobalPosition);
     }
@@ -240,7 +242,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         _current = _requested;
         int size = Mathf.Clamp(_settings.ChunkSize, 32, 64);
         var viewer = new Vector2((_current.X + 0.5f) * size, (_current.Y + 0.5f) * size);
-        float reach = Mathf.Clamp(_settings.RenderDistance, 64f, 256f) + size * 1.4f;
+        float reach = Visibility.RenderDistance + _viewOffset + size * 1.4f;
         var wanted = new HashSet<Vector2I>();
         foreach (var pair in _layout)
         {
@@ -281,9 +283,9 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         }
         if (body != null) { AddChild(body); group.Trunks = body; }
         int size = Mathf.Clamp(_settings.ChunkSize, 32, 64);
-        float end = Mathf.Clamp(_settings.RenderDistance, 64f, 256f) + _viewOffset;
-        float lod = Mathf.Min(end - 4f, Mathf.Clamp(_settings.LodDistance + _viewOffset, 24f, 150f));
-        float margin = Mathf.Clamp(_settings.DistanceFadeMargin, 2f, 28f);
+        float end = Visibility.RenderDistance + _viewOffset;
+        float lod = Mathf.Clamp(Visibility.Lod0End + _viewOffset, 8f, end - 4f);
+        float margin = Visibility.TransitionMargin;
         for (int i = 0; i < bins.Length; i++)
         {
             if (bins[i].Count == 0) continue;
@@ -340,11 +342,21 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     private void SetRange(MultiMeshInstance3D node, bool far)
     {
-        float end = Mathf.Clamp(_settings.RenderDistance, 64f, 256f) + _viewOffset;
-        float lod = Mathf.Min(end - 4f, Mathf.Clamp(_settings.LodDistance + _viewOffset, 24f, 150f));
+        float end = Visibility.RenderDistance + _viewOffset;
+        float lod = Mathf.Clamp(Visibility.Lod0End + _viewOffset, 8f, end - 4f);
         node.VisibilityRangeBegin = far ? lod : 0f;
         node.VisibilityRangeEnd = far ? end : lod;
         node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, node.VisibilityRangeEnd);
+    }
+
+    // =========================================================
+    // The common fog profile drives all native LOD ranges and loaded zone chunks.
+    private void OnVisibilityChanged()
+    {
+        if (!_ready) return;
+        UpdateView(_viewOffset);
+        _current = new Vector2I(int.MinValue, int.MinValue);
+        UpdateAnchor(_player.GlobalPosition);
     }
 
     // =========================================================
@@ -422,6 +434,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     public override void _ExitTree()
     {
+        Visibility.Changed -= OnVisibilityChanged;
         if (_ready && GodotObject.IsInstanceValid(_terrain))
             _terrain.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));
         _ready = false;

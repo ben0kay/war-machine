@@ -30,9 +30,6 @@ public partial class ForestSettings : Resource
 
     [ExportGroup("DF2 chunk rendering / collision")]
     [Export(PropertyHint.Range, "32,64,16")] public int ChunkSize { get; set; } = 32;
-    [Export(PropertyHint.Range, "64,256,8")] public float RenderDistance { get; set; } = 160f;
-    [Export(PropertyHint.Range, "24,150,8")] public float LodDistance { get; set; } = 64f;
-    [Export(PropertyHint.Range, "2,28,2")] public float DistanceFadeMargin { get; set; } = 8f;
     // Safe visible palette mode uses native StandardMaterial3D rather than unverified custom shaders.
     // Turn OFF only after checking DF2 shader compilation; shader mode retains top-down leaf fade.
     [Export] public bool UseSafePaletteMaterials { get; set; } = true;

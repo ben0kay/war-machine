@@ -24,6 +24,4 @@ public partial class StylizedGrassSettings : Resource
 
     [ExportGroup("Streaming / LOD")]
     [Export(PropertyHint.Range, "16,64,16")] public int ChunkSize { get; set; } = 32;
-    [Export(PropertyHint.Range, "24,128,4")] public float RenderDistance { get; set; } = 80f;
-    [Export(PropertyHint.Range, "8,96,4")] public float LodDistance { get; set; } = 32f;
 }

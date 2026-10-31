@@ -17,5 +17,3 @@ EdgeClearance = 0.9
 WindMultiplier = 0.06
 WindSpeed = 1.1
 ChunkSize = 32
-RenderDistance = 80
-LodDistance = 32

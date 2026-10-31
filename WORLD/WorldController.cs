@@ -15,6 +15,7 @@ public partial class WorldController : Node3D
     protected ForestPlacement? _forestPlacement;
     protected TerrainGrass _grass = null!;
     private StylizedGrassPlacement? _stylizedGrass;
+    private VegetationVisibilityPolicy _vegetationVisibility = null!;
     private PlaceableSpawnMenu? _spawnMenu;
     private WorldColorGrade? _colorGrade;
     private bool _debugPanelsOpen;
@@ -171,6 +172,10 @@ public partial class WorldController : Node3D
         _grass.SetExclusionAreas(grassClearings);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
+        // GV1: all active vegetation reads this single resource; fog will be bound once ready.
+        _vegetationVisibility = new VegetationVisibilityPolicy(
+            (VegetationVisibilitySettings)GD.Load<VegetationVisibilitySettings>(
+                "res://VEGETATION/Configuration/VegetationVisibilityMaster.tres").Duplicate(true));
         // STG1: original GPU particles are OFF in both masters; new imported grass uses
         // the same road/structure masks and streams lightweight MultiMesh patches.
         var stylizedConfig = GD.Load<StylizedGrassSettings>(
@@ -180,7 +185,7 @@ public partial class WorldController : Node3D
             _stylizedGrass = new StylizedGrassPlacement {
                 Name = "StylizedGrass",
                 Settings = (StylizedGrassSettings)stylizedConfig.Duplicate(true),
-                EnvironmentSettings = EnvironmentSettings
+                EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility
             };
             foreach (Rect2 exclusion in grassClearings) _stylizedGrass.ExclusionAreas.Add(exclusion);
             GetNode("SystemsRoot/VegetationRoot").AddChild(_stylizedGrass);
@@ -189,7 +194,7 @@ public partial class WorldController : Node3D
         }
         _pines = new PinePlacement { Name = "Pines",
             Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
-            EnvironmentSettings = EnvironmentSettings };
+            EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility };
         foreach (Rect2 clearing in sceneryClearings) _pines.ExclusionAreas.Add(clearing);
         // No trunks inside either existing spawns or the extra 20-zombie test cluster.
         AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.RunnerSpawnOffsets);
@@ -240,7 +245,7 @@ public partial class WorldController : Node3D
         // DF2 only activates after DF0's shared terrain/structure/patrol survey succeeds.
         if (approvedForestArea.HasValue && forest != null)
         {
-            _forestPlacement = new ForestPlacement { Name = "DenseForest" };
+            _forestPlacement = new ForestPlacement { Name = "DenseForest", Visibility = _vegetationVisibility };
             GetNode("SystemsRoot/VegetationRoot").AddChild(_forestPlacement);
             _forestPlacement.InitializeView(terrain, player, forest, approvedForestArea.Value);
             player.PositionChanged += _forestPlacement.UpdateAnchor;
@@ -335,6 +340,8 @@ public partial class WorldController : Node3D
         _renderCulling = new WorldRenderCulling { Name = "FogRenderPolicy" }; GetNode("SystemsRoot").AddChild(_renderCulling);
         _renderCulling.Initialize(fog, camera, player, Settings.RenderPolicy,
             GetNode("WorldActorsRoot/PersistentPropsRoot"), GetNode("SystemsRoot/VegetationRoot"));
+        // Shared entrypoint is called by BOTH the base World and the FPS fog adapter.
+        _vegetationVisibility.BindFog(fog);
     }
 
     // =========================================================
@@ -734,6 +741,7 @@ public partial class WorldController : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        _vegetationVisibility?.Release();
         if (IsInstanceValid(_spawnMenu)) _spawnMenu!.CloseRequested -= CloseDebugPanels;
         if (IsInstanceValid(_player) && IsInstanceValid(_stylizedGrass))
             _player.PositionChanged -= _stylizedGrass!.UpdateAnchor;

@@ -9,7 +9,7 @@
 | Clump scale | 0.75–1.15 | Uniform size multiplier on the original ~0.8m grass mesh. |
 | Environment | MinimumNormalY=0.87, EdgeClearance=0.9 | Reject steep terrain; skip any patch root near authored roads/buildings. |
 | GPU wind | WindMultiplier=0.06, WindSpeed=1.1 | Initial shared Environment wind direction/strength scaled for short grass blades. |
-| Streaming | ChunkSize=32m, LOD=28m, RenderDistance=64m | Two imported GLTF detail levels, chunk-owned GPU MultiMeshes. |
+| Streaming | ChunkSize=32m | Two GLTF detail levels; both distances and last-visible cutoff are from the single GV1 fog-linked visibility master. |
 
 To disable new patches, set Enabled=false. Old grass remains OFF in both old masters until explicitly re-enabled. [Full handoff](../README.md). Grass and stylized pine both read `wm_foliage_tint` and `wm_foliage_tint_strength` from **Project Settings → Shader Globals**, not this patch master.
 
@@ -22,8 +22,8 @@ To disable new patches, set Enabled=false. Old grass remains OFF in both old mas
 | Clumps per patch | 12 | **15** |
 | Patch radius | 1.7–3.6 m | **2.1–4.7 m** |
 | Individual size | 0.75–1.15 | **0.85–1.50** |
-| LOD change | 28 m | **32 m** |
-| Render range | 64 m | **80 m** |
+| LOD change | 28 m | **GV1 shared fraction (35% of fog-linked range)** |
+| Render range | 64 m | **GV1 shared fog-driven distance** |
 
 More scattered clumps with slight taller variation and longer-distance coverage. No changes to the saved mesh files, seeded world/chunk layout method, slope/road/structure exclusion logic or native MultiMesh architecture. The exclusion margin scales with clump size, so bigger plants retain extra roadside clearance. These new defaults increase render cost; visual/FPS acceptance required.
 
