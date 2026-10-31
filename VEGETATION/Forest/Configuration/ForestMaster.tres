@@ -26,6 +26,7 @@ ChunkSize = 32
 RenderDistance = 160.0
 LodDistance = 64.0
 DistanceFadeMargin = 8.0
+UseSafePaletteMaterials = true
 NearCastShadows = true
 FarCastShadows = false
 TrunkCollisionEnabled = true

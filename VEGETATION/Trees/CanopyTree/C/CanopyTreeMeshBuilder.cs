@@ -96,6 +96,10 @@ public static class CanopyTreeMeshBuilder
         }
         var mesh = new ArrayMesh();
         bark.Commit(mesh); foliage.Commit(mesh);
+        // Explicit post-commit binding: the two surfaces MUST retain different materials
+        // when reused by MultiMesh, regardless of SurfaceTool's material state.
+        mesh.SurfaceSetMaterial(0, barkMaterial);
+        mesh.SurfaceSetMaterial(1, leafMaterial);
         return mesh;
     }
 

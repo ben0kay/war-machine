@@ -14,6 +14,8 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private Node3D _player = null!;
     private Rect2 _area;
     private Mesh[] _near = System.Array.Empty<Mesh>(), _far = System.Array.Empty<Mesh>();
+    private StandardMaterial3D? _safeLeafMaterial;
+    private Color _baseLeafColor;
     private readonly Dictionary<Vector2I, List<Tree>> _layout = new();
     private readonly Dictionary<Vector2I, Chunk> _chunks = new();
     private readonly List<(Vector2 Point, float Gap)> _accepted = new();
@@ -48,16 +50,41 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         SetProcess(false); SetPhysicsProcess(false);
         var art = (CanopyTreeSettings)GD.Load<CanopyTreeSettings>(
             "res://VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeMaster.tres").Duplicate(true);
-        // DF2 colour safety: retain authored per-face vertex shades, with explicit fallback
-        // palettes if the instanced renderer supplies default white vertex colour.
-        var bark = new ShaderMaterial {
-            Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyBark.gdshader")
-        };
-        bark.SetShaderParameter("bark_fallback_color", art.BarkColor);
-        var foliage = new ShaderMaterial {
-            Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyFoliage.gdshader")
-        };
-        foliage.SetShaderParameter("leaf_fallback_color", art.LeafColor);
+        // DF2 white-tree recovery: a known-good native palette is the default until we
+        // can verify the custom shaders on the player's GPU. Do not let shader errors
+        // silently display white bark/leaves again.
+        Material bark, foliage;
+        _safeLeafMaterial = null;
+        _baseLeafColor = art.LeafColor.Lerp(art.LeafAccentColor, 0.35f);
+        if (_settings.UseSafePaletteMaterials)
+        {
+            bark = new StandardMaterial3D {
+                AlbedoColor = art.BarkColor.Lerp(art.BarkScarColor, 0.13f),
+                VertexColorUseAsAlbedo = false, Roughness = 1f
+            };
+            _safeLeafMaterial = new StandardMaterial3D {
+                AlbedoColor = _baseLeafColor,
+                VertexColorUseAsAlbedo = false, Roughness = 0.95f,
+                CullMode = BaseMaterial3D.CullModeEnum.Disabled
+            };
+            foliage = _safeLeafMaterial;
+            // One initial palette read, never polling RenderingServer in gameplay.
+            ApplySharedTint(
+                RenderingServer.GlobalShaderParameterGet("wm_foliage_tint").AsColor(),
+                RenderingServer.GlobalShaderParameterGet("wm_foliage_tint_strength").AsSingle());
+        }
+        else
+        {
+            var shaderBark = new ShaderMaterial {
+                Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyBark.gdshader")
+            };
+            shaderBark.SetShaderParameter("bark_fallback_color", art.BarkColor);
+            var shaderFoliage = new ShaderMaterial {
+                Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyFoliage.gdshader")
+            };
+            shaderFoliage.SetShaderParameter("leaf_fallback_color", art.LeafColor);
+            bark = shaderBark; foliage = shaderFoliage;
+        }
         _near = new Mesh[6]; _far = new Mesh[6];
         for (int i = 0; i < 3; i++)
         {
@@ -65,10 +92,46 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             _far[i] = CanopyTreeMeshBuilder.Create(art, i, bark, foliage, true);
             _near[i + 3] = _far[i]; _far[i + 3] = _far[i];
         }
+        // One log at startup, not per chunk: proves whether both surface materials exist.
+        LogMaterialCheck((ArrayMesh)_near[0]);
         BuildLayout();
         _terrain.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
         _ready = true;
         UpdateAnchor(_player.GlobalPosition);
+    }
+
+    // =========================================================
+    // Safe-mode palette follows the same F1 global tint controls used by stylized grass and pines.
+    // Native StandardMaterial3D cannot read a shader global directly; update one shared material.
+    public void ApplySharedTint(Color tint, float strength)
+    {
+        if (_safeLeafMaterial == null) return;
+        float luma = _baseLeafColor.R * 0.2126f + _baseLeafColor.G * 0.7152f + _baseLeafColor.B * 0.0722f;
+        float target = Mathf.Max(0.05f, tint.R * 0.2126f + tint.G * 0.7152f + tint.B * 0.0722f);
+        float ratio = luma / target;
+        var matched = new Color(Mathf.Clamp(tint.R * ratio, 0f, 1f),
+            Mathf.Clamp(tint.G * ratio, 0f, 1f),
+            Mathf.Clamp(tint.B * ratio, 0f, 1f), 1f);
+        _safeLeafMaterial.AlbedoColor = _baseLeafColor.Lerp(matched, Mathf.Clamp(strength * 0.85f, 0f, 1f));
+    }
+
+    // =========================================================
+    // Material diagnostics to distinguish missing shader/surface bindings from art colour.
+    private void LogMaterialCheck(ArrayMesh mesh)
+    {
+        if (mesh.GetSurfaceCount() != 2)
+        {
+            GD.PushError($"DF2 COLOR CHECK: expected 2 surfaces, got {mesh.GetSurfaceCount()}.");
+            return;
+        }
+        var bark = mesh.SurfaceGetMaterial(0);
+        var leaves = mesh.SurfaceGetMaterial(1);
+        string mode = _settings.UseSafePaletteMaterials ? "SAFE" : "SHADER";
+        GD.Print($"DF2 COLOR CHECK [{mode}]: bark={bark?.GetType().Name ?? "MISSING"}, " +
+            $"leaves={leaves?.GetType().Name ?? "MISSING"}, " +
+            $"base leaf={_baseLeafColor}, chunks remain deterministic.");
+        if (bark == null || leaves == null)
+            GD.PushError("DF2 COLOR CHECK: surface material missing; check CanopyTreeMeshBuilder.Create.");
     }
 
     // =========================================================
@@ -288,6 +351,8 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // Existing top-down CameraOcclusion provider fades crowns; FPS intentionally retains full foliage.
     public void CollectObstructions(Vector3 from, Vector3 to, float radius, HashSet<ICameraFadeTarget> results)
     {
+        // StandardMaterial3D has no per-instance dither hook; do not perform wasted fade work.
+        if (_settings.UseSafePaletteMaterials) return;
         foreach (var chunk in _chunks.Values)
         {
             if (!chunk.HasBounds || !CameraOcclusionMath.Intersects(from, to, chunk.Bounds, radius)) continue;
