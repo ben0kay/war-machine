@@ -87,3 +87,7 @@ Only if requested: transient recoil-induced bloom for sustained automatic fire, 
 ## Relation to RC0 (2026-10-28)
 
 The separate [RC0 recoil state](RECOIL_IMPLEMENTATION_PLAN.md) is now implemented in source, awaiting local build validation. Its accumulated angles and accepted-shot impulse are **not** ACC0 randomized dispersion, and RC0 intentionally has no camera adapter opt-in yet. `ShotSpread.Apply` remains unchanged and will run once **after** the recoil-adjusted direction when RC1/RC2 become active. ACC1 movement/crouch and ACC2 optional bloom remain planned independently.
+
+## FPS hip-fire spread size and radial shape (2026-10-31)
+
+**Implemented in source; local validation pending.** Rifle FPS hip-fire is now 0.85° maximum half-angle (0.30° shared base + 0.55° FPS extra); ADS stays at 0.30°. A new optional exponent in the **same** `ShotSpread.Apply` radial sample is **0.40** for rifle hip shots, versus the original uniform disk 0.50 for ADS/top-down and all otherwise unspecified weapons. This makes central impacts less common without adding another random mechanism. MG keeps its original 0.95° hip / 0.75° ADS and 0.50 radial distribution. This is **not ACC1** player movement/crouch accuracy; that phase remains planned and should not duplicate the FPS hip radial algorithm.

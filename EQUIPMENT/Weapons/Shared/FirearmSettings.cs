@@ -27,6 +27,9 @@ public partial class FirearmSettings : Resource
     [ExportGroup("FPS hip-fire accuracy")]
     // Extra angular spread while shooting without ADS in FPS. Zero preserves the original base spread.
     [Export(PropertyHint.Range, "0,2,0.05,suffix:°")] public float FpsHipFireExtraSpreadDegrees { get; set; }
+    // Radial probability shape (not a second random deviation): 0.50 = uniform area,
+    // lower values favour the outer spread cone. ADS/top-down always retain 0.50.
+    [Export(PropertyHint.Range, "0.2,0.5,0.01")] public float FpsHipFireSpreadRadialExponent { get; set; } = 0.5f;
     [ExportGroup("Gameplay recoil (RC0)")]
     // These values are independent of per-shot random BaseSpreadDegrees.
     [Export(PropertyHint.Range, "0,15,0.05")] public float RecoilPitchPerShotDegrees { get; set; }

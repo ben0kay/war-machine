@@ -88,3 +88,11 @@ Optional `FirearmSettings.ShotEmission` adds shared sound loudness and hearing r
 ## AM1 selection-to-HUD event (2026-10-28)
 
 AM1 attaches the ammo HUD to `WeaponSlots.SelectionChanged` rather than handling scene/camera input in firearm logic. Each selected gun's AM0 events (`AmmoChanged`, `ReloadStarted`, `ReloadCompleted`, `ReloadCancelled`) refresh a read-only `UI/GameplayHUD/Ammo/AmmoHud`. It shows the real magazine and `∞`/finite reserve. There is no duplicated ammo state, hot-path HUD polling, or damage/recoil change. See [AMMO_IMPLEMENTATION_PLAN.md](../AMMO_IMPLEMENTATION_PLAN.md). Awaiting local build and visual checks.
+
+## FPS hip-fire radial spread bias (2026-10-31)
+
+**Source implemented; local build and gameplay validation pending.** The existing `ShotSpread.Apply` still samples a single random bullet direction inside the same maximum angular cone. The radial function has an optional, bounded `radialExponent` (default **0.50**), replacing `sqrt(random)` with `pow(random, exponent)`. An exponent of 0.50 preserves the original uniform-area distribution; **lower values favour positions farther from the centre**, but any point in the cone remains possible. This is a **power-law radial bias**, not extra random noise, a second dispersion pass or cumulative travel-time error.
+
+The FPS hip-fire adapter may pass `FirearmSettings.FpsHipFireSpreadRadialExponent`. ADS and original shared/top-down calls always pass 0.50, preserving their existing probabilities. No new rays, timers or per-frame polling; the only additional cost is a single `Mathf.Pow` calculation on accepted shots.
+
+With the rifle's authored **0.40** hip exponent, the probability of a hit in the central **50% of the maximum spread radius** changes from **25%** (old 0.50 exponent) to approximately **17.7%**; an otherwise zero-spread gun still fires perfectly accurately. Muzzle obstruction, hit dispatch, recoil, tracer end position and damage are untouched.

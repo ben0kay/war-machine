@@ -322,7 +322,8 @@ public partial class FirstPersonWeapon : Node
                 // FPS camera recoil already affects aim; hip fire adds only random spread,
                 // never a second recoil rotation. ADS retains the original base spread.
                 float extraSpread = _adsActive ? 0f : _weapon!.RuntimeSettings.FpsHipFireExtraSpreadDegrees;
-                _weapon.TryFire(aim, origin, extraSpread);
+                float radialExponent = _adsActive ? 0.5f : _weapon.RuntimeSettings.FpsHipFireSpreadRadialExponent;
+                _weapon.TryFire(aim, origin, extraSpread, radialExponent);
             }
         }
         if (_melee?.IsAttacking == true)

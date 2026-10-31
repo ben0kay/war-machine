@@ -61,22 +61,23 @@ public partial class FirearmController : Node3D
     // =========================================================
     // Caller supplies aim and shoulder/probe origin during physics, independent of movement/input implementation.
     public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin)
-    { return TryFire(aimPoint, probeOrigin, Vector3.Zero, 0f); }
+    { return TryFire(aimPoint, probeOrigin, Vector3.Zero, 0f, 0.5f); }
 
     // =========================================================
     // FPS-only hip-fire inaccuracy uses the same random-spread sample as ordinary shots.
     // Shared/top-down callers keep their original base spread by using the other overloads.
-    public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, float extraSpreadDegrees)
-    { return TryFire(aimPoint, probeOrigin, Vector3.Zero, extraSpreadDegrees); }
+    public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, float extraSpreadDegrees, float radialExponent = 0.5f)
+    { return TryFire(aimPoint, probeOrigin, Vector3.Zero, extraSpreadDegrees, radialExponent); }
 
     // =========================================================
     // Third argument is camera-space up for RC1/RC2 real 3D shot climb; legacy calls remain unchanged.
     public bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp)
-    { return TryFire(aimPoint, probeOrigin, recoilScreenUp, 0f); }
+    { return TryFire(aimPoint, probeOrigin, recoilScreenUp, 0f, 0.5f); }
 
     // =========================================================
-    // One common firing pipeline, with an optional additive spread angle for view-specific handling.
-    private bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp, float extraSpreadDegrees)
+    // One common firing pipeline; view-specific callers can change spread size and radial bias.
+    private bool TryFire(Vector3 aimPoint, Vector3 probeOrigin, Vector3 recoilScreenUp,
+        float extraSpreadDegrees, float radialExponent)
     {
         if (!_equipped || !IsInstanceValid(_holder) || Muzzle == null || !_cooldown.IsStopped()) return false;
         if (!_ammo.CanShoot)
@@ -93,7 +94,7 @@ public partial class FirearmController : Node3D
         // One sample determines both the real hit ray and the tracer endpoint.
         direction = _recoil.Apply(direction, recoilScreenUp);
         float extra = float.IsFinite(extraSpreadDegrees) ? Mathf.Clamp(extraSpreadDegrees, 0f, 10f) : 0f;
-        direction = ShotSpread.Apply(direction, RuntimeSettings.BaseSpreadDegrees + extra, _shotRandom);
+        direction = ShotSpread.Apply(direction, RuntimeSettings.BaseSpreadDegrees + extra, _shotRandom, radialExponent);
         if (_anatomyVersion != AnatomyHitboxes.RegistryVersion)
         {
             AnatomyHitboxes.ConfigureShotQuery(_query, _holder!);
