@@ -66,3 +66,16 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 - Perform a **ground-floor corridor sweep + entrance eye-height seam inspection + basement walk + exterior perimeter walk** after any terrain/building alignment change. Verify collision separately (e.g. Debug → Visible Collision Shapes). C# source checks alone are not visual or runtime acceptance.
 
 **Validation status:** owner screenshot confirms the original overlap/gap and that stairs appear good; the V2 fix has been committed in source only and awaits Godot compilation, rendering and physics checks.
+
+
+## LL003 — Uniform concrete values concealed stairs and ceiling boundaries (2026-10-31)
+
+**Observed:** Owner-supplied first-person screenshots of PoliceStation001 (particularly its basement U-stair) showed dark, hard-to-see step depth and a nearly monochrome junction of floor, wall and ceiling. The stair geometry itself was reported walkable. This is a separate issue from LL002's coplanar Terrain3D/building floor flicker.
+
+**Confirmed source cause:** `PoliceStationMesh.Build()` originally used the same `PoliceStationSettings.Concrete` colour for all finished ground and upper decks and passed it to `BuildBasement` for both basement walls and floor; the initial stair-tread value was the same colour as that concrete. Each `StructureGeometry.Box` uses one material for all six faces, so the slab underside (ceiling) inherited the floor appearance. Limited indirect/stairwell light makes already-close values appear flatter.
+
+**Correction in source (visual/runtime acceptance pending):** Add separate exported `FloorSurface`, `BasementFloor`, `CeilingSurface` and muted dark-blue `StairEdgeStrips` materials, keeping higher-value walls and contrasting tread/riser colours. Add noncolliding ceiling underside visual panels offset away from structural slabs and split exactly around both U-stair shafts, assigned to their **owning upper floor slab / ground slab / roof visual role**. Give each of the two upstairs and two basement flights a 6cm blue visual nosing strip per tread, offset above the tread top; keep all existing step mesh dimensions, ramp/railing collision, guardrails and landing geometry unchanged. No extra lights or runtime processing are introduced in this pass.
+
+**Prevent recurrence:** Before authoring or approving any stairs or basement, inspect the material **value hierarchy** from standing and descending FPS camera height. Flat procedural primitives need intentional surface separation, not only a uniformly believable architectural colour. Visual underside overlays must never cover a real stair opening, share a coplanar surface, create duplicate colliders or break floor/roof preview/fading ownership. Nosing is a surface cue, not a physics step or obstacle. Keep colour choices editable in the building master resource. Validate in local Godot—source-level review alone cannot prove visual legibility or lighting.
+
+**Validation status:** original screenshot and material-reuse cause confirmed; new visual pass source-implemented and awaits local Godot C# build, camera/stair walkthrough and Z-fighting inspection.

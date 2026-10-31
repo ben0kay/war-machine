@@ -113,11 +113,17 @@ public partial class PoliceStationMesh : Node3D
         var partitions = StructureGeometry.Paint(s.Partitions);
         var trim = StructureGeometry.Paint(s.Frames, 0.10f);
         var glass = StructureGeometry.Paint(s.WindowGlass, 0.15f);
-        var floorMat = StructureGeometry.Paint(s.Concrete);
+        // Finished faces have distinct values; concrete walls, floors and ceilings
+        // must not all share the same grey when seen in a dim stairwell.
+        var basementWallMat = StructureGeometry.Paint(s.Concrete);
+        var floorMat = StructureGeometry.Paint(s.FloorSurface);
+        var basementFloorMat = StructureGeometry.Paint(s.BasementFloor);
+        var ceilingMat = StructureGeometry.Paint(s.CeilingSurface);
         var roofMat = StructureGeometry.Paint(s.Roof, 0.08f);
         var doors = StructureGeometry.Paint(s.DoorPanels);
         var step = StructureGeometry.Paint(s.StairTreads);
         var riser = StructureGeometry.Paint(s.StairRisers);
+        var edge = StructureGeometry.Paint(s.StairEdgeStrips);
 
         var generated = StructureGeometry.Group(this, "Generated");
         float occupiedBottom = s.BasementEnabled ? -basementDrop - 0.4f : -0.4f;
@@ -191,13 +197,21 @@ public partial class PoliceStationMesh : Node3D
         float upperPartitionTop = top - wallDeckGap;
         BuildExterior(upperWalls, upperBody, clear, "U", h0, top, false, shell, trim, glass, doors);
         BuildUpperRooms(upperWalls, upperBody, clear, h0, upperPartitionTop, partitions, trim, doors);
-        _ascendingStairs = BuildStairs(generated, upperBody, upperGuards, clear, h0, step, riser, trim);
+        _ascendingStairs = BuildStairs(generated, upperBody, upperGuards, clear, h0, step, riser, trim, edge);
         if (_basementLevel != null)
         {
             var groundGuards = Role(ground, "BasementOpeningGuards", "contents");
             BuildBasement(_basementLevel, groundBody, groundGuards, clear, basementDrop,
-                floorMat, partitions, trim, step, riser, s);
+                basementFloorMat, basementWallMat, partitions, trim, step, riser, edge, s);
         }
+
+        // Thin visual-only underside finishes are owned by the slab ABOVE them:
+        // upper deck = ground ceiling, ground deck = basement ceiling, roof = upper ceiling.
+        // They follow the EXACT shaft cutouts and inherit deck/roof fade and editor preview.
+        BuildCeilingFinish(upperDeck, h0 - deckThickness - 0.045f, ceilingMat, true);
+        if (_basementLevel != null)
+            BuildCeilingFinish(groundDeck, -0.245f, ceilingMat, true);
+        BuildCeilingFinish(_roof, top - 0.045f, ceilingMat, false);
         if (s.CeilingLightsEnabled)
             BuildCeilingFixtures(groundLights, upperLights, h0 - deckThickness, top, s);
 
@@ -545,7 +559,7 @@ public partial class PoliceStationMesh : Node3D
     // A real upper-floor opening plus a smooth sloped collider; individual visible risers do not
     // obstruct CharacterBody3D. The rising flight heads toward +Z, so pitch is negative.
     private static Node3D BuildStairs(Node3D generated, StaticBody3D upperBody, Node3D upperGuards, StructureClearance clear,
-        float rise, Material tread, Material riser, Material rail)
+        float rise, Material tread, Material riser, Material rail, Material edge)
     {
         var stairs = StructureGeometry.Group(generated, "Stairs_0_to_1");
         stairs.SetMeta("connects_floor_from", 0); stairs.SetMeta("connects_floor_to", 1);
@@ -557,13 +571,13 @@ public partial class PoliceStationMesh : Node3D
         // Twelve steps, a full 2.4m U-turn landing, then twelve steps back toward -Z.
         float halfRise = rise * 0.5f;
         StairFlight(visuals, body, "Lower", LowerFlightX, StairSouthZ, StairNorthZ,
-            0f, halfRise, tread, riser, rail);
+            0f, halfRise, tread, riser, rail, edge);
         StructureGeometry.Box(visuals, body, "TurnLanding",
             new((LowerFlightX + UpperFlightX) * 0.5f, halfRise - 0.11f,
                 (StairNorthZ + ShaftMaxZ) * 0.5f),
             new(8.6f, 0.22f, ShaftMaxZ - StairNorthZ), tread);
         StairFlight(visuals, body, "Upper", UpperFlightX, StairNorthZ, StairSouthZ,
-            halfRise, halfRise, tread, riser, rail);
+            halfRise, halfRise, tread, riser, rail, edge);
 
         // The upper landing is now the continuous, collidable StairApproachDeck.
         // No coplanar duplicate slab or shape. Guard the genuine shaft on three sides.
@@ -604,7 +618,7 @@ public partial class PoliceStationMesh : Node3D
     // One cheap smooth slope collider per flight; each of twelve visual treads/risers is noncolliding.
     private static void StairFlight(Node3D visuals, StaticBody3D body, string name,
         float x, float startZ, float endZ, float baseY, float rise,
-        Material tread, Material riser, Material rail)
+        Material tread, Material riser, Material rail, Material edge)
     {
         const int count = 12;
         const float width = 3.2f;
@@ -619,6 +633,11 @@ public partial class PoliceStationMesh : Node3D
             StructureGeometry.Box(visuals, null, name + "Riser",
                 new(x, y - dy * 0.5f, z + (north ? 1f : -1f) * depth * 0.45f),
                 new(width, dy, 0.065f), riser);
+            // Visual-only matte blue tread nosing: 6cm front band, 1mm above the
+            // tread surface to avoid coplanar flicker. Collision remains the same ramp.
+            float edgeZ = z + (north ? 1f : -1f) * (depth * 0.5f - 0.035f);
+            StructureGeometry.Box(visuals, null, name + "EdgeStrip",
+                new(x, y + 0.007f, edgeZ), new(width, 0.012f, 0.06f), edge);
         }
         float pitch = (north ? -1f : 1f) * Mathf.Atan2(rise, run);
         float length = Mathf.Sqrt(run * run + rise * rise);
@@ -645,8 +664,9 @@ public partial class PoliceStationMesh : Node3D
     // The downward first flight uses the OTHER lane (X=15.3) so the original ascending
     // entry at X=11 and every above-ground stair component stay exactly where they are.
     private static void BuildBasement(Node3D basement, StaticBody3D groundBody, Node3D groundGuards,
-        StructureClearance clear, float drop, Material concrete, Material partitions, Material trim,
-        Material tread, Material riser, PoliceStationSettings settings)
+        StructureClearance clear, float drop, Material basementFloor, Material basementWall,
+        Material partitions, Material trim, Material tread, Material riser, Material edge,
+        PoliceStationSettings settings)
     {
         float floorY = -drop, wallTop = -0.22f;
         var body = StructureGeometry.Body(basement);
@@ -658,17 +678,17 @@ public partial class PoliceStationMesh : Node3D
         // meets the underside of the EXISTING ground deck with a 2cm partition gap.
         StructureGeometry.Box(deck, body, "BasementSlab",
             new(0f, floorY - 0.12f, (BasementRearZ + BasementFrontZ) * 0.5f),
-            new(Width - 0.24f, 0.24f, BasementFrontZ - BasementRearZ - 0.24f), concrete);
+            new(Width - 0.24f, 0.24f, BasementFrontZ - BasementRearZ - 0.24f), basementFloor);
         const float xOuter = Width * 0.5f - ExteriorInsideFace;
         float zBack = BasementRearZ + ExteriorInsideFace, zFront = BasementFrontZ - ExteriorInsideFace;
         StructureGeometry.WallZ(WallGroup(walls, "BasementWestWall"), body, "BasementWest",
-            -xOuter, zBack, zFront, floorY, wallTop, concrete);
+            -xOuter, zBack, zFront, floorY, wallTop, basementWall);
         StructureGeometry.WallZ(WallGroup(walls, "BasementEastWall"), body, "BasementEast",
-            xOuter, zBack, zFront, floorY, wallTop, concrete);
+            xOuter, zBack, zFront, floorY, wallTop, basementWall);
         StructureGeometry.WallX(WallGroup(walls, "BasementRearWall"), body, "BasementRear",
-            -xOuter, xOuter, zBack, floorY, wallTop, concrete);
+            -xOuter, xOuter, zBack, floorY, wallTop, basementWall);
         StructureGeometry.WallX(WallGroup(walls, "BasementFrontWall"), body, "BasementFront",
-            -xOuter, xOuter, zFront, floorY, wallTop, concrete);
+            -xOuter, xOuter, zFront, floorY, wallTop, basementWall);
 
         // One secure back room and one west utility room provide recognizable basement
         // zones without furniture or alterations to the rooms directly overhead.
@@ -703,13 +723,13 @@ public partial class PoliceStationMesh : Node3D
         // across the 2.4m landing, then X=11 descends south to the basement floor.
         // Existing above-ground flights remain 4m+ overhead at corresponding positions.
         StairFlight(stairVisuals, stairBody, "BasementDownFirst", UpperFlightX,
-            StairSouthZ, StairNorthZ, 0f, halfDrop, tread, riser, trim);
+            StairSouthZ, StairNorthZ, 0f, halfDrop, tread, riser, trim, edge);
         StructureGeometry.Box(stairVisuals, stairBody, "BasementTurnLanding",
             new((LowerFlightX + UpperFlightX) * 0.5f, halfDrop - 0.11f,
                 (StairNorthZ + ShaftMaxZ) * 0.5f),
             new(8.6f, 0.22f, ShaftMaxZ - StairNorthZ), tread);
         StairFlight(stairVisuals, stairBody, "BasementDownReturn", LowerFlightX,
-            StairNorthZ, StairSouthZ, halfDrop, halfDrop, tread, riser, trim);
+            StairNorthZ, StairSouthZ, halfDrop, halfDrop, tread, riser, trim, edge);
 
         // The ground deck is cut ONLY over the true stair aperture. Guard its rim,
         // with separate full-width exits for BOTH the original upward and new downward
@@ -883,6 +903,31 @@ public partial class PoliceStationMesh : Node3D
     }
 
     // =========================================================
+    // =========================================================
+    // Apply a bright, visual-only underside finish under an existing collidable slab
+    // or roof. The 3cm finish is separated from the parent surface to prevent
+    // z-fighting. Split around the same stair shaft as the owning slab.
+    private static void BuildCeilingFinish(Node3D owner, float y, Material material, bool openShaft)
+    {
+        const float thickness = 0.03f;
+        const float inset = ExteriorInsideFace;
+        if (!openShaft)
+        {
+            FloorSpan(owner, null, "CeilingFinish", -Width * 0.5f + inset, Width * 0.5f - inset,
+                -Depth * 0.5f + inset, Depth * 0.5f - inset, y, thickness, material);
+            return;
+        }
+
+        FloorSpan(owner, null, "CeilingWest", -Width * 0.5f + inset, ShaftMinX,
+            -Depth * 0.5f + inset, Depth * 0.5f - inset, y, thickness, material);
+        FloorSpan(owner, null, "CeilingEast", ShaftMaxX, Width * 0.5f - inset,
+            -Depth * 0.5f + inset, Depth * 0.5f - inset, y, thickness, material);
+        FloorSpan(owner, null, "CeilingSouth", ShaftMinX, ShaftMaxX,
+            -Depth * 0.5f + inset, StairSouthZ, y, thickness, material);
+        FloorSpan(owner, null, "CeilingNorth", ShaftMinX, ShaftMaxX,
+            ShaftMaxZ, Depth * 0.5f - inset, y, thickness, material);
+    }
+
     private static void FloorSpan(Node3D visuals, StaticBody3D? body, string name,
         float minX, float maxX, float minZ, float maxZ, float y, float thickness, Material material)
     {

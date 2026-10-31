@@ -23,12 +23,18 @@ public partial class PoliceStationSettings : StructureSettings
 
     [ExportGroup("Shell appearance")]
     [Export] public Color Exterior { get; set; } = new(0.58f, 0.62f, 0.64f);
-    [Export] public Color Partitions { get; set; } = new(0.75f, 0.76f, 0.73f);
-    [Export] public Color Frames { get; set; } = new(0.22f, 0.27f, 0.31f);
+    [Export] public Color Partitions { get; set; } = new(0.75f, 0.77f, 0.77f);
+    [Export] public Color Frames { get; set; } = new(0.18f, 0.24f, 0.30f);
     [Export] public Color WindowGlass { get; set; } = new(0.24f, 0.37f, 0.42f);
-    [Export] public Color Concrete { get; set; } = new(0.49f, 0.51f, 0.51f);
+    // Basement wall concrete is deliberately lighter than either finished floor.
+    [Export] public Color Concrete { get; set; } = new(0.65f, 0.69f, 0.71f);
+    [Export] public Color FloorSurface { get; set; } = new(0.38f, 0.43f, 0.45f);
+    [Export] public Color BasementFloor { get; set; } = new(0.33f, 0.38f, 0.41f);
+    [Export] public Color CeilingSurface { get; set; } = new(0.84f, 0.86f, 0.86f);
     [Export] public Color Roof { get; set; } = new(0.31f, 0.35f, 0.37f);
     [Export] public Color DoorPanels { get; set; } = new(0.31f, 0.36f, 0.40f);
-    [Export] public Color StairTreads { get; set; } = new(0.49f, 0.51f, 0.51f);
-    [Export] public Color StairRisers { get; set; } = new(0.36f, 0.39f, 0.40f);
+    [Export] public Color StairTreads { get; set; } = new(0.25f, 0.30f, 0.33f);
+    [Export] public Color StairRisers { get; set; } = new(0.51f, 0.56f, 0.58f);
+    // Plain muted navy-blue safety nosing (not yellow or emissive).
+    [Export] public Color StairEdgeStrips { get; set; } = new(0.20f, 0.35f, 0.51f);
 }

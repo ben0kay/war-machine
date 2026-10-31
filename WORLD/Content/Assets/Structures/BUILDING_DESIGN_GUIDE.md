@@ -49,6 +49,12 @@ The station was intended to be an early structural stress test, but it exposed r
 
 ## Original shell-and-circulation requirements (retained from the former mixed guide)
 
+## FPS surface readability — PS1.6 material contrast rule (2026-10-31)
+
+When a procedural building uses flat-shaded box meshes, **do not give the floor, underside of slab (ceiling), wall and stair treads nearly the same colour/value**. It can conceal tread depth and floor boundaries even when the collision meshes are correct. Use a deliberate hierarchy: ceiling brightest, walls lighter than floors, finished floors darker, stair treads clearly distinct from paler risers, and a thin coloured step nose on every tread. PoliceStation001 uses **muted dark blue** as an understated nosing accent, not hazard-yellow or emissive stripes.
+
+Prefer **separate configurable material colours** to scattering constants in procedural mesh code. For a box slab where one material covers every face, place an **underside-only, visual-only finish** a small distance below the original physical slab rather than changing the upper walking surface or adding another collider. The underside finish must match all existing **shaft holes**, must inherit the correct upper-deck/roof visual ownership, and must not obstruct light fixtures, stairs or headroom. Likewise, step-edge strips should sit just above the tread, be *visual only*, and leave the existing tread/ramp collider completely untouched. Check from a **descending FPS player's eye height**, not only the overhead editor preview. See PoliceStation001 PS1.6 and root LessonsLearned LL003.
+
 ## Mandatory collision-free shell checks — stair approaches and window junctions (PS1 correction)
 
 **Hard rules for every future building, including editor-preview-only prefabs, not optional decoration advice.** The police-station PS1 visual review exposed two authoring failures: a stair flight/railing obstructed its own entrance and an internal partition met an exterior window instead of a solid pier. These **must be prevented before furnishing**.
