@@ -43,6 +43,21 @@ public sealed class VegetationVisibilityPolicy
     public bool IsFogDriven => _fog != null && _fog.FullyOpaque;
 
     // =========================================================
+    // F1 LOD tuning modifies the TWO shared LOD splits, not the common fog-linked
+    // disappearance distance. Notify existing vegetation listeners only on commit.
+    public void SetLodFractions(float lod0Fraction, float lod1Fraction)
+    {
+        float lod0 = Mathf.Clamp(lod0Fraction, 0.15f, 0.6f);
+        float lod1 = Mathf.Clamp(lod1Fraction, Mathf.Max(0.45f, lod0 + 0.1f), 0.9f);
+        if (Mathf.IsEqualApprox(Settings.Lod0EndFraction, lod0)
+            && Mathf.IsEqualApprox(Settings.Lod1EndFraction, lod1)) return;
+        Settings.Lod0EndFraction = lod0;
+        Settings.Lod1EndFraction = lod1;
+        Changed?.Invoke();
+        GD.Print($"GV1 shared LOD tuning: LOD0→1 {Lod0End:0}m, LOD1→2 {Lod1End:0}m, far {RenderDistance:0}m.");
+    }
+
+    // =========================================================
     // Updating the fog slider changes render ranges + streaming residency in all three systems.
     private void OnFogApplied()
     {

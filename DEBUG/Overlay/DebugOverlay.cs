@@ -307,6 +307,7 @@ public partial class DebugOverlay : PanelContainer
             value => pines.Settings.Density = value, pines.ApplySettings);
         AddDeferredSlider(rows, "Pine size multiplier", 0.5, 1.5, 0.05, pines.Settings.HeightMultiplier,
             value => pines.Settings.HeightMultiplier = value, pines.ApplySettings);
+        AddSharedLodSliders(rows, pines.Visibility);
         AddBoundSlider(rows, "Pine wind", 0, 1, 0.05, pines.Settings.LeafWindStrength,
             value => { pines.Settings.LeafWindStrength = value; pines.ApplyWind(); });
         if (visionDebug != null)
@@ -399,6 +400,44 @@ public partial class DebugOverlay : PanelContainer
     }
 
     // =========================================================
+    // Two linked percentages preserve one shared LOD policy and minimum 10% spacing.
+    // Only drag release notifies tree/grass chunk controllers; dragging itself is UI-only.
+    private void AddSharedLodSliders(VBoxContainer rows, VegetationVisibilityPolicy visibility)
+    {
+        rows.AddChild(new Label { Text = "LOD splits — shared with DF2 and grass; release to apply" });
+        var firstLabel = new Label();
+        rows.AddChild(firstLabel);
+        var first = AddSlider(rows, 15, 60, 1);
+        first.Scrollable = false;
+        first.SetValueNoSignal(Mathf.Clamp(visibility.Settings.Lod0EndFraction, 0.15f, 0.6f) * 100f);
+        var secondLabel = new Label();
+        rows.AddChild(secondLabel);
+        var second = AddSlider(rows, 45, 90, 1);
+        second.Scrollable = false;
+        second.SetValueNoSignal(Mathf.Clamp(visibility.Settings.Lod1EndFraction, 0.45f, 0.9f) * 100f);
+        Action preview = () =>
+        {
+            firstLabel.Text = $"LOD0 → LOD1: {first.Value:0}% of global distance";
+            secondLabel.Text = $"LOD1 → LOD2: {second.Value:0}% of global distance";
+        };
+        Action commit = () => {
+            visibility.SetLodFractions((float)first.Value / 100f, (float)second.Value / 100f);
+            _copy.Text = "Copy settings";
+        };
+        first.ValueChanged += value => {
+            if (second.Value < value + 10) second.SetValueNoSignal(Mathf.Min(90f, (float)value + 10f));
+            preview();
+        };
+        second.ValueChanged += value => {
+            if (first.Value > value - 10) first.SetValueNoSignal(Mathf.Max(15f, (float)value - 10f));
+            preview();
+        };
+        first.DragEnded += changed => { if (changed) commit(); };
+        second.DragEnded += changed => { if (changed) commit(); };
+        preview();
+    }
+
+    // =========================================================
     // Sky3D owns the clock; its existing signal keeps the hour slider current during an unpaused day.
     private void OnTimeChanged(float hour)
     {
@@ -474,6 +513,8 @@ public partial class DebugOverlay : PanelContainer
             ["VegetationRenderDistance"] = _pines.Visibility.RenderDistance,
             ["VegetationLod0End"] = _pines.Visibility.Lod0End,
             ["VegetationLod1End"] = _pines.Visibility.Lod1End,
+            ["VegetationLod0EndFraction"] = _pines.Visibility.Settings.Lod0EndFraction,
+            ["VegetationLod1EndFraction"] = _pines.Visibility.Settings.Lod1EndFraction,
             ["VegetationFogDriven"] = _pines.Visibility.IsFogDriven,
             ["PineEnabled"] = _pines.Settings.Enabled,
             ["PineDensity"] = _pines.Settings.Density,

@@ -368,25 +368,25 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
             float averageHeight = 0;
             foreach (var transform in bins[i]) averageHeight += transform.Origin.Y;
             var anchor = new Vector3((key.X + 0.5f) * _chunkSize, averageHeight / bins[i].Count, (key.Y + 0.5f) * _chunkSize);
-            // The imported three-level pine now fades between LODs instead of snapping.
-            // Keep culling and range centres identical for all three mesh variants.
-            bool fade = _usingStylizedPine && hasLod && hasThird;
-            Aabb sharedBounds = fade ? BuildLodBounds(i, bins[i], anchor) : default;
+            // Keep matched culling/range centres for the imported three-level pine, but
+            // use opaque, non-blended LOD switching (the native Self alpha-fade ghosted).
+            bool matchedBounds = _usingStylizedPine && hasLod && hasThird;
+            Aabb sharedBounds = matchedBounds ? BuildLodBounds(i, bins[i], anchor) : default;
             var near = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Near", _meshes[i], bins[i], anchor,
-                0, hasLod ? nearCut : distance, margin, Settings.CastShadows, fade, sharedBounds);
+                0, hasLod ? nearCut : distance, margin, Settings.CastShadows, matchedBounds, sharedBounds);
             chunk.Nodes.Add(near);
             MultiMeshInstance3D? far = null, third = null;
             if (hasLod)
             {
                 far = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_{(hasThird ? "Mid" : "Far")}", _farMeshes[i], bins[i],
                     anchor, nearCut, hasThird ? midCut : distance, margin,
-                    Settings.CastShadows && Settings.FarCastShadows, fade, sharedBounds);
+                    Settings.CastShadows && Settings.FarCastShadows, matchedBounds, sharedBounds);
                 chunk.Nodes.Add(far);
             }
             if (hasThird)
             {
                 third = CreateBatch($"Pine_{key.X}_{key.Y}_{i}_Far", _thirdMeshes[i], bins[i],
-                    anchor, midCut, distance, margin, false, fade, sharedBounds);
+                    anchor, midCut, distance, margin, false, matchedBounds, sharedBounds);
                 chunk.Nodes.Add(third);
             }
             // Both generated foliage and our imported GLB adapter share per-instance canopy fade data.
@@ -454,9 +454,10 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
-    // Native Forward+ alpha fades between stylized pine LOD batches, no per-frame C#.
+    // Native renderer switches opaque LOD levels with hysteresis; shared bounds avoid
+    // mismatched culling between the three imported meshes. No transparent crossfade.
     private MultiMeshInstance3D CreateBatch(string name, Mesh mesh, List<Transform3D> transforms,
-        Vector3 anchor, float begin, float end, float margin, bool shadows, bool fade, Aabb sharedBounds)
+        Vector3 anchor, float begin, float end, float margin, bool shadows, bool matchedBounds, Aabb sharedBounds)
     {
         var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = true, Mesh = mesh };
         multi.InstanceCount = transforms.Count;
@@ -469,11 +470,10 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         var node = new MultiMeshInstance3D
         {
             Name = name, Position = anchor, Multimesh = multi, ExtraCullMargin = 1f,
-            CustomAabb = fade ? sharedBounds : default,
+            CustomAabb = matchedBounds ? sharedBounds : default,
             VisibilityRangeBegin = begin, VisibilityRangeEnd = end,
             VisibilityRangeBeginMargin = begin > 0 ? margin : 0, VisibilityRangeEndMargin = margin,
-            VisibilityRangeFadeMode = fade ? GeometryInstance3D.VisibilityRangeFadeModeEnum.Self
-                : GeometryInstance3D.VisibilityRangeFadeModeEnum.Disabled,
+            VisibilityRangeFadeMode = GeometryInstance3D.VisibilityRangeFadeModeEnum.Disabled,
             CastShadow = shadows ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off
         };
         node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, end);
