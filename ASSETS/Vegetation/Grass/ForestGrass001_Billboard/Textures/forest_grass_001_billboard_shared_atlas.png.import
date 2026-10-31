@@ -16,7 +16,7 @@ dest_files=["res://.godot/imported/forest_grass_001_billboard_shared_atlas.png-8
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -25,6 +25,8 @@ compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=true
+mipmaps/preserve_alpha_test_coverage=true
+mipmaps/alpha_test_threshold=0.5
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

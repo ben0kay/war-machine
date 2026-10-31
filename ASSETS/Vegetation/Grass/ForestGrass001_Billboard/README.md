@@ -33,3 +33,30 @@ Built by `build_forest_grass_billboard.py` included at the ZIP root. All glTF bu
 ## Current War Machine usage (STG3)
 
 Enabled by `VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres` as variable-sized, irregular **high-density patches** alongside the unchanged original stylized grass (STG3B replaces STG3's dispersed cells). Its three variant meshes use this folder's shared `ForestGrass001BillboardWind.tres` and the project-global foliage tint; no original grass mesh/atlas is overwritten. Patch density, footprint radius, member count, individual size, occasional extra tilt, slope and exclusion clearance are tuned independently, while disappearance distance follows the single global fog/vegetation visibility policy. Source integration awaiting local Godot/visual/FPS acceptance.
+
+## BGR1 — root/tip colour and thin-edge import recovery (2026-10-31)
+
+**Source change; local Godot visual acceptance required.** The A/B/C billboard glTF meshes, UVs,
+single shared atlas PNG, deterministic placement, wind, fog/LOD rules and collision are untouched.
+The authored source atlas already contains relatively bright lower blades and near-black narrow tips,
+so flipping UVs would be incorrect. The existing shared billboard shader now uses local pre-wind
+vertex height to darken lower blades (`root_darkening=0.52`) and apply a small green-tinted
+luminance floor to **visible upper blade pixels** (`tip_luminance_floor=0.12`). Both are editable
+ShaderMaterial uniforms (set 0 to bypass either correction); the original atlas alpha and cutout
+threshold 0.24 are unchanged. This is a render-time colour correction, **not** a rewrite of the
+baked atlas. It does not add geometry, C# work or another grass material/spawner.
+
+The atlas import preset now requests **Lossless** texture compression, mipmaps and
+**Preserve Alpha Test Coverage** with threshold 0.5, retaining Fix Alpha Border.
+Godot needs to reimport the PNG locally for these settings to apply. The single
+768×1536 RGBA atlas will consume more VRAM than the old S3TC texture; compare visual
+quality and GPU use at the same camera position before accepting.
+
+**Check locally:** Pull branch and let Godot reimport, then F6
+`WORLD/FirstPerson/FirstPersonWorld.tscn`. In F1 Foliage, temporarily turn off
+the detailed stylized grass so the billboard layer can be isolated. Stand at the
+same grass patch used in the original screenshot and inspect roots, thin tips,
+near/far aliasing and wind under day lighting. Toggle the two material parameters
+to 0 one at a time to determine whether the problem is baked colour or alpha
+filtering; compare F2 frame time with billboard grass on/off. No Godot renderer
+or FPS measurements were available from the source editor.
