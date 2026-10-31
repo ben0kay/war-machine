@@ -48,8 +48,3 @@ Each mesh has **one indexed triangle primitive / one material surface**, with do
 Source was reviewed for glTF buffer/index consistency and asset paths. **Godot import, shader compilation, visually correct normals from every camera direction, shadows and performance have not been validated in the game.** Inspect the prefab in Godot before any mass scattering and make any art revisions in the included source rather than altering grass or existing shaders.
 
 **No gameplay or repository files were modified when this ZIP was produced.**
-
-
-## STG5 — War Machine ground-cover integration (2026-10-31)
-
-**Source integrated; local validation pending.** The original six-variant, two-LOD glTF pack and wind shader are unchanged. `VEGETATION/Grass/Stylized/Configuration/GroundCoverMaster.tres` registers this pack as `ForestShrub001Master.tres`. The existing grass chunk controller samples terrain and selects shrubs for ~20% of detailed-cover candidates, using shared global fog/LOD/wind/foliage tint and MultiMesh batches. The F1 overlay has independent shrub enabled/share/spacing/scale/wind controls; disabling shrubs does not resample the existing grass. The pack is still directly reusable as standalone imported models.
