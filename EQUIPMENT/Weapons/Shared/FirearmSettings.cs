@@ -67,13 +67,16 @@ public partial class FirearmSettings : Resource
     // FPS-only local adjustment relative to FirstPersonMaster. Does not change overhead weapon mounts.
     [Export] public Vector3 FirstPersonOffset { get; set; } = Vector3.Zero;
     [Export(PropertyHint.Range, "0.4,1.5,0.01")] public float FirstPersonScale { get; set; } = 1f;
+    [ExportGroup("Carried weapon movement (FPS only, ADS1)")]
+    // Additional movement penalty while the firearm is equipped, even outside ADS.
+    [Export(PropertyHint.Range, "0.1,1,0.01")] public float EquippedMovementMultiplier { get; set; } = 1f;
     [ExportGroup("Aim down sights (FPS only, ADS0)")]
     // Local offset added to the hip-fire root. Moves the real Muzzle together with the model.
     [Export] public Vector3 FpsAdsOffset { get; set; } = Vector3.Zero;
     [Export(PropertyHint.Range, "-15,15,0.1,suffix:°")] public float FpsAdsPitchDegrees { get; set; }
     // 1x uses the common FirstPersonMaster base duration; >1 raises/lowers faster.
     [Export(PropertyHint.Range, "0.25,3,0.05")] public float FpsAdsAnimationSpeedMultiplier { get; set; } = 1f;
-    // A separate multiplier for walking/running while ADS; carried weapon weight is not ADS0.
+    // Multiplies the equipped-weapon factor while ADS is held, not a replacement for it.
     [Export(PropertyHint.Range, "0.1,1,0.01")] public float FpsAdsMovementMultiplier { get; set; } = 1f;
     [Export(PropertyHint.Range, "40,110,1,suffix:°")] public float FpsAdsFieldOfView { get; set; } = 75f;
     [ExportGroup("FPS camera recoil (FPS only)")]

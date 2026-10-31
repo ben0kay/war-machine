@@ -45,6 +45,9 @@ public partial class FirstPersonWeapon : Node
         if (IsInstanceValid(previous))
         { previous!.ReadyToFire -= OnReadyToFire; previous.ShotAccepted -= OnShotAccepted; }
         _weapon = _slots.Current; _melee = _slots.CurrentMelee;
+        // ADS1: held firearm weight is applied on selection, not each physics/render frame.
+        if (_player is FirstPersonPlayer fps && IsInstanceValid(fps))
+            fps.SetEquippedWeaponMovementMultiplier(_weapon?.RuntimeSettings.EquippedMovementMultiplier ?? 1f);
         _adsInitialized = false; _visualRecoil = null;
         if (_melee != null)
         {
@@ -278,6 +281,7 @@ public partial class FirstPersonWeapon : Node
     public override void _ExitTree()
     {
         CancelTrigger(); _shove?.Cancel(); _melee?.Cancel(); ResetAds(); CancelVisualRecoil();
+        if (_player is FirstPersonPlayer fps && IsInstanceValid(fps)) fps.SetEquippedWeaponMovementMultiplier(1f);
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.InteractionModeChanged -= OnInputBlocked; }
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
     }

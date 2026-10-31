@@ -61,8 +61,13 @@ The inherited FPS world displays the **same** AM1 `GameplayHUD/Ammo/AmmoHud` as 
 
 ## ADS0 — held MMB aim-down-sights (2026-10-31)
 
-**Source implemented; local build/visual validation pending.** Hold MMB with a captured FPS mouse while a firearm is selected to move its entire root toward authored iron-sight alignment, with smooth FOV and pose interpolation. Releasing reverses the motion. Rifle ADS animation multiplier is **1.1×**, movement multiplier **0.70×**, FOV **65°**; MachineGun (future SMG) is **0.9×**, **0.85×**, **70°**. Base animation is **0.20s** in `FirstPersonMaster.tres`; a multiplier of 1.0× means that full duration. Each weapon's `FpsAdsOffset`, optional pitch, animation multiplier, movement multiplier and ADS FOV live in its existing master. Current aim offsets are preliminary, requiring owner sight-alignment checks.
+**Source implemented; local build/visual validation pending.** Hold MMB with a captured FPS mouse while a firearm is selected to move its entire root toward authored iron-sight alignment, with smooth FOV and pose interpolation. Releasing reverses the motion. Rifle ADS animation multiplier is **1.1×**, movement multiplier **0.70×**, FOV **70°**; MachineGun (future SMG) is **0.9×**, **0.85×**, **72°**. Base animation is **0.20s** in `FirstPersonMaster.tres`; a multiplier of 1.0× means that full duration. Each weapon's `FpsAdsOffset`, optional pitch, animation multiplier, movement multiplier and ADS FOV live in its existing master. Current aim offsets are preliminary, requiring owner sight-alignment checks.
 
 ADS only applies in FPS, does not change bullet spread or recoil strength, and leaves the shared damage/obstruction pipeline intact. Existing `Visual`-only recoil layers over the root/muzzle ADS pose. Camera pitch from accepted shots still requires mouse compensation. Animation shares the existing temporary recoil render callback, sleeping when settled; FPS movement penalty wakes shared player physics only on MMB state changes. Interaction focus, Q shove, Escape, lost focus, GUI blocking, switching and unload reset ADS. Slot-3 bat cannot ADS.
 
-See [ADS implementation plan](../ADS_IMPLEMENTATION_PLAN.md) for ADS0 acceptance and unapproved ADS1 carried-weapon weight / ADS2 polish phases.
+See [ADS implementation plan](../ADS_IMPLEMENTATION_PLAN.md) for ADS0/ADS1 acceptance and planned ADS2 optics/accuracy polish.
+
+## ADS1 — always-equipped weapon movement and subtle zoom (2026-10-31)
+
+**Source implemented; local validation pending.** `EquippedMovementMultiplier` in each firearm master defaults to **1.0×**, with rifle **0.90×** and MachineGun **0.97×**. Successful FPS weapon selection updates the player's cached carried factor, independently of the ADS movement factor. It stays active during hip fire and ADS and does not stack on repeated slot switches. Slot-3 bat is currently 1.0×. Existing ADS0 camera FOV transition now targets **70° rifle / 72° MachineGun**, down from the unscoped hip **75°**; no new zoom owner, optics or camera-rig zoom was added. A future scope attachment can override the same final ADS FOV. Top-down movement remains unchanged in ADS1.
+

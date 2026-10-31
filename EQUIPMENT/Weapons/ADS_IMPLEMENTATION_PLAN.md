@@ -16,8 +16,8 @@
 | Phase | Purpose | Status |
 | --- | --- | --- |
 | **ADS0 — held sight alignment** | MMB held animation, camera FOV, per-gun animation/movement multipliers, transition cancellation and existing recoil compatibility | **Implemented in source; awaiting local validation** |
-| **ADS1 — weapon carrying weight** | An independent, always-equipped weapon movement penalty per firearm, composed with ADS/stance/lean/corpse/sprint without double-applying | **Planned; not authorized** |
-| **ADS2 — visual/accuracy polish** | Tune future rifle optics/SMG replacements, sway and optional accuracy modifiers while ADS; decide sprint/ADS rules, reticles and head-bob treatment | **Planned; not authorized** |
+| **ADS1 — weapon carrying weight** | An independent, always-equipped weapon movement penalty per firearm, composed with ADS/stance/lean/corpse/sprint without double-applying | **Implemented in source; awaiting local validation** |
+| **ADS2 — optics/accuracy polish** | Future optics/SMG replacements, sway and optional accuracy modifiers; decide sprint/ADS rules, reticles and head-bob treatment | **Planned; not authorized** |
 
 ## ADS0: implementation contract
 
@@ -33,10 +33,10 @@
 
 | Master | ADS root offset (m) relative to hip | Animation | Move | FOV |
 | --- | --- | ---: | ---: | ---: |
-| RifleMaster | (-0.22, +0.06, +0.03) | 1.10× | 0.70× | 65° |
-| MachineGunMaster (future SMG model) | (-0.29, +0.24, +0.20) | 0.90× | 0.85× | 70° |
+| RifleMaster | (-0.22, +0.06, +0.03) | 1.10× | 0.70× | 70° |
+| MachineGunMaster (future SMG model) | (-0.29, +0.24, +0.20) | 0.90× | 0.85× | 72° |
 
-Iron-sight centres were estimated from the current procedural builders; retune `FpsAdsOffset` / `FpsAdsPitchDegrees` in each master after visually checking the gun at standing, crouching, leaning and moving. This phase does **not** remodel guns, change magazines, make a scope, apply ADS accuracy/recoil bonuses, alter ammo/damage, or implement the ADS1 always-carried weight penalties.
+Iron-sight centres were estimated from the current procedural builders; retune `FpsAdsOffset` / `FpsAdsPitchDegrees` in each master after visually checking the gun at standing, crouching, leaning and moving. This phase does **not** remodel guns, change magazines, make a scope, apply ADS accuracy/recoil bonuses, alter ammo/damage, or implement the ADS1 always-carried weight penalties as part of ADS0 itself. ADS1 is defined separately below.
 
 **Performance:** MMB edges, selection and interruption events wake work. FPS `FirstPersonWeapon._Process` already drives temporary recoil; ADS advances there only during transitions and then sleeps. The movement penalty is updated only on held-state changes; no per-weapon physics loop, additional raycast, timer, manager, scene node or material.
 
@@ -48,4 +48,23 @@ Iron-sight centres were estimated from the current procedural builders; retune `
 4. Fire while aiming (including MG automatic bursts), reload with R, switch 1/2/3 mid-transition, Q shove, Escape, open inventory/interactions, alt-tab, die and return focus. No stuck FOV/ADS/gun pose; MMB does not fire or jump.
 5. Shoot beside cover while aiming to confirm muzzle obstruction and tracer origin remain plausible; inspect sights at 75° hip FOV / authored ADS FOVs. Local sight tuning may be necessary due to current procedural geometry.
 
-**Validation status:** Code and authored settings added to source, **no Godot/.NET build or in-game verification performed** here. Do not claim the rifle/SMG sight line or visual comfort are accepted until tested by the owner.
+## ADS1 — carried movement penalty and subtle ADS FOV tuning (2026-10-31)
+
+**Implemented in source; awaiting local build and runtime verification.**
+
+- Add `FirearmSettings.EquippedMovementMultiplier` (default **1.0×**), a separate property from `FpsAdsMovementMultiplier`. Rifle starts at **0.90×**, MachineGun/future SMG at **0.97×** while held in FPS. The slot-3 bat retains **1.0×** in this phase; a later broader equipment-weight design may extend this contract.
+- On a **successful weapon selection**, FPS `FirstPersonWeapon` sends the new firearm's carried multiplier to `FirstPersonPlayer`; empty/non-firearm selection uses **1.0×**. Failed switches leave the previous multiplier unchanged. On view/equipment teardown reset the FPS player's carried multiplier to 1.0×.
+- `FirstPersonPlayer` keeps two separate state fields, carried and ADS; its existing movement-speed virtual hook returns their **product**. The one shared `PlayerMovement` path still multiplies it after stance, sprint, lean and corpse slowdown. Input blocking cancels ADS but does **not** erase the equipped weight; returning to gameplay should preserve the currently selected firearm's penalty. Top-down remains unchanged in this FPS-focused phase.
+- No per-frame equipment polling, allocation, new movement loop or second slowdown in the firearm. The existing physics driver wakes only when its cached multiplier changes.
+- Fine-tune existing ADS0 **per-gun FOV**, rather than introduce another zoom manager or competing FOV multiplier: base FPS camera **75°**, rifle ADS **70°**, MachineGun ADS **72°**. The same existing ADS pose/FOV animation blends both directions. This is a subtle unscoped zoom, not a scope module or true fixed-power magnification; it does not change camera pitch, shots, recoil, iron-sight offsets or collision.
+- **Future optics design (ADS2 only, not implemented):** attachments may supply an *override* for the effective ADS FOV, taking precedence over the firearm's fallback iron-sight FOV; higher-power scopes can use optical magnification or a calculated effective FOV rather than multiplying FOV degrees naively. Avoid stacking permanent FOV multipliers from unrelated owners. Reuse the current FPS adapter's existing one camera-FOV writer, including interrupt/reset rules.
+
+**ADS1 acceptance:**
+
+1. Build `dotnet build war-machine.csproj`, F6 `WORLD/FirstPerson/FirstPersonWorld.tscn` and compare ordinary walking/sprint with rifle (0.90×), MachineGun (0.97×) and bat (1.0×), switching 1/2/3 repeatedly. Movement should respond promptly and not accumulate reductions.
+2. Hold MMB: rifle final movement multiplier **0.90×0.70 = 0.63×** of the otherwise computed target; MachineGun **0.97×0.85 = 0.8245×**. Release MMB restores only the ADS component (0.90× / 0.97× carried remain). Crouch/prone/sprint/lean modifiers still compose correctly.
+3. Check the subtle ADS FOV (75→70 rifle, 75→72 MachineGun) on press/release, mid-transition reversal, aim/fire/reload, swapping guns, Q, Esc and focus/menu interruptions. Ensure the original FOV and previous sight alignment are restored.
+4. F6 `WORLD/World.tscn` once to confirm the shared top-down view retains the original movement defaults and firing behaviour.
+
+**Validation status:** ADS0 and ADS1 are now present in source; **no Godot/.NET build or in-game verification performed** here. Runtime gun alignment, zoom comfort and movement feel require local acceptance.
+

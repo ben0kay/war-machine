@@ -62,4 +62,5 @@ FpsAdsOffset = Vector3(-0.29, 0.24, 0.20)
 FpsAdsPitchDegrees = 0.0
 FpsAdsAnimationSpeedMultiplier = 0.9
 FpsAdsMovementMultiplier = 0.85
-FpsAdsFieldOfView = 70.0
+FpsAdsFieldOfView = 72.0
+EquippedMovementMultiplier = 0.97

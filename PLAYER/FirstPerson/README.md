@@ -22,3 +22,8 @@ The FPS camera now receives target lean from shared physics and blends its visib
 ## ADS0 — FPS-only movement modifier (2026-10-31)
 
 The FPS equipment adapter updates `FirstPersonPlayer.SetAdsMovementMultiplier` only on held ADS start/stop or cancellation. Shared `PlayerMovement` requests `GetMovementSpeedMultiplier()`, which defaults to 1.0 for top-down; the FPS override supplies the current ADS factor (rifle 0.70, MachineGun 0.85). This composes multiplicatively with stance, sprint, lean and corpse slowdown. The same physics driver wakes for movement changes; no second movement loop. See [ADS plan](../../EQUIPMENT/Weapons/ADS_IMPLEMENTATION_PLAN.md). Source implemented; local verification pending.
+
+## ADS1 — independent carried firearm penalty (2026-10-31)
+
+The FPS player now separately stores `_equippedMovementMultiplier` and `_adsMovementMultiplier`. `FirstPersonWeapon` applies the carried multiplier once after successful slot selection (rifle 0.90×, MachineGun 0.97×, bat 1.0×); the existing movement-speed hook returns their product. Each setter wakes existing physics only when the value changes; blocked input cancels ADS but the carried multiplier stays tied to the selected weapon. Tear-down restores 1.0×. Top-down movement remains unchanged. Source implemented; Godot/.NET local validation pending.
+
