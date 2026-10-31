@@ -8,6 +8,9 @@ public static class WeaponVisualGeometry
     public static readonly Mesh Chamfer = Profile(1f, 1f);
     public static readonly Mesh TaperForward = Profile(0.76f, 1f);
     public static readonly Mesh TaperRear = Profile(1f, 0.78f);
+    // More pronounced corner bevels for large rifle receiver/stock pieces; older profiles remain untouched.
+    public static readonly Mesh BroadChamfer = Profile(1f, 1f, 0.22f);
+    public static readonly Mesh BroadTaperRear = Profile(1f, 0.78f, 0.20f);
     private static readonly CylinderMesh Round = new()
     { TopRadius = 0.5f, BottomRadius = 0.5f, Height = 1f, RadialSegments = 12 };
 
@@ -34,15 +37,15 @@ public static class WeaponVisualGeometry
     // =========================================================
     // A shared 8-sided cross-section with two narrow bevel transitions at each Z end.
     // Front (-Z) and back (+Z) can have different breadths for believable tapered stocks and shells.
-    private static ArrayMesh Profile(float front, float back)
+    private static ArrayMesh Profile(float front, float back, float cornerClip = 0.105f)
     {
         using var surface = new SurfaceTool();
         surface.Begin(Mesh.PrimitiveType.Triangles);
         var rings = new Vector3[4][];
-        rings[0] = Ring(-0.5f, front * 0.90f);
-        rings[1] = Ring(-0.39f, front);
-        rings[2] = Ring(0.39f, back);
-        rings[3] = Ring(0.5f, back * 0.90f);
+        rings[0] = Ring(-0.5f, front * 0.90f, cornerClip);
+        rings[1] = Ring(-0.39f, front, cornerClip);
+        rings[2] = Ring(0.39f, back, cornerClip);
+        rings[3] = Ring(0.5f, back * 0.90f, cornerClip);
         for (int r = 0; r < 3; r++)
             for (int i = 0; i < 8; i++)
             {
@@ -61,9 +64,9 @@ public static class WeaponVisualGeometry
 
     // =========================================================
     // Clockwise eight-corner perimeter in XY, with a small 45-degree chamfer at each corner.
-    private static Vector3[] Ring(float z, float scale)
+    private static Vector3[] Ring(float z, float scale, float cornerClip)
     {
-        float h = scale * 0.5f, c = scale * 0.105f;
+        float h = scale * 0.5f, c = scale * cornerClip;
         return new Vector3[] {
             new(-h + c, -h, z), new(h - c, -h, z),
             new(h, -h + c, z), new(h, h - c, z),

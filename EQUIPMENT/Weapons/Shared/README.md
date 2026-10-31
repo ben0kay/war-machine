@@ -96,3 +96,7 @@ AM1 attaches the ammo HUD to `WeaponSlots.SelectionChanged` rather than handling
 The FPS hip-fire adapter may pass `FirearmSettings.FpsHipFireSpreadRadialExponent`. ADS and original shared/top-down calls always pass 0.50, preserving their existing probabilities. No new rays, timers or per-frame polling; the only additional cost is a single `Mathf.Pow` calculation on accepted shots.
 
 With the rifle's authored **0.40** hip exponent, the probability of a hit in the central **50% of the maximum spread radius** changes from **25%** (old 0.50 exponent) to approximately **17.7%**; an otherwise zero-spread gun still fires perfectly accurately. Muzzle obstruction, hit dispatch, recoil, tracer end position and damage are untouched.
+
+## Rifle-only broader machined bevel profiles (2026-10-31)
+
+`WeaponVisualGeometry.BroadChamfer` / `BroadTaperRear` are two new cached mesh profiles used by the procedurally authored Rifle_001. Existing `Chamfer`, `TaperForward` and `TaperRear` meshes retain their exact old corner factor (0.105), so MachineGun_001 remains visually unchanged. The added corner factor is applied at the same one-time mesh creation; no shader, extra shot work, callbacks or scene changes. Verify large rifle edge readability and correct exterior face culling in Godot; source-only validation so far.
