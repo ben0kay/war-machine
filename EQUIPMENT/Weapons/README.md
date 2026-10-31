@@ -37,3 +37,7 @@ Existing pooled effects still disable recycled physics interpolation, and muzzle
 ## Shared light and rifle audio foundation
 
 FirearmSettings.EmitMuzzleLight opts each weapon into a cached warm, shadowless real light driven by existing FirearmShotEffects lifetime; both current masters explicitly enable it. LightingMaster owns light colour/energy/range/duration and the active cap. ShotCue opts a firearm into the pooled world audio service supplied through WeaponSlots; RifleMaster uses AUDIO/OneShots/Weapons/RifleShot.tres with an intentionally empty Stream. Assign a WAV/OGG there to hear it. Machine gun has no sound assigned and needs its own cue. Legacy ShotSound only runs without ShotCue, preventing double playback. Accepted-shot damage/spread/cover/cadence remain unchanged. See AUDIO/README.md and ENVIRONMENT/Lighting/README.md for APIs, settings, limits and brief local checks. Compilation/visual/listening acceptance pending locally.
+
+## Future coherent weapon handling (WH0–WH5; planning only, 2026-10-31)
+
+See [Weapon handling / weight + player stats plan](WEAPON_HANDLING_IMPLEMENTATION_PLAN.md) for the Codex-ready phased plan to connect authored gun mass/balance to equipped movement, ADS transition speed, physical sway, live stamina/stance/arm condition and a future F1 Weapons debug category. Existing recoil, spread, stamina, movement, muzzle, and ADS have independent owners; WH implementation must reuse those rather than duplicate their mechanics. **No WH phase is implemented/authorized by adding this plan.**

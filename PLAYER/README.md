@@ -75,3 +75,7 @@ When prone, the existing upper-body, leg/arm and weapon rig pivots take a **simp
 **L0a visual refinement (2026-10-28):** Increased top-down torso roll to **15°** and lateral shift to **0.10m**, while FPS roll/eye shift are **16° / 0.20m**. FPS applies additional frame-rate-aware render smoothing for the camera/gun rather than snapping roll at physics frequency. Existing 0.55× movement and 0.18s shared lean blend are unchanged. See [L0 plan](LEAN_IMPLEMENTATION_PLAN.md).
 
 **L0b corner-peek tuning (2026-10-28):** stronger lean: FPS camera roll **18°** and lateral eye offset **0.35m**, shared/top-down torso lean **18°** and **0.13m**. FPS eye-shift runtime/Inspector limit is now 0.50m, enabling the full authored 0.35m offset. Render smoothing, speed penalty and collision/perception boundaries are unchanged. Awaiting local visual check near walls.
+
+## Future weapon mass and player-stat integration (planning only, 2026-10-31)
+
+The separate [weapon handling plan](../EQUIPMENT/Weapons/WEAPON_HANDLING_IMPLEMENTATION_PLAN.md) specifies how current PH2 stamina and six-region body condition can supply *read-only* factors to physical sway and existing ADS/movement without introducing a new vitality or survival system. Strength, fatigue, skill, detailed arm injury effects and inventory encumbrance are explicitly future dependencies; WH0–WH5 are **not implemented or authorized** by this documentation.
