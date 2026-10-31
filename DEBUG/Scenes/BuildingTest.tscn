@@ -1,0 +1,103 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://DEBUG/Scenes/BuildingTestPlayer.tscn" id="player"]
+[ext_resource type="PackedScene" path="res://WORLD/Content/Assets/Structures/PoliceStation001/PoliceStation001.tscn" id="building"]
+
+[sub_resource type="BoxMesh" id="GroundBox"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="GroundSideShape"]
+size = Vector3(36, 0.24, 120)
+
+[sub_resource type="BoxShape3D" id="GroundEndShape"]
+size = Vector3(48, 0.24, 28)
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.29, 0.37, 0.31, 1)
+roughness = 1.0
+
+[sub_resource type="Environment" id="TestEnvironment"]
+background_mode = 1
+background_color = Color(0.63, 0.72, 0.79, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.76, 0.81, 0.84, 1)
+ambient_light_energy = 0.45
+
+[node name="BuildingTest" type="Node3D"]
+
+[node name="BuildingSlot" type="Node3D" parent="."]
+
+[node name="PoliceStation001" parent="BuildingSlot" instance=ExtResource("building")]
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+position = Vector3(0, 0.3, 38)
+
+[node name="BuildingTestPlayer" parent="." instance=ExtResource("player")]
+position = Vector3(0, 0.3, 38)
+
+[node name="TestGround" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="WestGround" type="MeshInstance3D" parent="TestGround"]
+position = Vector3(-42, -0.12, 0)
+scale = Vector3(36, 0.24, 120)
+mesh = SubResource("GroundBox")
+material_override = SubResource("GroundMaterial")
+
+[node name="WestShape" type="CollisionShape3D" parent="TestGround"]
+position = Vector3(-42, -0.12, 0)
+shape = SubResource("GroundSideShape")
+
+[node name="EastGround" type="MeshInstance3D" parent="TestGround"]
+position = Vector3(42, -0.12, 0)
+scale = Vector3(36, 0.24, 120)
+mesh = SubResource("GroundBox")
+material_override = SubResource("GroundMaterial")
+
+[node name="EastShape" type="CollisionShape3D" parent="TestGround"]
+position = Vector3(42, -0.12, 0)
+shape = SubResource("GroundSideShape")
+
+[node name="FrontGround" type="MeshInstance3D" parent="TestGround"]
+position = Vector3(0, -0.12, 46)
+scale = Vector3(48, 0.24, 28)
+mesh = SubResource("GroundBox")
+material_override = SubResource("GroundMaterial")
+
+[node name="FrontShape" type="CollisionShape3D" parent="TestGround"]
+position = Vector3(0, -0.12, 46)
+shape = SubResource("GroundEndShape")
+
+[node name="RearGround" type="MeshInstance3D" parent="TestGround"]
+position = Vector3(0, -0.12, -46)
+scale = Vector3(48, 0.24, 28)
+mesh = SubResource("GroundBox")
+material_override = SubResource("GroundMaterial")
+
+[node name="RearShape" type="CollisionShape3D" parent="TestGround"]
+position = Vector3(0, -0.12, -46)
+shape = SubResource("GroundEndShape")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, 28, 0)
+light_energy = 0.85
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("TestEnvironment")
+
+[node name="Help" type="CanvasLayer" parent="."]
+
+[node name="Controls" type="Label" parent="Help"]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 650.0
+offset_bottom = 62.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 14
+text = "BUILDING TEST  •  Arrows / WASD move  •  Shift sprint  •  RMB jump\nMouse look  •  Esc release mouse  •  Left click recapture"
