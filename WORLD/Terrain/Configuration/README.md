@@ -6,3 +6,6 @@
 
 
 **Visibility fix:** `ShowNearSpawnPatches=true` adds small witness areas near the player arrival. Village protection now uses `WORLD/Terrain/DirtPatchProtectedAreas.cs` rather than a huge editable rectangle that hid all local dirt. V1 preview files remain untouched; V2 is authored at `GameplayDirtPreviewV2/`.
+
+
+**DTP1 V3 local test:** `SingleSpawnPreviewPatch=true` is the default. It paints just one irregular dirt oval centred at `SpawnXZ + (-20, -8)` (approximately X=492,Z=542) off the access road near the parking lot. `ShowNearSpawnPatches=false` suppresses prior extra witnesses. Re-run `BakeDirtPreview.tscn` F6 after pulling; this creates a new `GameplayDirtPreviewV3/`, preserving earlier previews and the original terrain. No locator/debug marker is added.

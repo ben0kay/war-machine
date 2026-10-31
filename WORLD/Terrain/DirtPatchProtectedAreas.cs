@@ -15,7 +15,10 @@ public static class DirtPatchProtectedAreas
         Vector2 origin = settings.VillageOriginXZ;
 
         // PARK3 is 56x36m; the extended store, rear service access and driveway make its full footprint longer.
-        AddPad(areas, origin, new Vector2(37f, 48f), new Vector2(0f, -9f));
+        // The old 74x96m rectangle extended far beyond the asphalt and removed the
+        // small grassy corridor before spawn. The current store/lot spans roughly
+        // X +/-28m, Z -38..+24m, with the narrow driveway guarded separately below.
+        AddPad(areas, origin, new Vector2(32f, 32f), new Vector2(0f, -9f));
         AddPad(areas, origin, new Vector2(17f, 15f), settings.Building001Offset); // Depot 20x14m
         AddPad(areas, origin, new Vector2(17f, 17f), settings.Building002Offset); // Lodge, porch and stairs
         AddPad(areas, origin, new Vector2(22f, 28f), settings.Building003Offset); // Gas station and forecourt

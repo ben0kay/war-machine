@@ -73,8 +73,8 @@ public partial class WorldController : Node3D
         if (dirt != null && dirt.UsePreviewInGameplay)
         {
             if (DirtPatchAuthoring.HasCurrentPreview())
-            { terrainDirectory = DirtPatchAuthoring.PreviewDirectory; GD.Print("DTP1 V2: verified dirt preview ACTIVE at " + terrainDirectory); }
-            else GD.Print("DTP1 V2: no valid preview generated, or source files changed; loading original gameplay terrain. Run WORLD/Terrain/BakeDirtPreview.tscn (F6).");
+            { terrainDirectory = DirtPatchAuthoring.PreviewDirectory; GD.Print("DTP1 V3: verified dirt preview ACTIVE at " + terrainDirectory); }
+            else GD.Print("DTP1 V3: no valid preview generated, or source files changed; loading original gameplay terrain. Run WORLD/Terrain/BakeDirtPreview.tscn (F6).");
         }
         string directory = ProjectSettings.GlobalizePath(terrainDirectory);
         if (!Directory.Exists(directory) || Directory.GetFiles(directory, "*.res").Length == 0)

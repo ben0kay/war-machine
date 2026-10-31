@@ -13,4 +13,5 @@ FeatherMetres = 1.7
 WarpMetres = 2.2
 MinimumNormalY = 0.92
 Strength = 0.92
-ShowNearSpawnPatches = true
+SingleSpawnPreviewPatch = true
+ShowNearSpawnPatches = false

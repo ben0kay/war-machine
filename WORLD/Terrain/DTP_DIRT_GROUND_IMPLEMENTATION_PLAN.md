@@ -88,6 +88,14 @@
 
 **Validation:** pull and build, explicitly F6 `WORLD/Terrain/BakeDirtPreview.tscn`; confirm console `DTP1 V2 SUCCESS: ... soil texels` and valid preview directory. F6 FPS scene and confirm `DTP1 V2: verified dirt preview ACTIVE` in Output. Look immediately left of the spawn approach, rather than exploring far from the village. Toggle `UsePreviewInGameplay=false` to compare original ground. If no dirt despite both log messages, investigate Terrain3D material texture array/paint blend and native region save/load with Godot diagnostics; **not yet visually verified**.
 
+### DTP1 V3 — one visible dirt patch near spawn (2026-10-31)
+
+**User requested a single localized ground patch** rather than the proposed nearest-soil locator/debug markers. V3 defaults to `SingleSpawnPreviewPatch=true` so `DirtPatchField` creates **only one** irregular, feathered ellipse centred at world XZ `WorldMaster.SpawnXZ + (-20,-8)`, or (492,542) with the current (512,550) spawn. Width is ~23m X by ~15m Z before feathering; enough to inspect on foot. It lies to the west of the central access road, near the parking lot without painting onto the asphalt.
+
+The former site protection rectangle excluded ground almost up to spawn and would clip away this new patch. `DirtPatchProtectedAreas` now uses a tighter fit around the actual parking lot and store, while retaining separate protected road, other structure, robot and spawn footprints. Authored/manual Terrain3D texels remain preserved. The general-purpose seeded cluster/trail implementation is retained but disabled for V3 by the explicit single-patch setting; no new vegetation, markers or new per-frame work.
+
+**Preview lifecycle:** `DirtPatchAuthoring` writes only to **`GameplayDirtPreviewV3/`**; `Gameplay/`, V1 and V2 remain unchanged. Source manifest version V3 and the V3 console success message distinguish this from prior generated files. FPS will use V3 only after `BakeDirtPreview.tscn` is explicitly run (F6). After pull/build, check author console `DTP1 V3 SUCCESS` with nonzero dirt pixels, then FPS `DTP1 V3: verified dirt preview ACTIVE` and visually inspect from spawn toward X492,Z542. DTP2 plant-density response is not implemented. Runtime/visual acceptance pending.
+
 ## DTP2 — Soil-aware ground cover (planned)
 
 **Objective:** grass and plants become progressively less likely to spawn on dirt without sterilizing every patch. Keep natural, occasional growth even at brown patch centres.

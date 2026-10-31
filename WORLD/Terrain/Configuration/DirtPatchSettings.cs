@@ -20,5 +20,7 @@ public partial class DirtPatchSettings : Resource
     [Export(PropertyHint.Range, "0.65,1,0.01")] public float MinimumNormalY { get; set; } = 0.92f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float Strength { get; set; } = 0.92f;
     [ExportGroup("Visual test")]
-    [Export] public bool ShowNearSpawnPatches { get; set; } = true;
+    // One obvious ground patch near initial spawn, not a full-world scatter; run bake once.
+    [Export] public bool SingleSpawnPreviewPatch { get; set; } = true;
+    [Export] public bool ShowNearSpawnPatches { get; set; } = false;
 }
