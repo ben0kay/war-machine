@@ -16,6 +16,7 @@ public partial class WorldController : Node3D
     protected TerrainGrass _grass = null!;
     private StylizedGrassPlacement? _stylizedGrass;
     private VegetationVisibilityPolicy _vegetationVisibility = null!;
+    private FoliageTintSettings _foliageTint = null!;
     private PlaceableSpawnMenu? _spawnMenu;
     private WorldColorGrade? _colorGrade;
     private bool _debugPanelsOpen;
@@ -49,6 +50,11 @@ public partial class WorldController : Node3D
         Settings = (WorldSettings)Settings.Duplicate(true);
         PlayerSettings = (PlayerSettings)PlayerSettings.Duplicate(true);
         CameraSettings = (CameraSettings)CameraSettings.Duplicate(true);
+        // Foliage tint is one authored runtime copy; apply GPU globals before any tree/grass init.
+        var tintMaster = GD.Load<FoliageTintSettings>("res://VEGETATION/Configuration/FoliageTintMaster.tres");
+        if (tintMaster == null) GD.PushWarning("FoliageTintMaster missing; using matching C# defaults.");
+        _foliageTint = tintMaster != null ? (FoliageTintSettings)tintMaster.Duplicate(true) : new FoliageTintSettings();
+        _foliageTint.ApplyShaderGlobals();
         GameplayTerrainStorage.CopyLegacyBakeIfNeeded();
         _audio = GetNode<WorldAudio>("SystemsRoot/Audio");
         _environmentScene = GetNode<GameEnvironment>("SystemsRoot/EnvironmentRoot");
@@ -209,7 +215,8 @@ public partial class WorldController : Node3D
         AddDeerPreviewClearing(_pines.ExclusionAreas);
         // DF2.8: survey all independent canopy zones before pine/rock placement.
         // Zone 1 is the unchanged original DF2 village forest resource.
-        _forestZones = new ForestZonesPlacement { Name = "ForestZones", Visibility = _vegetationVisibility };
+        _forestZones = new ForestZonesPlacement { Name = "ForestZones",
+            Visibility = _vegetationVisibility, FoliageTint = _foliageTint };
         GetNode("SystemsRoot/VegetationRoot").AddChild(_forestZones);
         _forestZones.PrepareZones(data, Settings, _pines.ExclusionAreas);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
@@ -340,7 +347,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses, _stylizedGrass, _colorGrade, _forestZones);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses, _stylizedGrass, _colorGrade, _forestZones, _foliageTint);
     }
 
     // =========================================================

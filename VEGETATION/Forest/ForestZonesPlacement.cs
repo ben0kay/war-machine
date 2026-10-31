@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
 {
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
+    public FoliageTintSettings FoliageTint { get; set; } = null!;
     public event Action? OcclusionChanged;
     public int ApprovedCount => _approved.Count;
     public IReadOnlyList<Rect2> ApprovedAreas => _areas;
@@ -76,7 +77,9 @@ public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
         for (int i = 0; i < _approved.Count; i++)
         {
             var zone = _approved[i];
-            var placement = new ForestPlacement { Name = $"DenseForestZone{i + 1}", Visibility = Visibility };
+            var placement = new ForestPlacement {
+                Name = $"DenseForestZone{i + 1}", Visibility = Visibility, FoliageTint = FoliageTint
+            };
             AddChild(placement);
             placement.OcclusionChanged += OnChildOcclusionChanged;
             _placements.Add(placement);

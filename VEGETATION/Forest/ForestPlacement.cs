@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 {
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
+    public FoliageTintSettings FoliageTint { get; set; } = null!;
     public event System.Action? OcclusionChanged;
     public int TotalTrees { get; private set; }
     public int ActiveTrees { get; private set; }
@@ -79,10 +80,8 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
                 CullMode = BaseMaterial3D.CullModeEnum.Disabled
             };
             foliage = _safeLeafMaterial;
-            // One initial palette read, never polling RenderingServer in gameplay.
-            ApplySharedTint(
-                RenderingServer.GlobalShaderParameterGet("wm_foliage_tint").AsColor(),
-                RenderingServer.GlobalShaderParameterGet("wm_foliage_tint_strength").AsSingle());
+            // Use the CPU-owned runtime tint, never a render-thread-synchronizing global GET.
+            ApplySharedTint(FoliageTint.Tint, FoliageTint.Strength);
         }
         else
         {
