@@ -1,5 +1,5 @@
 // Shared HUD overlay: current/future HealthComponents automatically show while below full HP.
-// Only injured actors are projected; UI controls are pooled and capped.
+// Only injured actors are projected; bars are pooled, range-gated and occlusion-checked on physics ticks.
 using Godot;
 using System.Collections.Generic;
 
@@ -20,6 +20,7 @@ public partial class HealthBarOverlay : Control
     private FeedbackSettings _settings = null!;
     private PackedScene _barPrefab = null!;
     private Camera3D _camera = null!;
+    private PhysicsRayQueryParameters3D _visibilityRay = null!;
     private float _accumulator;
     private bool _initialized;
 
@@ -38,6 +39,11 @@ public partial class HealthBarOverlay : Control
         if (_initialized) return;
         _camera = camera;
         _settings = (FeedbackSettings)GD.Load<FeedbackSettings>("res://FEEDBACK/Configuration/FeedbackMaster.tres").Duplicate(true);
+        _visibilityRay = new PhysicsRayQueryParameters3D
+        {
+            CollisionMask = _settings.HealthBarOcclusionMask, CollideWithAreas = false, HitFromInside = true,
+            Exclude = new Godot.Collections.Array<Rid> { player.GetRid() }
+        };
         _barPrefab = GD.Load<PackedScene>("res://FEEDBACK/Bars/Health/HealthBar.tscn");
         _initialized = true;
         GetTree().NodeAdded += OnNodeAdded;
@@ -91,26 +97,31 @@ public partial class HealthBarOverlay : Control
             && entry.Health.MaxHealth > 0f && entry.Health.CurrentHealth < entry.Health.MaxHealth;
         if (wounded)
         {
-            if (!entry.Wounded) { entry.Wounded = true; _wounded.Add(entry); SetProcess(true); }
+            if (!entry.Wounded) { entry.Wounded = true; _wounded.Add(entry); SetPhysicsProcess(true); }
             entry.Bar?.SetHealth(entry.Health.CurrentHealth, entry.Health.MaxHealth);
         }
         else if (entry.Wounded)
         {
             entry.Wounded = false; _wounded.Remove(entry); ReleaseBar(entry);
-            if (_wounded.Count == 0) { SetProcess(false); _accumulator = 0; }
+            if (_wounded.Count == 0) { SetPhysicsProcess(false); _accumulator = 0; }
         }
     }
 
     // =========================================================
-    // Project at bounded frequency only while any actor is injured. Full HP means zero callbacks.
-    public override void _Process(double delta)
+    // Project and test visibility at bounded frequency while wounded actors exist. Raycasts belong on physics ticks.
+    public override void _PhysicsProcess(double delta)
     {
-        if (!_initialized || _wounded.Count == 0) { SetProcess(false); return; }
+        if (!_initialized || _wounded.Count == 0) { SetPhysicsProcess(false); return; }
         _accumulator += (float)delta;
         float interval = 1f / Mathf.Clamp(_settings.ProjectionUpdatesPerSecond, 5f, 60f);
         if (_accumulator < interval) return;
         _accumulator = 0f;
         Vector2 viewport = GetViewport().GetVisibleRect().Size;
+        Vector3 eye = _camera.GlobalPosition;
+        float maxDistance = Mathf.Max(1f, _settings.HealthBarMaxDistance);
+        float maxDistanceSquared = maxDistance * maxDistance;
+        PhysicsDirectSpaceState3D? space = _settings.HealthBarOcclusionEnabled
+            ? _camera.GetWorld3D().DirectSpaceState : null;
         int capacity = Mathf.Clamp(_settings.MaxVisibleBars, 1, 128), shown = 0;
 
         for (int i = _wounded.Count - 1; i >= 0; i--)
@@ -123,12 +134,25 @@ public partial class HealthBarOverlay : Control
             float width = Mathf.Clamp(_settings.WorldBarWidth, 24f, 320f);
             float height = Mathf.Clamp(_settings.WorldBarHeight, 4f, 28f);
             Vector3 anchor = entry.Actor.GlobalPosition + Vector3.Up * Mathf.Clamp(_settings.WorldAnchorHeight, 0.5f, 5f);
-            bool inView = entry.Actor.IsVisibleInTree() && !_camera.IsPositionBehind(anchor);
+            bool inView = entry.Actor.IsVisibleInTree() && eye.DistanceSquaredTo(anchor) <= maxDistanceSquared
+                && !_camera.IsPositionBehind(anchor);
             Vector2 pos = inView ? _camera.UnprojectPosition(anchor) - new Vector2(width * 0.5f, height) : Vector2.Zero;
             inView = inView && pos.X >= 0f && pos.Y >= 0f
                 && pos.X + width <= viewport.X && pos.Y + height <= viewport.Y;
 
             if (!inView || shown >= capacity) { ReleaseBar(entry); continue; }
+
+            // Check the upper torso, not the floating bar anchor above the zombie's head.
+            // This hides bars when a hill or building covers the body, even if the bar projects over it.
+            if (space != null)
+            {
+                _visibilityRay.From = eye;
+                _visibilityRay.To = entry.Actor.GlobalPosition
+                    + Vector3.Up * Mathf.Min(1.35f, _settings.WorldAnchorHeight);
+                if (space.IntersectRay(_visibilityRay).Count > 0)
+                { ReleaseBar(entry); continue; }
+            }
+
             if (entry.Bar == null)
             {
                 entry.Bar = AcquireBar();
@@ -171,7 +195,7 @@ public partial class HealthBarOverlay : Control
         if (IsInstanceValid(health)) health.HealthChanged -= OnHealthChanged;
         if (entry.Wounded) _wounded.Remove(entry);
         ReleaseBar(entry);
-        if (_wounded.Count == 0) { SetProcess(false); _accumulator = 0; }
+        if (_wounded.Count == 0) { SetPhysicsProcess(false); _accumulator = 0; }
     }
 
     // =========================================================
@@ -184,6 +208,6 @@ public partial class HealthBarOverlay : Control
         foreach (HealthComponent health in _registered.Keys)
             if (IsInstanceValid(health)) health.HealthChanged -= OnHealthChanged;
         _registered.Clear(); _wounded.Clear(); _pool.Clear(); _initialized = false;
-        SetProcess(false);
+        SetPhysicsProcess(false);
     }
 }

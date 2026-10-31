@@ -1,7 +1,56 @@
-# NPC health overlay — existing source implementation, awaiting local validation
+# NPC health overlay — injured enemies visible to the camera
 
-`HealthBarOverlay.cs` already registers shared `HealthComponent` actors and displays a pooled red bar for injured living actors only. At full health no bar is shown. It updates from `HealthChanged` events and projects wounded actors at a capped rate, with no per-entity permanent UI callbacks. Known limitation: no world-geometry LOS occlusion; an injured NPC behind walls may still expose its bar.
+**Implemented in source; Godot compilation and runtime validation pending.**
 
-**PH0 future player integration change:** The current overlay contains a branch that would show the player's generic health as a bottom-left numeric bar. The new player design **must exclude PlayerController-owned HealthComponent from this overlay**. Do not delete or regress zombie/deer bars. Player condition is PH1's six-region silhouette under `FEEDBACK/Bars/PlayerStatus`. Do not show a standard numeric player HP bar.
+`HealthBarOverlay.cs` observes shared `HealthComponent` events and pools screen-space health
+bars for injured, living **NPCs** only (standard zombies, runners and other actors). Health
+changes remain event-driven; the bar itself is hidden at full HP and on death.
 
-This folder remains a shared NPC presenter, not a damage owner, and the FPS test inherits the same shared HUD. PH0/PH1 are planned only. See [FB plan](../../IMPLEMENTATION_PLAN.md) and [player design](../../../PLAYER/Stats/BODY_CONDITION_DESIGN.md).
+## Visibility rules
+
+A wounded actor's bar appears only when its actor is visible in the tree, it is in
+front of the current camera, its bar anchor is inside the viewport, and it is
+within `HealthBarMaxDistance` (**50 metres** by default). When
+`HealthBarOcclusionEnabled` is true, a physics ray from the **camera** to the
+actor's upper torso must also be clear: nearby hills, collidable buildings and walls
+block it. We probe the torso rather than the bar's floating position so bars don't
+show through a hill just because the bar would be above the hill.
+
+The ray uses `HealthBarOcclusionMask = 17` (world layer 1 plus tree-trunk layer 5),
+matching the existing zombie sight blocker mask. The player's own collider is excluded.
+Purely decorative geometry without collision will not occlude a health bar; check the
+collider and mask when an expected wall doesn't block it.
+
+## Low-cost updates
+
+- `ProjectionUpdatesPerSecond = 10` by default (**one update every 0.1 seconds**).
+- Screen projection and optional physics occlusion use the same 10 Hz cadence, driven
+  by the shared overlay's `_PhysicsProcess` (not a callback on every zombie).
+- Only **wounded, on-screen, in-range** actors are ray-tested, bounded by
+  `MaxVisibleBars` (48 default) per update.
+- No injured actors means the overlay disables its physics callbacks entirely.
+- Health values update immediately on `HealthChanged` and are not polled at 10 Hz.
+- No new timers, ray casts per zombie per frame, or new NPC gameplay code.
+
+## Configure
+
+`FEEDBACK/Configuration/FeedbackMaster.tres`:
+
+- `ProjectionUpdatesPerSecond = 10`
+- `HealthBarMaxDistance = 50`
+- `HealthBarOcclusionEnabled = true`
+- `HealthBarOcclusionMask = 17`
+
+The existing bar dimensions, anchor, pool capacity and separate player silhouette
+settings are unchanged.
+
+## Acceptance checks (local Godot test)
+
+Pull `implement-td0-td1`, build the .NET solution, and run
+`WORLD/FirstPerson/FirstPersonWorld.tscn` (F6). Damage a zombie and verify its bar
+appears unobstructed, disappears behind a hill/building, disappears past 50m, and
+reappears as it comes into view. Repeat while moving around cover; check the second
+world view and other injured NPC types. Collision-less foliage does not count as a wall.
+
+This folder owns NPC presentation only. The player body-condition silhouette lives in
+`FEEDBACK/Bars/PlayerStatus`; do not restore a numeric player HP bar here.

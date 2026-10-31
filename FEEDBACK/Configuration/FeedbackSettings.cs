@@ -9,7 +9,10 @@ public partial class FeedbackSettings : Resource
     [Export(PropertyHint.Range, "4,24,1")] public float WorldBarHeight { get; set; } = 9f;
     [Export(PropertyHint.Range, "0.5,5,0.05")] public float WorldAnchorHeight { get; set; } = 2.1f;
     [Export(PropertyHint.Range, "1,128,1")] public int MaxVisibleBars { get; set; } = 48;
-    [Export(PropertyHint.Range, "5,60,1")] public float ProjectionUpdatesPerSecond { get; set; } = 30f;
+    [Export(PropertyHint.Range, "5,60,1")] public float ProjectionUpdatesPerSecond { get; set; } = 10f;
+    [Export(PropertyHint.Range, "5,200,1")] public float HealthBarMaxDistance { get; set; } = 50f;
+    [Export] public bool HealthBarOcclusionEnabled { get; set; } = true;
+    [Export(PropertyHint.Layers3DPhysics)] public uint HealthBarOcclusionMask { get; set; } = 17u;
     [ExportGroup("Player body silhouette")]
     [Export(PropertyHint.Range, "8,60,1")] public float BodyHudMargin { get; set; } = 22;
     [Export(PropertyHint.Range, "0.1,1,0.01")] public float BodyHealthyThreshold { get; set; } = 0.75f;
