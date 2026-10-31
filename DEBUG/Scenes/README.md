@@ -10,7 +10,13 @@ The root owns a **`BuildingSlot`** Node3D with one instance of `PoliceStation001
 
 The **`BuildingTestPlayer`** is an independent reusable debug prefab, `DEBUG/Scenes/BuildingTestPlayer.tscn`, with a separate `BuildingTestPlayer.cs` controller. It is **not** a `PLAYER/Player.tscn` instance, does not derive from `PlayerController`, and never initializes the shared combat, stance, equipment, audio, inventory or world systems. It uses one Godot `CharacterBody3D` capsule (radius 0.3m / height 1.8m) and its own FPS camera. No script initializes or controls the building. You can reposition the `BuildingTestPlayer` node to spawn in the lobby, basement or outside. A separate `PlayerSpawn` marker marks the initial position but deliberately does not auto-teleport the player at runtime, avoiding additional scene/controller complexity. When moving the spawn, update the test player transform as well.
 
-**Controls:** WASD or arrow keys move, mouse looks, Shift sprints, right mouse button jumps, Escape releases the mouse, and left mouse click recaptures it. The movement script runs only for the one test actor; the static test stage and building add no per-frame processing. There is intentionally no crouch, weapon, health, HUD, zombie perception, leaning or game interaction — this is a collision/clearance/walkthrough harness, not a gameplay test.
+**Controls:** WASD or arrow keys move, mouse looks, Shift sprints **only while standing**, right mouse button jumps **only while standing**, **C / Left Ctrl / Right Ctrl toggle crouch**, **Slash (/) toggles prone**, Escape releases the mouse, and left mouse click recaptures it. Vertical mouse look is **inverted by default**, like the current FPS master profile; toggle `BuildingTestPlayer → InvertMouseY` in the Inspector to switch direction.
+
+The dedicated test player matches the core gameplay stance geometry and movement multipliers without importing the gameplay player: standing capsule **1.8m** and eye ~**1.65m**, crouching capsule **1.4m** and eye ~**1.25m** at **0.45× walking speed**, prone capsule **0.75m** and eye ~**0.60m** at **0.17× walking speed**. A single capsule/eye transition runs inside the player's existing physics callback; destination headroom queries are only made on requests to grow taller, so blocked ceilings prevent standing and unsafe prone-to-crouch transitions. The prone proxy is a short **upright capsule**, like the existing gameplay prototype, not a physical lying hitbox. The user returns from prone to the previous stance when clearance permits, or crouching if standing is obstructed.
+
+**Documentation discrepancy:** The current real `PLAYER/Input/PlayerInput.cs` handles **Right Ctrl = crouch** and **Slash = prone**. Some older gameplay READMEs describe Right Ctrl as prone. This debug scene follows the **actual code** while adding Left Ctrl / C aliases for easy crouch testing; it does not alter the gameplay bindings.
+
+The movement script runs only for this one test actor; the static test stage and building add no per-frame processing. There are intentionally no weapons, health, HUD gameplay systems, zombie perception, leaning or world interactions — this is a collision/clearance/walkthrough harness, not a gameplay test.
 
 ## Exterior floor and basement
 
@@ -27,3 +33,7 @@ The test scene also has a static directional sun, simple ambient environment and
 5. Check lighting and rendered materials locally. A source-only commit does **not** prove compilation, visual appearance or walkability.
 
 **Boundary:** The police station source/prefab, normal World/FPS scenes, project startup, gameplay player, terrain assets and project input settings are not modified by this test harness.
+
+## Building-test stance and vertical look (2026-10-31)
+
+The local `BuildingTestPlayer.cs` now supports configurable inverted Y look and stance-changing capsules so inspectors can test 1.8m/1.4m/0.75m clearances and low doors or spaces in any swapped building. This is **not** a new dependency on `PlayerController`. Mouse inversion defaults to true in the inspector, and height/speed values can be edited on the test actor without touching gameplay. The scene's top-left control help lists both actions. C# compilation and physical transitions through basement ceiling/rail geometry require local Godot verification.
