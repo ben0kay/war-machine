@@ -738,7 +738,12 @@ public partial class PoliceStationMesh : Node3D
         clear.Reserve("BasementUtilityDoor", new(utilityX, floorY + 1.45f, utilityDoorZ),
             new(3.6f, 2.9f, 3.6f));
 
-        BuildDetentionWing(walls, body, clear, floorY, wallTop, partitions, trim);
+        // Materials are allocated once per station, not per bar, cell or gate.
+        var cellSteel = StructureGeometry.Paint(settings.CellSteel, 0.12f);
+        var cellLowerWall = StructureGeometry.Paint(settings.CellLowerWall);
+        var cellAccent = StructureGeometry.Paint(settings.CellAccent);
+        BuildDetentionWing(walls, body, clear, floorY, wallTop, partitions,
+            cellSteel, cellLowerWall, cellAccent, settings.ShowOpenCellGates);
 
         var stairs = StructureGeometry.Group(basement, "Stairs_-1_to_0");
         stairs.SetMeta("connects_floor_from", -1); stairs.SetMeta("connects_floor_to", 0);
@@ -828,12 +833,12 @@ public partial class PoliceStationMesh : Node3D
     }
 
     // =========================================================
-    // Eight accessible jail-style cells: four west, four east, arranged along
-    // a broad central corridor. Fronts use native collidable bars with true 1.9m
-    // open entrances; rear service wings are divided into reachable rooms.
-    // The detention wing is static, generated once, with no AI, doors or ticks.
+    // Eight connected jail cells: four per side of the established six-metre
+    // corridor. PS1.9 adds detailing without changing walls, cell dimensions,
+    // collision apertures or the 1.9m-wide walkable entry into every cell.
     private static void BuildDetentionWing(Node3D walls, StaticBody3D body, StructureClearance clear,
-        float floorY, float ceilingY, Material partition, Material bars)
+        float floorY, float ceilingY, Material partition, Material cellSteel,
+        Material cellLowerWall, Material cellAccent, bool showOpenGates)
     {
         const float cellDepth = 6f, doorHalf = 0.95f;
         if (CellBlockRearZ + CellsPerSide * cellDepth != CellBlockFrontZ ||
@@ -851,8 +856,6 @@ public partial class PoliceStationMesh : Node3D
             float roomMaxX = Mathf.Max(corridorX, backX);
             var wing = WallGroup(walls, wingName + "DetentionWing");
 
-            // The continuous rear wall separates each cell from secure service
-            // rooms. Side partitions meet it and the barred corridor face flush.
             StructureGeometry.WallZ(wing, body, wingName + "CellBack",
                 backX, CellBlockRearZ, CellBlockFrontZ, floorY, ceilingY, partition, 0.18f);
             for (int cell = 0; cell < CellsPerSide; cell++)
@@ -860,15 +863,38 @@ public partial class PoliceStationMesh : Node3D
                 float z0 = CellBlockRearZ + cell * cellDepth;
                 float z1 = z0 + cellDepth, doorZ = (z0 + z1) * 0.5f;
                 string cellName = wingName + "Cell" + (cell + 1);
+                var cellDetail = WallGroup(wing, cellName + "Detail");
                 StructureGeometry.WallX(wing, body, cellName + "RearDivider",
                     roomMinX, roomMaxX, z0, floorY, ceilingY, partition, 0.18f);
 
-                BuildCellBarSpan(wing, body, cellName + "BarsA", corridorX,
-                    z0 + 0.10f, doorZ - doorHalf, floorY, ceilingY, bars);
-                BuildCellBarSpan(wing, body, cellName + "BarsB", corridorX,
-                    doorZ + doorHalf, z1 - 0.10f, floorY, ceilingY, bars);
-                DoorFrameZ(wing, cellName + "OpenDoor", corridorX, doorZ,
-                    floorY, doorHalf * 2f, floorY + 2.90f, bars);
+                // Front grille: narrow collidable steel posts, two delicate
+                // reinforcing crossbars and a 2.9m-high clear doorway.
+                BuildCellBarSpan(cellDetail, body, cellName + "GrilleWest", corridorX,
+                    z0 + 0.12f, doorZ - doorHalf, floorY, ceilingY, cellSteel);
+                BuildCellBarSpan(cellDetail, body, cellName + "GrilleEast", corridorX,
+                    doorZ + doorHalf, z1 - 0.12f, floorY, ceilingY, cellSteel);
+                DoorFrameZ(cellDetail, cellName + "DoorFrame", corridorX, doorZ,
+                    floorY, doorHalf * 2f, floorY + 2.90f, cellSteel);
+
+                // The lintel above the empty doorway was previously plain space;
+                // finish it with a barred transom WITHOUT filling the walkable opening.
+                BuildCellBarSpan(cellDetail, body, cellName + "OverDoor", corridorX,
+                    doorZ - doorHalf + 0.05f, doorZ + doorHalf - 0.05f,
+                    floorY + 3.04f, ceilingY, cellSteel);
+
+                // A permanently OPEN demonstration gate shows the intended cell
+                // hardware without introducing a working door or a blocked doorway.
+                // It folds along the interior face of the left door jamb.
+                if (showOpenGates)
+                    BuildOpenCellGate(cellDetail, cellName, corridorX, doorZ,
+                        side, floorY, cellSteel, cellAccent);
+
+                BuildCellWallDetails(cellDetail, cellName, backX, corridorX,
+                    side, doorZ, z0, z1, floorY, cellLowerWall, cellAccent, cellSteel);
+                BuildCellNumberPlate(cellDetail, cellName, corridorX,
+                    side, doorZ + doorHalf + 0.22f, floorY + 2.24f,
+                    cell + 1, cellAccent, partition);
+
                 clear.Reserve(cellName + "Entry",
                     new(corridorX, floorY + 1.45f, doorZ),
                     new(3.6f, 2.9f, doorHalf * 2f));
@@ -878,9 +904,7 @@ public partial class PoliceStationMesh : Node3D
                 roomMinX, roomMaxX, CellBlockFrontZ,
                 floorY, ceilingY, partition, 0.18f);
 
-            // Two partitions per side make three large rear service rooms.
-            // They are entered from the front processing vestibule (Z=-2..8)
-            // and connected to one another through genuine framed apertures.
+            // Existing side service rooms remain accessible and unchanged.
             float sideMin = side < 0 ? -Width * 0.5f + ExteriorInsideFace :
                 CellBackWallX + PartitionHalfThickness;
             float sideMax = side < 0 ? -CellBackWallX - PartitionHalfThickness :
@@ -890,7 +914,7 @@ public partial class PoliceStationMesh : Node3D
                 var divider = WallGroup(walls, wingName + "ServiceDivider");
                 DoorPartitionX(divider, body, clear, wingName + "ServiceEntry",
                     sideMin, sideMax, dividerZ, floorY, ceilingY,
-                    side * 17.5f, 2.8f, partition, bars, partition);
+                    side * 17.5f, 2.8f, partition, cellSteel, partition);
             }
         }
 
@@ -902,28 +926,97 @@ public partial class PoliceStationMesh : Node3D
     }
 
     // =========================================================
-    // Fixed square detention bars, with real individual colliders. No invisible
-    // full-width wall may cross a cell door opening; the player can enter each cell.
+    // Slender steel grille with individual colliding uprights. Spacing is just
+    // under 40cm, far narrower than the test player's 60cm capsule diameter.
+    // Three restrained rails tie them together; no solid plane closes the gaps.
     private static void BuildCellBarSpan(Node3D visual, StaticBody3D body, string name,
         float x, float startZ, float endZ, float bottom, float top, Material material)
     {
-        if (endZ <= startZ) throw new System.InvalidOperationException(
-            "PoliceStation001: detention bars would overlap the cell doorway.");
-        float span = endZ - startZ;
-        StructureGeometry.Box(visual, body, name + "LowerRail",
-            new(x, bottom + 0.08f, (startZ + endZ) * 0.5f),
-            new(0.12f, 0.16f, span), material);
-        StructureGeometry.Box(visual, body, name + "UpperRail",
-            new(x, top - 0.08f, (startZ + endZ) * 0.5f),
-            new(0.12f, 0.16f, span), material);
-        int intervals = Mathf.Max(1, Mathf.CeilToInt(span / 0.50f));
-        for (int i = 0; i <= intervals; i++)
+        if (endZ <= startZ || top - bottom < 0.60f)
+            throw new System.InvalidOperationException(
+                "PoliceStation001: invalid detention grille or doorway transom.");
+        float span = endZ - startZ, midZ = (startZ + endZ) * 0.5f;
+        const float rod = 0.072f;
+        foreach (float y in new[] { bottom + 0.055f, bottom + (top - bottom) * 0.53f, top - 0.055f })
+            StructureGeometry.Box(visual, body, name + "CrossRail",
+                new(x, y, midZ), new(0.105f, 0.085f, span), material);
+        int intervals = Mathf.Max(1, Mathf.CeilToInt(span / 0.38f));
+        for (int index = 0; index <= intervals; index++)
         {
-            float z = Mathf.Lerp(startZ, endZ, i / (float)intervals);
-            StructureGeometry.Box(visual, body, name + "VerticalBar",
+            float z = Mathf.Lerp(startZ, endZ, index / (float)intervals);
+            StructureGeometry.Box(visual, body, name + "SteelRod",
                 new(x, (bottom + top) * 0.5f, z),
-                new(0.12f, top - bottom, 0.12f), material);
+                new(rod, top - bottom, rod), material);
         }
+    }
+
+    // =========================================================
+    // Static, visual-only 90-degree open cell-gate silhouette, parked along the
+    // inside of its own doorway. Never occupies the central corridor or the
+    // 1.9m door aperture, and intentionally has no lock, hinge or collider.
+    private static void BuildOpenCellGate(Node3D visuals, string name, float frontX, float doorZ,
+        int side, float floorY, Material steel, Material accent)
+    {
+        const float gateLength = 1.66f, gateHeight = 2.58f, gateInset = 0.12f;
+        float hingeX = frontX + side * gateInset;
+        float gateMidX = hingeX + side * gateLength * 0.5f;
+        float gateZ = doorZ - 0.95f + 0.14f;
+        foreach (float y in new[] { floorY + 0.10f, floorY + 1.33f, floorY + gateHeight - 0.08f })
+            StructureGeometry.Box(visuals, null, name + "OpenGateRail",
+                new(gateMidX, y, gateZ),
+                new(gateLength, 0.07f, 0.075f), steel);
+        for (int index = 0; index <= 6; index++)
+        {
+            float x = hingeX + side * gateLength * index / 6f;
+            StructureGeometry.Box(visuals, null, name + "OpenGateRod",
+                new(x, floorY + gateHeight * 0.5f, gateZ),
+                new(0.060f, gateHeight, 0.060f), steel);
+        }
+        StructureGeometry.Box(visuals, null, name + "GateLatch",
+            new(hingeX + side * (gateLength - 0.06f), floorY + 1.33f, gateZ),
+            new(0.17f, 0.19f, 0.11f), accent);
+    }
+
+    // =========================================================
+    // Thin lower-wall finish, tiny top trim and recessed-looking ventilation
+    // grille per cell. These sit on the CELL side of the existing real wall,
+    // with no new collision and no changes to room dimensions.
+    private static void BuildCellWallDetails(Node3D visual, string name,
+        float backX, float frontX, int side, float cellZ, float z0, float z1,
+        float floorY, Material lower, Material accent, Material steel)
+    {
+        float faceX = backX - side * 0.106f;
+        float innerSpan = z1 - z0 - 0.24f;
+        StructureGeometry.Box(visual, null, name + "LowerWallPanel",
+            new(faceX, floorY + 0.48f, cellZ),
+            new(0.026f, 0.96f, innerSpan), lower);
+        StructureGeometry.Box(visual, null, name + "WallCapStrip",
+            new(faceX - side * 0.007f, floorY + 0.975f, cellZ),
+            new(0.035f, 0.035f, innerSpan), accent);
+        float ventX = backX - side * 0.145f;
+        StructureGeometry.Box(visual, null, name + "VentRecess",
+            new(ventX, floorY + 3.26f, cellZ),
+            new(0.024f, 0.34f, 0.78f), steel);
+        for (int vent = 0; vent < 4; vent++)
+            StructureGeometry.Box(visual, null, name + "VentLouver",
+                new(ventX - side * 0.015f, floorY + 3.14f + vent * 0.08f, cellZ),
+                new(0.035f, 0.025f, 0.68f), accent);
+    }
+
+    // =========================================================
+    // Visual cell-number plaque made of 1–4 small bright bars, avoiding text
+    // layout assets, fonts or per-cell label rendering. It faces the corridor.
+    private static void BuildCellNumberPlate(Node3D visual, string name,
+        float frontX, int side, float z, float y, int cellNumber,
+        Material accent, Material bright)
+    {
+        float faceX = frontX - side * 0.12f;
+        StructureGeometry.Box(visual, null, name + "NumberPlate",
+            new(faceX, y, z), new(0.03f, 0.24f, 0.48f), accent);
+        for (int tick = 0; tick < cellNumber; tick++)
+            StructureGeometry.Box(visual, null, name + "NumberTick",
+                new(faceX - side * 0.024f, y, z + (tick - (cellNumber - 1) * 0.5f) * 0.09f),
+                new(0.012f, 0.11f, 0.036f), bright);
     }
 
     // =========================================================

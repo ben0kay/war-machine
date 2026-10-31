@@ -37,4 +37,10 @@ public partial class PoliceStationSettings : StructureSettings
     [Export] public Color StairRisers { get; set; } = new(0.51f, 0.56f, 0.58f);
     // Plain muted navy-blue safety nosing (not yellow or emissive).
     [Export] public Color StairEdgeStrips { get; set; } = new(0.20f, 0.35f, 0.51f);
+
+    [ExportGroup("Detention cell appearance")]
+    [Export] public Color CellSteel { get; set; } = new(0.18f, 0.24f, 0.29f);
+    [Export] public Color CellLowerWall { get; set; } = new(0.52f, 0.58f, 0.61f);
+    [Export] public Color CellAccent { get; set; } = new(0.25f, 0.37f, 0.48f);
+    [Export] public bool ShowOpenCellGates { get; set; } = true;
 }

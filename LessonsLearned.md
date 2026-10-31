@@ -114,3 +114,14 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 **Source correction (local visual acceptance pending):** Keep one **20cm** noncolliding underside under the treads, remove the thick side stringers, use nine balusters evenly spaced along each flight, compute both turn widths from the real flight bounds, and support the basement platform with two full-height static corner columns from basement floor to the landing underside. Preserve the stair ramp, treads, risers, 6cm blue nosing, cell block, Terrain3D and all above-ground architecture.
 
 **Prevention:** Check an authored stair in first person from side and underside; verify visible, uniformly spaced balusters, rail/pillar joins, no obstructive half-height panels, platform ends aligned with real stairs, and non-floating structural supports. Read the building design guide's PS1.8 notes. Source-only commits require local Godot validation.
+
+
+## LL007 — Coarse detention bars and empty cell-door transoms (2026-10-31)
+
+**Observed/requested:** After the PS1.7/PS1.8 basement extension, the user requested a second pass because jail cells appeared too clunky and under-detailed. Current source confirmed 12cm-square bars at ~50cm spacing, wide horizontal rails, basic full-height concrete partitions and only an unfilled doorway frame.
+
+**Source correction awaiting FPS validation:** Replace coarse structural bar proportions with 7.2cm uprights and regular ≤38cm gaps, three thin crossrails and a short barred upper transom. Add small, static lower concrete wall panels, trims, ventilation grilles and corridor-visible bay markers. Stage a 90-degree open barred door leaf on the **inside of the cell, visual only**, leaving the original 1.9m-wide walkable aperture and 2.9m headroom unchanged. Keep native collision on fixed grilles but not visual-only detail; use shared material instances and no runtime ticking.
+
+**Prevention:** For procedural jail/industrial rooms, vary material profiles and small architectural cues rather than solving lack of detail with thicker bars or multiple overlapping colliders. Verify actual passage size, spacing versus character capsule diameter, collision-bar agreement, flush divider joins and a functional distinction between an intentionally open mock gate and an interactive physical door. Confirm by local build and walking the corridor into every cell.
+
+**Status:** Original clunky bar measurements verified from source; revised detail geometry committed; Godot rendering and physics validation pending.

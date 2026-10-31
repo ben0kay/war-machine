@@ -57,6 +57,12 @@ A 3.2m tread extends only 1.6m to each side of the flight centre. Rail/post X co
 
 For below-ground detention corridors, author genuinely traversable central routes and actual cell door **openings** with corresponding *visual and physical* gaps. Do not replace jail fronts with a full invisible collider through a doorway, or end cell partitions short of their barred wall/back wall. Check that cell bars, service-room walls, foundation perimeter and rear hall connect without dangling stubs. Add functional doors, prisoners or furniture only in a separately authorized pass.
 
+## Detention bars and cell front detailing — PS1.9 (2026-10-31)
+
+A detention area built from generic large rectangular primitives can appear like a crude fence rather than a believable set of cells. Give bars an intentional **slender steel profile**, regular rhythm and lightweight horizontal reinforcement without replacing them with a solid invisible collider. Preserve a separate physically walkable **full-width doorway** below its lintel, and confine any barred transom or cell-gate placeholder to geometry *outside* the doorway's clearance volume. A door posed 90 degrees open is **visual-only** until a separate door/interaction phase authorizes its physics and hinge state.
+
+Add small but restrained architectural distinctions (lower wall finish, a vent or grille, small cell designation) rather than duplicating an entire furniture subsystem. Keep static materials shared across cells; batch or simplify if the jail population later grows. Validate bars from first-person corridor eye height, actual capsule passage through every cell doorway and alignment at solid rear walls and dividers. Do not let room trim create new corner nubs or coplanar Z-fighting. See PoliceStation001 PS1.9.
+
 ## Open stair railings and structurally supported turns — PS1.8 (2026-10-31)
 
 A thick continuous stair `SideStringer` can unintentionally hide the lower half of every banister even when every post is generated. Keep the backing **thin and beneath the steps**, make balusters evenly spaced on both sides, and embed their ends in the backing/treads and handrail. Inspect from the stair sides and below, not only from the player eye height while climbing. Avoid railing posts extending past the actual first/last step.

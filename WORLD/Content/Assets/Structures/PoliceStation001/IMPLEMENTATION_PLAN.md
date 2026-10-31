@@ -8,6 +8,7 @@
 | **PS1** | Front-right lobby U-stair, connected upper landing, varied asymmetrical ground rooms | Regular Chat / Codex; owner visual validation | **Implemented in source; Awaiting Validation** |
 | **PS1.5** | Add a 48×32m standalone basement below the unchanged above-ground station, mirrored U-stair down, ground slab aperture, guards, collision, editor preview; terrain placement separate | Regular Chat; owner local inspection | **Implemented in source; Awaiting Validation** |
 | **PS1.7** | Connect stair posts/rails to treads/landings and close visible step gaps; expand basement to full footprint with central detention corridor, eight barred accessible cells and service wings | Regular Chat; owner walkthrough | **Implemented in source; Awaiting Validation** |
+| **PS1.9** | Refine all eight cells with thinner collidable grilles, upper doorway transoms, visual-only open gate silhouettes, lower-wall trim, vent details and cell identifier plates | Regular Chat; owner FPS inspection | **Implemented in source; Awaiting Validation** |
 | **PS2** | Selectively furnish accepted rooms with reusable models under safe clearance / floor ownership | Codex for integration, Regular Chat for simple placement | Planned |
 | **PS3** | Separate explicit world/site placement, culling/streaming integration and repeatable performance stress baseline | Codex + owner local profiler | Planned |
 
