@@ -11,6 +11,7 @@ public partial class DirtPatchAuthoring : Node
     public const string PreviewDirectory = "res://WORLD/Terrain/GameplayDirtPreviewV3";
     private const string StageDirectory = "res://WORLD/Terrain/GameplayDirtPreviewV3.staging";
     private const string Manifest = "DTP1_V3_SOURCE_MANIFEST.txt";
+    private const string ManifestVersion = "DTP1-v3-savefix";
     private const uint Fields = (0x1Fu << 27) | (0x1Fu << 22) | (0xFFu << 14) | 1u;
     [Export] public DirtPatchSettings Settings { get; set; } = null!;
 
@@ -24,7 +25,7 @@ public partial class DirtPatchAuthoring : Node
         try
         {
             string[] originals = Directory.GetFiles(src, "*.res"), lines = File.ReadAllLines(Path.Combine(dst, Manifest));
-            if (originals.Length == 0 || lines.Length != originals.Length + 1 || lines[0] != "DTP1-v3") return false;
+            if (originals.Length == 0 || lines.Length != originals.Length + 1 || lines[0] != ManifestVersion) return false;
             var hashes = new Dictionary<string, string>(StringComparer.Ordinal);
             for (int i = 1; i < lines.Length; i++)
             {
@@ -69,7 +70,7 @@ public partial class DirtPatchAuthoring : Node
         string[] sources = Directory.GetFiles(src, "*.res");
         if (sources.Length == 0) throw new IOException("No native .res terrain regions found.");
         Directory.CreateDirectory(stage);
-        var lines = new List<string> { "DTP1-v3" };
+        var lines = new List<string> { ManifestVersion };
         foreach (string source in sources)
         {
             string name = Path.GetFileName(source);
@@ -98,10 +99,12 @@ public partial class DirtPatchAuthoring : Node
         if (!float.IsFinite(spacing) || spacing <= 0) throw new IOException("Bad Terrain3D vertex_spacing.");
         var exclusions = DirtPatchProtectedAreas.Build(world);
         int changed = 0, regions = 0, manual = 0, holes = 0;
+        var expectedControlHashes = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (Variant value in locations)
         {
             Vector2I loc = value.AsVector2I();
-            var region = data.Call("get_region", loc).AsGodotObject();
+            var region = data.Call("get_region", loc).AsGodotObject() as Resource
+                ?? throw new IOException($"Terrain3D region {loc} could not be loaded.");
             var map = (Image)region.Call("get_map", 1).AsGodotObject();
             var height = (Image)region.Call("get_map", 0).AsGodotObject();
             int size = map.GetWidth();
@@ -153,17 +156,38 @@ public partial class DirtPatchAuthoring : Node
                 BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset, 4), painted); local++;
             }
             if (local == 0) continue;
+            string regionFile = Path.GetFileName(region.ResourcePath);
+            if (string.IsNullOrEmpty(regionFile) || !File.Exists(Path.Combine(stage, regionFile)))
+                throw new IOException($"Cannot identify staged region {loc}: {region.ResourcePath}");
             region.Call("set_map", 1, Image.CreateFromData(size, size, false, Image.Format.Rf, bytes));
-            region.Set("edited", true); changed += local; regions++;
+            // Terrain3D 1.0.2: edited refreshes maps; modified is separately required for saving.
+            region.Set("edited", true);
+            region.Set("modified", true);
+            expectedControlHashes.Add(regionFile, Convert.ToHexString(SHA256.HashData(bytes)));
+            changed += local; regions++;
         }
         if (changed == 0) throw new IOException($"No automatic texels were painted (manual {manual}, hole {holes}). No preview published.");
         data.Call("update_maps", 1, true, false);
         data.Call("save_directory", StageDirectory);
         if (Directory.GetFiles(stage, "*.res").Length != sources.Length)
             throw new IOException("Incomplete save: staging folder retained; original terrain unchanged.");
+        // Disk read-back: a positive in-memory texel count is not evidence of a successful save.
+        // Ignore ResourceLoader's cache so only the re-opened native .res contents can pass.
+        foreach (var entry in expectedControlHashes)
+        {
+            var saved = ResourceLoader.Load<Resource>(StageDirectory + "/" + entry.Key,
+                "Terrain3DRegion", ResourceLoader.CacheMode.Ignore);
+            if (saved == null)
+                throw new IOException($"Cannot reopen saved dirt region {entry.Key}.");
+            var savedMap = saved.Call("get_map", 1).AsGodotObject() as Image;
+            if (savedMap == null || savedMap.GetFormat() != Image.Format.Rf ||
+                !string.Equals(Convert.ToHexString(SHA256.HashData(savedMap.GetData())),
+                    entry.Value, StringComparison.Ordinal))
+                throw new IOException($"Dirt control pixels did not persist in {entry.Key}; staging retained, preview not published.");
+        }
         Directory.Move(stage, dst);
         if (!HasCurrentPreview()) throw new IOException("DTP1 V3 wrote files, but manifest verification failed. Original terrain remains safe.");
-        GD.Print($"DTP1 V3 SUCCESS: {changed} soil texels in {regions} regions, manual skipped={manual}, holes skipped={holes}. Preview: {PreviewDirectory}. Open FPS World F6.");
+        GD.Print($"DTP1 V3 SUCCESS: {changed} soil texels saved and read back in {regions} regions, manual skipped={manual}, holes skipped={holes}. Preview: {PreviewDirectory}. Open FPS World F6.");
     }
 
     // =========================================================
