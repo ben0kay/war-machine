@@ -5,14 +5,18 @@
 
 This is the short **entry point** for AI work, not a replacement for the documents below.
 
-## Start each substantial task
+## Before starting code or project work — required reading
 
-Refresh the current repository sources even if this conversation read them earlier:
+Read these **three root files first, in order**, from the active branch even if this conversation previously read them:
 
 1. **[CodePreferences.md](CodePreferences.md)** — authoritative coding style, C# syntax, performance, folder/asset rules, Git scope, testing and planning.
-2. **[README.md](README.md)** — War Machine's actual project identity, primary FPS / secondary top-down views, shared-world scene paths, existing versus planned systems and current development status.
-3. **Owning feature README/plan, authoring guide, configuration and actual scripts/scenes/assets** — inspect only what the requested work affects. If notes conflict with code, check the source and flag the discrepancy.
-4. **[FPS_ONLY_CONVERSION_IMPLEMENTATION_PLAN.md](FPS_ONLY_CONVERSION_IMPLEMENTATION_PLAN.md)** — owner-approved FPS-only direction and phased removal roadmap. It is **planning, not blanket phase authorization**; use it when implementing related work.
+2. **[README.md](README.md)** — War Machine's project identity, primary FPS / secondary top-down views, shared-world scene paths, implemented versus planned systems and current development status.
+3. **[LessonsLearned.md](LessonsLearned.md)** — verified project pitfalls, root causes, fixes and prevention checks. Apply relevant lessons before editing or suggesting a fix.
+
+Then read the context needed for the task:
+
+4. **Owning feature README/plan, authoring guide, configuration and actual scripts/scenes/assets** — inspect only what the requested work affects. If notes conflict with code, verify the current source and flag the discrepancy.
+5. **[FPS_ONLY_CONVERSION_IMPLEMENTATION_PLAN.md](FPS_ONLY_CONVERSION_IMPLEMENTATION_PLAN.md)** — owner-approved FPS-only direction and phased removal roadmap, when working on FPS conversion. It is **planning, not blanket phase authorization**; use it when implementing related work.
 
 For **new objects/props**, always read `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md` and its SOC0 collision-mode rules. For **new or redesigned buildings**, read **both** `WORLD/Content/Assets/Structures/BUILDING_DESIGN_GUIDE.md` and `WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md` before modelling or furnishing.
 
@@ -26,4 +30,4 @@ For **new objects/props**, always read `WORLD/Content/Assets/Objects/OBJECT_AUTH
 - Keep a single logical commit for each authorized job and push only to `implement-td0-td1`. Never force reset, overwrite other changes, write to `main` or include unrelated files. Report changed files and commit SHA.
 - Update a feature README/plan when lasting behavior or configuration changes, and distinguish **implemented in source** from **awaiting local validation** or **accepted**. Keep handoffs brief and actionable.
 
-**Reminder:** `AGENTS.md` being read in a long conversation means rereading the linked *current branch files* before new substantive work — not relying on cached summaries.
+**Reminder:** Every new coding task requires refreshing the **current branch's CodePreferences.md, README.md, and LessonsLearned.md** before task-specific source review. Do not rely on cached summaries, and do not assume a GitHub push alone confirms Godot compilation or in-game behaviour.
