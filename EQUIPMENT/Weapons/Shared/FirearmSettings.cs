@@ -24,6 +24,9 @@ public partial class FirearmSettings : Resource
     [ExportGroup("Accuracy")]
     // Maximum half-angle in degrees. Zero means perfect accuracy; shot-only deviation.
     [Export(PropertyHint.Range, "0,10,0.05")] public float BaseSpreadDegrees { get; set; } = 0f;
+    [ExportGroup("FPS hip-fire accuracy")]
+    // Extra angular spread while shooting without ADS in FPS. Zero preserves the original base spread.
+    [Export(PropertyHint.Range, "0,2,0.05,suffix:°")] public float FpsHipFireExtraSpreadDegrees { get; set; }
     [ExportGroup("Gameplay recoil (RC0)")]
     // These values are independent of per-shot random BaseSpreadDegrees.
     [Export(PropertyHint.Range, "0,15,0.05")] public float RecoilPitchPerShotDegrees { get; set; }

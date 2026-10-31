@@ -68,3 +68,16 @@ Iron-sight centres were estimated from the current procedural builders; retune `
 
 **Validation status:** ADS0 and ADS1 are now present in source; **no Godot/.NET build or in-game verification performed** here. Runtime gun alignment, zoom comfort and movement feel require local acceptance.
 
+
+## FPS hip-fire accuracy precursor (2026-10-31)
+
+**Source implemented; local validation pending.** The owner requested subtle inaccuracy while hip-firing first, before a fully configurable ADS accuracy phase. Add a per-firearm `FpsHipFireExtraSpreadDegrees` to the shared master resource and pass it as an additional angle for FPS shots made with ADS toggled **off**. Existing `BaseSpreadDegrees` remains the shared normal shot-spread parameter; the firearm uses **one** `ShotSpread.Apply` sample on accepted shots.
+
+| Weapon | Existing base (also ADS) | FPS hip-fire extra | FPS hip-fire effective maximum |
+| --- | ---: | ---: | ---: |
+| Rifle_001 | 0.30° | +0.15° | 0.45° |
+| MachineGun_001 | 0.75° | +0.20° | 0.95° |
+
+ADS now has a relative precision advantage because it omits the new hip-fire-only extra angle, **but does not have a dedicated ADS spread multiplier yet**. That can be considered as the later ADS2a balance pass. Do not duplicate spread randomization, double-apply camera recoil or change top-down accuracy. This is first-person, shot-only work: idle cost remains zero, no new timers/nodes and no update loop.
+
+**Validation:** Build C#, F6 FPS compare hip/ADS patterns at a consistent wall range with several shots, test rifle/MG bursts and near-cover muzzle obstruction, then F6 top-down to verify its spread stays at the original base. Source complete; compilation and runtime tests still pending.

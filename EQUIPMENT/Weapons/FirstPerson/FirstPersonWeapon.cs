@@ -243,8 +243,10 @@ public partial class FirstPersonWeapon : Node
                 var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(_query);
                 Vector3 aim = hit.Count > 0 ? hit["position"].AsVector3() : _query.To;
                 // The FPS camera itself is already tilted upward by cumulative recoil.
-                // Using the default firing overload prevents applying the angle twice.
-                _weapon!.TryFire(aim, origin);
+                // FPS camera recoil already affects aim; hip fire adds only random spread,
+                // never a second recoil rotation. ADS retains the original base spread.
+                float extraSpread = _adsActive ? 0f : _weapon!.RuntimeSettings.FpsHipFireExtraSpreadDegrees;
+                _weapon.TryFire(aim, origin, extraSpread);
             }
         }
         if (_melee?.IsAttacking == true)

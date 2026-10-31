@@ -20,6 +20,7 @@ SeverPower = 0.65
 DamageKind = 0
 Range = 85.0
 BaseSpreadDegrees = 0.75
+FpsHipFireExtraSpreadDegrees = 0.20
 MagazineCapacity = 100
 ReloadSeconds = 4.5
 AutoReloadWhenEmpty = true
