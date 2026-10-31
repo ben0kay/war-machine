@@ -299,6 +299,32 @@ public partial class DebugOverlay : PanelContainer
                 value => { billboard.WindMultiplier = value; placement.ApplyWind(); });
             billboardRows.AddChild(new Label { Text = "Live preview only; Copy settings for saved values." });
         }
+        // STG5: the same controller owns data-driven plants and original grass.
+        if (_stylizedGrass?.GroundCover != null)
+        {
+            var placement = _stylizedGrass;
+            foreach (var plant in placement.GroundCover.Plants)
+            {
+                if (plant == null) continue;
+                var plantRows = AddSection(foliageRows, "Ground cover · " + plant.Label);
+                var toggle = new CheckButton { Text = plant.Label + " enabled",
+                    ButtonPressed = plant.Enabled, FocusMode = FocusModeEnum.None };
+                plantRows.AddChild(toggle);
+                toggle.Toggled += value => {
+                    plant.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
+                };
+                AddDeferredSlider(plantRows, plant.Label + " share", 0, 1, 0.05,
+                    plant.Share, value => plant.Share = value, placement.ApplySettings);
+                AddDeferredSlider(plantRows, plant.Label + " spacing (m)", 0, 5, 0.25,
+                    plant.MinimumSpacing, value => plant.MinimumSpacing = value, placement.ApplySettings);
+                AddDeferredSlider(plantRows, plant.Label + " minimum size", 0.25, 2, 0.05,
+                    plant.ScaleMin, value => plant.ScaleMin = value, placement.ApplySettings);
+                AddDeferredSlider(plantRows, plant.Label + " maximum size", 0.25, 2, 0.05,
+                    plant.ScaleMax, value => plant.ScaleMax = value, placement.ApplySettings);
+                AddBoundSlider(plantRows, plant.Label + " wind", 0, 2, 0.05,
+                    plant.WindMultiplier, value => { plant.WindMultiplier = value; placement.ApplyWind(); });
+            }
+        }
         rows = AddSection(foliageRows, "Pine trees");
         rows.AddChild(new Label { Text = "Release density/size to apply" });
         var pineEnabled = new CheckButton { Text = "Pine trees enabled", ButtonPressed = pines.Settings.Enabled, FocusMode = FocusModeEnum.None };
@@ -589,6 +615,21 @@ public partial class DebugOverlay : PanelContainer
             values["BillboardGrassTiltChance"] = billboard.TiltChance;
             values["BillboardGrassMaxTiltDegrees"] = billboard.MaxTiltDegrees;
             values["BillboardGrassWindMultiplier"] = billboard.WindMultiplier;
+        }
+        if (_stylizedGrass?.GroundCover != null)
+        {
+            foreach (var plant in _stylizedGrass.GroundCover.Plants)
+            {
+                if (plant == null) continue;
+                string key = "GroundCover_" + plant.Label.Replace(" ", "");
+                values[key + "_Enabled"] = plant.Enabled;
+                values[key + "_Share"] = plant.Share;
+                values[key + "_Spacing"] = plant.MinimumSpacing;
+                values[key + "_ScaleMin"] = plant.ScaleMin;
+                values[key + "_ScaleMax"] = plant.ScaleMax;
+                values[key + "_WindMultiplier"] = plant.WindMultiplier;
+            }
+            values["GroundCoverActivePlants"] = _stylizedGrass.ActivePlants;
         }
         if (_renderCulling != null)
         {

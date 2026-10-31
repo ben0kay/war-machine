@@ -17,6 +17,8 @@
 
 > **VW1 procedural landscape (source-implemented, awaiting local validation):** the existing **single Terrain3D startup sculpt** adds seeded rolling terrain over a **784×784m** area encompassing the village and all three forests—not separate manually placed hills per zone. Building foundations, roads and robot patrol corridor remain protected and flat/graded; trees and grass sample the resulting Terrain3D heights automatically. Toggle `WORLD/Configuration/WorldMaster.tres → VillageOutskirtsEnabled` or tune `VillageOutskirtsScale`. [Generation details](WORLD/Generation/README.md#vw1--broad-procedural-landscape-across-the-village-and-forests-revised-2026-10-31).
 
+> **STG5 shared ground cover (source-implemented, local validation pending):** `VEGETATION/Grass/Stylized/Configuration/GroundCoverMaster.tres` references the existing stylized and billboard grass masters plus reusable extra plant profiles. `ForestShrub001` now joins the same 32m Terrain3D/LOD/wind batch owner at **20% of detailed-cover candidates** (80% grass), with an independent F1 shrub toggle. [Ground-cover guide](VEGETATION/Grass/Stylized/README.md#stg5--unified-extensible-ground-cover-2026-10-31).
+
 ## Game vision
 
 War Machine takes place on a recognizably earthly but unsettling world: misty forests, rolling terrain, cliffs, roads, abandoned businesses and houses, caves, changing light and weather, and signs of a science-fiction intrusion. **Zombies and imposing mechanical entities** are current threat foundations; other hostile life, wildlife and environmental dangers may broaden the setting later.

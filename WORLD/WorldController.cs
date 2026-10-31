@@ -184,16 +184,24 @@ public partial class WorldController : Node3D
                 "res://VEGETATION/Configuration/VegetationVisibilityMaster.tres").Duplicate(true));
         // STG1: original GPU particles are OFF in both masters; new imported grass uses
         // the same road/structure masks and streams lightweight MultiMesh patches.
-        var stylizedConfig = GD.Load<StylizedGrassSettings>(
+        var coverMaster = GD.Load<GroundCoverSettings>(
+            "res://VEGETATION/Grass/Stylized/Configuration/GroundCoverMaster.tres");
+        var cover = coverMaster != null ? (GroundCoverSettings)coverMaster.Duplicate(true) : null;
+        var stylizedConfig = cover?.StylizedGrass ?? GD.Load<StylizedGrassSettings>(
             "res://VEGETATION/Grass/Stylized/Configuration/StylizedGrassMaster.tres");
-        var fillerConfig = GD.Load<BillboardGrassSettings>(
+        var fillerConfig = cover?.BillboardGrass ?? GD.Load<BillboardGrassSettings>(
             "res://VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres");
-        if (stylizedConfig != null && fillerConfig != null && (stylizedConfig.Enabled || fillerConfig.Enabled))
+        bool hasPlants = false;
+        if (cover != null)
+            foreach (var plant in cover.Plants)
+                if (plant != null && plant.Enabled && plant.Share > 0f) { hasPlants = true; break; }
+        if (stylizedConfig != null && fillerConfig != null
+            && (stylizedConfig.Enabled || fillerConfig.Enabled || hasPlants))
         {
             _stylizedGrass = new StylizedGrassPlacement {
                 Name = "StylizedGrass",
-                Settings = (StylizedGrassSettings)stylizedConfig.Duplicate(true),
-                FillerSettings = (BillboardGrassSettings)fillerConfig.Duplicate(true),
+                Settings = stylizedConfig,
+                FillerSettings = fillerConfig, GroundCover = cover,
                 EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility
             };
             foreach (Rect2 exclusion in grassClearings) _stylizedGrass.ExclusionAreas.Add(exclusion);

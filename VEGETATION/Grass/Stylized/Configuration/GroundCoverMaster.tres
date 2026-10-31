@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="GroundCoverSettings" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://VEGETATION/Grass/Stylized/Configuration/GroundCoverSettings.cs" id="1"]
+[ext_resource type="Resource" path="res://VEGETATION/Grass/Stylized/Configuration/StylizedGrassMaster.tres" id="2"]
+[ext_resource type="Resource" path="res://VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres" id="3"]
+[ext_resource type="Resource" path="res://VEGETATION/Grass/Stylized/Configuration/ForestShrub001Master.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+StylizedGrass = ExtResource("2")
+BillboardGrass = ExtResource("3")
+Plants = Array[Resource("res://VEGETATION/Grass/Stylized/Configuration/GroundCoverPlantSettings.cs")]([ExtResource("4")])

@@ -1,6 +1,7 @@
 // STG3B: configurable irregular billboard patch placement; shares grass streaming and exclusion ownership.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class BillboardGrassSettings : Resource
 {

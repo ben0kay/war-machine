@@ -1,6 +1,7 @@
 // STG1: editor master for sparse, seeded imported grass patch placement; no GPU particles.
 using Godot;
 
+[Tool]
 [GlobalClass]
 public partial class StylizedGrassSettings : Resource
 {
