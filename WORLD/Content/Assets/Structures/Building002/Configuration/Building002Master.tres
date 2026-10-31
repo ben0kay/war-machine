@@ -7,6 +7,7 @@ script = ExtResource("1")
 Width = 17.0
 Depth = 13.0
 WallHeight = 4.0
+StairTreadCount = 16
 RoofRise = 2.6
 UpperWallHeight = 2.8
 Timber = Color(0.45, 0.4, 0.32, 1)

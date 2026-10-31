@@ -10,6 +10,8 @@ public partial class Building002Settings : StructureSettings
     [Export(PropertyHint.Range, "10,18,0.5")] public float Depth { get; set; } = 13f;
     [Export(PropertyHint.Range, "3.4,5.0,0.1")] public float WallHeight { get; set; } = 4.0f;
     [Export(PropertyHint.Range, "1.4,3.5,0.1")] public float RoofRise { get; set; } = 2.6f;
+    [ExportGroup("Interior stairs")]
+    [Export(PropertyHint.Range, "12,22,1")] public int StairTreadCount { get; set; } = 16;
     [ExportGroup("Upper floor")]
     [Export(PropertyHint.Range, "2.5,3.4,0.1")] public float UpperWallHeight { get; set; } = 2.8f;
     [ExportGroup("Colours")]
