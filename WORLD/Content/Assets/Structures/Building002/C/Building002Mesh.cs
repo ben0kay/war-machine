@@ -5,6 +5,11 @@ using Godot;
 [Tool]
 public partial class Building002Mesh : Node3D
 {
+    // Upper deck owns the roof of the ground-floor rooms. The wall-top inset
+    // is shared with the actual upper slab so partitions do not stop short.
+    private const float UpperDeckThickness = 0.24f;
+    private const float ReceptionX = -4.5f;
+
     [Export] public Building002Settings Settings { get; set; } = null!;
     [Export] public bool ShowRoof { get; set; } = true;
     private Node3D? _roof;
@@ -58,7 +63,17 @@ public partial class Building002Mesh : Node3D
         float h = Mathf.Clamp(s.WallHeight, 3.4f, 5f), rise = Mathf.Clamp(s.RoofRise, 1.4f, 3.5f);
         float hx = w * 0.5f, hz = d * 0.5f;
         float upperHeight = Mathf.Clamp(s.UpperWallHeight, 2.5f, 3.4f);
+        float stairFront = hz - 3.45f, stairRear = stairFront - 5.50f;
+        float rearOfficeZ = -hz + 3.35f, partitionTop = h - UpperDeckThickness - 0.02f;
+        float receptionZ = hz - 3.65f, stoveZ = hz - 1.55f;
+        float cabinetX = -hx + 1.65f, cabinetZ = -hz + 2.20f;
+        float lockerX = 3.75f, lockerZ = hz - 3.20f;
+        if (stairRear <= rearOfficeZ + 0.50f || Mathf.RadToDeg(Mathf.Atan2(h, stairFront - stairRear)) > 44f)
+            throw new System.InvalidOperationException(
+                "Building002: these footprint/floor-height settings cannot fit the 2m+ stair approach " +
+                "and a safely pitched straight flight ahead of the rear-office wall.");
         var generated = StructureGeometry.Group(this, "Generated");
+        var clearance = new StructureClearance(generated);
         var lower = StructureGeometry.Group(generated, "Level_0");
         var upper = StructureGeometry.Group(generated, "Level_1");
         lower.SetMeta("floor_level", 0); lower.SetMeta("floor_elevation", 0f);
@@ -125,25 +140,56 @@ public partial class Building002Mesh : Node3D
         SideWindow(shell, detail, body, -hx, -1, hz, h, wood, woodLight, trim, glass);
         SideWindow(shell, detail, body,  hx,  1, hz, h, wood, woodLight, trim, glass);
 
-        // A partition to make the right side into a separate room, with its own real door gap.
+        // Ground-storey partitions continue to the underside of the actual
+        // Y=h upper deck with a 2cm reveal (not the old fixed Y=2.95m).
         const float dividingX = 2.7f, gapA = -0.8f, gapB = 1.35f;
-        StructureGeometry.WallZ(partitions, body, "PartitionRear", dividingX, -hz + 0.25f, gapA, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallZ(partitions, body, "PartitionFront", dividingX, gapB, hz - 0.25f, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallZ(partitions, body, "PartitionHeader", dividingX, gapA, gapB, 2.65f, 2.95f, woodLight, 0.15f);
-        // Rear left office/bedroom: a second partition with a different walk-through gap.
-        float partitionZ = -hz + 3.35f;
+        StructureGeometry.WallZ(partitions, body, "PartitionRear", dividingX, -hz + 0.25f, gapA, 0, partitionTop, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, body, "PartitionFront", dividingX, gapB, hz - 0.25f, 0, partitionTop, woodLight, 0.15f);
+        StructureGeometry.WallZ(partitions, body, "PartitionHeader", dividingX, gapA, gapB, 2.65f, partitionTop, woodLight, 0.15f);
+        // Stop the rear partition at the receiving wall's near face so it does
+        // not leave a narrow floating seam or project through the intersection.
         StructureGeometry.WallX(partitions, body, "RearOfficeLeft", -hx + 0.25f, -4.8f,
-            partitionZ, 0, 2.95f, woodLight, 0.15f);
-        StructureGeometry.WallX(partitions, body, "RearOfficeRight", -2.9f, dividingX - 0.2f,
-            partitionZ, 0, 2.95f, woodLight, 0.15f);
+            rearOfficeZ, 0, partitionTop, woodLight, 0.15f);
+        StructureGeometry.WallX(partitions, body, "RearOfficeRight", -2.9f, dividingX - 0.075f,
+            rearOfficeZ, 0, partitionTop, woodLight, 0.15f);
         StructureGeometry.WallX(partitions, body, "RearOfficeLintel", -4.8f, -2.9f,
-            partitionZ, 2.6f, 2.95f, woodLight, 0.15f);
-        // Interior furniture is modest but gives the rooms real gameplay scale.
-        StructureGeometry.Box(rooms, body, "ReceptionDesk", new(-3.1f, 0.66f, hz - 2.15f),
+            rearOfficeZ, 2.6f, partitionTop, woodLight, 0.15f);
+
+        // Reserve both the entrance-to-stair walkway and full-height glazing
+        // volumes BEFORE furnishing. Use complete prop bounds in every check.
+        clearance.Reserve("FrontEntranceVestibule", new(0, 1.45f, (front + stairFront) * 0.5f),
+            new(2.4f, 2.9f, front - stairFront));
+        clearance.Reserve("GroundStairApproach", new(0.85f, 1.45f, stairFront + 1.15f),
+            new(2.6f, 2.9f, 2.3f));
+        clearance.Reserve("FrontLeftWindow", new(-4.25f, 2f, front - 0.80f),
+            new(2.7f, 1.8f, 1.60f));
+        clearance.Reserve("FrontRightWindow", new(4.75f, 2f, front - 0.80f),
+            new(2.7f, 1.8f, 1.60f));
+        clearance.Reserve("WestSideWindow", new(-hx + 0.65f, 2f, -0.4f),
+            new(1.65f, 1.8f, 4.0f));
+        clearance.Reserve("EastSideWindow", new(hx - 0.65f, 2f, -0.4f),
+            new(1.65f, 1.8f, 4.0f));
+        foreach (float windowX in new[] { -4.5f, 4.5f })
+            clearance.Reserve("RearWindowSightline", new(windowX, 2f, -hz + 0.80f),
+                new(2.6f, 1.8f, 1.60f));
+
+        // Furniture is checked against the reserved circulation and window
+        // space, not simply placed by eye. Invalid authoring fails visibly.
+        RequireFurnishingClearance(clearance, "ReceptionDesk",
+            new(ReceptionX, 0.70f, receptionZ), new(2.90f, 1.40f, 0.95f));
+        RequireFurnishingClearance(clearance, "OfficeCabinet",
+            new(cabinetX, 1.04f, cabinetZ), new(1.45f, 2.05f, 0.75f));
+        RequireFurnishingClearance(clearance, "EquipmentLocker",
+            new(lockerX, 1.02f, lockerZ), new(1.08f, 2.04f, 1.06f));
+        RequireFurnishingClearance(clearance, "WoodStove",
+            new(-hx + 1.38f, 0.92f, stoveZ), new(1.05f, 1.72f, 1.06f));
+
+        // Shift desk, locker, stove and cabinet away from entrance and windows.
+        StructureGeometry.Box(rooms, body, "ReceptionDesk", new(ReceptionX, 0.66f, receptionZ),
             new(2.7f, 1.3f, 0.7f), woodDark);
-        StructureGeometry.Box(rooms, null, "DeskTop", new(-3.1f, 1.34f, hz - 2.15f),
+        StructureGeometry.Box(rooms, null, "DeskTop", new(ReceptionX, 1.34f, receptionZ),
             new(2.9f, 0.10f, 0.95f), woodLight);
-        StructureGeometry.Box(rooms, body, "OfficeCabinet", new(-hx + 1.1f, 1.04f, -hz + 1.3f),
+        StructureGeometry.Box(rooms, body, "OfficeCabinet", new(cabinetX, 1.04f, cabinetZ),
             new(1.45f, 2.05f, 0.75f), woodDark);
         StructureGeometry.Box(rooms, body, "BunkBedBase", new(hx - 2f, 0.54f, -hz + 2.1f),
             new(1.65f, 0.96f, 3.2f), trim);
@@ -151,13 +197,13 @@ public partial class Building002Mesh : Node3D
             new(1.53f, 0.17f, 3.04f), slateLight);
         StructureGeometry.Box(rooms, null, "Pillow", new(hx - 2f, 1.20f, -hz + 0.8f),
             new(1.20f, 0.17f, 0.53f), stone);
-        StructureGeometry.Box(rooms, body, "EquipmentLocker", new(hx - 1.2f, 1.02f, hz - 1.35f),
+        StructureGeometry.Box(rooms, body, "EquipmentLocker", new(lockerX, 1.02f, lockerZ),
             new(0.95f, 2.04f, 1.06f), trim);
-        StructureGeometry.Box(rooms, null, "LockerDoor", new(hx - 1.75f, 1.06f, hz - 1.35f),
+        StructureGeometry.Box(rooms, null, "LockerDoor", new(lockerX + 0.55f, 1.06f, lockerZ),
             new(0.06f, 1.82f, 0.93f), slate);
-        StructureGeometry.Box(rooms, body, "Stove", new(-hx + 1.38f, 0.92f, 0.15f),
+        StructureGeometry.Box(rooms, body, "Stove", new(-hx + 1.38f, 0.92f, stoveZ),
             new(1.05f, 1.72f, 1.06f), trim);
-        StructureGeometry.Box(rooms, null, "StoveFirebox", new(-hx + 1.38f, 0.98f, 0.72f),
+        StructureGeometry.Box(rooms, null, "StoveFirebox", new(-hx + 1.38f, 0.98f, stoveZ + 0.57f),
             new(0.64f, 0.56f, 0.06f), accent);
 
         // Thick timber framework and a porch that visually distinguishes this from Building001.
@@ -210,19 +256,32 @@ public partial class Building002Mesh : Node3D
         for (int i = 0; i < 5; i++)
             StructureGeometry.Box(detail, null, "SignInlay", new(-1.40f + i * 0.70f, 3.45f, front + 0.32f),
                 new(0.35f, 0.17f, 0.045f), accent);
-        AddShowcaseDetails(_level0Visuals, body, s, hx, hz, h);
+        AddShowcaseDetails(_level0Visuals, body, s, hx, hz, h,
+            ReceptionX, receptionZ, cabinetX, cabinetZ);
         BuildUpperFloor(generated, _level1Visuals, upperBody, w, d, h, upperHeight,
+            stairFront, stairRear,
             wood, woodLight, woodDark, slateLight, trim, glass, stone);
     }
 
 
 
     // =========================================================
+    // Fail at authoring time if a fixed fixture crosses a reserved doorway,
+    // approach lane or window volume. This guard runs once, not every frame.
+    private static void RequireFurnishingClearance(StructureClearance clearance,
+        string name, Vector3 centre, Vector3 size)
+    {
+        if (!clearance.Allows(name, centre, size))
+            throw new System.InvalidOperationException(
+                $"Building002: {name} intersects a reserved circulation or window volume.");
+    }
+
+    // =========================================================
     // The second storey is kept on a separate, tagged structural floor. All coordinates are local
     // to the building. Upper floors and walls use dedicated solid collision that never fades.
     private static void BuildUpperFloor(Node3D generated, Node3D upperVisuals, StaticBody3D upperBody,
         float width, float depth, float floorY, float wallHeight,
-        Material wood, Material woodLight, Material woodDark, Material bedding, Material trim,
+        float stairFront, float stairRear, Material wood, Material woodLight, Material woodDark, Material bedding, Material trim,
         Material glass, Material stone)
     {
         float hx = width * 0.5f, hz = depth * 0.5f, top = floorY + wallHeight;
@@ -233,8 +292,8 @@ public partial class Building002Mesh : Node3D
 
         // Reserve a genuine open stairwell. The upper deck has four independent solid spans,
         // not a complete floor with a hidden/uncollidable hole painted into it.
-        const float shaftLeft = -0.20f, shaftRight = 1.90f, stairFront = 4.55f, stairRear = -1.80f;
-        const float deckInset = 0.24f, deckThickness = 0.24f;
+        const float shaftLeft = -0.20f, shaftRight = 1.90f, deckInset = 0.24f;
+        float deckThickness = UpperDeckThickness;
         float deckCenter = floorY - deckThickness * 0.5f;
         FloorSpan(deck, upperBody, "WestUpperFloor", -hx + deckInset, shaftLeft,
             -hz + deckInset, hz - deckInset, deckCenter, deckThickness, woodDark);
@@ -412,7 +471,8 @@ public partial class Building002Mesh : Node3D
     // A separate dressing pass: all details remain optional visuals or selective furniture collision.
     // Keep exterior openings, walk-through interior partitions and overall footprint untouched.
     private static void AddShowcaseDetails(Node3D generated, StaticBody3D body,
-        Building002Settings settings, float hx, float hz, float h)
+        Building002Settings settings, float hx, float hz, float h,
+        float receptionX, float receptionZ, float cabinetX, float cabinetZ)
     {
         var exterior = StructureGeometry.Group(generated, "ShowcaseExterior");
         var interior = StructureGeometry.Group(generated, "ShowcaseInterior");
@@ -536,16 +596,16 @@ public partial class Building002Mesh : Node3D
 
         for (int i = 0; i < 3; i++)
         {
-            StructureGeometry.Box(interior, null, "DeskPaper", new(-3.55f + i * 0.42f, 1.41f,
-                hz - 2.15f), new(0.31f, 0.018f, 0.42f), paper);
-            StructureGeometry.Box(interior, null, "Pencil", new(-3.5f + i * 0.30f, 1.44f,
-                hz - 2.45f), new(0.035f, 0.022f, 0.29f), yellow);
+            StructureGeometry.Box(interior, null, "DeskPaper", new(receptionX - 0.45f + i * 0.42f, 1.41f,
+                receptionZ), new(0.31f, 0.018f, 0.42f), paper);
+            StructureGeometry.Box(interior, null, "Pencil", new(receptionX - 0.4f + i * 0.30f, 1.44f,
+                receptionZ - 0.30f), new(0.035f, 0.022f, 0.29f), yellow);
         }
-        StructureGeometry.Box(interior, null, "DeskRadio", new(-2.23f, 1.54f, hz - 2.15f),
+        StructureGeometry.Box(interior, null, "DeskRadio", new(receptionX + 0.87f, 1.54f, receptionZ),
             new(0.43f, 0.35f, 0.30f), steel);
-        StructureGeometry.Box(interior, null, "RadioFace", new(-2.23f, 1.55f, hz - 1.985f),
+        StructureGeometry.Box(interior, null, "RadioFace", new(receptionX + 0.87f, 1.55f, receptionZ + 0.165f),
             new(0.29f, 0.17f, 0.02f), ink);
-        StructureGeometry.Box(interior, null, "RadioAntenna", new(-2.35f, 1.91f, hz - 2.17f),
+        StructureGeometry.Box(interior, null, "RadioAntenna", new(receptionX + 0.75f, 1.91f, receptionZ - 0.02f),
             new(0.02f, 0.53f, 0.02f), steel);
 
         // Wall shelves inside the small rear office; contents remain cosmetic.
@@ -560,7 +620,7 @@ public partial class Building002Mesh : Node3D
         }
         StructureGeometry.Box(interior, null, "OfficeNotice", new(-5.05f, 2.17f, -hz + 0.18f),
             new(1.20f, 0.90f, 0.06f), paper);
-        StructureGeometry.Box(interior, null, "CabinetDoorDetail", new(-hx + 1.10f, 1.16f, -hz + 1.75f),
+        StructureGeometry.Box(interior, null, "CabinetDoorDetail", new(cabinetX, 1.16f, cabinetZ + 0.45f),
             new(1.23f, 1.65f, 0.05f), carved);
         StructureGeometry.Box(interior, null, "BunkBlanket", new(hx - 2f, 1.20f, -hz + 2.65f),
             new(1.55f, 0.08f, 1.68f), cloth);
