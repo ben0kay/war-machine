@@ -1,4 +1,4 @@
-// One bounded runtime height-image pass: flat village platforms, dirt roads and varied outskirts.
+// One startup-only Terrain3D height-image pass: broad procedural relief and protected village infrastructure.
 // Copies native height images; never saves terrain resources or bakes on gameplay launch.
 using Godot;
 
@@ -11,10 +11,15 @@ public static class VillageTerrain
         float spacing = terrain.Get("vertex_spacing").AsSingle();
         if (!float.IsFinite(spacing) || spacing <= 0) { GD.PushError("Village requires valid terrain spacing."); return false; }
         Vector2 origin = settings.VillageOriginXZ;
-        Rect2 area = new(origin + new Vector2(-240, -340), new Vector2(480, 500));
-        using var noise = new FastNoiseLite { Seed = settings.Seed + 6011, Frequency = 0.028f };
         float outskirtsScale = settings.VillageOutskirtsEnabled
             ? Mathf.Clamp(settings.VillageOutskirtsScale, 0f, 2f) : 0f;
+        // One terrain pass: when enabled, cover the whole village and all three
+        // existing DF2 forest footprints. OFF keeps the original, cheaper VG2 area.
+        Rect2 area = outskirtsScale > 0f
+            ? new Rect2(origin - new Vector2(352f, 352f), new Vector2(784f, 784f))
+            : new Rect2(origin + new Vector2(-240f, -340f), new Vector2(480f, 500f));
+        using var noise = new FastNoiseLite { Seed = settings.Seed + 6011, Frequency = 0.028f };
+        using var landscape = new FastNoiseLite { Seed = settings.Seed + 7129, Frequency = 0.009f };
         int changed = 0;
         foreach (Variant item in data.Get("region_locations").AsGodotArray())
         {
@@ -45,10 +50,12 @@ public static class VillageTerrain
                 float hills = Hill(local, new(-70, 55), 45, 5)
                     + Hill(local, new(105, 20), 52, 6) + Hill(local, new(0, -245), 65, 9);
                 hills *= Mathf.Clamp(settings.VillageHillScale, 0, 2) * (1 + variation * 0.13f);
-                // VW1: additional broad ridges and shallow basins only outside roads,
-                // village platforms and the entire robot body/feet patrol corridor.
+                // VW1 revision: one broad seeded landscape everywhere in the sculpt
+                // area, including beneath forests. Noise can rise or dip naturally;
+                // flat platforms/roads and the entire robot corridor still win.
                 float outskirts = outskirtsScale > 0f
-                    ? Outskirts(local) * outskirtsScale * EdgeFade(local) * (1 + variation * 0.18f)
+                    ? (landscape.GetNoise2D(world.X, world.Y) * 9f + variation * 1.5f)
+                        * outskirtsScale * EdgeFade(world, area)
                     : 0f;
                 float value = pixel.R + (hills + outskirts) * (1 - protection) * (1 - grade);
                 value = Mathf.Lerp(value, layout.Level, grade);
@@ -59,8 +66,8 @@ public static class VillageTerrain
         }
         if (changed == 0) return layout.ValidateSupport(data);
         data.Call("calc_height_range", false); data.Call("update_maps", 0, true, false);
-        GD.Print($"Village graded {changed} native samples; outskirts "
-            + $"{(outskirtsScale > 0f ? $"ON x{outskirtsScale:F1}" : "OFF")}; "
+        GD.Print($"Village graded {changed} native samples; procedural relief "
+            + $"{(outskirtsScale > 0f ? $"ON x{outskirtsScale:F1}, area {area}" : "OFF (legacy VG2 area)")}; "
             + "collision rebuild follows once; saved files unchanged.");
         return layout.ValidateSupport(data);
     }
@@ -75,28 +82,14 @@ public static class VillageTerrain
     }
 
     // =========================================================
-    // VW1: broad, partially overlapping landforms around the village outskirts.
-    // Offsets are relative to VillageOriginXZ; existing patrol/road/platform masks
-    // are applied to the combined shape in Apply(), not separately per landform.
-    private static float Outskirts(Vector2 p)
+    // VW1 revision: feather the *single* procedural sculpt at the boundary of
+    // the expanded 784m area, so it rejoins the saved ground without a ridge.
+    private static float EdgeFade(Vector2 p, Rect2 bounds)
     {
-        return Hill(p, new(-185f, -210f), 74f, 7.0f)
-            + Hill(p, new(-82f, -282f), 77f, 6.5f)
-            + Hill(p, new(160f, -272f), 78f, 7.5f)
-            + Hill(p, new(180f, -98f), 66f, 4.8f)
-            - Hill(p, new(-200f, -45f), 64f, 3.3f)
-            - Hill(p, new(82f, 122f), 68f, 3.2f)
-            - Hill(p, new(135f, -196f), 58f, 2.5f);
-    }
-
-    // =========================================================
-    // Fade the new relief to zero at each border of the existing 480x500m
-    // height-image edit, preventing a visible step at the untouched terrain.
-    private static float EdgeFade(Vector2 p)
-    {
-        float border = Mathf.Min(Mathf.Min(p.X + 240f, 240f - p.X),
-            Mathf.Min(p.Y + 340f, 160f - p.Y));
-        float t = Mathf.Clamp(border / 28f, 0f, 1f);
+        float border = Mathf.Min(
+            Mathf.Min(p.X - bounds.Position.X, bounds.End.X - p.X),
+            Mathf.Min(p.Y - bounds.Position.Y, bounds.End.Y - p.Y));
+        float t = Mathf.Clamp(border / 64f, 0f, 1f);
         return t * t * (3f - 2f * t);
     }
 
