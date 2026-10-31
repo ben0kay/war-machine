@@ -2,7 +2,7 @@
 
 **Repository:** `ben0kay/war-machine`  
 **Working branch:** `implement-td0-td1` (never `main` without explicit instruction)  
-**Status:** **DF0–DF2 and DF2.5 implemented in source — awaiting local validation.** DF3–DF5 remain planned. Forest population requires DF0 preflight approval and Enabled=true; no saved terrain or global lighting changes.  
+**Status:** **DF0–DF2.6 implemented in source — awaiting local validation.** DF3–DF5 remain planned. Forest population requires DF0 preflight approval and Enabled=true; no saved terrain or global lighting changes.  
 **Priority:** Primary FPS view; retain shared-world/secondary top-down compatibility.  
 **Reference:** User's forest screenshots, especially the sunlit tall-trunk woodland with overlapping foliage high overhead (visual target, not a supplied asset/license).
 
@@ -14,6 +14,7 @@
 | **DF1** | Tall high-crowned broadleaf tree, three seeded variants, cheaper far art and preview | Regular Chat (isolated procedural asset) | **Implemented in source — awaiting local validation** |
 | **DF2** | Dense seeded canopy tree placement, chunked MultiMeshes, near/far LOD and trunk collision | Regular Chat (bounded zone integration) | **Implemented in source — awaiting local validation** |
 | **DF2.5** | Tiny near-only leaf-edge geometry detail and a longer village-parallel forest strip, with per-tree reservation safety | Regular Chat (bounded art/zone adjustment) | **Implemented in source — awaiting local validation** |
+| **DF2.6** | Keep original canopy tree art, add a slightly leafier/trunk-detailed duplicate, seed a configurable 50/50 mix in shared MultiMesh batches | Regular Chat (bounded art/batching integration) | **Implemented in source — awaiting local validation** |
 | **DF3** | Interlocking crowns, selective real sun shadows, atmospheric depth and canopy-gap lighting | Codex/Work for shader/render integration; Regular Chat for simple authored tuning | **Planned — not authorized** |
 | **DF4** | Forest-floor layers: grass, sparse undergrowth, logs/rocks and a subtle walkable route | Codex/Work for active-world scatter integration; Regular Chat for bounded config changes | **Planned — not authorized** |
 | **DF5** | LOD/shadow/collider/performance pass, A/B testing, final world compatibility and docs | Codex/Work implementation; Copilot/owner for in-engine profiling and acceptance | **Planned — not authorized** |
@@ -220,3 +221,14 @@ WORLD/Configuration/WorldMaster.tres   [DF0 — authored zone, existing file]
 - **Traversal:** `TrailEntryZ=567` preserves the southern road-facing 7m entry corridor. A narrower, gently winding north–south central trail runs alongside the village, with two pocket clearings. New density is still seeded, and the enlarged rectangular grid recalculates some original tree placements; the relative layout is deterministic per seed on every restart.
 - **Performance:** startup survey/candidate work scales with test-zone area (~2.7× old footprint), but one 32m chunk per occupied cell, reused near/far MultiMesh templates, native trunk collision, event-driven chunk sync and shared fog distance remain as before. Per-near-clump geometry gains 3 triangles only; no far-LOD, idle tick or global streaming change. Actual CPU/GPU cost is **unmeasured**.
 - **Validation:** compile if possible, F6 FPS scene, watch DF0 Output, walk north from the eastern road entrance to Z 359, inspect road/fuel-station reservations and northern slopes, compare tree canopy near/far silhouettes, shadows, material safe palette, forest ON/OFF, reload determinism, LOD and frame time. Owner judges visual quality; don't mark DF3 started.
+
+
+## DF2.6 — original/leafier tree mix handoff (2026-10-31)
+
+**Source implemented; compilation, Godot visual result, draw-call and FPS performance acceptance pending.** No unrelated DF3 lighting or FPS-only migration work.
+
+- **Original preserved:** the original `CanopyTreeMaster.tres` and `CanopyTree.tscn` are byte-for-byte unchanged. The mesh-builder's new authoring fields default to neutral values so the original geometry, variant seeds, near/far silhouettes and existing safe-material pathway remain identical.
+- **Leafier duplicate:** `VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeLeafierMaster.tres` and `CanopyTreeLeafier.tscn` reuse the same procedural generator with 14 main branches (formerly 13), near foliage clumps 0.96×, `LeafEdgeDetail=0.20`, two tiny two-triangle near-only edge sprays per clump, 8 trunk segments (formerly 6) and 3 subtle high-trunk twig forks. Stay low poly, opaque and within the same two material surfaces; far LOD skips leaf sprays. This does not create per-leaf nodes/scripts or per-tree animation.
+- **Distribution:** `VEGETATION/Forest/Configuration/ForestMaster.tres → LeafierShare=0.5`. `ForestPlacement` builds and caches 3 mature and 3 cheap young visual bins per art style (12 in total), using the same MultiMesh near/far batch and existing collision construction. One independently seeded hash chooses the style for each accepted tree; the original placement RNG sequence, positions, sizes, yaw, roads/footpaths, chunk keys and trunk collision inputs remain unchanged. Values 0 or 1 produce only original or only leafier art; 0.5 is a statistical mix, not exactly half per chunk. The startup DF2.6 log prints the actual counts.
+- **Performance:** two template art sets allocated once, no additional world loop, per-tree scene instance or physics actor. Fewer leaf triangles on far art; more nonempty style bins can increase MultiMesh draw calls. Check active chunks / FPS / materials in engine before claiming the change is optimized.
+- **Validation:** build C# when possible; open original and leafier tree scenes separately, inspect near and far art in Godot; F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`, confirm DF0 accepts the long zone and new original/leafier count report. Inspect several tree pairs up close, verify both are green and subtly different, distant LODs don't pop, tree trunks stop player/bullets as before, forest seed/spacing unchanged, and near/far FPS acceptable. Toggle `LeafierShare=0` then `1` with restarts to verify that only art changes; restore 0.5. The owner accepts visuals locally.

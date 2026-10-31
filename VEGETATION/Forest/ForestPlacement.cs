@@ -14,6 +14,8 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private GodotObject _terrain = null!;
     private Node3D _player = null!;
     private Rect2 _area;
+    // Six slots per style: three tall variants and three young fillers using far art.
+    private const int VariantsPerStyle = 6;
     private Mesh[] _near = System.Array.Empty<Mesh>(), _far = System.Array.Empty<Mesh>();
     private StandardMaterial3D? _safeLeafMaterial;
     private Color _baseLeafColor;
@@ -92,12 +94,23 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             shaderFoliage.SetShaderParameter("leaf_fallback_color", art.LeafColor);
             bark = shaderBark; foliage = shaderFoliage;
         }
-        _near = new Mesh[6]; _far = new Mesh[6];
-        for (int i = 0; i < 3; i++)
+        // DF2.6: duplicate the original authored tree family, keeping its exact source
+        // config intact and adding a slightly leafier high-crown/trunk art resource.
+        var leafier = (CanopyTreeSettings)GD.Load<CanopyTreeSettings>(
+            "res://VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeLeafierMaster.tres").Duplicate(true);
+        _near = new Mesh[VariantsPerStyle * 2]; _far = new Mesh[VariantsPerStyle * 2];
+        for (int style = 0; style < 2; style++)
         {
-            _near[i] = CanopyTreeMeshBuilder.Create(art, i, bark, foliage);
-            _far[i] = CanopyTreeMeshBuilder.Create(art, i, bark, foliage, true);
-            _near[i + 3] = _far[i]; _far[i + 3] = _far[i];
+            var source = style == 0 ? art : leafier;
+            int offset = style * VariantsPerStyle;
+            for (int i = 0; i < 3; i++)
+            {
+                _near[offset + i] = CanopyTreeMeshBuilder.Create(source, i, bark, foliage);
+                _far[offset + i] = CanopyTreeMeshBuilder.Create(source, i, bark, foliage, true);
+                // Young fill trees stay cheaper and share their own style's far mesh.
+                _near[offset + i + 3] = _far[offset + i];
+                _far[offset + i + 3] = _far[offset + i];
+            }
         }
         // One log at startup, not per chunk: proves whether both surface materials exist.
         LogMaterialCheck((ArrayMesh)_near[0]);
@@ -149,7 +162,12 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         _layout.Clear(); _accepted.Clear(); TotalTrees = 0;
         using var noise = new FastNoiseLite { Seed = _settings.Seed + 313, Frequency = 0.021f };
         PlaceLayer(false, noise); PlaceLayer(true, noise);
-        GD.Print($"DF2 forest: {TotalTrees} seeded trees, {_layout.Count} occupied chunks at {_area}.");
+        int leafierCount = 0;
+        foreach (var pair in _layout)
+            foreach (var tree in pair.Value)
+                if (tree.Variant >= VariantsPerStyle) leafierCount++;
+        GD.Print($"DF2 forest: {TotalTrees} seeded trees, {_layout.Count} occupied chunks at {_area}; "
+            + $"DF2.6 canopy: {TotalTrees - leafierCount} original / {leafierCount} leafier.");
     }
 
     // =========================================================
@@ -184,8 +202,13 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
                     Mathf.Clamp(Mathf.Max(_settings.YoungScaleMin, _settings.YoungScaleMax), 0.4f, 0.9f))
                 : rng.RandfRange(Mathf.Clamp(_settings.MatureScaleMin, 0.7f, 1.3f),
                     Mathf.Clamp(Mathf.Max(_settings.MatureScaleMin, _settings.MatureScaleMax), 0.7f, 1.4f));
+            float yaw = rng.RandfRange(0f, Mathf.Tau);
+            // Independent hash: changing the 50/50 visual mix does not move any trees,
+            // consume the placement RNG, or change trunk collisions/chunk membership.
+            float selection = (Mix(_settings.Seed + 4171, x, z) & 0xffffUL) / 65535f;
+            int style = selection < Mathf.Clamp(_settings.LeafierShare, 0f, 1f) ? 1 : 0;
             var tree = new Tree(new Vector3(p.X, height - 0.1f, p.Y), scale,
-                rng.RandfRange(0f, Mathf.Tau), variant + (young ? 3 : 0));
+                yaw, variant + (young ? 3 : 0) + style * VariantsPerStyle);
             int chunk = Mathf.Clamp(_settings.ChunkSize, 32, 64);
             var key = new Vector2I(Mathf.FloorToInt(p.X / chunk), Mathf.FloorToInt(p.Y / chunk));
             if (!_layout.TryGetValue(key, out var list)) { list = new List<Tree>(); _layout.Add(key, list); }
