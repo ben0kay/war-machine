@@ -11,7 +11,7 @@
 
 > **Object render/debug status:** Shared per-asset `ShadowMode` (Inherit / Disabled / Enabled) is implemented in source as the shadow-only subset of SOC1A. [SOC1 plan](WORLD/Content/Assets/Objects/SOC1_OBJECT_DIAGNOSTICS_PLAN.md) still proposes render caps, F1 inspection, malformed-GLB checks and performance cost reports. Runtime validation pending.
 
-> **Dense woodland prototype — DF0–DF2 source implemented, awaiting validation:** [Forest phases](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) include a disabled-by-default east-side test region, three DF1 broadleaf tree variants and **DF2 seeded/streamed MultiMesh canopy placement with trunk collision** when DF0 preflight approves. Enable `VEGETATION/Forest/Configuration/ForestMaster.tres → Enabled` for FPS/World F6 testing. No saved terrain edits, global lighting or undergrowth work. DF3–DF5 remain planned; runtime visuals and frame time unverified.
+> **Dense woodland prototype — DF0–DF2 source implemented, awaiting validation:** [Forest phases](VEGETATION/Forest/FOREST_IMPLEMENTATION_PLAN.md) include an enabled east-side test region (subject to DF0 survey approval), three DF1 broadleaf tree variants and **DF2 seeded/streamed MultiMesh canopy placement with trunk collision** when DF0 preflight approves. `VEGETATION/Forest/Configuration/ForestMaster.tres → Enabled` is now true for FPS/World F6 testing; set false to revert. No saved terrain edits, global lighting or undergrowth work. DF3–DF5 remain planned; runtime visuals and frame time unverified.
 
 ## Game vision
 
