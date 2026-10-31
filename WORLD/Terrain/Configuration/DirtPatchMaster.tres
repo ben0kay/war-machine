@@ -4,8 +4,8 @@
 script = ExtResource("1")
 UsePreviewInGameplay = true
 Seed = 73421
-AreaHalfExtent = 380.0
-ClusterCount = 125
+AreaHalfExtent = 500.0
+ClusterCount = 200
 MinBlotches = 2
 MaxBlotches = 5
 TrailCount = 12
@@ -13,5 +13,5 @@ FeatherMetres = 1.7
 WarpMetres = 2.2
 MinimumNormalY = 0.92
 Strength = 0.92
-SingleSpawnPreviewPatch = true
+SingleSpawnPreviewPatch = false
 ShowNearSpawnPatches = false

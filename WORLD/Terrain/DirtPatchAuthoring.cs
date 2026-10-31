@@ -11,7 +11,7 @@ public partial class DirtPatchAuthoring : Node
     public const string PreviewDirectory = "res://WORLD/Terrain/GameplayDirtPreviewV3";
     private const string StageDirectory = "res://WORLD/Terrain/GameplayDirtPreviewV3.staging";
     private const string Manifest = "DTP1_V3_SOURCE_MANIFEST.txt";
-    private const string ManifestVersion = "DTP1-v3-savefix";
+    private const string ManifestVersion = "DTP1-v3-mapwide";
     private const uint Fields = (0x1Fu << 27) | (0x1Fu << 22) | (0xFFu << 14) | 1u;
     [Export] public DirtPatchSettings Settings { get; set; } = null!;
 
@@ -101,6 +101,8 @@ public partial class DirtPatchAuthoring : Node
         if (locations.Count != sources.Length) throw new IOException("Preview did not load every native terrain region.");
 
         using var field = new DirtPatchField(Settings, world.VillageOriginXZ, world.SpawnXZ);
+        GD.Print($"DTP1 V3 authoring: area={field.Area}, {field.Marks.Count} organic marks, " +
+            $"single-patch test={Settings.SingleSpawnPreviewPatch}.");
         float spacing = terrain.Get("vertex_spacing").AsSingle();
         if (!float.IsFinite(spacing) || spacing <= 0) throw new IOException("Bad Terrain3D vertex_spacing.");
         var exclusions = DirtPatchProtectedAreas.Build(world);
@@ -192,6 +194,10 @@ public partial class DirtPatchAuthoring : Node
                 throw new IOException($"Dirt control pixels did not persist in {entry.Key}; staging retained, preview not published.");
         }
         PublishGeneratedPreview(stage, dst, sources);
+        // Older test outputs are never gameplay data. Remove only recognized DTP1
+        // authored snapshots AFTER the verified V3 replacement is active.
+        CleanupLegacyPreview("GameplayDirtPreview", "DTP1_SOURCE_MANIFEST.txt", "DTP1-v1", sources);
+        CleanupLegacyPreview("GameplayDirtPreviewV2", "DTP1_V2_SOURCE_MANIFEST.txt", "DTP1-v2", sources);
         GD.Print($"DTP1 V3 SUCCESS: {changed} soil texels saved and read back in {regions} regions, manual skipped={manual}, holes skipped={holes}. Preview: {PreviewDirectory}. Open FPS World F6.");
     }
 
@@ -267,7 +273,8 @@ public partial class DirtPatchAuthoring : Node
         }
 
         string[] records = File.ReadAllLines(manifestPath);
-        if (records.Length == 0 || (records[0] != "DTP1-v3" && records[0] != ManifestVersion))
+        if (records.Length == 0 || (records[0] != "DTP1-v3" &&
+            records[0] != "DTP1-v3-savefix" && records[0] != ManifestVersion))
             throw new IOException("Preview was not created by the supported DTP1 V3 baker: " + directory);
         for (int i = 1; i < records.Length; i++)
         {
@@ -275,6 +282,61 @@ public partial class DirtPatchAuthoring : Node
             if (fields.Length != 2 || !names.Contains(fields[0]) ||
                 fields[1].Length != 64)
                 throw new IOException("Invalid DTP1 V3 manifest; refusing to delete preview: " + directory);
+        }
+    }
+
+    // =========================================================
+    // Called only after successful explicit F6 authoring. Legacy V1/V2 outputs
+    // are disposable only when their expected manifest and exact region names
+    // prove they were produced by our own dirt-preview baker. No other paths.
+    private static void CleanupLegacyPreview(string name, string manifestName, string version, string[] sources)
+    {
+        string root = Path.GetDirectoryName(ProjectSettings.GlobalizePath(PreviewDirectory))
+            ?? throw new IOException("Cannot resolve Terrain3D preview parent.");
+        string folder = Path.Combine(root, name);
+        if (!Directory.Exists(folder)) return;
+        try
+        {
+            if ((File.GetAttributes(folder) & FileAttributes.ReparsePoint) != 0 ||
+                Directory.GetDirectories(folder).Length != 0)
+                throw new IOException("Preview is linked or contains subfolders.");
+            string manifestPath = Path.Combine(folder, manifestName);
+            if (!File.Exists(manifestPath)) throw new IOException("Ownership manifest missing.");
+
+            var expected = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string source in sources) expected.Add(Path.GetFileName(source));
+            string[] records = File.ReadAllLines(manifestPath);
+            if (records.Length != expected.Count + 1 || records[0] != version)
+                throw new IOException("Legacy manifest version or region count does not match.");
+            var found = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 1; i < records.Length; i++)
+            {
+                string[] fields = records[i].Split('|');
+                if (fields.Length != 2 || !expected.Contains(fields[0]) ||
+                    fields[1].Length != 64 || !found.Add(fields[0]))
+                    throw new IOException("Legacy manifest contains an unexpected region record.");
+            }
+            if (found.Count != expected.Count) throw new IOException("Legacy manifest is incomplete.");
+
+            string[] files = Directory.GetFiles(folder);
+            if (files.Length != expected.Count + 1)
+                throw new IOException("Extra or missing files in legacy preview.");
+            foreach (string file in files)
+            {
+                if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0)
+                    throw new IOException("Legacy preview contains a linked file.");
+                string fileName = Path.GetFileName(file);
+                if (fileName != manifestName && !expected.Contains(fileName))
+                    throw new IOException("Legacy preview contains an unknown file.");
+            }
+            Directory.Delete(folder, true);
+            GD.Print($"DTP1: removed obsolete generated preview {name}.");
+        }
+        catch (Exception error)
+        {
+            // The new V3 bake has succeeded; never delete unknown/user data just
+            // to tidy the editor. Warn and keep the suspect legacy folder.
+            GD.PushWarning($"DTP1: kept {name}; safe cleanup refused: {error.Message}");
         }
     }
 

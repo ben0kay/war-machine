@@ -9,8 +9,8 @@ public partial class DirtPatchSettings : Resource
     [Export] public bool UsePreviewInGameplay { get; set; } = true;
     [ExportGroup("Distribution")]
     [Export] public int Seed { get; set; } = 73421;
-    [Export(PropertyHint.Range, "100,450,10")] public float AreaHalfExtent { get; set; } = 380f;
-    [Export(PropertyHint.Range, "0,300,1")] public int ClusterCount { get; set; } = 125;
+    [Export(PropertyHint.Range, "100,512,10")] public float AreaHalfExtent { get; set; } = 500f;
+    [Export(PropertyHint.Range, "0,300,1")] public int ClusterCount { get; set; } = 200;
     [Export(PropertyHint.Range, "1,8,1")] public int MinBlotches { get; set; } = 2;
     [Export(PropertyHint.Range, "1,8,1")] public int MaxBlotches { get; set; } = 5;
     [Export(PropertyHint.Range, "0,40,1")] public int TrailCount { get; set; } = 12;
@@ -20,7 +20,7 @@ public partial class DirtPatchSettings : Resource
     [Export(PropertyHint.Range, "0.65,1,0.01")] public float MinimumNormalY { get; set; } = 0.92f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float Strength { get; set; } = 0.92f;
     [ExportGroup("Visual test")]
-    // One obvious ground patch near initial spawn, not a full-world scatter; run bake once.
-    [Export] public bool SingleSpawnPreviewPatch { get; set; } = true;
+    // False = seed dirt across the full active terrain; true = spawn-only diagnosis.
+    [Export] public bool SingleSpawnPreviewPatch { get; set; } = false;
     [Export] public bool ShowNearSpawnPatches { get; set; } = false;
 }

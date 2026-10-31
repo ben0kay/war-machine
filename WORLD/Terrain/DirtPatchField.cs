@@ -30,7 +30,7 @@ public sealed class DirtPatchField : IDisposable
     // Generate a set of overlapping blots and broken curved ribbons, never grid-aligned decals.
     public DirtPatchField(DirtPatchSettings config, Vector2 origin, Vector2 spawnXZ)
     {
-        float half = Mathf.Clamp(config.AreaHalfExtent, 100f, 450f);
+        float half = Mathf.Clamp(config.AreaHalfExtent, 100f, 512f);
         Area = new Rect2(origin - Vector2.One * half, Vector2.One * (2f * half));
         _warp = Mathf.Clamp(config.WarpMetres, 0f, 6f);
         _feather = Mathf.Clamp(config.FeatherMetres, 0.25f, 5f);
@@ -40,15 +40,11 @@ public sealed class DirtPatchField : IDisposable
         _detail = new FastNoiseLite { Seed = config.Seed + 71, Frequency = 0.14f };
         var rng = new RandomNumberGenerator { Seed = unchecked((ulong)(uint)config.Seed) };
         float pad = _warp + _feather + 2f;
-        // DTP1 V3: a single, deliberately visible forest-soil patch between the player
-        // spawn and the parking lot, offset to the west of the protected road/pavement.
-        // In this test mode we do NOT scatter the wider procedural dirt field.
-        if (config.SingleSpawnPreviewPatch)
-        {
-            Vector2 center = spawnXZ + new Vector2(-20f, -8f);
-            _marks.Add(new Mark(center, center, 11.5f, 7.5f, 0.17f, false, pad));
-            return;
-        }
+        // Keep the owner-validated patch near spawn in BOTH modes; the full-world
+        // mode adds seeded clusters/trails around it rather than making it disappear.
+        Vector2 center = spawnXZ + new Vector2(-20f, -8f);
+        _marks.Add(new Mark(center, center, 11.5f, 7.5f, 0.17f, false, pad));
+        if (config.SingleSpawnPreviewPatch) return;
         int low = Mathf.Clamp(config.MinBlotches, 1, 8);
         int high = Mathf.Clamp(Mathf.Max(low, config.MaxBlotches), 1, 8);
         for (int i = 0; i < Mathf.Clamp(config.ClusterCount, 0, 300); i++)

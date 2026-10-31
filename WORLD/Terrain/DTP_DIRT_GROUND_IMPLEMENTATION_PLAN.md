@@ -96,6 +96,14 @@ The former site protection rectangle excluded ground almost up to spawn and woul
 
 **Preview lifecycle:** `DirtPatchAuthoring` writes only to **`GameplayDirtPreviewV3/`**; `Gameplay/`, V1 and V2 remain unchanged. Source manifest version V3 and the V3 console success message distinguish this from prior generated files. FPS will use V3 only after `BakeDirtPreview.tscn` is explicitly run (F6). After pull/build, check author console `DTP1 V3 SUCCESS` with nonzero dirt pixels, then FPS `DTP1 V3: verified dirt preview ACTIVE` and visually inspect from spawn toward X492,Z542. DTP2 plant-density response is not implemented. Runtime/visual acceptance pending.
 
+### DTP1 map-wide switch and preview consolidation (2026-10-31)
+
+**Owner-authorized source change:** map-wide deterministic dirt distribution now defaults on; 200 clusters with 2–5 elliptical/satellite shapes per cluster plus 12 winding trails and the previously validated near-spawn X492/Z542 patch, over a 1000×1000m authored region (X/Z about 12..1012). Single-patch mode remains available in `DirtPatchMaster.tres` but defaults off. Road/building/slope/manual-paint protections and the existing native V3 control-map save/read-back mechanism are retained.
+
+**Preview lifecycle:** New V3 authoring produces manifest version `DTP1-v3-mapwide`; the old single-patch preview is rejected by FPS until an explicit F6 bake. On successful bake only, `DirtPatchAuthoring` cleans generated legacy V1/V2 folders if their precise manifest and native region file set prove ownership; ambiguous/edited/foreign content is protected. V1's 16 region files were identical to Gameplay, so its tracked copy is deleted from the branch. Generated V3 staging/copy folders are ignored by Git, **not** written into original Gameplay. Keep `PineLandscape` and other terrain assets unchanged. Startup cost remains only the existing V3 preview verification; generation/scans only happen on the explicit authoring scene, not during normal FPS play.
+
+**Acceptance:** Pull and build Godot .NET, F6 `BakeDirtPreview.tscn` then F6 the FPS scene. Check console for mapwide mark count, nonzero persisted soil samples and V3 active. Visually inspect several forest zones and village margins for patch variety, roads/buildings remaining clear, and unchanged rock slopes. Vegetation response is deferred to DTP2. **Source implemented; full-map rendered acceptance pending.**
+
 ## DTP2 — Soil-aware ground cover (planned)
 
 **Objective:** grass and plants become progressively less likely to spawn on dirt without sterilizing every patch. Keep natural, occasional growth even at brown patch centres.

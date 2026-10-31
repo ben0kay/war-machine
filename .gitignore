@@ -5,3 +5,11 @@
 # .NET build outputs
 **/bin/Debug/
 **/obj/
+
+# DTP1 Terrain3D authoring outputs: regenerate explicitly with BakeDirtPreview.tscn.
+# Gameplay/ and PineLandscape/ are original/independent terrain sources: NOT ignored.
+/WORLD/Terrain/GameplayDirtPreview/
+/WORLD/Terrain/GameplayDirtPreviewV2/
+/WORLD/Terrain/GameplayDirtPreviewV3/
+/WORLD/Terrain/GameplayDirtPreviewV3.staging/
+/WORLD/Terrain/GameplayDirtPreviewV3.previous/
