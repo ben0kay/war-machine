@@ -48,10 +48,16 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         SetProcess(false); SetPhysicsProcess(false);
         var art = (CanopyTreeSettings)GD.Load<CanopyTreeSettings>(
             "res://VEGETATION/Trees/CanopyTree/Configuration/CanopyTreeMaster.tres").Duplicate(true);
-        var bark = new StandardMaterial3D { VertexColorUseAsAlbedo = true, Roughness = 1f };
+        // DF2 colour safety: retain authored per-face vertex shades, with explicit fallback
+        // palettes if the instanced renderer supplies default white vertex colour.
+        var bark = new ShaderMaterial {
+            Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyBark.gdshader")
+        };
+        bark.SetShaderParameter("bark_fallback_color", art.BarkColor);
         var foliage = new ShaderMaterial {
             Shader = GD.Load<Shader>("res://VEGETATION/Forest/Shaders/CanopyFoliage.gdshader")
         };
+        foliage.SetShaderParameter("leaf_fallback_color", art.LeafColor);
         _near = new Mesh[6]; _far = new Mesh[6];
         for (int i = 0; i < 3; i++)
         {
@@ -246,12 +252,13 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         float begin, float end, float margin, bool shadows)
     {
         var multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
-            UseCustomData = true, Mesh = mesh };
+            UseColors = true, UseCustomData = true, Mesh = mesh };
         multimesh.InstanceCount = trees.Count;
         for (int i = 0; i < trees.Count; i++)
         {
             var pose = trees[i]; pose.Origin -= anchor;
             multimesh.SetInstanceTransform(i, pose);
+            multimesh.SetInstanceColor(i, Colors.White); // Preserve geometry vertex colours without instance tint.
             multimesh.SetInstanceCustomData(i, new Color(1f, 0f, 0f, 0f));
         }
         var node = new MultiMeshInstance3D {
