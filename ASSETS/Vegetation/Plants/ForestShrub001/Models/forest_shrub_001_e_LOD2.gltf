@@ -1,0 +1,166 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "War Machine original stylized understory plant author 1.0"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "forest_shrub_001_e_LOD2",
+      "mesh": 0
+    }
+  ],
+  "meshes": [
+    {
+      "name": "forest_shrub_001_e_LOD2",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2,
+            "COLOR_0": 3
+          },
+          "indices": 4,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "ForestShrub001_OpaqueFacetAtlas",
+      "doubleSided": true,
+      "alphaMode": "OPAQUE",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.93
+      }
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 33071,
+      "wrapT": 33071
+    }
+  ],
+  "images": [
+    {
+      "uri": "../Textures/forest_shrub_001_atlas.png"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "forest_shrub_001_e_LOD2.bin",
+      "byteLength": 28200
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 6768,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 6768,
+      "byteLength": 6768,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 13536,
+      "byteLength": 4512,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 18048,
+      "byteLength": 9024,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 27072,
+      "byteLength": 1128,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 564,
+      "type": "VEC3",
+      "min": [
+        -0.2134636640548706,
+        -0.00010230622865492478,
+        -0.3592205345630646
+      ],
+      "max": [
+        0.23931582272052765,
+        1.5720477104187012,
+        0.21910038590431213
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 564,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 564,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 564,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5123,
+      "count": 564,
+      "type": "SCALAR"
+    }
+  ],
+  "extras": {
+    "species": "original tall forest weed / upright broadleaf understory",
+    "variant": "e",
+    "lod": 2,
+    "triangle_count": 188,
+    "single_surface": true,
+    "opaque_geometric_leaves": true,
+    "foliage_tint_mask": "COLOR_0.a =1 leaf, 0 stem/flower"
+  }
+}
