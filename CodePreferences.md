@@ -59,6 +59,7 @@ Prefer replaceable visuals, efficient materials, practical LODs, simple collisio
 - **Treat separate scaling problems separately:** terrain/foliage visual LOD, static-world streaming, entity simulation, collision activation and persistence do not automatically solve each other. Register/unregister with chunk residency without losing required state.
 - **Typical event examples:** fire/tree reactions wake on ignition; hit wobble wakes on impact and sleeps after completion; zero-intensity weather turns off emitters and splash callbacks after intentional fade-out; investigation ends when its bounded search/timeout expires.
 - **Do not remove correct behavior just to eliminate loops.** Prefer a measured reduction in work, without freezing active wind, animation or threat response.
+- **Do not apply random bandaid fixes to issues. If you can see an issue, lets try to fix it instead of just patching it up with more needless code fixes.
 - **Performance handoff:** state activation, sleep conditions, any remaining idle work, scaling strategy and checks actually run. Use profiler/FPS claims only with actual measurements and test conditions; if owner profiling is pending, say so.
 
 ## 5. C# syntax and build hygiene
