@@ -64,11 +64,17 @@ public partial class DirtPatchAuthoring : Node
         string src = ProjectSettings.GlobalizePath(WorldSettings.TerrainDirectory);
         string dst = ProjectSettings.GlobalizePath(PreviewDirectory);
         string stage = ProjectSettings.GlobalizePath(StageDirectory);
-        if (Directory.Exists(dst) || Directory.Exists(stage))
-            throw new IOException("Dirt preview/staging already exists. Back up and delete ONLY that preview folder to regenerate.");
         if (!Directory.Exists(src)) throw new IOException("Original Gameplay terrain missing.");
         string[] sources = Directory.GetFiles(src, "*.res");
         if (sources.Length == 0) throw new IOException("No native .res terrain regions found.");
+        // A previous failed run can leave staging behind. Clear only files proven to
+        // belong to this baker; never remove original Gameplay or unrelated content.
+        if (Directory.Exists(stage))
+        {
+            EnsureGeneratedOnly(stage, sources, true);
+            Directory.Delete(stage, true);
+        }
+        if (Directory.Exists(dst)) EnsureGeneratedOnly(dst, sources, false);
         Directory.CreateDirectory(stage);
         var lines = new List<string> { ManifestVersion };
         foreach (string source in sources)
@@ -185,9 +191,91 @@ public partial class DirtPatchAuthoring : Node
                     entry.Value, StringComparison.Ordinal))
                 throw new IOException($"Dirt control pixels did not persist in {entry.Key}; staging retained, preview not published.");
         }
-        Directory.Move(stage, dst);
-        if (!HasCurrentPreview()) throw new IOException("DTP1 V3 wrote files, but manifest verification failed. Original terrain remains safe.");
+        PublishGeneratedPreview(stage, dst, sources);
         GD.Print($"DTP1 V3 SUCCESS: {changed} soil texels saved and read back in {regions} regions, manual skipped={manual}, holes skipped={holes}. Preview: {PreviewDirectory}. Open FPS World F6.");
+    }
+
+    // =========================================================
+    // Replace only a known DTP1 V3 output. The old preview stays available until
+    // the new saved data is verified and promoted. A failed publish restores it.
+    private static void PublishGeneratedPreview(string stage, string destination, string[] sources)
+    {
+        string backup = destination + ".previous";
+        // Recover an interrupted swap automatically, but only for an owned V3 preview.
+        if (Directory.Exists(backup))
+        {
+            EnsureGeneratedOnly(backup, sources, false);
+            if (!Directory.Exists(destination)) Directory.Move(backup, destination);
+            else Directory.Delete(backup, true);
+        }
+
+        bool hadOld = Directory.Exists(destination);
+        if (hadOld)
+        {
+            EnsureGeneratedOnly(destination, sources, false);
+            Directory.Move(destination, backup);
+        }
+        try
+        {
+            Directory.Move(stage, destination);
+            if (!HasCurrentPreview())
+                throw new IOException("Published V3 preview failed manifest verification.");
+        }
+        catch
+        {
+            // Move the new generated output back to staging rather than deleting it.
+            if (Directory.Exists(destination) && !Directory.Exists(stage))
+                Directory.Move(destination, stage);
+            if (hadOld && Directory.Exists(backup) && !Directory.Exists(destination))
+                Directory.Move(backup, destination);
+            throw;
+        }
+
+        if (hadOld)
+        {
+            try { Directory.Delete(backup, true); }
+            catch (IOException error)
+            { GD.PushWarning("DTP1 V3 replaced the preview, but could not remove its old generated backup: " + error.Message); }
+        }
+    }
+
+    // =========================================================
+    // Never wipe an unfamiliar folder. Only a flat set of known Terrain3D region
+    // filenames plus this baker's manifest is considered disposable. No links.
+    private static void EnsureGeneratedOnly(string directory, string[] sources, bool staging)
+    {
+        if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0 ||
+            Directory.GetDirectories(directory).Length != 0)
+            throw new IOException("Refusing to replace a linked or non-flat directory: " + directory);
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string source in sources) names.Add(Path.GetFileName(source));
+        string manifestPath = Path.Combine(directory, Manifest);
+        string[] files = Directory.GetFiles(directory);
+        foreach (string file in files)
+        {
+            if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("Refusing to remove a linked preview file: " + file);
+            string name = Path.GetFileName(file);
+            if (name != Manifest && !names.Contains(name))
+                throw new IOException("Unexpected file inside dirt preview; no cleanup performed: " + file);
+        }
+        if (!File.Exists(manifestPath))
+        {
+            if (staging) return; // Crash before the manifest was created.
+            throw new IOException("Preview is missing the DTP1 ownership manifest: " + directory);
+        }
+
+        string[] records = File.ReadAllLines(manifestPath);
+        if (records.Length == 0 || (records[0] != "DTP1-v3" && records[0] != ManifestVersion))
+            throw new IOException("Preview was not created by the supported DTP1 V3 baker: " + directory);
+        for (int i = 1; i < records.Length; i++)
+        {
+            string[] fields = records[i].Split('|');
+            if (fields.Length != 2 || !names.Contains(fields[0]) ||
+                fields[1].Length != 64)
+                throw new IOException("Invalid DTP1 V3 manifest; refusing to delete preview: " + directory);
+        }
     }
 
     // =========================================================
