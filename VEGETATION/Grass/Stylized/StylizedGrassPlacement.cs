@@ -53,7 +53,8 @@ public partial class StylizedGrassPlacement : Node3D
         if (!_initialized) return;
         if (Settings != null && Settings.Enabled && Settings.PatchesPerChunk > 0 && !LoadTemplates())
             _near = _far = System.Array.Empty<Mesh>();
-        if (FillerSettings != null && FillerSettings.Enabled && FillerSettings.Coverage > 0f && !LoadBillboards())
+        if (FillerSettings != null && FillerSettings.Enabled && FillerSettings.PatchesPerChunk > 0
+            && FillerSettings.PatchChance > 0f && FillerSettings.MaxPerPatch > 0 && !LoadBillboards())
             _billboards = System.Array.Empty<Mesh>();
         ApplyWind();
         UpdateAnchor(_anchor.GlobalPosition);
@@ -277,29 +278,62 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // Jittered independent cells give broad irregular ground coverage, not a second patch pattern.
-    // A separately seeded stream cannot change the original stylized patch positions.
+    // Irregular seeded billboard patches: many models per patch, variable footprint and scale.
+    // A separate seed keeps the original stylized-grass positions completely unchanged.
+    // =========================================================
     private void CreateFiller(Vector2I key, int width, float end, GrassChunk chunk)
     {
         var rng = new RandomNumberGenerator { Seed = Mix(FillerSettings.Seed, key.X, key.Y) };
-        int cells = Mathf.Clamp(Mathf.CeilToInt(width / Mathf.Clamp(FillerSettings.CellSize, 0.9f, 5f)), 1, 40);
-        float spacing = (float)width / cells;
         var bin = new List<Transform3D>[3];
         for (int i = 0; i < 3; i++) bin[i] = new List<Transform3D>();
-        for (int z = 0; z < cells; z++) for (int x = 0; x < cells; x++)
+
+        int patches = Mathf.Clamp(FillerSettings.PatchesPerChunk, 0, 16);
+        int least = Mathf.Clamp(FillerSettings.MinPerPatch, 1, 100);
+        int most = Mathf.Clamp(Mathf.Max(least, FillerSettings.MaxPerPatch), 1, 120);
+        float minRadius = Mathf.Clamp(FillerSettings.PatchRadiusMin, 0.8f, 10f);
+        float maxRadius = Mathf.Clamp(Mathf.Max(minRadius, FillerSettings.PatchRadiusMax), minRadius, 12f);
+        float minScale = Mathf.Clamp(FillerSettings.ScaleMin, 0.3f, 2f);
+        float maxScale = Mathf.Clamp(Mathf.Max(minScale, FillerSettings.ScaleMax), minScale, 2.5f);
+        float tiltChance = Mathf.Clamp(FillerSettings.TiltChance, 0f, 1f);
+        float tiltDegrees = Mathf.Clamp(FillerSettings.MaxTiltDegrees, 0f, 8f);
+
+        for (int patch = 0; patch < patches; patch++)
         {
-            if (rng.Randf() > Mathf.Clamp(FillerSettings.Coverage, 0f, 1f)) continue;
-            Vector2 point = new((key.X * width) + (x + rng.Randf()) * spacing,
-                (key.Y * width) + (z + rng.Randf()) * spacing);
-            float scale = rng.RandfRange(Mathf.Clamp(FillerSettings.ScaleMin, 0.3f, 2f),
-                Mathf.Clamp(Mathf.Max(FillerSettings.ScaleMin, FillerSettings.ScaleMax), 0.3f, 2.5f));
-            if (point.X < 2 || point.Y < 2 || point.X >= _worldSize - 2 || point.Y >= _worldSize - 2
-                || IsExcluded(point, Mathf.Max(0.5f, FillerSettings.EdgeClearance) * scale)) continue;
-            if (!TryGround(point, FillerSettings.MinimumNormalY, out float height)) continue;
-            int variant = rng.RandiRange(0, 2);
-            bin[variant].Add(new Transform3D(
-                new Basis(Vector3.Up, rng.RandfRange(0f, Mathf.Tau)).Scaled(Vector3.One * scale),
-                new Vector3(point.X, height - 0.035f, point.Y)));
+            if (rng.Randf() > Mathf.Clamp(FillerSettings.PatchChance, 0f, 1f)) continue;
+            Vector2 center = new((key.X + rng.RandfRange(0.06f, 0.94f)) * width,
+                (key.Y + rng.RandfRange(0.06f, 0.94f)) * width);
+            int members = rng.RandiRange(least, most);
+            float radius = rng.RandfRange(minRadius, maxRadius);
+            float aspect = rng.RandfRange(0.70f, 1.35f);
+            float heading = rng.RandfRange(0f, Mathf.Tau);
+            float phase = rng.RandfRange(0f, Mathf.Tau);
+            float patchScale = rng.RandfRange(0.82f, 1.18f);
+
+            for (int j = 0; j < members; j++)
+            {
+                float theta = rng.RandfRange(0f, Mathf.Tau);
+                float wobble = 1f + 0.16f * Mathf.Sin(theta * 3f + phase)
+                    + 0.09f * Mathf.Sin(theta * 5f - phase);
+                float spread = Mathf.Sqrt(rng.Randf()) * radius * wobble;
+                Vector2 offset = new Vector2(Mathf.Cos(theta) * aspect,
+                    Mathf.Sin(theta) / aspect) * spread;
+                Vector2 point = center + offset.Rotated(heading);
+                float scale = Mathf.Clamp(rng.RandfRange(minScale, maxScale) * patchScale, 0.4f, 2.2f);
+                if (point.X < 2 || point.Y < 2 || point.X >= _worldSize - 2 || point.Y >= _worldSize - 2
+                    || IsExcluded(point, Mathf.Max(0.5f, FillerSettings.EdgeClearance) * scale)) continue;
+                if (!TryGround(point, FillerSettings.MinimumNormalY, out float height)) continue;
+
+                Basis basis = new(Vector3.Up, rng.RandfRange(0f, Mathf.Tau));
+                if (tiltDegrees > 0f && rng.Randf() < tiltChance)
+                {
+                    float angle = rng.RandfRange(0f, Mathf.Tau);
+                    Vector3 axis = new(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                    basis *= new Basis(axis, Mathf.DegToRad(rng.RandfRange(0f, tiltDegrees)));
+                }
+                int variant = rng.RandiRange(0, 2);
+                bin[variant].Add(new Transform3D(basis.Scaled(Vector3.One * scale),
+                    new Vector3(point.X, height - 0.035f, point.Y)));
+            }
         }
         for (int i = 0; i < 3; i++)
         {
@@ -313,7 +347,7 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-        // World-space road/structure masks are shared with old grass; allow for half-width of each model.
+    // World-space road/structure masks are shared with old grass; allow for half-width of each model.
     private bool IsExcluded(Vector2 p, float margin)
     {
         foreach (Rect2 rectangle in ExclusionAreas)

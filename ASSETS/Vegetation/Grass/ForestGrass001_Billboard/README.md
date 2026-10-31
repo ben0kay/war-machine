@@ -1,6 +1,6 @@
 # ForestGrass001 — experimental crossed-billboard clumps
 
-This is a **separate asset**. It does not replace ForestGrass001 LOD1/LOD2; War Machine now uses it as an additional widespread filler layer through STG3 in `VEGETATION/Grass/Stylized/StylizedGrassPlacement.cs`. The three A/B/C models are authored from *actual orthographic renders* of the previously supplied 20%-lighter ForestGrass001 meshes and their original dark-green foliage texture. All grass silhouettes are drawn from existing grass source geometry, not placeholder brush marks.
+This is a **separate asset**. It does not replace ForestGrass001 LOD1/LOD2; War Machine now uses it as an independent large-patch layer through STG3B in `VEGETATION/Grass/Stylized/StylizedGrassPlacement.cs`. The three A/B/C models are authored from *actual orthographic renders* of the previously supplied 20%-lighter ForestGrass001 meshes and their original dark-green foliage texture. All grass silhouettes are drawn from existing grass source geometry, not placeholder brush marks.
 
 ## Contents and geometry
 
@@ -32,4 +32,4 @@ Built by `build_forest_grass_billboard.py` included at the ZIP root. All glTF bu
 
 ## Current War Machine usage (STG3)
 
-Enabled by `VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres` as irregular, broadly scattered ground filler underneath the unchanged original patch grass. Its three variant meshes use this folder's shared `ForestGrass001BillboardWind.tres` and the project-global foliage tint; no original grass mesh/atlas is overwritten. Density, occupancy, scale, slope and exclusion clearance are tuned independently, while disappearance distance follows the single global fog/vegetation visibility policy. Source integration awaiting local Godot/visual/FPS acceptance.
+Enabled by `VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres` as variable-sized, irregular **high-density patches** alongside the unchanged original stylized grass (STG3B replaces STG3's dispersed cells). Its three variant meshes use this folder's shared `ForestGrass001BillboardWind.tres` and the project-global foliage tint; no original grass mesh/atlas is overwritten. Patch density, footprint radius, member count, individual size, occasional extra tilt, slope and exclusion clearance are tuned independently, while disappearance distance follows the single global fog/vegetation visibility policy. Source integration awaiting local Godot/visual/FPS acceptance.

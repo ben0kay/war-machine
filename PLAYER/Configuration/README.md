@@ -13,3 +13,7 @@ When PH0 is authorized, the existing `PLAYER/Configuration/PlayerMaster.tres` wi
 ## Shared prone tuning (2026-10-28)
 
 `PlayerMaster.tres` now exports `ProneSpeedMultiplier=0.17` and `ProneCollisionHeight=0.75` in the existing `PlayerSettings` Movement group. These affect **both** main world (top-down) and the FPS debug player. At the default 5m/s walk speed crawling is 0.85m/s, versus 2.25m/s crouch; Shift does not affect prone. 0.75m is a short upright capsule for initial low clearance, *not* a true 1.8m long horizontal hurtbox. `WalkSpeed`, `RunMultiplier`, `CrouchSpeedMultiplier` and `JumpVelocity` remain unchanged. Edit this single master for future balance adjustments; inspect in Godot after local build.
+
+## Corpse pile slowdown — enabled (2026-10-31)
+
+`PlayerMaster.tres → CorpseSlowdownEnabled=true` opts the shared PlayerController and its FPS subclass into the existing settled-corpse `ICorpseSlowable` overlap system. As with zombies, one footprint scales movement to 0.8× and additive stacked footprints stop at 0.65×. Area signals apply and remove the modifier without per-frame corpse searches; corpse art/physics remains non-solid to players. Disable the setting for A/B comparison and restart/re-enter footprints when changing it. Local run/validation pending.
