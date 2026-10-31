@@ -31,3 +31,9 @@ Do not move FPS inside the scroll container or wire it to debug visibility; `Fps
 ## Top-down orbit input update — 2026-10-28
 
 The Camera section no longer contains the yaw/rotation slider. It instead tells users to **hold middle mouse and drag horizontally** over the world to orbit the top-down camera. Yaw remains an authored/copied numeric setting, and the FOV, pitch, projection and zoom UI remain. The FPS adapter continues to hide this top-down camera section; its mouse-look is unchanged. See [CAMERA/README.md](../../CAMERA/README.md) for event and focus behaviour. Local build and manual top-down/FPS checks pending.
+
+## STG2 — live global foliage and imported mesh grass controls (2026-10-30)
+
+**F1 → Foliage → Shared tree + grass tint:** a live colour picker and strength slider (0–1) call `RenderingServer.GlobalShaderParameterSet` for `wm_foliage_tint` and `wm_foliage_tint_strength`. The Godot shader global values are read only twice when the panel is built, because rendering-thread synchronized GET is expensive; there is **no continuous polling**. All active shared-palette foliage (stylized grass, stylized pines and DF2 broadleaf crowns) reacts. Original mesh texturing/vertex colors and local wind shaders remain. Live edits are temporary and appear in Copy settings; for permanent palette edit Godot Project Settings → Shader Globals.
+
+**F1 → Foliage → Grass:** now routes controls to the imported `StylizedGrassPlacement` when active (instead of the disabled particle grass). Enable, patch count/chunk, clumps/patch, max patch spread, max grass scale, wind; patch rebuilding waits for slider release. If no stylized placement exists, legacy grass controls appear. Weather wind strength/heading also calls the new `StylizedGrassPlacement.ApplyWind()`. No `_Process`, no per-clump nodes or new global searches. Build and runtime check pending.

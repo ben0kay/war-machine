@@ -12,3 +12,19 @@
 | Streaming | ChunkSize=32m, LOD=28m, RenderDistance=64m | Two imported GLTF detail levels, chunk-owned GPU MultiMeshes. |
 
 To disable new patches, set Enabled=false. Old grass remains OFF in both old masters until explicitly re-enabled. [Full handoff](../README.md). Grass and stylized pine both read `wm_foliage_tint` and `wm_foliage_tint_strength` from **Project Settings → Shader Globals**, not this patch master.
+
+## STG2 — denser, taller, farther patches (2026-10-30)
+
+| Parameter | Before | Current |
+| --- | ---: | ---: |
+| Patches per 32m chunk | 6 | **8** |
+| Patch chance | 0.82 | **0.90** |
+| Clumps per patch | 12 | **15** |
+| Patch radius | 1.7–3.6 m | **2.1–4.7 m** |
+| Individual size | 0.75–1.15 | **0.85–1.50** |
+| LOD change | 28 m | **32 m** |
+| Render range | 64 m | **80 m** |
+
+More scattered clumps with slight taller variation and longer-distance coverage. No changes to the saved mesh files, seeded world/chunk layout method, slope/road/structure exclusion logic or native MultiMesh architecture. The exclusion margin scales with clump size, so bigger plants retain extra roadside clearance. These new defaults increase render cost; visual/FPS acceptance required.
+
+Runtime testing is now easier: expand **F1 → Foliage → Grass** for actual imported-grass patch density, clumps, max spread, max size and wind. Sliders regenerate only on drag release. **F1 → Foliage → Shared tree + grass tint** now has a live colour picker and strength slider (0 original, 1 strongest); both the imported grass and stylized pines, plus DF2 canopy, read these same `wm_foliage_*` global uniforms. Changes are not saved to master files. Keep permanent defaults in this resource and Godot → Project Settings → Shader Globals.
