@@ -1,139 +1,89 @@
-## Required working branch — all AI assistants
+# Code Preferences — War Machine
 
-**The current development branch is `implement-td0-td1` in `ben0kay/war-machine`. Use this branch for all repository reads, planning, code/documentation changes, commits and pushes unless Ben explicitly instructs otherwise. Do not write, push or merge to `main` without his explicit authorization.** This applies to Regular Chat, Codex / ChatGPT Work, Copilot, Claude and any other AI assistant.
+> **Applies to:** `ben0kay/war-machine` on **`implement-td0-td1`** unless the owner explicitly changes the target branch.
+> **Read alongside:** [AGENTS.md](AGENTS.md), [README.md](README.md), the relevant feature README/plan, and the actual code, scenes, and resources.
+> **Project:** Godot 4 .NET/C# survival prototype. FPS is the primary presentation; the shared top-down view remains supported until explicitly changed.
 
-- Start by reading the root README and this file from `implement-td0-td1`, not the repository's default branch. The default branch may be behind current development.
-- Verify the checked-out branch before editing and the push destination before pushing. Preserve unrelated local changes; do not force checkout/reset to switch branches.
-- For GitHub tools/API calls, explicitly set `ref: "implement-td0-td1"` on reads and `branch: "implement-td0-td1"` on writes (or the equivalent supported parameter). Never omit the branch/ref and rely on the default.
-- Base any explicitly authorized task branch on `implement-td0-td1` and target its pull request back to `implement-td0-td1`, not `main`.
-- If this branch is unavailable, report the issue rather than silently falling back to `main`. Only a later explicit instruction from Ben changes this branch policy.
-- Continue to make one commit per authorized job. This policy specifies the destination; it does not authorize unrelated work.
+## 1. Before every AI task — branch, scope, context
 
-**For EVERY new furniture, street object, decorative item or pickable-prop GLB, read `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md` before authoring.** The guide is canonical for assets and requires an explicit `CollisionMode` choice: `0 None`, `1 AutoBox`, `2 CustomBoxes`. Ordinary **fixed** objects generally use AutoBox; open shelters use CustomBoxes; future movable props stay None until their IX rigid-body phase. Keep `PLACEABLE_CATALOG.md` and the asset's README current. Do not accidentally make both static and movable physics for the same prop.
+1. **Use `implement-td0-td1`, not `main`.** Read, plan, edit, commit and push against this branch explicitly. For GitHub APIs, pass `ref: "implement-td0-td1"` on reads and `branch: "implement-td0-td1"` on writes. Do not rely on the default branch, merge into `main`, force-switch/reset, or overwrite unrelated local work. If this branch cannot be accessed, report that rather than silently falling back.
+2. Refresh the **current** root `AGENTS.md`, `README.md`, this file, relevant owner/feature READMEs, plans, asset guides and source before substantial work, even in a long-running chat. Some notes may be outdated: resolve discrepancies against the actual current source and flag important conflicts.
+3. Confirm what the owner has **actually authorized**. Don't implement later roadmap phases, change project startup scenes, migrate systems, remove the secondary camera/view, or refactor unrelated code without permission.
+4. Prefer a small, coherent change, **one logical commit per authorized job**, and a clear handoff with files, commit SHA and verification status. Push to the authorized branch only.
+5. Keep checks proportional: focused source review and an initial build/essential check when practical. Do **not** run extended/repeated testing, visual automation or FPS profiling by default; the owner normally validates in Godot. Distinguish **implemented**, **built**, **runtime-tested**, **visually accepted** and **awaiting validation**.
 
-Read the main README.md in the project root for an overall flavour of the game/coding structure. This is C#.
-I prefer comments above functions/methods. along with a commented line of ========================================================= so i can easily see when editing code in godot
-I prefer some comment at top of each script to explain what the script is doing.
-I prefer a .md file inside each major folder to explain whats inside this folder.
-I prefer a masterconfig file inside each major capslock folder to group easily frequent tweakable settings
-I prefer you organizing functions/methods into regions when appropriate.
-I prefer to organize my scripts for ease of finding in future etc.
-I do like you to vertically compress code where possible, so it's a little easier to read on screen.
-I also prefer my code to be not overly complex, more like simplicity, while still achieving the gameplay I desire + performance friendly
-I like re-using code when possible, I.E we use a helper function for staggered checks for enemies and things, similar to my Macros i had in my previous gamemaker vector game etc.
-Please keep in mind I like optimization where possible too. Performance oriented.
-I like keeping things containted and modular for easy expansion and easy tweaking of things without having to rewrite other things.
-I like Node helpers as well so that the scene trees to not become cluttered. we should group common things in a shared plain node.
-I like grouping similar variables in structs / export groups for inspector so it shows sub categories etc.
-Check out my isometric 3d and isometric 2d github repositories for code/folder structure references.
-If an .md file is available in the project for a section/feature/mechanic we are editing, refer to the .md as sometimes it will have extra context. Some might be outdated. Update md files appropriately when completing work.
-Only do one commit for github per job instead of multiple commits.
-By default, keep validation brief and proportional: review the changes and run initial build/basic checks where practical, then leave extended runtime testing, visual verification and performance profiling to me. Do not spend excessive time on repeated checks or large test suites unless I explicitly request them; this overrides broader validation requirements below. Clearly state any checks left for me.
+## 2. C# style and code organization
 
+- Add a brief purpose/ownership comment at the top of each new script.
+- Put short explanatory comments **above** methods, with an easy-to-scan `// =========================================================` divider when useful.
+- Use `#region` / `#endregion` for substantial related method groups, not for every tiny method.
+- Favor moderately **vertically compact**, readable C#. Avoid both long sprawling code and clever abstraction for its own sake.
+- Keep ownership clear and code modular: share helpers for repeated patterns (e.g. staggered enemy checks), but do not create unnecessary managers or generic frameworks.
+- Use plain shared `Node` / `Node3D` grouping helpers where they make scene ownership clearer. Container-only nodes should not have idle processing scripts.
+- Group related settings using structs/classes, Godot `[ExportGroup]` / `[ExportSubgroup]`, and typed resources where appropriate. Prefer a feature-owned `Configuration/<Feature>Master.tres` for frequently tuned settings instead of scattered magic numbers.
+- Major feature folders need a concise `README.md` stating responsibility, entry scene/scripts, configuration, data flow and limitations. Read before editing; update when durable behavior changes. Do not create placeholder folders/docs just to satisfy a pattern.
+- Preserve stable `.tscn` scene paths, public interfaces, nodes, configuration values, animation pivots/sockets and working features unless the change requires it. Inspect all consumers before moving paths.
+- Prefer simple C# with native Godot scenes/resources and the **installed** addons. Verify an API against actual installed plugin code rather than assuming methods exist.
 
-Refer to https://github.com/ben0kay/godot-tower-defense for folder / notes structure
-Refer to https://github.com/ben0kay/isometric-new-2d for similar game mechanics
-Refer to https://github.com/ben0kay/Ben_MonsterExpansion for Grim Dawns spawn mechanics just for ideas
+### Shared world and gameplay boundaries
 
-## Performance-first rules for every new mechanic
+- The shared gameplay world is `WORLD/World.tscn`; the FPS gameplay entry is `WORLD/FirstPerson/FirstPersonWorld.tscn`, which builds on it. `WORLD/testworld.tscn` is a separate legacy environment scene. **Do not change F5 startup merely because FPS is the preferred acceptance view.**
+- Maintain the existing distinction between shared gameplay simulation (world, actors, health/anatomy, damage, items, buildings, environment) and view-specific FPS/top-down controls, presentation and camera obstruction.
+- Respect scene-root ownership and existing streaming/persistence boundaries. Keep terrain, entities, persistent props, foliage and debug/UI under their appropriate owners instead of scattering children under `World` or inventing duplicate global controllers.
+- Use actual subsystem READMEs and master resources for details. A planned system (for example future persistence, item physics or whole-world actor streaming) is **not** an implemented guarantee.
 
-**Design for low idle cost from the beginning, not just functional correctness.** Before writing a feature, identify what activates it, what work happens while active, and exactly what stops that work afterward. Avoid introducing an always-running `_Process` or `_PhysicsProcess` by default.
+## 3. Asset authoring and replaceable visuals
 
-- **Inactive means dormant:** If an effect is off, intensity is zero, or its animation has finished, it should not keep simulating, checking objects, redrawing, or rewriting GPU properties. Use `SetProcess(false)`, `SetPhysicsProcess(false)`, emitter shutdown, and explicit activation where suitable. Keep a way for UI/config changes to wake it without idle polling.
-- **Prefer triggers and signals:** A tree should process fire only after `TryIgnite()` triggers ignition; an axe-hit wobble should animate only after a hit and stop afterward. Do not give every idle tree a fire-checking loop.
-- **Rain and snowfall example:** Zero intensity means OFF, not invisible particles still updating. Suspend emission, splash work and unnecessary callbacks; allow intentional fade-out/remaining effects to finish, then sleep. Changing the slider or weather state must reactivate the effect directly.
-- **Use shared systems:** Prefer one manager for many objects, pooled effects, shared GPU particles/materials, and cached data instead of thousands of per-instance idle loops.
-- **Only update changed data:** Don't assign the same shader uniforms, settings, particle bounds or light properties every frame. Apply configuration when changed, and throttle legitimately continuous cosmetic changes if it preserves the appearance.
-- **Respect streaming and visibility:** Limit queries to nearby or active chunks; register/unregister on spawn and unload. Avoid full-world/group scans every frame. Suspend off-screen cosmetic work without breaking persistent simulation.
-- **Keep hot paths allocation-free where practical:** Avoid repeated scene-tree searches, resource loads, temporary lists/arrays, LINQ, material creation, or redundant `QueueRedraw()` in frequent callbacks.
-- **Do not over-optimize away necessary animation:** Clock, sunlight and active wind may be genuinely continuous. Justify their update frequency and avoid duplicate calculations; don't freeze functioning visuals.
-- **Verify idle and active performance:** Test never-active, activation, deactivation, settled zero state, reactivation, many instances, and chunk unload/reload. Use Godot profiler/frame traces to verify idle callbacks/draws and allocations are absent or intentionally minimal. Do not claim measured improvements without measurements.
-- **Include a performance handoff:** When implementing, describe the wake-up trigger, sleep/shutdown condition, any remaining idle per-frame work, scaling strategy, and what was actually tested.
+**New furniture, street objects, decorative items, or pickable-prop GLBs:** read `WORLD/Content/Assets/Objects/OBJECT_AUTHORING_GUIDE.md` first. Follow the existing catalogue/prefab conventions, update the asset README and `PLACEABLE_CATALOG.md` as needed, and explicitly choose SOC0 `CollisionMode`: **0 None**, **1 AutoBox**, or **2 CustomBoxes**. Typical fixed solid props use AutoBox; open/multi-part structures may need CustomBoxes; future movable physics props stay None until their IX implementation. Never stack duplicate static and rigid-body collisions; creating an asset does not automatically authorize placement in the world.
 
-**Default design question:** What makes this mechanic run, what makes it stop, and what is its cost while nothing is happening?
+**New or significantly redesigned buildings:** read **both**
+`WORLD/Content/Assets/Structures/BUILDING_DESIGN_GUIDE.md` (architecture and preventable mistakes) and
+`WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md` (Godot integration, floor/stair geometry, collision, fade, interior haze and editor preview). Check entrances, floor joins, windows, staircase headroom and player clearance before adding furnishings.
 
-These requirements apply alongside the existing modular, data-driven, C# and documentation preferences.
+**Procedural art folder convention:**
+- `<Asset>/C/` contains **C# visual geometry generation**: mesh builders, primitive assembly, generated-visual helpers/materials. It is **not** a catch-all for gameplay C#.
+- `<Asset>/Artwork/` contains current or future imported `.glb`, `.gltf`, textures and authored art.
+- `<Asset>/<Asset>.tscn` stays the reusable game-facing wrapper; gameplay, physics, interaction and animation contracts must survive an art swap. Use a feature-owned `Configuration/` where tweakable authoring settings warrant it.
+- Follow the existing feature layout rather than reorganizing old assets solely to match a template.
 
-## Optional local testing handoff — when I request it
+Prefer replaceable visuals, efficient materials, practical LODs, simple collision where precise contact is unnecessary, and explicit shadow/visibility controls. Preserve imported art, variant names, pivots, resource paths and collision settings. Assess alpha overdraw, shadows and instance count, not only triangle count.
 
-To conserve Codex usage, I may explicitly ask for compilation and some or all runtime/performance testing to be performed locally by GitHub Copilot in VS Code. When requested, Codex should implement and review the changes, commit/push when authorized, and hand over the deferred checks instead of running them here. This is optional per job; otherwise follow the normal validation requirements above.
+## 4. Performance-first design — including idle cost
 
-Provide the commit SHA, changed files, prerequisites, exact build/test commands, expected results and any manual Godot visual/performance checks. Clearly state which checks were run and which are deferred, and mark the implementation as **awaiting local validation** until results are available. Pushing code does not mean it passed testing. Copilot should initially run the checks without modifying code and return commands, exit codes and relevant failures for follow-up.
+**Ask before implementing:** *What wakes this feature, what work runs while active, what stops it, and what does it cost while idle?*
 
-## Implementation planning and AI task allocation
+- **Dormant means no unnecessary processing.** Avoid a default `_Process` / `_PhysicsProcess` on every object. Prefer events, signals, timers, explicit state transitions, `SetProcess(false)`, `SetPhysicsProcess(false)`, and emitter shutdown. A later input/config change must still be able to wake the feature.
+- **Share and batch where useful.** Use reusable helpers, cached resources, pooled effects, material/instance sharing and existing spatial/streaming registries instead of thousands of per-object loops or full-tree scans.
+- **Apply settings only when they change.** Don't rewrite identical shader uniforms, particle bounds, light properties or debug parameters each frame. Genuinely continuous sky, wind or animation may update at the necessary rate.
+- **Bound hot-path work.** Avoid per-frame scene lookups, loads, LINQ/temporary collections, new materials and redundant redraws. Limit perception, AI, hit tests and cosmetic effects by proximity, budgets, active chunks and relevance; stagger checks as appropriate.
+- **Treat separate scaling problems separately:** terrain/foliage visual LOD, static-world streaming, entity simulation, collision activation and persistence do not automatically solve each other. Register/unregister with chunk residency without losing required state.
+- **Typical event examples:** fire/tree reactions wake on ignition; hit wobble wakes on impact and sleeps after completion; zero-intensity weather turns off emitters and splash callbacks after intentional fade-out; investigation ends when its bounded search/timeout expires.
+- **Do not remove correct behavior just to eliminate loops.** Prefer a measured reduction in work, without freezing active wind, animation or threat response.
+- **Performance handoff:** state activation, sleep conditions, any remaining idle work, scaling strategy and checks actually run. Use profiler/FPS claims only with actual measurements and test conditions; if owner profiling is pending, say so.
 
-Regular Chat is the preferred assistant for drafting and reviewing implementation plans before coding. First read the root README, this file, the owning feature README, relevant plans, and actual current scripts/scenes/configs. Create an implementation-ready Markdown plan in the feature's owning folder; distinguish confirmed current behavior from proposed changes.
+## 5. C# syntax and build hygiene
 
-Use short numbered phases with feature-specific prefixes (for example C0/C1/C2 or ES0/ES1/ES2). At the top, include a compact phase table showing identifier, goal, suggested assistant and current status. For each phase, specify objective, current dependencies, scope and out-of-scope, owning files/folders, implementation approach, existing behavior to preserve, data/configuration considerations, performance (activation, idle cost, shutdown, streaming), validation/pass criteria, and recommended assistant with rationale. Keep phases independently reviewable and avoid speculative complexity.
+- Collection iteration is **`foreach (var item in items)`**, never the invalid `for (var item in items)`.
+- Indexed iteration is **`for (int i = 0; i < count; i++)`** (or another valid C# for form with semicolon-separated clauses). Review new/edited loops especially in procedural mesh builders; a previous compile failure was caused by `for (float x in new[] { ... })`.
+- Check new Godot API names, types, signal signatures, scene paths and resources before commit.
+- Prefer an initial `dotnet build war-machine.csproj` where the .NET/Godot build environment is available. Fix reported compile errors before claiming a successful build. When unavailable, perform focused source checks and state **compilation not verified**.
+- A Git push, clean diff, or screenshot does not establish runtime correctness, visual quality or performance.
 
-Explicitly identify work Regular Chat can safely handle to conserve Codex usage: documentation, planning, design review, simple isolated configuration or code changes. Recommend Codex/ChatGPT Work for major multi-file implementation, shared architecture, complex integrations and performance-sensitive changes; Copilot for local testing/diagnostics and authorized small fixes; Claude for optional second opinions and assigned isolated work. These are suggestions, never automatic permission to edit.
+## 6. Plans, documentation and handoffs
 
-After drafting, explain phases in plain language and proactively suggest possible improvements, simplifications, alternatives, reordering, splitting or deferral. Give the user the opportunity to review and refine the plan before implementation. Never automatically execute a plan or proceed to subsequent phases: implement only the phase/task explicitly authorized by the user.
+For substantial work, draft a feature-owned implementation plan first. Separate **confirmed current behavior** from proposed changes; use short feature-prefixed phases (e.g. `IX0/IX1`, `ZD1/ZD2`) with a compact status table. Each phase should identify goal, dependencies, owned files/scenes, scope exclusions, preserved behavior, configuration/data, wake/sleep/streaming cost, acceptance checks and an appropriate implementation assistant.
 
-Maintain clear phase states: Planned, In Progress, Implemented, Awaiting Validation, Accepted. Update the plan and owning README after authorized work; distinguish code completion from automated checks and user visual/performance acceptance. Record commit SHA, known limitations, deferred tests and next handoff. Keep current guidance prominent; relocate lengthy superseded history to validation/archive notes instead of mixing contradictory instructions into active phases. Continue to follow one GitHub commit per job.
+Keep statuses explicit: **Planned / In Progress / Implemented / Awaiting Validation / Accepted**. The owner chooses the phase to implement; planning does not authorize execution or continuation into the next phase. Update owning READMEs/plans after meaningful authorized changes; avoid contradictory historical status or speculative claims.
 
-Preferred workflow: Regular Chat investigates and drafts → user reviews/improves → user chooses phase and assistant → authorized implementation → validation → documentation update → next phase only on request.
+**Preferred division of work:** regular ChatGPT for design reviews, plans and small contained edits; Codex/Work for cross-file integration; Copilot for delegated local builds/diagnostics or authorized small fixes; another assistant for an explicitly assigned review. Tool choice never grants permission.
 
-**For every new or significantly redesigned building**, first read [the architectural building design guide](WORLD/Content/Assets/Structures/BUILDING_DESIGN_GUIDE.md) and [the technical authoring contract](WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md). The architectural guide contains the PoliceStation001 mistake checklist for stairs, windows, floors and wall joins. The technical guide covers editor preview, collision/fade, haze and engine integration. Both checks are mandatory before furnishings. This is separate from the Object Authoring Guide for props.
+**When local testing is delegated to Copilot:** supply changed files, commit SHA, prerequisites, exact commands, expected results, deferred runtime/visual/FPS checks and outstanding limitations. Copilot should report initial diagnostics without automatically modifying code unless instructed. Continue to mark pending checks as **awaiting local validation**.
 
-## Procedural C# models and future artwork folder convention (owner preference)
+## 7. Reference repositories — patterns, not instructions to migrate
 
-When an object, character, building, vehicle, tree or other asset is being **modelled/generated with C# instead of an imported 3D model**, follow the existing paired-folder pattern:
+- [Final Machine](https://github.com/ben0kay/final-machine): concise `AGENTS.md` entry point, organized coding preferences and documentation conventions. **Its `main` branch policy and project direction do not apply here.**
+- [godot-tower-defense](https://github.com/ben0kay/godot-tower-defense): folder/notes structure.
+- [isometric-new-2d](https://github.com/ben0kay/isometric-new-2d): similar gameplay/code patterns.
+- [Ben_MonsterExpansion](https://github.com/ben0kay/Ben_MonsterExpansion): spawn-mechanic ideas only.
 
-- **`C/` = C# procedural model/mesh generation.** Put the C# that *constructs the asset's visible geometry* here: mesh builders, primitive assembly, custom vertices/shapes, procedural variations and closely related geometry-generation helpers. It may also build generated art-specific materials or supporting generated geometry as needed. Examples already in the repo include `PLAYER/C/PlayerMeshBuilder.cs`, `ENTITIES/TYPES/Zombies/C/ZombieMeshBuilder.cs`, `WORLD/Content/Assets/Structures/Building001/C/Building001Mesh.cs`, and `WORLD/Content/Assets/Objects/Static/Cars/Car001/C/Car001Mesh.cs`.
-- **`Artwork/` = future imported model/artwork files.** Reserve this sibling folder for authored/imported assets such as `.glb`, `.gltf`, models, textures and associated art materials. It is fine for `Artwork/` to contain only a README until actual art exists. This folder is where I may later put a better model to replace the C#-generated visual geometry.
-- **Keep the gameplay asset's scene and behavior reusable.** The `.tscn` should remain the stable prefab. Make the procedural visual implementation replaceable by an imported model later without redesigning movement, AI, interactions, animation sockets, collision or other gameplay systems. Preserve the relevant pivots/sockets and adjust visual setup/collision only when the replacement demands it.
-- **`C/` is not a catch-all for every C# script.** General controllers, gameplay, movement, health, AI, equipment behavior and common settings stay in their owning feature or `Configuration/` folder. Geometry-generation-specific helpers may live with the generator in `C/`. Follow any existing feature README and do not reorganize older folders just to satisfy naming.
-- For a newly built code-generated object, prefer a simple structure like `<Asset>/C/<Asset>Mesh.cs`, `<Asset>/Artwork/README.md`, `<Asset>/<Asset>.tscn`, and `<Asset>/Configuration/` for tweakable authoring settings as appropriate. Don't create unnecessary empty files or extra managers.
-
-This is a **source-art versus future-imported-art convention**, not an instruction to move every C# class into `C/`. For example, the active camera remains `CAMERA/Camera.cs` and the player controller remains `PLAYER/PlayerController.cs`.
-
-## C# syntax guardrails — loops and collection iteration (mandatory)
-
-**Recurring compile error: `Syntax error, 'foreach' expected`**. This happened in procedural C# mesh generation when a collection traversal was mistakenly written as `for (float x in new[] { ... })`. **This is not valid C#**; `in` collection iteration requires the `foreach` keyword. Two such mistakes were corrected in `EQUIPMENT/Weapons/MachineGuns/MachineGun_001/C/MachineGunMeshBuilder.cs` (cooling-vent positions and bipod positions).
-
-**Use `foreach` to visit the elements of an array, list or enumerable:**
-
-```csharp
-// Correct: enumerate fixed positions (typed variable).
-foreach (float x in new[] { -0.114f, 0.114f })
-{
-	// Build the vent/leg at this x position.
-}
-
-// Correct: infer the element type when appropriate.
-foreach (var item in items)
-{
-	Process(item);
-}
-```
-
-**Use `for` only with initializer, condition and iterator separated by semicolons** (or another genuinely valid C# `for` form):
-
-```csharp
-// Correct: count/index iteration.
-for (int i = 0; i < 4; i++)
-{
-	BuildPart(i);
-}
-
-// Correct: enumerate an array by index when the index is needed.
-float[] offsets = { -0.114f, 0.114f };
-for (int i = 0; i < offsets.Length; i++)
-{
-	float x = offsets[i];
-	BuildAt(x);
-}
-```
-
-**Never write the invalid hybrid syntax below:**
-
-```csharp
-// INVALID C# — triggers "'foreach' expected".
-for (float x in new[] { -0.114f, 0.114f })
-{
-	BuildAt(x);
-}
-```
-
-**Pre-commit requirement for all C# changes:** check every new/edited `for` and `foreach` loop, particularly loops over literal `new[] { ... }` collections. Search changed `.cs` files for suspicious `for (... in ...)` constructs and correct them to `foreach (... in ...)` before committing. Prefer `dotnet build war-machine.csproj` if the Godot C# SDK is available; build errors must be fixed before reporting a successful compile. If the environment cannot build, perform at least a focused syntax review and explicitly report **compilation not verified**. Don't assume an editor screenshot or successful GitHub push means the code compiled.
+**Default:** preserve War Machine's working architecture, make the smallest robust authorized change, and leave the next person a short, accurate handoff.
