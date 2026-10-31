@@ -1,7 +1,7 @@
 {
   "asset": {
     "version": "2.0",
-    "generator": "Final Machine low-poly geometric blade grass author"
+    "generator": "War Machine ForestGrass001 UV-fixed replacement author"
   },
   "scene": 0,
   "scenes": [
@@ -77,38 +77,38 @@
   "buffers": [
     {
       "uri": "forest_grass_001_c_LOD1.bin",
-      "byteLength": 10344
+      "byteLength": 11250
     }
   ],
   "bufferViews": [
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 2448,
+      "byteLength": 2700,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 2448,
-      "byteLength": 2448,
+      "byteOffset": 2700,
+      "byteLength": 2700,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 4896,
-      "byteLength": 1632,
+      "byteOffset": 5400,
+      "byteLength": 1800,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 6528,
-      "byteLength": 3264,
+      "byteOffset": 7200,
+      "byteLength": 3600,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 9792,
-      "byteLength": 552,
+      "byteOffset": 10800,
+      "byteLength": 450,
       "target": 34963
     }
   ],
@@ -116,48 +116,49 @@
     {
       "bufferView": 0,
       "componentType": 5126,
-      "count": 204,
+      "count": 225,
       "type": "VEC3",
       "min": [
-        -0.39742112159729004,
+        -0.4229183793067932,
         0.0,
-        -0.39860960841178894
+        -0.4242914319038391
       ],
       "max": [
-        0.3854973614215851,
-        0.9524274468421936,
-        0.4519936442375183
+        0.4237024486064911,
+        0.9977429509162903,
+        0.4193289577960968
       ]
     },
     {
       "bufferView": 1,
       "componentType": 5126,
-      "count": 204,
+      "count": 225,
       "type": "VEC3"
     },
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 204,
+      "count": 225,
       "type": "VEC2"
     },
     {
       "bufferView": 3,
       "componentType": 5126,
-      "count": 204,
+      "count": 225,
       "type": "VEC4"
     },
     {
       "bufferView": 4,
       "componentType": 5123,
-      "count": 276,
+      "count": 225,
       "type": "SCALAR"
     }
   ],
   "extras": {
     "variant": "C",
     "lod": 1,
-    "purpose": "low-poly fine geometric grass ribbons",
-    "triangle_count": 92
+    "purpose": "UV-fixed low-poly geometric grass ribbons",
+    "triangle_count": 75,
+    "note": "Roots now sample dark atlas values; tips sample lighter atlas values."
   }
 }
