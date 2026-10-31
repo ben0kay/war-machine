@@ -104,3 +104,13 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 **Prevent recurrence:** Every new FPS stair prefab must be inspected **from underneath and both sides**, not only top-down or by walking on it. Check tread width versus guard X offsets, real riser continuity on rising and descending flights, step-to-landing joints, baluster anchors, collision versus visual boundary and existence of a physically plausible support/soffit. Do not introduce dozens of individual step colliders for a visual gap; keep smooth ramps as the walking proxy when intended. See `BUILDING_DESIGN_GUIDE.md` PS1.7 for the reusable contract.
 
 **Status:** photographed original defect and source geometry confirmed; corrective source is implemented, but Godot build and FPS rendering/physics acceptance require the user's local test.
+
+## LL006 — Side stringers concealed banisters and turn landing was unsupported (2026-10-31)
+
+**Observed:** PoliceStation001 screenshots after PS1.7 showed a railing that looked half-solid, a floating basement U-turn landing and some projecting ends/columns.
+
+**Confirmed source causes:** The recently introduced 0.50m-deep `SideStringer` boxes blocked the sightlines through the lower rail posts. Rail post positions were not exactly uniform. Each stair turn landing was hardcoded 8.6m wide although two 3.2m lanes at X=11 and X=15.3 span **7.5m**, creating roughly 0.55m overhang at each outer end. The basement mid-landing had its own slab collider but no visual columns beneath it.
+
+**Source correction (local visual acceptance pending):** Keep one **20cm** noncolliding underside under the treads, remove the thick side stringers, use nine balusters evenly spaced along each flight, compute both turn widths from the real flight bounds, and support the basement platform with two full-height static corner columns from basement floor to the landing underside. Preserve the stair ramp, treads, risers, 6cm blue nosing, cell block, Terrain3D and all above-ground architecture.
+
+**Prevention:** Check an authored stair in first person from side and underside; verify visible, uniformly spaced balusters, rail/pillar joins, no obstructive half-height panels, platform ends aligned with real stairs, and non-floating structural supports. Read the building design guide's PS1.8 notes. Source-only commits require local Godot validation.
