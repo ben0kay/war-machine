@@ -15,6 +15,9 @@ public partial class WorldController : Node3D
     protected ForestPlacement? _forestPlacement;
     protected TerrainGrass _grass = null!;
     private StylizedGrassPlacement? _stylizedGrass;
+    private PlaceableSpawnMenu? _spawnMenu;
+    private WorldColorGrade? _colorGrade;
+    private bool _debugPanelsOpen;
     private PlayerController _player = null!;
     protected WorldAudio _audio = null!;
     protected WeatherBridge _weather = null!;
@@ -139,10 +142,16 @@ public partial class WorldController : Node3D
         InitializeHealthFeedback(player, camera);
         InitializeAmmoHud(player);
         InitializeBackpack(player);
-        // The shared F1 model spawner is debug-only, with no real prop physics or world placement.
-        var spawnMenu = GD.Load<PackedScene>("res://DEBUG/PlaceableSpawner/PlaceableSpawnMenu.tscn").Instantiate<PlaceableSpawnMenu>();
-        GetNode("DebugUIRoot").AddChild(spawnMenu);
-        spawnMenu.Initialize(player, camera, terrain, GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot"));
+        // GD1: one persistent grading pass beneath gameplay HUD + debug layers; dormant at neutral.
+        _colorGrade = new WorldColorGrade { Name = "WorldColorGrade" };
+        GetNode("DebugUIRoot").AddChild(_colorGrade);
+        _colorGrade.Initialize(GD.Load<WorldColorGradeSettings>(
+            "res://DEBUG/ColorGrade/Configuration/ColorGradeMaster.tres"));
+        // F1 spawner and the left controls now have one input/visibility owner: this world.
+        _spawnMenu = GD.Load<PackedScene>("res://DEBUG/PlaceableSpawner/PlaceableSpawnMenu.tscn").Instantiate<PlaceableSpawnMenu>();
+        GetNode("DebugUIRoot").AddChild(_spawnMenu);
+        _spawnMenu.Initialize(player, camera, terrain, GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot"));
+        _spawnMenu.CloseRequested += CloseDebugPanels;
         // Build one deterministic horde layout for both placement and its tree/rock clearings.
         // The inherited first-person debug scene explicitly opts out.
         var horde = EnableHorde ? BuildHordeOffsets() : (Slow: System.Array.Empty<Vector2>(), Fast: System.Array.Empty<Vector2>());
@@ -264,7 +273,31 @@ public partial class WorldController : Node3D
             + (patrolReady ? "" : "\nRobot placement failed; see Output.")
             + (horde.Slow.Length + horde.Fast.Length > 0 ? $"\nDebug horde: {horde.Slow.Length} slow + {horde.Fast.Length} fast" : "");
         InitializeStaticStreaming(player, camera);
+        // Start with a clean gameplay view; F1 opens both left/right debug panels.
+        SetDebugPanelsVisible(false);
     }
+
+    // =========================================================
+    // F1 is handled once for both camera presentations; no per-frame debug input polling.
+    public override void _Input(InputEvent input)
+    {
+        if (input is not InputEventKey key || !key.Pressed || key.Echo || _spawnMenu == null) return;
+        if (key.Keycode != Key.F1 && key.PhysicalKeycode != Key.F1) return;
+        SetDebugPanelsVisible(!_debugPanelsOpen);
+        GetViewport().SetInputAsHandled();
+    }
+
+    // =========================================================
+    // Hide all left-side debug labels/panels together and the independent right-hand spawner.
+    private void SetDebugPanelsVisible(bool open)
+    {
+        _debugPanelsOpen = open;
+        DebugControls.Visible = open;
+        _spawnMenu?.SetMenuVisible(open);
+    }
+
+    // =========================================================
+    private void CloseDebugPanels() => SetDebugPanelsVisible(false);
 
     // =========================================================
     // View-specific adapters are replaceable; terrain, scenery and entity composition remain shared.
@@ -311,7 +344,7 @@ public partial class WorldController : Node3D
     protected virtual void InitializeControls(Camera camera)
     {
         var panel = DebugControls.GetNode<DebugOverlay>("DebugOverlay");
-        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses, _stylizedGrass);
+        panel.Initialize(camera, CameraSettings, GetNode<SkyController>("SystemsRoot/EnvironmentRoot/Environment"), _weather, _grass, _pines, _distanceFog, _groundHaze, _visionDebug, OverlayView, _renderCulling, _player, _corpses, _stylizedGrass, _colorGrade);
     }
 
     // =========================================================
@@ -701,6 +734,7 @@ public partial class WorldController : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        if (IsInstanceValid(_spawnMenu)) _spawnMenu!.CloseRequested -= CloseDebugPanels;
         if (IsInstanceValid(_player) && IsInstanceValid(_stylizedGrass))
             _player.PositionChanged -= _stylizedGrass!.UpdateAnchor;
         if (IsInstanceValid(_player) && IsInstanceValid(_forestPlacement))

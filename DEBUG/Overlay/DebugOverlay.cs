@@ -19,6 +19,7 @@ public partial class DebugOverlay : PanelContainer
     private PinePlacement _pines = null!;
     private TerrainGrass _grass = null!;
     private StylizedGrassPlacement? _stylizedGrass;
+    private WorldColorGrade? _colorGrade;
     private Color _sharedFoliageTint;
     private float _sharedFoliageStrength;
     private EnvironmentConfig _environment = null!;
@@ -31,11 +32,11 @@ public partial class DebugOverlay : PanelContainer
 
     // =========================================================
     // Runtime copy belongs to this preview; slider edits never write resources or affect the original world.
-    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null, StylizedGrassPlacement? stylizedGrass = null)
+    public void Initialize(Camera camera, CameraSettings settings, SkyController sky, WeatherBridge weather, TerrainGrass grass, PinePlacement pines, PlayerDistanceFog? distanceFog = null, GroundHaze? groundHaze = null, ZombieVisionDebug? visionDebug = null, IDebugOverlayView? view = null, WorldRenderCulling? renderCulling = null, PlayerController? player = null, CorpseManager? corpses = null, StylizedGrassPlacement? stylizedGrass = null, WorldColorGrade? colorGrade = null)
     {
         _view = view; _renderCulling = renderCulling;
         _camera = camera; _settings = settings; _sky = sky; _environment = sky.Settings; _grass = grass; _pines = pines;
-        _stylizedGrass = stylizedGrass;
+        _stylizedGrass = stylizedGrass; _colorGrade = colorGrade;
         // Read each global once at panel creation; shader parameter GET synchronizes render thread.
         _sharedFoliageTint = RenderingServer.GlobalShaderParameterGet("wm_foliage_tint").AsColor();
         _sharedFoliageStrength = RenderingServer.GlobalShaderParameterGet("wm_foliage_tint_strength").AsSingle();
@@ -65,6 +66,29 @@ public partial class DebugOverlay : PanelContainer
             _zoomLabel = new Label(); rows.AddChild(_zoomLabel);
             _zoom = AddSlider(rows, Mathf.Max(5, Mathf.Min(settings.MinimumZoom, settings.MaximumZoom)),
                 Mathf.Max(5, Mathf.Max(settings.MinimumZoom, settings.MaximumZoom)), 0.5);
+        }
+        if (_colorGrade != null)
+        {
+            var grading = _colorGrade;
+            var gradeRows = AddSection(rootRows, "Colour grading");
+            gradeRows.AddChild(new Label { Text = "Whole game image · HUD and debug panels unaffected" });
+            var gradeEnabled = new CheckButton {
+                Text = "Enable global grade", ButtonPressed = grading.Settings.Enabled,
+                FocusMode = FocusModeEnum.None
+            };
+            gradeRows.AddChild(gradeEnabled);
+            gradeEnabled.Toggled += value => {
+                grading.Settings.Enabled = value; grading.ApplySettings(); _copy.Text = "Copy settings";
+            };
+            AddBoundSlider(gradeRows, "Hue shift (°)", -180, 180, 1, grading.Settings.HueDegrees,
+                value => { grading.Settings.HueDegrees = value; grading.ApplySettings(); });
+            AddBoundSlider(gradeRows, "Saturation", 0, 2, 0.01, grading.Settings.Saturation,
+                value => { grading.Settings.Saturation = value; grading.ApplySettings(); });
+            AddBoundSlider(gradeRows, "Contrast", 0.5, 1.5, 0.01, grading.Settings.Contrast,
+                value => { grading.Settings.Contrast = value; grading.ApplySettings(); });
+            AddBoundSlider(gradeRows, "Brightness", 0.5, 1.5, 0.01, grading.Settings.Brightness,
+                value => { grading.Settings.Brightness = value; grading.ApplySettings(); });
+            gradeRows.AddChild(new Label { Text = "Neutral: hue 0 · saturation / contrast / brightness 1" });
         }
         var environmentRows = AddSection(rootRows, "Environment");
         if (_view != null) _view.BuildControls(environmentRows, rootRows);
@@ -441,6 +465,14 @@ public partial class DebugOverlay : PanelContainer
             [nameof(_environment.WeatherFallSpeed)] = _environment.WeatherFallSpeed,
             [nameof(_environment.WeatherQuality)] = _environment.WeatherQuality
         };
+        if (_colorGrade != null)
+        {
+            values["GlobalGradeEnabled"] = _colorGrade.Settings.Enabled;
+            values["GlobalHueDegrees"] = _colorGrade.Settings.HueDegrees;
+            values["GlobalSaturation"] = _colorGrade.Settings.Saturation;
+            values["GlobalContrast"] = _colorGrade.Settings.Contrast;
+            values["GlobalBrightness"] = _colorGrade.Settings.Brightness;
+        }
         if (_stylizedGrass != null)
         {
             values["StylizedGrassEnabled"] = _stylizedGrass.Settings.Enabled;
