@@ -8,9 +8,9 @@ using System.Security.Cryptography;
 
 public partial class DirtPatchAuthoring : Node
 {
-    public const string PreviewDirectory = "res://WORLD/Terrain/GameplayDirtPreview";
-    private const string StageDirectory = "res://WORLD/Terrain/GameplayDirtPreview.staging";
-    private const string Manifest = "DTP1_SOURCE_MANIFEST.txt";
+    public const string PreviewDirectory = "res://WORLD/Terrain/GameplayDirtPreviewV2";
+    private const string StageDirectory = "res://WORLD/Terrain/GameplayDirtPreviewV2.staging";
+    private const string Manifest = "DTP1_V2_SOURCE_MANIFEST.txt";
     private const uint Fields = (0x1Fu << 27) | (0x1Fu << 22) | (0xFFu << 14) | 1u;
     [Export] public DirtPatchSettings Settings { get; set; } = null!;
 
@@ -24,7 +24,7 @@ public partial class DirtPatchAuthoring : Node
         try
         {
             string[] originals = Directory.GetFiles(src, "*.res"), lines = File.ReadAllLines(Path.Combine(dst, Manifest));
-            if (originals.Length == 0 || lines.Length != originals.Length + 1 || lines[0] != "DTP1-v1") return false;
+            if (originals.Length == 0 || lines.Length != originals.Length + 1 || lines[0] != "DTP1-v2") return false;
             var hashes = new Dictionary<string, string>(StringComparer.Ordinal);
             for (int i = 1; i < lines.Length; i++)
             {
@@ -48,7 +48,7 @@ public partial class DirtPatchAuthoring : Node
     public override void _Ready()
     {
         try { Generate(); GetTree().Quit(); }
-        catch (Exception ex) { GD.PushError("DTP1 failed; original saved terrain is untouched. " + ex); GetTree().Quit(1); }
+        catch (Exception ex) { GD.PrintErr("DTP1 V2 FAILED. See error below; original saved terrain is untouched. " + ex); GD.PushError("DTP1 V2 failed: " + ex.Message); GetTree().Quit(1); }
     }
 
     // =========================================================
@@ -69,7 +69,7 @@ public partial class DirtPatchAuthoring : Node
         string[] sources = Directory.GetFiles(src, "*.res");
         if (sources.Length == 0) throw new IOException("No native .res terrain regions found.");
         Directory.CreateDirectory(stage);
-        var lines = new List<string> { "DTP1-v1" };
+        var lines = new List<string> { "DTP1-v2" };
         foreach (string source in sources)
         {
             string name = Path.GetFileName(source);
@@ -93,10 +93,10 @@ public partial class DirtPatchAuthoring : Node
         var locations = data.Get("region_locations").AsGodotArray();
         if (locations.Count != sources.Length) throw new IOException("Preview did not load every native terrain region.");
 
-        using var field = new DirtPatchField(Settings, world.VillageOriginXZ);
+        using var field = new DirtPatchField(Settings, world.VillageOriginXZ, world.SpawnXZ);
         float spacing = terrain.Get("vertex_spacing").AsSingle();
         if (!float.IsFinite(spacing) || spacing <= 0) throw new IOException("Bad Terrain3D vertex_spacing.");
-        Rect2 village = new(world.VillageOriginXZ + Settings.ProtectedMin, Settings.ProtectedMax - Settings.ProtectedMin);
+        var exclusions = DirtPatchProtectedAreas.Build(world);
         int changed = 0, regions = 0, manual = 0, holes = 0;
         foreach (Variant value in locations)
         {
@@ -122,7 +122,7 @@ public partial class DirtPatchAuthoring : Node
                 for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++)
                 {
                     Vector2 p = origin + new Vector2(x, z) * spacing;
-                    if (world.VillageEnabled && village.HasPoint(p)) continue;
+                    if (DirtPatchProtectedAreas.Contains(exclusions, p)) continue;
                     int index = z * size + x;
                     coverage[index] = Mathf.Max(coverage[index], field.Coverage(shape, p));
                 }
@@ -162,7 +162,8 @@ public partial class DirtPatchAuthoring : Node
         if (Directory.GetFiles(stage, "*.res").Length != sources.Length)
             throw new IOException("Incomplete save: staging folder retained; original terrain unchanged.");
         Directory.Move(stage, dst);
-        GD.Print($"DTP1: dirt preview painted {changed} texels across {regions} regions; skipped manual={manual}, holes={holes}. Test FPS F6.");
+        if (!HasCurrentPreview()) throw new IOException("DTP1 V2 wrote files, but manifest verification failed. Original terrain remains safe.");
+        GD.Print($"DTP1 V2 SUCCESS: {changed} soil texels in {regions} regions, manual skipped={manual}, holes skipped={holes}. Preview: {PreviewDirectory}. Open FPS World F6.");
     }
 
     // =========================================================

@@ -13,5 +13,4 @@ FeatherMetres = 1.7
 WarpMetres = 2.2
 MinimumNormalY = 0.92
 Strength = 0.92
-ProtectedMin = Vector2(-150, -250)
-ProtectedMax = Vector2(155, 110)
+ShowNearSpawnPatches = true

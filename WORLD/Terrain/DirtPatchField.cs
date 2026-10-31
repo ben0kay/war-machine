@@ -28,7 +28,7 @@ public sealed class DirtPatchField : IDisposable
 
     // =========================================================
     // Generate a set of overlapping blots and broken curved ribbons, never grid-aligned decals.
-    public DirtPatchField(DirtPatchSettings config, Vector2 origin)
+    public DirtPatchField(DirtPatchSettings config, Vector2 origin, Vector2 spawnXZ)
     {
         float half = Mathf.Clamp(config.AreaHalfExtent, 100f, 450f);
         Area = new Rect2(origin - Vector2.One * half, Vector2.One * (2f * half));
@@ -67,6 +67,19 @@ public sealed class DirtPatchField : IDisposable
                 _marks.Add(new Mark(p, q, width, next, 0f, true, pad));
                 p = q; width = next;
             }
+        }
+        // A few authored witness patches just outside the real parking lot and road edge.
+        // Unlike a random sparse field, these make the first FPS visual check possible from spawn.
+        if (config.ShowNearSpawnPatches)
+        {
+            float padding = _warp + _feather + 2f;
+            Vector2 a = spawnXZ + new Vector2(-25f, 12f);
+            Vector2 b = spawnXZ + new Vector2(-46f, 32f);
+            _marks.Add(new Mark(a, a, 12f, 8f, .34f, false, padding));
+            _marks.Add(new Mark(b, b, 8f, 12f, -.6f, false, padding));
+            _marks.Add(new Mark(a, b, 3.5f, 2.5f, 0f, true, padding));
+            Vector2 c = spawnXZ + new Vector2(62f, 25f);
+            _marks.Add(new Mark(c, c, 13f, 7f, -.5f, false, padding));
         }
     }
 

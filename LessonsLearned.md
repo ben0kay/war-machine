@@ -138,3 +138,16 @@ Changed script: `VEGETATION/Trees/CanopyTree/CanopyTreeSettings.cs`. The canopy 
 **Prevention:** Check the *actual* 3D entrance-to-first-tread flat walking area including open door leaf and rail posts, not just nominal doorway width. When moving stairs, update both the upper deck's hole and its guards from the same geometry parameters. Reserve window sightlines early enough to catch nearby stoves and lockers. Move every furniture visual/detail and matching collider together. Derive interior wall endpoints from the next collidable slab underside with a small gap; never alter the exterior facade to fix an interior seam. Validate non-default building sizes for clearance rather than silently accepting a layout that cannot physically fit. One initial build and a manual FPS stair/window/ceiling walkthrough are still required.
 
 **Status:** Source-verified defects, correction source committed; local Godot compile, traversal and visual check pending.
+
+
+## LL008 — DTP1 dirt preview invisible around spawn due to oversized protection mask (2026-10-31)
+
+**Observed:** Owner ran the one-shot DTP1 preview and then FPS, but saw no exposed dirt while exploring near spawn. The preview scene exited automatically; that behaviour occurs after both successful authoring and an exception and is not itself proof of success.
+
+**Confirmed source flaw:** `DirtPatchSettings` originally excluded everything inside a **305×360m axis-aligned rectangle** relative to VillageOriginXZ (X[-150,+155], Z[-250,+110]). WorldMaster's default SpawnXZ is (512,550), which is inside that rectangle. All soil candidate locations inside were rejected before painting. Additionally, the original FPS world logs only a brief fallback message, so an absent/stale preview might go unnoticed.
+
+**Source correction (awaiting Godot visual confirmation):** Replace the coarse mask with individual site/building/road/patrol pads in `DirtPatchProtectedAreas`, add three near-spawn witness patches, output explicit `DTP1 V2 SUCCESS` after the published preview passes its manifest check, and print `DTP1 V2: verified dirt preview ACTIVE` in FPS when the preview is selected. Use a **new V2 directory** rather than deleting or silently overwriting the user's original DTP1 copy. Original native gameplay terrain, saved heightmaps, manual-painted control pixels and foliage logic remain untouched.
+
+**Prevent recurrence:** Whenever an environmental generator is expected to be testable from spawn, compare its placement constraints numerically with the player spawn and the nearest authored infrastructure. Use bounding masks that cover actual objects/roads rather than arbitrarily large no-content rectangles; add a local witness/test case and a distinguishable success/failure log. A CLI/editor scene exiting does not establish generated content, correct loading, or rendering.
+
+**Status:** the oversized exclusion is proven from source; revised material/preview rendering and in-game dirt visibility await user test.

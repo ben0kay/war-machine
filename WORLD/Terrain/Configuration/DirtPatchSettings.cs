@@ -19,7 +19,6 @@ public partial class DirtPatchSettings : Resource
     [Export(PropertyHint.Range, "0,6,0.25")] public float WarpMetres { get; set; } = 2.2f;
     [Export(PropertyHint.Range, "0.65,1,0.01")] public float MinimumNormalY { get; set; } = 0.92f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float Strength { get; set; } = 0.92f;
-    [ExportGroup("Village exclusion (relative to WorldMaster village origin)")]
-    [Export] public Vector2 ProtectedMin { get; set; } = new(-150f, -250f);
-    [Export] public Vector2 ProtectedMax { get; set; } = new(155f, 110f);
+    [ExportGroup("Visual test")]
+    [Export] public bool ShowNearSpawnPatches { get; set; } = true;
 }

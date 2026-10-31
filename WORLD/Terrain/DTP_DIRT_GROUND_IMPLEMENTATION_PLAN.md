@@ -79,6 +79,15 @@
 - **Validation needed locally (not yet run here):** `dotnet build war-machine.csproj`; run `BakeDirtPreview.tscn` once; verify every `Gameplay/*.res` source checksum unchanged, preview directory has the same region count plus manifest, and DTP1 prints nonzero changed texels. F6 primary FPS scene; verify irregular soil shape, soft transitions, correct dirt texture ID, no holes/roads/structures painted, rock slopes outside patches and no visual repetition. Compare using `UsePreviewInGameplay=false`; confirm stale previews fall back after original source edits and that the bake refuses a second run without backup/removal. Check vegetation remains unchanged until DTP2 and measure FPS locally if needed.
 - **No claimed visual acceptance:** the assistant verified connector source changes only. Godot .NET compilation, native Terrain3D save/load, GPU texture-array imports and playtest have not run; do not mark DTP1 Accepted yet.
 
+
+### DTP1 V2 bugfix / visibility acceptance (2026-10-31)
+
+**Confirmed root cause:** V1's single protected rectangle X[-150,+155], Z[-250,+110] relative to the village origin included the player's default spawn and the nearby landscape. A successful bake could therefore display no dirt around the starting village, even after walking a considerable distance. The separate authoring scene also quits on either success or error, so its closing is not proof of completion.
+
+**Source fix:** `DirtPatchProtectedAreas.cs` declares individual conservative building/site/road/patrol/spawn exclusion pads, rather than the giant village rectangle. `DirtPatchField.cs` adds three close-enough organic witness patches just off the spawn approach; these are visual-test anchors, not a new per-frame decorator. Settings include `ShowNearSpawnPatches`. The old V1 output remains unchanged and is not deleted. The new `GameplayDirtPreviewV2/` is a standalone copy guarded by SHA-256 source-region manifest `DTP1_V2_SOURCE_MANIFEST.txt`. Source regions, manually painted pixels, terrain height, and vegetation are untouched.
+
+**Validation:** pull and build, explicitly F6 `WORLD/Terrain/BakeDirtPreview.tscn`; confirm console `DTP1 V2 SUCCESS: ... soil texels` and valid preview directory. F6 FPS scene and confirm `DTP1 V2: verified dirt preview ACTIVE` in Output. Look immediately left of the spawn approach, rather than exploring far from the village. Toggle `UsePreviewInGameplay=false` to compare original ground. If no dirt despite both log messages, investigate Terrain3D material texture array/paint blend and native region save/load with Godot diagnostics; **not yet visually verified**.
+
 ## DTP2 — Soil-aware ground cover (planned)
 
 **Objective:** grass and plants become progressively less likely to spawn on dirt without sterilizing every patch. Keep natural, occasional growth even at brown patch centres.
