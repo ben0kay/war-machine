@@ -12,6 +12,7 @@ SurveyStep = 8.0
 MaximumSlope = 0.75
 Seed = 72199
 LeafierShare = 0.5
+MaxTiltDegrees = 1.5
 MatureSpacing = 7.0
 MatureDensity = 0.95
 MatureMinSeparation = 5.2

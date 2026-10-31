@@ -1,16 +1,18 @@
-// Always-on debug FPS label: half-second sampling, smooth green-yellow-orange-red feedback; no frame polling.
+// Always-visible performance HUD: slow FPS + visible 3D primitive sampling; no frame polling.
 using Godot;
 
 public partial class FpsCounter : Label
 {
     [Export] public DebugConfig Settings { get; set; } = null!;
     private Timer _timer = null!;
-    private int _lastFps = -1;
+    private Label? _triangles;
+    private int _lastFps = -1, _lastPrimitives = -1;
 
     // =========================================================
     // Set up one slow timer rather than redrawing or formatting a label every frame.
     public override void _Ready()
     {
+        _triangles = GetNodeOrNull<Label>("Triangles");
         _timer = new Timer { WaitTime = Mathf.Clamp(Settings.FpsUpdateSeconds, 0.1, 5.0) };
         AddChild(_timer); _timer.Timeout += UpdateFps;
         VisibilityChanged += RefreshVisibility;
@@ -35,14 +37,27 @@ public partial class FpsCounter : Label
     }
 
     // =========================================================
-    // Only assign text when the displayed integer actually changes.
+    // One timer owns both readouts. Do not let unchanged FPS suppress triangle updates.
     private void UpdateFps()
     {
         int fps = (int)Engine.GetFramesPerSecond();
-        if (fps == _lastFps) return;
-        _lastFps = fps;
-        Text = $"FPS: {fps}";
-        AddThemeColorOverride("font_color", GetFpsColor(fps));
+        if (fps != _lastFps)
+        {
+            _lastFps = fps;
+            Text = $"FPS: {fps}";
+            AddThemeColorOverride("font_color", GetFpsColor(fps));
+        }
+
+        if (_triangles == null) return; // Existing legacy/test counters need no scene change.
+        // Visible 3D primitives in this viewport (no shadow passes), not the total
+        // triangles stored in meshes. Godot may also count 3D points/lines here.
+        int primitives = RenderingServer.ViewportGetRenderInfo(
+            GetViewport().GetViewportRid(),
+            RenderingServer.ViewportRenderInfoType.Visible,
+            RenderingServer.ViewportRenderInfo.PrimitivesInFrame);
+        if (primitives == _lastPrimitives) return;
+        _lastPrimitives = primitives;
+        _triangles.Text = $"TRIS: {primitives:N0}";
     }
 
     // =========================================================

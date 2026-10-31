@@ -30,10 +30,12 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private readonly struct Tree
     {
         public readonly Vector3 Origin;
-        public readonly float Scale, Yaw;
+        public readonly float Scale, Yaw, TiltAxis, TiltRadians;
         public readonly int Variant;
-        public Tree(Vector3 position, float scale, float yaw, int variant)
-        { Origin = position; Scale = scale; Yaw = yaw; Variant = variant; }
+        public Tree(Vector3 position, float scale, float yaw, float tiltAxis,
+            float tiltRadians, int variant)
+        { Origin = position; Scale = scale; Yaw = yaw;
+            TiltAxis = tiltAxis; TiltRadians = tiltRadians; Variant = variant; }
     }
     private sealed class Chunk
     {
@@ -207,8 +209,14 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             // consume the placement RNG, or change trunk collisions/chunk membership.
             float selection = (Mix(_settings.Seed + 4171, x, z) & 0xffffUL) / 65535f;
             int style = selection < Mathf.Clamp(_settings.LeafierShare, 0f, 1f) ? 1 : 0;
+            // Independent seeded tilt: no change to tree positions, size, yaw or style
+            // selection when this art-only setting is edited (0 = perfectly upright).
+            ulong lean = Mix(_settings.Seed + (young ? 9029 : 9011), x, z);
+            float maxTilt = Mathf.DegToRad(Mathf.Clamp(_settings.MaxTiltDegrees, 0f, 2f));
+            float tiltAxis = (lean & 0xffffUL) * (Mathf.Tau / 65535f);
+            float tiltRadians = ((lean >> 16) & 0xffffUL) * (maxTilt / 65535f);
             var tree = new Tree(new Vector3(p.X, height - 0.1f, p.Y), scale,
-                yaw, variant + (young ? 3 : 0) + style * VariantsPerStyle);
+                yaw, tiltAxis, tiltRadians, variant + (young ? 3 : 0) + style * VariantsPerStyle);
             int chunk = Mathf.Clamp(_settings.ChunkSize, 32, 64);
             var key = new Vector2I(Mathf.FloorToInt(p.X / chunk), Mathf.FloorToInt(p.Y / chunk));
             if (!_layout.TryGetValue(key, out var list)) { list = new List<Tree>(); _layout.Add(key, list); }
@@ -317,13 +325,18 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         } : null;
         foreach (var tree in trees)
         {
+            // Apply one tiny rigid lean from the root: all LOD meshes share the transform.
+            // The same rotation is used below for the short physical trunk capsule.
+            var axis = new Vector3(Mathf.Cos(tree.TiltAxis), 0f, Mathf.Sin(tree.TiltAxis));
+            var tilt = new Basis(new Quaternion(axis, tree.TiltRadians));
             bins[tree.Variant].Add(new Transform3D(
-                new Basis(Vector3.Up, tree.Yaw).Scaled(Vector3.One * tree.Scale), tree.Origin));
+                (tilt * new Basis(Vector3.Up, tree.Yaw)).Scaled(Vector3.One * tree.Scale), tree.Origin));
             if (body == null) continue;
             float radius = 0.39f * Mathf.Clamp(_settings.TrunkRadiusMultiplier, 0.6f, 1.8f) * tree.Scale;
             float height = Mathf.Max(radius * 2.2f, _settings.TrunkCollisionHeight * tree.Scale);
             body.AddChild(new CollisionShape3D {
-                Position = tree.Origin + Vector3.Up * (height * 0.5f),
+                Transform = new Transform3D(tilt,
+                    tree.Origin + tilt * (Vector3.Up * (height * 0.5f))),
                 Shape = new CapsuleShape3D { Radius = radius, Height = height }
             });
         }

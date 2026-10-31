@@ -19,6 +19,8 @@ public partial class ForestSettings : Resource
     [ExportGroup("DF2.6 canopy art mix")]
     // The same seed keeps forest coordinates/scale/yaw unchanged when mixing styles.
     [Export(PropertyHint.Range, "0,1,0.05")] public float LeafierShare { get; set; } = 0.5f;
+    // DF2.7: gentle deterministic lean applied to visual meshes and trunk capsules alike.
+    [Export(PropertyHint.Range, "0,2,0.1")] public float MaxTiltDegrees { get; set; } = 1.5f;
     [ExportGroup("DF2 tree layout")]
     [Export(PropertyHint.Range, "5,12,0.25")] public float MatureSpacing { get; set; } = 7f;
     [Export(PropertyHint.Range, "0,1,0.05")] public float MatureDensity { get; set; } = 0.95f;
