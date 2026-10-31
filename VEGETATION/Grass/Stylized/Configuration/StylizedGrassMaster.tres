@@ -10,6 +10,7 @@ PatchChance = 0.9
 ClumpsPerPatch = 30
 PatchRadiusMin = 2.1
 PatchRadiusMax = 4.7
+PatchSpreadMultiplier = 1.0
 ScaleMin = 0.85
 ScaleMax = 2.3
 MinimumNormalY = 0.87

@@ -12,6 +12,9 @@ public partial class StylizedGrassSettings : Resource
     [Export(PropertyHint.Range, "1,30,1")] public int ClumpsPerPatch { get; set; } = 15;
     [Export(PropertyHint.Range, "0.6,4,0.2")] public float PatchRadiusMin { get; set; } = 2.1f;
     [Export(PropertyHint.Range, "0.6,6,0.2")] public float PatchRadiusMax { get; set; } = 4.7f;
+    // STG4: radius multiplier for less clustered, wider stylized grass coverage.
+    // 1 keeps the authored distribution unchanged; 5 reaches up to 23.5m.
+    [Export(PropertyHint.Range, "1,5,0.25")] public float PatchSpreadMultiplier { get; set; } = 1f;
 
     [ExportGroup("Appearance / Terrain")]
     [Export(PropertyHint.Range, "0.3,2,0.05")] public float ScaleMin { get; set; } = 0.85f;

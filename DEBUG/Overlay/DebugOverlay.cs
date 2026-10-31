@@ -238,6 +238,9 @@ public partial class DebugOverlay : PanelContainer
                 value => stylized.Settings.ClumpsPerPatch = Mathf.RoundToInt(value), stylized.ApplySettings);
             AddDeferredSlider(rows, "Patch spread max (m)", 1, 6, 0.1, stylized.Settings.PatchRadiusMax,
                 value => stylized.Settings.PatchRadiusMax = value, stylized.ApplySettings);
+            AddDeferredSlider(rows, "Stylized grass spread multiplier", 1, 5, 0.25,
+                stylized.Settings.PatchSpreadMultiplier,
+                value => stylized.Settings.PatchSpreadMultiplier = value, stylized.ApplySettings);
             AddDeferredSlider(rows, "Grass size max", 0.5, 2.5, 0.05, stylized.Settings.ScaleMax,
                 value => stylized.Settings.ScaleMax = value, stylized.ApplySettings);
             AddBoundSlider(rows, "Stylized grass wind", 0, 2, 0.05, stylized.Settings.WindMultiplier,
@@ -527,6 +530,7 @@ public partial class DebugOverlay : PanelContainer
             values["StylizedGrassPatchesPerChunk"] = _stylizedGrass.Settings.PatchesPerChunk;
             values["StylizedGrassClumpsPerPatch"] = _stylizedGrass.Settings.ClumpsPerPatch;
             values["StylizedGrassPatchRadiusMax"] = _stylizedGrass.Settings.PatchRadiusMax;
+            values["StylizedGrassPatchSpreadMultiplier"] = _stylizedGrass.Settings.PatchSpreadMultiplier;
             values["StylizedGrassScaleMax"] = _stylizedGrass.Settings.ScaleMax;
         }
         if (_stylizedGrass?.FillerSettings != null)
