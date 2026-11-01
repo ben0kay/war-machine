@@ -7,6 +7,15 @@ public partial class ZombieSettings : EntitySettings
     [ExportGroup("Melee attacks (CM5)")]
     [Export] public bool AttacksEnabled { get; set; } = true;
     [Export] public MeleeSettings? AttackProfile { get; set; }
+    [ExportGroup("Physical forward lunge (CM5-B)")]
+    // An optional alternate attack; disabled for the slow zombie, strongly preferred by the runner.
+    [Export] public bool LungeEnabled { get; set; }
+    [Export(PropertyHint.Range, "0,1,0.05")] public float LungeChance { get; set; } = 0.85f;
+    [Export(PropertyHint.Range, "0.3,2,0.05,suffix:m")] public float LungeMinimumRange { get; set; } = 0.9f;
+    [Export(PropertyHint.Range, "1,4,0.05,suffix:m")] public float LungeMaximumRange { get; set; } = 2.2f;
+    [Export(PropertyHint.Range, "0.1,1.5,0.05,suffix:m")] public float LungeTravelDistance { get; set; } = 0.75f;
+    [Export(PropertyHint.Range, "0.08,0.5,0.01,suffix:s")] public float LungeDurationSeconds { get; set; } = 0.16f;
+    [Export(PropertyHint.Range, "0,30,1,suffix:°")] public float LungeExtraForwardLeanDegrees { get; set; } = 16f;
     [ExportGroup("Attack lunge pose (visual only)")]
     [Export(PropertyHint.Range, "0,30,1")] public float AttackTorsoRollDegrees { get; set; } = 14f;
     [Export(PropertyHint.Range, "0,25,1")] public float AttackTorsoTwistDegrees { get; set; } = 18f;

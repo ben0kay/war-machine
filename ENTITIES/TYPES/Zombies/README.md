@@ -1,3 +1,5 @@
+> **CM5-B physical attack lunge (2026-11-01; source implemented, local acceptance pending):** Slow Zombie 001 **never** lunges. Runner 002 uses an optional 85%-preferred forward lunge when in swipe range and always lunges when only its 0.9–2.2m initiation window is valid; otherwise it uses the original standing swipe. The runner moves its real physics capsule a maximum 0.75m over 0.16s via the already-running MoveAndSlide, with fixed committed direction and the same 10-damage/1.65m-hit-range/cooldown contact pipeline. Settings live in each species master; [CM5-B details and validation](ATTACK_ANIMATION_PLAN.md#cm5-b--runner-weighted-physical-lunge-2026-11-01). ELD3 crawling and bites are still deferred.
+
 > **ZM-PERF2B native mesh LOD (2026-10-29):** Source implemented, awaiting local build/visual/profiling validation. Shared lower-polygon index buffers reduce distant triangle work without extra nodes or distance timers. Both masters expose `MeshLodEnabled` / `MeshLodBias`; full detail remains available for A/B comparison. Draw-call count is unchanged by this phase. [Current scope and checks](MESH_LOD_README.md).
 
 ## Imported artwork first pass

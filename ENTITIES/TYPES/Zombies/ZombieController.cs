@@ -200,7 +200,8 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
     public void InitializeTarget(Node3D player, uint seed, System.Func<Vector3, float>? groundHeight = null)
     {
         Deactivate(); ClearReaction(); ClearInvestigation(); _groundHeight = groundHeight; _reportedGroundFailure = false; _target = player; _home = GlobalPosition; _random.Seed = seed;
-        _corpseSeed = seed; _deathHandled = false; _attackSide = (seed & 1u) == 0u ? -1f : 1f;
+        _corpseSeed = seed; _deathHandled = false; _lungeAttack = false;
+        _attackSide = (seed & 1u) == 0u ? -1f : 1f;
         // ZMAT0: spawn-seeded cached material assignment; does not advance the movement RNG.
         ZombieAppearance.Apply(VisualRoot, seed, _config.AppearanceVariationEnabled, _config.BloodChance);
         ZombieMeshLod.Configure(VisualRoot, _config.MeshLodEnabled, _config.MeshLodBias);
@@ -282,7 +283,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             Velocity = new Vector3(push.X, Velocity.Y, push.Z);
         }
         else return;
-        _attack?.Cancel();
+        _attack?.Cancel(); _lungeAttack = false;
         _recoveryRemaining = 0; _stuck = 0; SetPhysicsProcess(true);
     }
 
@@ -354,7 +355,7 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
 
     // =========================================================
     protected override void OnDeactivated()
-    { UnsubscribeHearing(); _attack?.Cancel(); ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
+    { UnsubscribeHearing(); _attack?.Cancel(); _lungeAttack = false; ClearReaction(); ClearInvestigation(); _brain?.Stop(); _hasGoal = false; IsChasing = false; if (_leftArm != null) UpdatePose(0); UpdateVisionDebug(); }
 
     // =========================================================
     // Initial frontal acquisition, then angle-independent alerted tracking with mandatory LOS.
@@ -515,7 +516,10 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Vector3 offset = _goal - GlobalPosition; offset.Y = 0;
         float stop = IsChasing ? Mathf.Max(0.7f, _config.StopDistance)
             : _investigation.Phase == InvestigationPhase.Travel ? SafePolicy(_config.InvestigationArrivalDistance, 0.2f, 1.5f) : 0.4f;
-        AdvanceAttack(dt);
+        // Lunges resolve contact after their capsule has moved, so the shared hit query sees
+        // the new position. Ordinary swipes retain their original before-movement timing.
+        bool lunging = Lunging;
+        if (!lunging) AdvanceAttack(dt);
         bool walking = !Attacking && _locomotion.CanDrive && _hasGoal && offset.LengthSquared() > stop * stop;
         if (_hasGoal && _locomotion.CanDrive && !walking && !IsChasing && !shovePushing)
         { if (_investigation.Phase == InvestigationPhase.Travel) InvestigationArrived(); else Rest(); }
@@ -532,11 +536,14 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
         Vector3 currentHorizontal = new(Velocity.X, 0, Velocity.Z);
         Vector3 horizontal = shovePushing
             ? currentHorizontal.MoveToward(Vector3.Zero, dt * SafeShoveSetting(_config.ShoveBrakingAcceleration, 40f))
+            : lunging ? LungeHorizontalVelocity(dt)
             : currentHorizontal.MoveToward(direction * speed, dt * Mathf.Max(0.1f, acceleration));
         if (!_locomotion.CanDrive && !shovePushing) horizontal = Vector3.Zero;
         Vector3 before = GlobalPosition;
         Velocity = new Vector3(horizontal.X, IsOnFloor() ? -0.1f : Velocity.Y - 20 * dt, horizontal.Z);
         MoveAndSlide();
+        // A collision-blocked lunge may fall short; never force position through geometry.
+        if (lunging) AdvanceAttack(dt);
         Vector3 travel = GlobalPosition - before; travel.Y = 0;
         bool moved = travel.LengthSquared() > 0.000001f;
         if (moved)
@@ -554,8 +561,12 @@ public partial class ZombieController : EntityCore, IDamageReceiver, IImpactRece
             }
             else
             {
-                float yaw = Mathf.Atan2(-travel.X, -travel.Z);
-                SetMobilityFacing(Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)));
+                // A committed lunge must not turn after sliding off a wall or another capsule.
+                if (!lunging)
+                {
+                    float yaw = Mathf.Atan2(-travel.X, -travel.Z);
+                    SetMobilityFacing(Mathf.LerpAngle(VisualRoot.Rotation.Y, yaw, 1 - Mathf.Exp(-4 * dt)));
+                }
                 _phase += travel.Length() * Mathf.Max(0.1f, GaitPhasePerMeter * _locomotion.GaitScale);
                 // Flex the airborne knee slightly, using the existing shamble clock; no extra animation loop.
                 float swing = Mathf.Cos(_phase);
