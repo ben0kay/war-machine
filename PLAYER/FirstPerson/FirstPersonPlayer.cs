@@ -59,10 +59,9 @@ public partial class FirstPersonPlayer : PlayerController
         float dt = (float)delta;
         ActualHorizontalSpeed = float.IsFinite(dt) && dt > 0f
             ? Mathf.Clamp(travel.Length() / dt, 0f, 30f) : 0f;
-        bool movingInput = ReadMovementInput().LengthSquared() > 0.01f;
         _view.SetLeanAmount(LeanAmount);
         _view.RecordPhysicsPose(CapsuleHeight, travel.Length(), IsOnFloor(),
-            movingInput, CurrentStance, (float)delta);
+            CurrentStance, dt);
     }
 
     // =========================================================

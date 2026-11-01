@@ -145,7 +145,7 @@ public partial class FirstPersonCamera : Camera
 
     // =========================================================
     // Physics supplies one completed eye pose and actual travel distance; no second movement driver.
-    public void RecordPhysicsPose(float capsuleHeight, float horizontalDistance, bool grounded, bool movingInput,
+    public void RecordPhysicsPose(float capsuleHeight, float horizontalDistance, bool grounded,
         PlayerController.MovementStance stance, float physicsDelta)
     {
         if (!_ready) return;
@@ -160,8 +160,8 @@ public partial class FirstPersonCamera : Camera
         }
         bool gameplay = Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus()
             && !_actor.GameplayInputBlocked && !_actor.IsDead;
-        _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay,
-            movingInput && gameplay, stance, ViewSettings);
+        // Actual distance drives step cadence and actual speed drives amplitude, even while braking.
+        _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay, stance, ViewSettings);
         if (!ViewSettings.InterpolateTranslation || _previousEye == _currentEye)
         {
             SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate || LeanAnimating || _feedback.IsActive); return;

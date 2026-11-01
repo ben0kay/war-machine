@@ -10,11 +10,11 @@ public sealed class FirstPersonHeadBob
 
     // =========================================================
     // Walk/run phase advances only after actual grounded post-collision horizontal travel.
-    public void Record(float distance, float dt, bool grounded, bool movingInput,
+    public void Record(float distance, float dt, bool grounded,
         PlayerController.MovementStance stance, FirstPersonSettings settings)
     {
         _target = Vector2.Zero;
-        if (!settings.HeadBobEnabled || !grounded || !movingInput
+        if (!settings.HeadBobEnabled || !grounded
             || stance == PlayerController.MovementStance.Prone
             || !float.IsFinite(distance) || !float.IsFinite(dt) || dt <= 0f) return;
         float speed = distance / dt;
@@ -23,7 +23,8 @@ public sealed class FirstPersonHeadBob
         float runningSpeed = Mathf.Max(walkingSpeed + 0.1f, walkingSpeed * Mathf.Max(1f, settings.RunMultiplier));
         bool crouching = stance == PlayerController.MovementStance.Crouching;
         float running = crouching ? 0f : Mathf.Clamp((speed - walkingSpeed) / (runningSpeed - walkingSpeed), 0f, 1f);
-        float intensity = Mathf.Clamp(speed / walkingSpeed, 0f, 1f) * (crouching ? 0.5f : 1f);
+        // Use post-collision speed throughout, rather than stopping the increase at walk speed.
+        float intensity = Mathf.Clamp(speed / walkingSpeed, 0f, 1.2f) * (crouching ? 0.5f : 1f);
         float stride = Mathf.Lerp(Stride(settings.WalkStrideLength), Stride(settings.RunStrideLength), running);
         // Repeat over two vertical cycles so the lateral sway completes once per two footstep bounces.
         // This is travel-paced presentation, not an exact foot-bone/animation sync.
@@ -40,7 +41,8 @@ public sealed class FirstPersonHeadBob
     public bool Advance(float dt, FirstPersonSettings settings)
     {
         float tau = _target.LengthSquared() < 0.00000001f
-            ? Mathf.Clamp(settings.HeadBobReturnSeconds, 0.05f, 0.8f) : 0.06f;
+            ? Mathf.Clamp(settings.HeadBobReturnSeconds, 0.05f, 0.8f)
+            : Mathf.Clamp(settings.HeadBobFollowSeconds, 0.01f, 0.15f);
         Offset = Offset.Lerp(_target, 1f - Mathf.Exp(-Mathf.Max(0f, dt) / tau));
         if (_target.LengthSquared() < 0.00000001f && Offset.LengthSquared() < 0.00000001f)
             Offset = _target = Vector2.Zero;
