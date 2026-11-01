@@ -6,6 +6,8 @@ using System.Collections.Generic;
 public partial class StylizedGrassPlacement : Node3D
 {
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
+    public bool ExternallyManaged { get; set; }
+    public event System.Action? ChunksInvalidated;
     [Export] public StylizedGrassSettings Settings { get; set; } = null!;
     [Export] public BillboardGrassSettings FillerSettings { get; set; } = null!;
     // ForestGrass002 replaces the billboard filler by default, with independently authored dense beds.
@@ -89,7 +91,8 @@ public partial class StylizedGrassPlacement : Node3D
                 _plants.Add(art);
             }
         ApplyWind();
-        UpdateAnchor(_anchor.GlobalPosition);
+        ChunksInvalidated?.Invoke();
+        if (!ExternallyManaged) UpdateAnchor(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -317,7 +320,7 @@ public partial class StylizedGrassPlacement : Node3D
     // Move only on integer 32m chunk crossings. Existing chunks are reused without polling.
     public void UpdateAnchor(Vector3 position)
     {
-        if (_near.Length != 3 && _shortNear.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants()) return;
+        if (ExternallyManaged || (_near.Length != 3 && _shortNear.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants())) return;
         int width = Mathf.Clamp(Settings?.ChunkSize ?? 32, 16, 64);
         var next = new Vector2I(Mathf.FloorToInt(position.X / width),
             Mathf.FloorToInt(position.Z / width));
@@ -349,8 +352,29 @@ public partial class StylizedGrassPlacement : Node3D
     {
         if (!_initialized) return;
         UpdateView(0f, _focusDistance, true);
-        _center = new Vector2I(int.MinValue, int.MinValue);
-        UpdateAnchor(_anchor.GlobalPosition);
+        if (!ExternallyManaged)
+        {
+            _center = new Vector2I(int.MinValue, int.MinValue);
+            UpdateAnchor(_anchor.GlobalPosition);
+        }
+    }
+
+    // =========================================================
+    // One shared chunk lifecycle can call these without a competing player-distance scan.
+    public void BuildManagedChunk(Vector2I key, int width)
+    {
+        if (!ExternallyManaged || _active.ContainsKey(key)) return;
+        if (_near.Length != 3 && _shortNear.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants()) return;
+        CreateChunk(key, width);
+    }
+
+    public void ReleaseManagedChunk(Vector2I key)
+    {
+        if (!_active.TryGetValue(key, out var chunk)) return;
+        ReleaseChunk(chunk);
+        ActiveClumps -= chunk.Clumps; ActiveFiller -= chunk.Filler;
+        ActiveShortGrass -= chunk.ShortGrass; ActivePlants -= chunk.Plants;
+        _active.Remove(key);
     }
 
     // =========================================================

@@ -6,6 +6,8 @@ using System.Collections.Generic;
 public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 {
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
+    public bool ExternallyManaged { get; set; }
+    public event System.Action? ChunksInvalidated;
     public FoliageTintSettings FoliageTint { get; set; } = null!;
     public event System.Action? OcclusionChanged;
     public int TotalTrees { get; private set; }
@@ -119,7 +121,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         _terrain.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
         Visibility.Changed += OnVisibilityChanged;
         _ready = true;
-        UpdateAnchor(_player.GlobalPosition);
+        if (!ExternallyManaged) UpdateAnchor(_player.GlobalPosition);
     }
 
     // =========================================================
@@ -277,7 +279,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // Player movement queues a single deferred sync on chunk boundary (safe outside physics flush).
     public void UpdateAnchor(Vector3 position)
     {
-        if (!_ready) return;
+        if (!_ready || ExternallyManaged) return;
         int size = Mathf.Clamp(_settings.ChunkSize, 32, 64);
         var next = new Vector2I(Mathf.FloorToInt(position.X / size), Mathf.FloorToInt(position.Z / size));
         if (next == _current && !_queued) return;
@@ -415,8 +417,25 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     {
         if (!_ready) return;
         UpdateView(_viewOffset);
-        _current = new Vector2I(int.MinValue, int.MinValue);
-        UpdateAnchor(_player.GlobalPosition);
+        if (!ExternallyManaged)
+        {
+            _current = new Vector2I(int.MinValue, int.MinValue);
+            UpdateAnchor(_player.GlobalPosition);
+        }
+    }
+
+    // =========================================================
+    public void BuildManagedChunk(Vector2I key)
+    {
+        if (ExternallyManaged && _ready && !_chunks.ContainsKey(key) && _layout.TryGetValue(key, out var trees))
+        { CreateChunk(key, trees); OcclusionChanged?.Invoke(); }
+    }
+
+    public void ReleaseManagedChunk(Vector2I key)
+    {
+        if (!_chunks.TryGetValue(key, out var chunk)) return;
+        ReleaseChunk(chunk); ActiveTrees -= chunk.Count; _chunks.Remove(key);
+        OcclusionChanged?.Invoke();
     }
 
     // =========================================================
@@ -477,7 +496,9 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         if (!_ready) return;
         foreach (var chunk in _chunks.Values) ReleaseChunk(chunk);
         _chunks.Clear(); ActiveTrees = 0; _current = new(int.MinValue, int.MinValue);
-        BuildLayout(); UpdateAnchor(_player.GlobalPosition);
+        BuildLayout();
+        if (ExternallyManaged) ChunksInvalidated?.Invoke();
+        else UpdateAnchor(_player.GlobalPosition);
         OcclusionChanged?.Invoke();
     }
 

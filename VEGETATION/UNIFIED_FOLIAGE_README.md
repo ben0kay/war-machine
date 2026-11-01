@@ -1,0 +1,17 @@
+# Unified foliage controller — FG0 first pass (source implemented, Godot validation pending)
+
+**Single authoritative authoring entrypoint:** `VEGETATION/Configuration/FoliageMaster.tres`.
+
+This resource contains the existing **editable child recipe resources**, rather than duplicating every density/seed in multiple new settings. Open FoliageMaster in Godot to edit which families/species are enabled, density, placement zones, spacing, patch sizes, tint and shared fog visibility. The referenced recipes retain their original material/mesh/shader assets and deterministic seeds. The legacy resource files remain as reusable nested recipes and a fallback, not extra runtime spawners.
+
+**One active-world chunk lifecycle:** `VEGETATION/FoliageManager.cs` listens to the player and shared fog policy, owns one aligned 32m X/Z key grid, prioritizes nearby chunk work and releases distant content. Up to 2 family/chunk operations run per frame with a **soft 3 ms budget**. A single costly grass creation can still exceed 3 ms; this first pass does **not** promise zero spikes. Existing F2 diagnostics still report `Grass.CreateChunk` etc., plus `Foliage.ProcessQueue`.
+
+**What does not independently stream anymore when FoliageMaster.Enabled=true:** `StylizedGrassPlacement`, `PinePlacement`, `ForestPlacement` and `ContentScatter` enter passive/externally-managed mode. They use their current deterministic template loaders, exclusion masks, Terrain3D sampling, MultiMesh/LOD, wind, canopy and collision creation **only when the single manager asks for a chunk**. No separate player PositionChanged subscriptions exist for these four families. F1 recipe edits invalidate that family's chunks and requeue through the same manager. Fog changes adjust all native vegetation LODs and rock range and requeue only changed residency.
+
+**What stays separate:** the existing disabled-by-default `TerrainGrass` GPU particle tile pool is a legacy rendering implementation, configured by the FoliageMaster's `GpuGrass` child recipe; it is not created by the CPU MultiMesh chunk queue. World WS0 128m logical sections, WS1 GPU culling and WS2 static building streaming are independent and unchanged. The actual terrain and building layout are not rebaked, and world objects/zombies are not foliage chunks.
+
+**Fallback:** switch `FoliageMaster.tres → Enabled=false` to use the pre-existing autonomous per-species streaming paths for comparison; no artwork or terrain files are deleted in FG0. Do not remove the old implementations before local acceptance.
+
+**Validation in Godot 4 .NET:** build C#, F6 FirstPersonWorld.tscn, observe near/far gradual foliage arrival, collision on rocks/trunks, forest zones and exclusions, grass001/002/ferns/shrubs, F1 live fog/foliage toggles and F2 timings. Compare same player location with fallback Enabled=false; layout and materials should match, but streaming order/timing differs. Verify chunk release/re-entry and that F2 sees no multi-family synchronized 181ms reconcile. This commit is **not a runtime benchmark**.
+
+If the 2–4ms target still misses due to `Grass.CreateChunk` running atomically, the next measured PERF1 step is to split its dense patch work; don't add another scheduler.

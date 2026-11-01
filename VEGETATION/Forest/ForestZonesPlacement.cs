@@ -6,6 +6,8 @@ using System.Collections.Generic;
 public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
 {
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
+    public bool ExternallyManaged { get; set; }
+    public event System.Action? ChunksInvalidated;
     public FoliageTintSettings FoliageTint { get; set; } = null!;
     public event Action? OcclusionChanged;
     public int ApprovedCount => _approved.Count;
@@ -80,10 +82,12 @@ public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
         {
             var zone = _approved[i];
             var placement = new ForestPlacement {
-                Name = $"DenseForestZone{i + 1}", Visibility = Visibility, FoliageTint = FoliageTint
+                Name = $"DenseForestZone{i + 1}", Visibility = Visibility, FoliageTint = FoliageTint,
+                ExternallyManaged = ExternallyManaged
             };
             AddChild(placement);
             placement.OcclusionChanged += OnChildOcclusionChanged;
+            placement.ChunksInvalidated += OnChildChunksInvalidated;
             _placements.Add(placement);
             placement.InitializeView(terrain, player, zone.Settings, zone.Area, zone.Reservations);
         }
@@ -103,12 +107,20 @@ public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
         HashSet<ICameraFadeTarget> results)
     { foreach (var placement in _placements) placement.CollectObstructions(from, to, radius, results); }
 
+    public void BuildManagedChunk(Vector2I key)
+    { foreach (var zone in _placements) zone.BuildManagedChunk(key); }
+
+    public void ReleaseManagedChunk(Vector2I key)
+    { foreach (var zone in _placements) zone.ReleaseManagedChunk(key); }
+
     private void OnChildOcclusionChanged() => OcclusionChanged?.Invoke();
+    private void OnChildChunksInvalidated() => ChunksInvalidated?.Invoke();
 
     // =========================================================
     public override void _ExitTree()
     {
         foreach (var placement in _placements)
-            if (IsInstanceValid(placement)) placement.OcclusionChanged -= OnChildOcclusionChanged;
+            if (IsInstanceValid(placement))
+            { placement.OcclusionChanged -= OnChildOcclusionChanged; placement.ChunksInvalidated -= OnChildChunksInvalidated; }
     }
 }

@@ -17,6 +17,8 @@ public partial class ContentScatter : Node3D
     public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
     private readonly Dictionary<Vector2I, List<Node3D>> _chunks = new();
     public int ActiveChunks => _chunks.Count;
+    public bool ExternallyManaged { get; set; }
+    public event System.Action? ChunksInvalidated;
     private Mesh[] _meshes = System.Array.Empty<Mesh>();
     private FastNoiseLite _patch = null!;
     private ShaderMaterial? _wind, _stone;
@@ -94,7 +96,8 @@ public partial class ContentScatter : Node3D
             for (int j = 0; j < 8; j++) _rockClearance = Mathf.Max(_rockClearance, bounds.GetEndpoint(j).Length());
         }
         _rockClearance *= Mathf.Max(0.1f, Mathf.Max(Settings.MinimumScale, Settings.MaximumScale));
-        Move(_anchor.GlobalPosition);
+        ChunksInvalidated?.Invoke();
+        if (!ExternallyManaged) Move(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -126,7 +129,7 @@ public partial class ContentScatter : Node3D
     // =========================================================
     private void Move(Vector3 position)
     {
-        if (_meshes.Length == 0) return;
+        if (ExternallyManaged || _meshes.Length == 0) return;
         var center = new Vector2I(Mathf.FloorToInt(position.X / _chunkSize), Mathf.FloorToInt(position.Z / _chunkSize));
         if (center == _center) return;
         using var perf = WorldPerformanceProbe.Measure("Rocks.ReconcileChunks");
@@ -141,6 +144,32 @@ public partial class ContentScatter : Node3D
         for (int x = Mathf.Max(0, center.X - radius); x <= Mathf.Min(count - 1, center.X + radius); x++)
             for (int z = Mathf.Max(0, center.Y - radius); z <= Mathf.Min(count - 1, center.Y + radius); z++)
             { var key = new Vector2I(x, z); if (!_chunks.ContainsKey(key)) CreateChunk(key); }
+    }
+
+    // =========================================================
+    public void BuildManagedChunk(Vector2I key)
+    { if (ExternallyManaged && _meshes.Length > 0 && !_chunks.ContainsKey(key)) CreateChunk(key); }
+
+    public void ReleaseManagedChunk(Vector2I key)
+    {
+        if (!_chunks.TryGetValue(key, out var nodes)) return;
+        foreach (var node in nodes)
+        {
+            if (node is StaticBody3D body) body.CollisionLayer = 0;
+            RemoveChild(node); node.QueueFree();
+        }
+        _chunks.Remove(key);
+    }
+
+    // The unified visual range applies to rock MultiMeshes; collisions stay until their chunk releases.
+    public void SetManagedVisibility(float distance)
+    {
+        if (!ExternallyManaged) return;
+        Settings.RenderDistance = distance;
+        foreach (var nodes in _chunks.Values)
+            foreach (var node in nodes)
+                if (node is MultiMeshInstance3D batch)
+                    batch.VisibilityRangeEnd = distance;
     }
 
     // =========================================================

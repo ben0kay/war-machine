@@ -6,6 +6,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
 {
     // One shared visibility owner for every active vegetation family. No per-pine distances.
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
+    public bool ExternallyManaged { get; set; }
+    public event System.Action? ChunksInvalidated;
     public const uint TrunkLayer = 1u << 4; // Physics layer 5: small actors/weapon rays; giant robot ignores it.
     public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
     public event System.Action? OcclusionChanged;
@@ -112,7 +114,8 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
             }
         }
         ApplyWind();
-        UpdateAnchor(_anchor.GlobalPosition);
+        ChunksInvalidated?.Invoke();
+        if (!ExternallyManaged) UpdateAnchor(_anchor.GlobalPosition);
     }
 
     // =========================================================
@@ -268,7 +271,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     // Crossing a chunk boundary loads/evicts only nearby tree MultiMeshes; standing still does nothing.
     public void UpdateAnchor(Vector3 position)
     {
-        if (_meshes.Length == 0) return;
+        if (ExternallyManaged || _meshes.Length == 0) return;
         var next = new Vector2I(Mathf.FloorToInt(position.X / _chunkSize), Mathf.FloorToInt(position.Z / _chunkSize));
         if (next == _center) return;
         using var perf = WorldPerformanceProbe.Measure("Pine.ReconcileChunks");
@@ -308,8 +311,24 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     {
         if (!_initialized) return;
         UpdateView(_focusDistance, true);
-        _center = new Vector2I(int.MinValue, int.MinValue);
-        UpdateAnchor(_anchor.GlobalPosition);
+        if (!ExternallyManaged)
+        {
+            _center = new Vector2I(int.MinValue, int.MinValue);
+            UpdateAnchor(_anchor.GlobalPosition);
+        }
+    }
+
+    // =========================================================
+    public void BuildManagedChunk(Vector2I key)
+    {
+        if (ExternallyManaged && _meshes.Length > 0 && !_active.ContainsKey(key)) CreateChunk(key);
+    }
+
+    public void ReleaseManagedChunk(Vector2I key)
+    {
+        if (!_active.TryGetValue(key, out var chunk)) return;
+        ReleaseChunk(chunk); ActiveTrees -= chunk.TreeCount; _active.Remove(key);
+        OcclusionChanged?.Invoke();
     }
 
     // =========================================================

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="FoliageSettings" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://VEGETATION/FoliageSettings.cs" id="1"]
+[ext_resource type="Resource" path="res://VEGETATION/Grass/Stylized/Configuration/GroundCoverMaster.tres" id="ground"]
+[ext_resource type="Resource" path="res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres" id="pines"]
+[ext_resource type="Resource" path="res://VEGETATION/Forest/Configuration/ForestZonesMaster.tres" id="forest"]
+[ext_resource type="Resource" path="res://WORLD/Content/Rocks/Configuration/GameplayRockMaster.tres" id="rocks"]
+[ext_resource type="Resource" path="res://VEGETATION/Configuration/VegetationMaster.tres" id="gpu"]
+[ext_resource type="Resource" path="res://VEGETATION/Configuration/VegetationVisibilityMaster.tres" id="visibility"]
+[ext_resource type="Resource" path="res://VEGETATION/Configuration/FoliageTintMaster.tres" id="tint"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+ChunkSize = 32
+OperationsPerFrame = 2
+WorkBudgetMs = 3.0
+LoadChunkMargin = 1.5
+UnloadChunkMargin = 2.5
+GroundCover = ExtResource("ground")
+Pines = ExtResource("pines")
+ForestZones = ExtResource("forest")
+Rocks = ExtResource("rocks")
+GpuGrass = ExtResource("gpu")
+Visibility = ExtResource("visibility")
+Tint = ExtResource("tint")

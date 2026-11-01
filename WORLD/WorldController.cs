@@ -30,6 +30,8 @@ public partial class WorldController : Node3D
     protected GameEnvironment _environmentScene = null!;
     private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
+    private FoliageSettings? _foliageSettings;
+    private FoliageManager? _foliageManager;
     private WorldPerformanceMonitor? _performanceMonitor;
     private VillageLayout? _village;
     private CorpseManager? _corpses;
@@ -51,8 +53,13 @@ public partial class WorldController : Node3D
         Settings = (WorldSettings)Settings.Duplicate(true);
         PlayerSettings = (PlayerSettings)PlayerSettings.Duplicate(true);
         CameraSettings = (CameraSettings)CameraSettings.Duplicate(true);
+        // One authoring entrypoint, with legacy scene fallback if it is temporarily disabled.
+        var foliageMaster = GD.Load<FoliageSettings>("res://VEGETATION/Configuration/FoliageMaster.tres");
+        _foliageSettings = foliageMaster != null && foliageMaster.Enabled
+            ? (FoliageSettings)foliageMaster.Duplicate(true) : null;
+        if (_foliageSettings?.ForestZones != null) Settings.ForestZones = _foliageSettings.ForestZones;
         // Foliage tint is one authored runtime copy; apply GPU globals before any tree/grass init.
-        var tintMaster = GD.Load<FoliageTintSettings>("res://VEGETATION/Configuration/FoliageTintMaster.tres");
+        var tintMaster = _foliageSettings?.Tint ?? GD.Load<FoliageTintSettings>("res://VEGETATION/Configuration/FoliageTintMaster.tres");
         if (tintMaster == null) GD.PushWarning("FoliageTintMaster missing; using matching C# defaults.");
         _foliageTint = tintMaster != null ? (FoliageTintSettings)tintMaster.Duplicate(true) : new FoliageTintSettings();
         _foliageTint.ApplyShaderGlobals();
@@ -187,18 +194,18 @@ public partial class WorldController : Node3D
         { sceneryClearings.Add(cliffClearing); grassClearings.Add(cliffClearing); }
         AddDeerPreviewClearing(grassClearings);
         _grass = new TerrainGrass { Name = "Grass",
-            Settings = (VegetationConfig)(GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
+            Settings = (VegetationConfig)(_foliageSettings?.GpuGrass ?? GrassSettings ?? GD.Load<VegetationConfig>("res://VEGETATION/Configuration/VegetationMaster.tres")).Duplicate(true),
             EnvironmentSettings = EnvironmentSettings };
         _grass.SetExclusionAreas(grassClearings);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_grass); _grass.InitializeView(terrain, player, camera);
         player.PositionChanged += _grass.UpdateAnchor;
         // GV1: all active vegetation reads this single resource; fog will be bound once ready.
         _vegetationVisibility = new VegetationVisibilityPolicy(
-            (VegetationVisibilitySettings)GD.Load<VegetationVisibilitySettings>(
-                "res://VEGETATION/Configuration/VegetationVisibilityMaster.tres").Duplicate(true));
+            (VegetationVisibilitySettings)(_foliageSettings?.Visibility ?? GD.Load<VegetationVisibilitySettings>(
+                "res://VEGETATION/Configuration/VegetationVisibilityMaster.tres")).Duplicate(true));
         // STG1: original GPU particles are OFF in both masters; new imported grass uses
         // the same road/structure masks and streams lightweight MultiMesh patches.
-        var coverMaster = GD.Load<GroundCoverSettings>(
+        var coverMaster = _foliageSettings?.GroundCover ?? GD.Load<GroundCoverSettings>(
             "res://VEGETATION/Grass/Stylized/Configuration/GroundCoverMaster.tres");
         var cover = coverMaster != null ? (GroundCoverSettings)coverMaster.Duplicate(true) : null;
         var stylizedConfig = cover?.StylizedGrass ?? GD.Load<StylizedGrassSettings>(
@@ -218,16 +225,18 @@ public partial class WorldController : Node3D
                 Name = "StylizedGrass",
                 Settings = stylizedConfig,
                 FillerSettings = fillerConfig, ShortGrassSettings = shortConfig, GroundCover = cover,
-                EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility
+                EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility,
+                ExternallyManaged = _foliageSettings != null
             };
             foreach (Rect2 exclusion in grassClearings) _stylizedGrass.ExclusionAreas.Add(exclusion);
             GetNode("SystemsRoot/VegetationRoot").AddChild(_stylizedGrass);
             _stylizedGrass.InitializeView(terrain, player, WorldSettings.TerrainSize);
-            player.PositionChanged += _stylizedGrass.UpdateAnchor;
+            if (_foliageSettings == null) player.PositionChanged += _stylizedGrass.UpdateAnchor;
         }
         _pines = new PinePlacement { Name = "Pines",
-            Settings = (PineSettings)GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres").Duplicate(true),
-            EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility };
+            Settings = (PineSettings)(_foliageSettings?.Pines ?? GD.Load<PineSettings>("res://VEGETATION/Trees/Pine/Configuration/PineMaster.tres")).Duplicate(true),
+            EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility,
+            ExternallyManaged = _foliageSettings != null };
         foreach (Rect2 clearing in sceneryClearings) _pines.ExclusionAreas.Add(clearing);
         // No trunks inside either existing spawns or the extra 20-zombie test cluster.
         AddZombieSpawnClearings(_pines.ExclusionAreas, Settings.RunnerSpawnOffsets);
@@ -240,14 +249,15 @@ public partial class WorldController : Node3D
         // DF2.8: survey all independent canopy zones before pine/rock placement.
         // Zone 1 is the unchanged original DF2 village forest resource.
         _forestZones = new ForestZonesPlacement { Name = "ForestZones",
-            Visibility = _vegetationVisibility, FoliageTint = _foliageTint };
+            Visibility = _vegetationVisibility, FoliageTint = _foliageTint,
+            ExternallyManaged = _foliageSettings != null };
         GetNode("SystemsRoot/VegetationRoot").AddChild(_forestZones);
         _forestZones.PrepareZones(data, Settings, _pines.ExclusionAreas);
         GetNode("SystemsRoot/VegetationRoot").AddChild(_pines); _pines.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
-        player.PositionChanged += _pines.UpdateAnchor;
+        if (_foliageSettings == null) player.PositionChanged += _pines.UpdateAnchor;
         _rocks = new ContentScatter { Name = "Rocks",
-            Settings = (ContentScatterSettings)GD.Load<ContentScatterSettings>("res://WORLD/Content/Rocks/Configuration/GameplayRockMaster.tres").Duplicate(true),
-            EnvironmentSettings = EnvironmentSettings };
+            Settings = (ContentScatterSettings)(_foliageSettings?.Rocks ?? GD.Load<ContentScatterSettings>("res://WORLD/Content/Rocks/Configuration/GameplayRockMaster.tres")).Duplicate(true),
+            EnvironmentSettings = EnvironmentSettings, ExternallyManaged = _foliageSettings != null };
         foreach (Rect2 clearing in sceneryClearings) _rocks.ExclusionAreas.Add(clearing);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.ZombieSpawnOffsets);
         AddZombieSpawnClearings(_rocks.ExclusionAreas, Settings.RunnerSpawnOffsets);
@@ -263,12 +273,19 @@ public partial class WorldController : Node3D
             _rocks.ExclusionAreas.Add(new Rect2(Settings.SpawnXZ + new Vector2(-38, -6), new Vector2(28, 28)));
         GetNode("WorldActorsRoot/PersistentPropsRoot").AddChild(_rocks);
         _rocks.InitializeView(terrain, player, WorldSettings.TerrainSize, Settings.SpawnXZ);
-        player.PositionChanged += _rocks.UpdateAnchor;
+        if (_foliageSettings == null) player.PositionChanged += _rocks.UpdateAnchor;
         // Reuse the same DF2 placement and 32m streaming independently for each approved region.
         if (_forestZones.ApprovedCount > 0)
         {
             _forestZones.InitializeView(terrain, player);
-            player.PositionChanged += _forestZones.UpdateAnchor;
+            if (_foliageSettings == null) player.PositionChanged += _forestZones.UpdateAnchor;
+        }
+        if (_foliageSettings != null)
+        {
+            _foliageManager = new FoliageManager { Name = "FoliageManager" };
+            GetNode("SystemsRoot/VegetationRoot").AddChild(_foliageManager);
+            _foliageManager.Initialize(player, WorldSettings.TerrainSize, _foliageSettings,
+                _vegetationVisibility, _stylizedGrass, _pines, _forestZones, _rocks);
         }
         InitializeOcclusion(camera, player);
         _environmentScene.InitializeView(terrain, player, camera);
