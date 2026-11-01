@@ -290,6 +290,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // Iterate only occupied zone chunks; no all-world chunk grids or idle loops.
     public void SyncChunks()
     {
+        using var perf = WorldPerformanceProbe.Measure("Forest.SyncChunks");
         _queued = false;
         if (!_ready || _requested == _current) return;
         _current = _requested;
@@ -316,6 +317,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // One body per chunk, per-trunk capsules on pine physics layer 5, with near/far mesh batches.
     private void CreateChunk(Vector2I key, List<Tree> trees)
     {
+        using var perf = WorldPerformanceProbe.Measure("Forest.CreateChunk", key);
         var group = new Chunk { Count = trees.Count };
         var bins = new List<Transform3D>[_near.Length];
         for (int i = 0; i < bins.Length; i++) bins[i] = new List<Transform3D>();
@@ -454,6 +456,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     private void ReleaseChunk(Chunk chunk)
     {
+        using var perf = WorldPerformanceProbe.Measure("Forest.ReleaseChunk");
         foreach (var target in chunk.FadeTargets) target.Alive = false;
         foreach (var batch in chunk.Batches) { RemoveChild(batch); batch.QueueFree(); }
         if (GodotObject.IsInstanceValid(chunk.Trunks))

@@ -9,6 +9,8 @@ public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
     public FoliageTintSettings FoliageTint { get; set; } = null!;
     public event Action? OcclusionChanged;
     public int ApprovedCount => _approved.Count;
+    // PERF0: lightweight diagnostics only; each zone retains ownership of its batches.
+    public int ActiveChunks { get { int count = 0; foreach (var zone in _placements) count += zone.ActiveChunks; return count; } }
     public IReadOnlyList<Rect2> ApprovedAreas => _areas;
 
     private const int MaxZones = 12;

@@ -106,6 +106,7 @@ public partial class StaticSectionStreamer : Node
     public override void _Process(double delta)
     {
         if (!_initialized) { SetProcess(false); return; }
+        using var perf = WorldPerformanceProbe.Measure("Buildings.StreamStep");
         int budget = _settings.OperationsPerFrame;
         foreach (var item in _manifest.Placements)
         {

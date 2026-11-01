@@ -357,6 +357,7 @@ public partial class StylizedGrassPlacement : Node3D
     // =========================================================
     private void CreateChunk(Vector2I key, int width)
     {
+        using var perf = WorldPerformanceProbe.Measure("Grass.CreateChunk", key);
         var chunk = new GrassChunk();
         float end = Visibility.RenderDistance + _focusDistance;
         if (_near.Length == 3 || HasLoadedPlants()) CreatePatchClumps(key, width, end, chunk);
@@ -612,6 +613,7 @@ public partial class StylizedGrassPlacement : Node3D
     // =========================================================
     private void ReleaseChunk(GrassChunk chunk)
     {
+        using var perf = WorldPerformanceProbe.Measure("Grass.ReleaseChunk");
         foreach (var node in chunk.Nodes) { RemoveChild(node); node.QueueFree(); }
     }
 

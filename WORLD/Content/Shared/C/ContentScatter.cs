@@ -16,6 +16,7 @@ public partial class ContentScatter : Node3D
     private float _rockClearance;
     public Godot.Collections.Array<Rect2> ExclusionAreas { get; } = new();
     private readonly Dictionary<Vector2I, List<Node3D>> _chunks = new();
+    public int ActiveChunks => _chunks.Count;
     private Mesh[] _meshes = System.Array.Empty<Mesh>();
     private FastNoiseLite _patch = null!;
     private ShaderMaterial? _wind, _stone;
@@ -144,6 +145,7 @@ public partial class ContentScatter : Node3D
     // Candidate count is bounded; slope-aware placement follows the actual saved height map.
     private void CreateChunk(Vector2I key)
     {
+        using var perf = WorldPerformanceProbe.Measure("Rocks.CreateChunk", key);
         var bins = new List<Transform3D>[_meshes.Length]; for (int i = 0; i < bins.Length; i++) bins[i] = new();
         var random = new RandomNumberGenerator { Seed = Seed(Settings.Seed, key.X, key.Y) };
         int cells = Mathf.Clamp(Mathf.CeilToInt(_chunkSize / Mathf.Max(2, Settings.Spacing)), 1, 16);

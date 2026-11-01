@@ -30,6 +30,7 @@ public partial class WorldController : Node3D
     protected GameEnvironment _environmentScene = null!;
     private ZombieVisionDebug _visionDebug = null!;
     private ContentScatter _rocks = null!;
+    private WorldPerformanceMonitor? _performanceMonitor;
     private VillageLayout? _village;
     private CorpseManager? _corpses;
     private WorldManifest? _sectionManifest;
@@ -59,7 +60,11 @@ public partial class WorldController : Node3D
         _audio = GetNode<WorldAudio>("SystemsRoot/Audio");
         _environmentScene = GetNode<GameEnvironment>("SystemsRoot/EnvironmentRoot");
         EnvironmentSettings = _environmentScene.Settings;
-        SetProcess(false); SetPhysicsProcess(false); CallDeferred(nameof(InitializeWorld));
+        SetProcess(false); SetPhysicsProcess(false);
+        // PERF0: F2-only diagnostics, separate from the F1 configuration panels.
+        _performanceMonitor = new WorldPerformanceMonitor { Name = "WorldPerformanceMonitor" };
+        GetNode("DebugUIRoot").AddChild(_performanceMonitor);
+        CallDeferred(nameof(InitializeWorld));
     }
 
     // =========================================================
@@ -293,16 +298,23 @@ public partial class WorldController : Node3D
             + (patrolReady ? "" : "\nRobot placement failed; see Output.")
             + (horde.Slow.Length + horde.Fast.Length > 0 ? $"\nDebug horde: {horde.Slow.Length} slow + {horde.Fast.Length} fast" : "");
         InitializeStaticStreaming(player, camera);
+        _performanceMonitor?.Bind(_stylizedGrass, _pines, _forestZones, _rocks);
         // Start with a clean gameplay view; F1 opens both left/right debug panels.
         SetDebugPanelsVisible(false);
     }
 
     // =========================================================
-    // F1 is handled once for both camera presentations; no per-frame debug input polling.
+    // F1 remains the settings overlay; F2 independently captures frame and chunk timing.
     public override void _Input(InputEvent input)
     {
-        if (input is not InputEventKey key || !key.Pressed || key.Echo || _spawnMenu == null) return;
-        if (key.Keycode != Key.F1 && key.PhysicalKeycode != Key.F1) return;
+        if (input is not InputEventKey key || !key.Pressed || key.Echo) return;
+        if (key.Keycode == Key.F2 || key.PhysicalKeycode == Key.F2)
+        {
+            _performanceMonitor?.Toggle();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+        if (_spawnMenu == null || (key.Keycode != Key.F1 && key.PhysicalKeycode != Key.F1)) return;
         SetDebugPanelsVisible(!_debugPanelsOpen);
         GetViewport().SetInputAsHandled();
     }
@@ -407,6 +419,7 @@ public partial class WorldController : Node3D
             bridge.Initialize(player, camera, GetNode<Node3D>("WorldActorsRoot/PersistentPropsRoot/Structures"),
                 GetNode("WorldActorsRoot/PersistentEntitiesRoot"), _sectionManifest, CreateStreamingSettings());
             _sectionDiagnostics?.BindStreaming(bridge.Streamer);
+            _performanceMonitor?.BindStreaming(bridge.Streamer);
             _village.ReleaseStartupBuildingReferences();
         }
         catch (System.ArgumentException error)

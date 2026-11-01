@@ -315,6 +315,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     // Sample Terrain3D heights and local slopes once per candidate, with forest noise and a spawn clearing.
     private void CreateChunk(Vector2I key)
     {
+        using var perf = WorldPerformanceProbe.Measure("Pine.CreateChunk", key);
         var bins = new List<Transform3D>[_meshes.Length];
         for (int i = 0; i < bins.Length; i++) bins[i] = new List<Transform3D>();
         var random = new RandomNumberGenerator { Seed = Mix(Settings.Seed, key.X, key.Y) };
@@ -426,6 +427,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
     // One body per active chunk, one simple shape per trunk; free collision alongside its visual batch on OFF/eviction.
     private void ReleaseChunk(TreeChunk chunk)
     {
+        using var perf = WorldPerformanceProbe.Measure("Pine.ReleaseChunk");
         foreach (var target in chunk.Occluders) target.Alive = false;
         foreach (var instance in chunk.Nodes) { RemoveChild(instance); instance.QueueFree(); }
         if (GodotObject.IsInstanceValid(chunk.Trunks))
