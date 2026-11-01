@@ -2,6 +2,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
 {
@@ -107,6 +108,20 @@ public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
         HashSet<ICameraFadeTarget> results)
     { foreach (var placement in _placements) placement.CollectObstructions(from, to, radius, results); }
 
+    // Resume each applicable forest zone within the shared foliage deadline.
+    public bool StepManagedChunk(Vector2I key, long deadlineTicks)
+    {
+        foreach (var zone in _placements)
+        {
+            if (!zone.StepManagedChunk(key, deadlineTicks)) return false;
+            if (Stopwatch.GetTimestamp() >= deadlineTicks) return false;
+        }
+        return true;
+    }
+
+    public void CancelPendingManagedChunk()
+    { foreach (var zone in _placements) zone.CancelPendingManagedChunk(); }
+
     public void BuildManagedChunk(Vector2I key)
     { foreach (var zone in _placements) zone.BuildManagedChunk(key); }
 
@@ -119,6 +134,7 @@ public partial class ForestZonesPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     public override void _ExitTree()
     {
+        CancelPendingManagedChunk();
         foreach (var placement in _placements)
             if (IsInstanceValid(placement))
             { placement.OcclusionChanged -= OnChildOcclusionChanged; placement.ChunksInvalidated -= OnChildChunksInvalidated; }

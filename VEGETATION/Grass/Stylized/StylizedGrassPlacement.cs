@@ -384,8 +384,9 @@ public partial class StylizedGrassPlacement : Node3D
         if (_pending == null)
             _pending = new PendingGrassBuild(key, chunk => CreateChunkStages(key, width, chunk));
         using var perf = WorldPerformanceProbe.Measure("Grass.BuildStep", key);
-        for (int step = 0; step < 16; step++)
+        for (int step = 0; step < 8; step++)
         {
+            if (Stopwatch.GetTimestamp() >= deadlineTicks) break;
             if (!_pending.Steps.MoveNext())
             {
                 var complete = _pending;
@@ -447,6 +448,7 @@ public partial class StylizedGrassPlacement : Node3D
 
     private void CommitChunk(Vector2I key, GrassChunk chunk)
     {
+        using var perf = WorldPerformanceProbe.Measure("Grass.Commit", key);
         _active.Add(key, chunk);
         ActiveClumps += chunk.Clumps; ActiveFiller += chunk.Filler;
         ActiveShortGrass += chunk.ShortGrass; ActivePlants += chunk.Plants;
@@ -489,7 +491,7 @@ public partial class StylizedGrassPlacement : Node3D
             for (int j = 0; j < members; j++)
             {
                 // Yield before the next block, even when earlier candidates were rejected.
-                if (j > 0 && j % 8 == 0) yield return true;
+                if (j > 0 && j % 4 == 0) yield return true;
                 float theta = rng.RandfRange(0f, Mathf.Tau);
                 float spread = Mathf.Sqrt(rng.Randf()) * radius;
                 Vector2 point = center + new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * spread;
@@ -610,7 +612,7 @@ public partial class StylizedGrassPlacement : Node3D
             for (int j = 0; j < members; j++)
             {
                 // Yield before the next block, even when earlier candidates were rejected.
-                if (j > 0 && j % 8 == 0) yield return true;
+                if (j > 0 && j % 4 == 0) yield return true;
                 float theta = rng.RandfRange(0f, Mathf.Tau);
                 float wobble = 1f + 0.16f * Mathf.Sin(theta * 3f + phase)
                     + 0.09f * Mathf.Sin(theta * 5f - phase);
@@ -692,7 +694,7 @@ public partial class StylizedGrassPlacement : Node3D
         {
             var t = instances[i]; t.Origin -= anchor;
             multi.SetInstanceTransform(i, t);
-            if ((i & 63) == 63) yield return true;
+            if ((i & 15) == 15) yield return true;
         }
         chunk.Nodes.Add(AttachBatch(name, multi, anchor, begin, end, false));
         yield return true;

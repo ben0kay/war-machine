@@ -2,6 +2,7 @@
 // No per-tree scripts, idle callbacks, or terrain changes. A DF0-approved zone is required.
 using Godot;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 {
@@ -29,6 +30,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     private Vector2I _current = new(int.MinValue, int.MinValue), _requested;
     private bool _ready, _queued, _refreshQueued;
     private float _viewOffset;
+    private PendingForestBuild? _pending;
 
     private readonly struct Tree
     {
@@ -48,6 +50,15 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         public Aabb Bounds;
         public bool HasBounds;
         public int Count;
+    }
+
+    private sealed class PendingForestBuild
+    {
+        public readonly Vector2I Key;
+        public readonly Chunk Chunk;
+        public IEnumerator<bool>? Steps;
+        public PendingForestBuild(Vector2I key, int count)
+        { Key = key; Chunk = new Chunk { Count = count }; }
     }
 
     // =========================================================
@@ -316,34 +327,96 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     }
 
     // =========================================================
-    // One body per chunk, per-trunk capsules on pine physics layer 5, with near/far mesh batches.
+    // PERF1.1: incremental DF2 chunks. The shared FoliageManager is the only scheduler.
+    public bool StepManagedChunk(Vector2I key, long deadlineTicks)
+    {
+        if (!ExternallyManaged || !_ready || _chunks.ContainsKey(key)
+            || !_layout.TryGetValue(key, out var trees)) return true;
+        if (_pending != null && _pending.Key != key) CancelPendingManagedChunk();
+        if (_pending == null)
+        {
+            _pending = new PendingForestBuild(key, trees.Count);
+            _pending.Steps = BuildChunkStages(_pending, trees).GetEnumerator();
+        }
+        using var perf = WorldPerformanceProbe.Measure("Forest.BuildStep", key);
+        for (int step = 0; step < 8; step++)
+        {
+            if (Stopwatch.GetTimestamp() >= deadlineTicks) break;
+            if (!_pending.Steps!.MoveNext())
+            {
+                var finished = _pending;
+                finished.Steps.Dispose(); _pending = null;
+                CommitChunk(finished);
+                OcclusionChanged?.Invoke();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // =========================================================
+    public void CancelPendingManagedChunk()
+    {
+        if (_pending == null) return;
+        _pending.Steps?.Dispose();
+        ReleaseChunk(_pending.Chunk);
+        _pending = null;
+    }
+
+    private void CommitChunk(PendingForestBuild work)
+    {
+        var chunk = work.Chunk;
+        if (ExternallyManaged && IsInstanceValid(chunk.Trunks))
+            chunk.Trunks!.CollisionLayer = PinePlacement.TrunkLayer;
+        foreach (var batch in chunk.Batches) batch.Visible = true;
+        _chunks.Add(work.Key, chunk);
+        ActiveTrees += chunk.Count;
+    }
+
+    // =========================================================
+    // Legacy owner consumes all stages immediately; managed owner resumes each step.
     private void CreateChunk(Vector2I key, List<Tree> trees)
     {
         using var perf = WorldPerformanceProbe.Measure("Forest.CreateChunk", key);
-        var group = new Chunk { Count = trees.Count };
+        var work = new PendingForestBuild(key, trees.Count);
+        foreach (var unused in BuildChunkStages(work, trees)) { }
+        CommitChunk(work);
+    }
+
+    // =========================================================
+    // Same tree transforms, materials and fade targets; break up shape registration
+    // and near/far batch construction instead of building them in a single long call.
+    private IEnumerable<bool> BuildChunkStages(PendingForestBuild work, List<Tree> trees)
+    {
+        Vector2I key = work.Key;
+        Chunk group = work.Chunk;
         var bins = new List<Transform3D>[_near.Length];
         for (int i = 0; i < bins.Length; i++) bins[i] = new List<Transform3D>();
         StaticBody3D? body = _settings.TrunkCollisionEnabled ? new StaticBody3D {
-            Name = $"CanopyTrunks_{key.X}_{key.Y}", CollisionLayer = PinePlacement.TrunkLayer, CollisionMask = 0
+            Name = $"CanopyTrunks_{key.X}_{key.Y}",
+            CollisionLayer = ExternallyManaged ? 0u : PinePlacement.TrunkLayer, CollisionMask = 0
         } : null;
+        // Keep the staged collision body non-interactive until all visible tree batches exist.
+        if (ExternallyManaged && body != null) { AddChild(body); group.Trunks = body; }
+        int treeIndex = 0;
         foreach (var tree in trees)
         {
-            // Apply one tiny rigid lean from the root: all LOD meshes share the transform.
-            // The same rotation is used below for the short physical trunk capsule.
             var axis = new Vector3(Mathf.Cos(tree.TiltAxis), 0f, Mathf.Sin(tree.TiltAxis));
             var tilt = new Basis(new Quaternion(axis, tree.TiltRadians));
             bins[tree.Variant].Add(new Transform3D(
                 (tilt * new Basis(Vector3.Up, tree.Yaw)).Scaled(Vector3.One * tree.Scale), tree.Origin));
-            if (body == null) continue;
-            float radius = 0.39f * Mathf.Clamp(_settings.TrunkRadiusMultiplier, 0.6f, 1.8f) * tree.Scale;
-            float height = Mathf.Max(radius * 2.2f, _settings.TrunkCollisionHeight * tree.Scale);
-            body.AddChild(new CollisionShape3D {
-                Transform = new Transform3D(tilt,
-                    tree.Origin + tilt * (Vector3.Up * (height * 0.5f))),
-                Shape = new CapsuleShape3D { Radius = radius, Height = height }
-            });
+            if (body != null)
+            {
+                float radius = 0.39f * Mathf.Clamp(_settings.TrunkRadiusMultiplier, 0.6f, 1.8f) * tree.Scale;
+                float height = Mathf.Max(radius * 2.2f, _settings.TrunkCollisionHeight * tree.Scale);
+                body.AddChild(new CollisionShape3D {
+                    Transform = new Transform3D(tilt, tree.Origin + tilt * (Vector3.Up * (height * 0.5f))),
+                    Shape = new CapsuleShape3D { Radius = radius, Height = height }
+                });
+            }
+            if (++treeIndex % 4 == 0) yield return true;
         }
-        if (body != null) { AddChild(body); group.Trunks = body; }
+        if (!ExternallyManaged && body != null) { AddChild(body); group.Trunks = body; }
         int size = Mathf.Clamp(_settings.ChunkSize, 32, 64);
         float end = Visibility.RenderDistance + _viewOffset;
         float lod = Mathf.Clamp(Visibility.Lod0End + _viewOffset, 8f, end - 4f);
@@ -353,12 +426,16 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             if (bins[i].Count == 0) continue;
             float meanY = 0f;
             foreach (var pose in bins[i]) meanY += pose.Origin.Y;
-            var anchor = new Vector3((key.X + 0.5f) * size, meanY / bins[i].Count, (key.Y + 0.5f) * size);
+            var anchor = new Vector3((key.X + 0.5f) * size,
+                meanY / bins[i].Count, (key.Y + 0.5f) * size);
             var near = Batch($"Canopy_{key.X}_{key.Y}_{i}_Near", _near[i], bins[i], anchor,
-                0f, lod, margin, _settings.NearCastShadows);
+                0f, lod, margin, _settings.NearCastShadows, !ExternallyManaged);
+            group.Batches.Add(near);
+            yield return true;
             var far = Batch($"Canopy_{key.X}_{key.Y}_{i}_Far", _far[i], bins[i], anchor,
-                lod, end, margin, _settings.FarCastShadows);
-            group.Batches.Add(near); group.Batches.Add(far);
+                lod, end, margin, _settings.FarCastShadows, !ExternallyManaged);
+            group.Batches.Add(far);
+            yield return true;
             Aabb crown = _near[i].GetAabb().Merge(_far[i].GetAabb());
             crown.Position += Vector3.Up * crown.Size.Y * 0.36f;
             crown.Size = new Vector3(crown.Size.X, crown.Size.Y * 0.64f, crown.Size.Z);
@@ -368,15 +445,16 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
                 group.FadeTargets.Add(new CanopyFade(near.Multimesh, far.Multimesh, j, bound));
                 group.Bounds = group.HasBounds ? group.Bounds.Merge(bound) : bound;
                 group.HasBounds = true;
+                if ((j & 3) == 3) yield return true;
             }
+            yield return true;
         }
-        _chunks.Add(key, group); ActiveTrees += trees.Count;
     }
 
     // =========================================================
     // Only two shared material surfaces; one custom-opacity channel for native MultiMesh instances.
     private MultiMeshInstance3D Batch(string name, Mesh mesh, List<Transform3D> trees, Vector3 anchor,
-        float begin, float end, float margin, bool shadows)
+        float begin, float end, float margin, bool shadows, bool visible)
     {
         var multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
             UseColors = true, UseCustomData = true, Mesh = mesh };
@@ -385,7 +463,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
         {
             var pose = trees[i]; pose.Origin -= anchor;
             multimesh.SetInstanceTransform(i, pose);
-            multimesh.SetInstanceColor(i, Colors.White); // Preserve geometry vertex colours without instance tint.
+            multimesh.SetInstanceColor(i, Colors.White);
             multimesh.SetInstanceCustomData(i, new Color(1f, 0f, 0f, 0f));
         }
         var node = new MultiMeshInstance3D {
@@ -394,7 +472,8 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
             VisibilityRangeBeginMargin = begin > 0f ? margin : 0f,
             VisibilityRangeEndMargin = margin,
             CastShadow = shadows ? GeometryInstance3D.ShadowCastingSetting.On
-                : GeometryInstance3D.ShadowCastingSetting.Off
+                : GeometryInstance3D.ShadowCastingSetting.Off,
+            Visible = visible
         };
         node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, end);
         AddChild(node);
@@ -433,6 +512,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
 
     public void ReleaseManagedChunk(Vector2I key)
     {
+        if (_pending?.Key == key) CancelPendingManagedChunk();
         if (!_chunks.TryGetValue(key, out var chunk)) return;
         ReleaseChunk(chunk); ActiveTrees -= chunk.Count; _chunks.Remove(key);
         OcclusionChanged?.Invoke();
@@ -492,6 +572,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     public void RefreshTerrain()
     {
+        CancelPendingManagedChunk();
         _refreshQueued = false;
         if (!_ready) return;
         foreach (var chunk in _chunks.Values) ReleaseChunk(chunk);
@@ -516,6 +597,7 @@ public partial class ForestPlacement : Node3D, ICameraOcclusionProvider
     // =========================================================
     public override void _ExitTree()
     {
+        CancelPendingManagedChunk();
         Visibility.Changed -= OnVisibilityChanged;
         if (_ready && GodotObject.IsInstanceValid(_terrain))
             _terrain.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));

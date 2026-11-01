@@ -89,6 +89,7 @@ public partial class FoliageManager : Node3D
     {
         using var perf = WorldPerformanceProbe.Measure("Foliage.Reconcile");
         _grass?.CancelPendingManagedChunk();
+        _forest?.CancelPendingManagedChunk();
         _wanted.Clear();
         int size = _settings.ChunkSize;
         float limit = _visibility.RenderDistance + size * _settings.LoadChunkMargin;
@@ -168,8 +169,11 @@ public partial class FoliageManager : Node3D
                 if (!_wanted.Contains(job.Key)) { _cursor++; continue; }
                 if (job.Family == Grass && _grass != null)
                 {
-                    // Do not call this grass chunk ready until all hidden batches commit.
                     if (!_grass.StepManagedChunk(job.Key, _settings.ChunkSize, deadline)) break;
+                }
+                else if (job.Family == Forest && _forest != null)
+                {
+                    if (!_forest.StepManagedChunk(job.Key, deadline)) break;
                 }
                 else Build(job.Family, job.Key);
                 state.Ready |= mask;
@@ -221,6 +225,7 @@ public partial class FoliageManager : Node3D
         if (!_ready) return;
         _ready = false;
         _grass?.CancelPendingManagedChunk();
+        _forest?.CancelPendingManagedChunk();
         _player.PositionChanged -= OnMoved;
         _visibility.Changed -= OnVisibilityChanged;
         if (_grass != null) _grass.ChunksInvalidated -= OnGrassInvalidated;
