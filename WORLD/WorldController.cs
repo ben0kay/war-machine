@@ -200,17 +200,19 @@ public partial class WorldController : Node3D
             "res://VEGETATION/Grass/Stylized/Configuration/StylizedGrassMaster.tres");
         var fillerConfig = cover?.BillboardGrass ?? GD.Load<BillboardGrassSettings>(
             "res://VEGETATION/Grass/Stylized/Configuration/BillboardGrassMaster.tres");
+        var shortConfig = cover?.ForestGrass002 ?? GD.Load<ForestGrass002Settings>(
+            "res://VEGETATION/Grass/Stylized/Configuration/ForestGrass002Master.tres");
         bool hasPlants = false;
         if (cover != null)
             foreach (var plant in cover.Plants)
                 if (plant != null && plant.Enabled && plant.Share > 0f) { hasPlants = true; break; }
         if (stylizedConfig != null && fillerConfig != null
-            && (stylizedConfig.Enabled || fillerConfig.Enabled || hasPlants))
+            && (stylizedConfig.Enabled || fillerConfig.Enabled || shortConfig?.Enabled == true || hasPlants))
         {
             _stylizedGrass = new StylizedGrassPlacement {
                 Name = "StylizedGrass",
                 Settings = stylizedConfig,
-                FillerSettings = fillerConfig, GroundCover = cover,
+                FillerSettings = fillerConfig, ShortGrassSettings = shortConfig, GroundCover = cover,
                 EnvironmentSettings = EnvironmentSettings, Visibility = _vegetationVisibility
             };
             foreach (Rect2 exclusion in grassClearings) _stylizedGrass.ExclusionAreas.Add(exclusion);

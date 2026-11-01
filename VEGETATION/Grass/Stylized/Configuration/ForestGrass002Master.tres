@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ForestGrass002Settings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Grass/Stylized/Configuration/ForestGrass002Settings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+Seed = 183769
+PatchesPerChunk = 5
+PatchChance = 0.85
+MinPerPatch = 70
+MaxPerPatch = 115
+PatchRadiusMin = 3.5
+PatchRadiusMax = 6.5
+ScaleMin = 0.85
+ScaleMax = 1.25
+TiltChance = 0.18
+MaxTiltDegrees = 4.0
+MinimumNormalY = 0.87
+EdgeClearance = 0.55
+WindMultiplier = 0.08
+WindSpeed = 1.1

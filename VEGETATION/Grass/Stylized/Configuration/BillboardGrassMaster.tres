@@ -3,7 +3,7 @@
 
 [resource]
 script = ExtResource("1")
-Enabled = true
+Enabled = false
 Seed = 90641
 PatchesPerChunk = 7
 PatchChance = 0.95

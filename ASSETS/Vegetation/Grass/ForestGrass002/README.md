@@ -33,3 +33,8 @@ Copy the `ASSETS/Vegetation/Grass/ForestGrass002/` folder into your Godot projec
 - use it as a manually placed grass-bed asset
 - add a dedicated `ForestGrass002Master.tres` later if you want it integrated into the existing grass scatter
 - mix ForestGrass001 and ForestGrass002 to get both loose taller clumps and tighter bed-like filler
+
+
+## War Machine runtime integration (STG7)
+
+Now referenced by `VEGETATION/Grass/Stylized/Configuration/ForestGrass002Master.tres` and streamed in `StylizedGrassPlacement.cs` as dense short grass beds. Both original two-LOD meshes per variant and the packed atlas remain unchanged. This art family is **not** the old six-triangle billboard filler. The latter is disabled by default in its own master, but remains available. Normal startup uses the same shared 32m ground-cover owner and single fog-driven GV1 render envelope; no separate scene needs placing. Local FPS/LOD/performance visual acceptance pending.

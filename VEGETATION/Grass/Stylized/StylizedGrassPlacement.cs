@@ -8,6 +8,8 @@ public partial class StylizedGrassPlacement : Node3D
     public VegetationVisibilityPolicy Visibility { get; set; } = new(new VegetationVisibilitySettings());
     [Export] public StylizedGrassSettings Settings { get; set; } = null!;
     [Export] public BillboardGrassSettings FillerSettings { get; set; } = null!;
+    // ForestGrass002 replaces the billboard filler by default, with independently authored dense beds.
+    public ForestGrass002Settings? ShortGrassSettings { get; set; }
     // All additional plant types use the same ground-cover chunks, masks and fog policy.
     public GroundCoverSettings? GroundCover { get; set; }
     [Export] public EnvironmentConfig EnvironmentSettings { get; set; } = null!;
@@ -15,13 +17,15 @@ public partial class StylizedGrassPlacement : Node3D
     public int ActiveChunks => _active.Count;
     public int ActiveClumps { get; private set; }
     public int ActiveFiller { get; private set; }
+    public int ActiveShortGrass { get; private set; }
     public int ActivePlants { get; private set; }
 
     private readonly Dictionary<Vector2I, GrassChunk> _active = new();
     private readonly List<PlantArt> _plants = new();
     private Mesh[] _near = System.Array.Empty<Mesh>(), _far = System.Array.Empty<Mesh>();
+    private Mesh[] _shortNear = System.Array.Empty<Mesh>(), _shortFar = System.Array.Empty<Mesh>();
     private Mesh[] _billboards = System.Array.Empty<Mesh>();
-    private ShaderMaterial? _material, _billboardMaterial;
+    private ShaderMaterial? _material, _shortMaterial, _billboardMaterial;
     private GodotObject _terrain = null!;
     private Node3D _anchor = null!;
     private Vector2I _center = new(int.MinValue, int.MinValue);
@@ -32,7 +36,7 @@ public partial class StylizedGrassPlacement : Node3D
     private sealed class GrassChunk
     {
         public readonly List<MultiMeshInstance3D> Nodes = new();
-        public int Clumps, Filler, Plants;
+        public int Clumps, Filler, ShortGrass, Plants;
     }
 
     private sealed class PlantArt
@@ -60,9 +64,10 @@ public partial class StylizedGrassPlacement : Node3D
     public void ApplySettings()
     {
         foreach (var chunk in _active.Values) ReleaseChunk(chunk);
-        _active.Clear(); ActiveClumps = 0; ActiveFiller = 0; ActivePlants = 0;
+        _active.Clear(); ActiveClumps = 0; ActiveFiller = 0; ActiveShortGrass = 0; ActivePlants = 0;
         _center = new Vector2I(int.MinValue, int.MinValue);
-        _near = _far = _billboards = System.Array.Empty<Mesh>(); _material = _billboardMaterial = null;
+        _near = _far = _shortNear = _shortFar = _billboards = System.Array.Empty<Mesh>();
+        _material = _shortMaterial = _billboardMaterial = null;
         _plants.Clear();
         if (!_initialized) return;
         if (Settings != null && Settings.Enabled && Settings.PatchesPerChunk > 0 && !LoadTemplates())
@@ -70,6 +75,9 @@ public partial class StylizedGrassPlacement : Node3D
         if (FillerSettings != null && FillerSettings.Enabled && FillerSettings.PatchesPerChunk > 0
             && FillerSettings.PatchChance > 0f && FillerSettings.MaxPerPatch > 0 && !LoadBillboards())
             _billboards = System.Array.Empty<Mesh>();
+        if (ShortGrassSettings != null && ShortGrassSettings.Enabled && ShortGrassSettings.PatchesPerChunk > 0
+            && ShortGrassSettings.PatchChance > 0f && ShortGrassSettings.MaxPerPatch > 0 && !LoadShortGrass())
+            _shortNear = _shortFar = System.Array.Empty<Mesh>();
         // Build each configured plant art set just once; no per-instance scenes.
         if (GroundCover != null)
             foreach (var species in GroundCover.Plants)
@@ -161,6 +169,43 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
+    // Import ForestGrass002's three compact tuft variants at two mesh LODs.
+    // Keep its own wind/atlas material rather than using billboard cutout artwork.
+    private bool LoadShortGrass()
+    {
+        const string root = "res://ASSETS/Vegetation/Grass/ForestGrass002/";
+        var material = GD.Load<ShaderMaterial>(root + "Materials/ForestGrass002Wind.tres");
+        if (material == null)
+        { GD.PushWarning("ForestGrass002: material missing; short grass disabled."); return false; }
+        _shortMaterial = (ShaderMaterial)material.Duplicate();
+        var near = new Mesh[3]; var far = new Mesh[3];
+        for (int variant = 0; variant < 3; variant++) for (int lod = 1; lod <= 2; lod++)
+        {
+            string path = root + "Models/forest_grass_002_" + (char)('a' + variant)
+                + "_LOD" + lod + ".gltf";
+            var packed = GD.Load<PackedScene>(path);
+            if (packed == null) { GD.PushWarning("ForestGrass002: missing " + path); return false; }
+            Node scene = packed.Instantiate();
+            try
+            {
+                MeshInstance3D? item = scene as MeshInstance3D;
+                if (item == null)
+                    foreach (Node child in scene.FindChildren("*", "MeshInstance3D", true, false))
+                        if (child is MeshInstance3D mesh) { item = mesh; break; }
+                if (item?.Mesh is not ArrayMesh source || source.GetSurfaceCount() != 1)
+                { GD.PushWarning("ForestGrass002: invalid mesh/surface " + path); return false; }
+                var copy = (ArrayMesh)source.Duplicate();
+                copy.SurfaceSetMaterial(0, _shortMaterial);
+                if (lod == 1) near[variant] = copy; else far[variant] = copy;
+            }
+            finally { scene.Free(); }
+        }
+        _shortNear = near; _shortFar = far;
+        ApplyWind();
+        return true;
+    }
+
+    // =========================================================
     // Load a species using the same single-surface imported glTF + MultiMesh pipeline.
     // Future plants only need a settings resource and lettered 2- or 3-LOD meshes.
     private bool LoadPlantTemplates(PlantArt art)
@@ -219,6 +264,13 @@ public partial class StylizedGrassPlacement : Node3D
                 EnvironmentSettings.GrassWindStrength * FillerSettings.WindMultiplier, 0f, 0.2f));
             _billboardMaterial.SetShaderParameter("wind_speed", Mathf.Max(0f, FillerSettings.WindSpeed));
         }
+        if (_shortMaterial != null && ShortGrassSettings != null)
+        {
+            _shortMaterial.SetShaderParameter("wind_direction", dir);
+            _shortMaterial.SetShaderParameter("wind_strength", Mathf.Clamp(
+                EnvironmentSettings.GrassWindStrength * ShortGrassSettings.WindMultiplier, 0f, 0.2f));
+            _shortMaterial.SetShaderParameter("wind_speed", Mathf.Max(0f, ShortGrassSettings.WindSpeed));
+        }
         foreach (var art in _plants)
         {
             if (art.Material == null) continue;
@@ -265,7 +317,7 @@ public partial class StylizedGrassPlacement : Node3D
     // Move only on integer 32m chunk crossings. Existing chunks are reused without polling.
     public void UpdateAnchor(Vector3 position)
     {
-        if (_near.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants()) return;
+        if (_near.Length != 3 && _shortNear.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants()) return;
         int width = Mathf.Clamp(Settings?.ChunkSize ?? 32, 16, 64);
         var next = new Vector2I(Mathf.FloorToInt(position.X / width),
             Mathf.FloorToInt(position.Z / width));
@@ -285,7 +337,7 @@ public partial class StylizedGrassPlacement : Node3D
         var remove = new List<Vector2I>();
         foreach (var old in _active)
             if (!wanted.Contains(old.Key)) { ReleaseChunk(old.Value); ActiveClumps -= old.Value.Clumps; ActiveFiller -= old.Value.Filler;
-                ActivePlants -= old.Value.Plants; remove.Add(old.Key); }
+                ActiveShortGrass -= old.Value.ShortGrass; ActivePlants -= old.Value.Plants; remove.Add(old.Key); }
         foreach (var key in remove) _active.Remove(key);
         foreach (var key in wanted) if (!_active.ContainsKey(key)) CreateChunk(key, width);
     }
@@ -301,16 +353,20 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // The original stylized patches and widespread billboard filler share residency and masks.
+    // All three grass families share residency and road/terrain masks; only art and scatter differ.
     // =========================================================
     private void CreateChunk(Vector2I key, int width)
     {
         var chunk = new GrassChunk();
         float end = Visibility.RenderDistance + _focusDistance;
         if (_near.Length == 3 || HasLoadedPlants()) CreatePatchClumps(key, width, end, chunk);
-        if (_billboards.Length == 3) CreateFiller(key, width, end, chunk);
+        if (_shortNear.Length == 3 && ShortGrassSettings != null)
+            CreateDensePatches(key, width, end, chunk, ShortGrassSettings, _shortNear, _shortFar, false);
+        if (_billboards.Length == 3 && FillerSettings != null)
+            CreateDensePatches(key, width, end, chunk, FillerSettings, _billboards, System.Array.Empty<Mesh>(), true);
         _active.Add(key, chunk);
-        ActiveClumps += chunk.Clumps; ActiveFiller += chunk.Filler; ActivePlants += chunk.Plants;
+        ActiveClumps += chunk.Clumps; ActiveFiller += chunk.Filler;
+        ActiveShortGrass += chunk.ShortGrass; ActivePlants += chunk.Plants;
     }
 
     // =========================================================
@@ -433,28 +489,29 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // Irregular seeded billboard patches: many models per patch, variable footprint and scale.
-    // A separate seed keeps the original stylized-grass positions completely unchanged.
+    // Irregular seeded dense patches for ForestGrass002 or optional legacy billboards.
+    // Independent seeds do not touch ForestGrass001 or the plant selection stream.
     // =========================================================
-    private void CreateFiller(Vector2I key, int width, float end, GrassChunk chunk)
+    private void CreateDensePatches(Vector2I key, int width, float end, GrassChunk chunk,
+        BillboardGrassSettings config, Mesh[] near, Mesh[] far, bool billboard)
     {
-        var rng = new RandomNumberGenerator { Seed = Mix(FillerSettings.Seed, key.X, key.Y) };
+        var rng = new RandomNumberGenerator { Seed = Mix(config.Seed, key.X, key.Y) };
         var bin = new List<Transform3D>[3];
         for (int i = 0; i < 3; i++) bin[i] = new List<Transform3D>();
 
-        int patches = Mathf.Clamp(FillerSettings.PatchesPerChunk, 0, 16);
-        int least = Mathf.Clamp(FillerSettings.MinPerPatch, 1, 100);
-        int most = Mathf.Clamp(Mathf.Max(least, FillerSettings.MaxPerPatch), 1, 120);
-        float minRadius = Mathf.Clamp(FillerSettings.PatchRadiusMin, 0.8f, 10f);
-        float maxRadius = Mathf.Clamp(Mathf.Max(minRadius, FillerSettings.PatchRadiusMax), minRadius, 12f);
-        float minScale = Mathf.Clamp(FillerSettings.ScaleMin, 0.3f, 2f);
-        float maxScale = Mathf.Clamp(Mathf.Max(minScale, FillerSettings.ScaleMax), minScale, 2.5f);
-        float tiltChance = Mathf.Clamp(FillerSettings.TiltChance, 0f, 1f);
-        float tiltDegrees = Mathf.Clamp(FillerSettings.MaxTiltDegrees, 0f, 8f);
+        int patches = Mathf.Clamp(config.PatchesPerChunk, 0, 16);
+        int least = Mathf.Clamp(config.MinPerPatch, 1, 100);
+        int most = Mathf.Clamp(Mathf.Max(least, config.MaxPerPatch), 1, 120);
+        float minRadius = Mathf.Clamp(config.PatchRadiusMin, 0.8f, 10f);
+        float maxRadius = Mathf.Clamp(Mathf.Max(minRadius, config.PatchRadiusMax), minRadius, 12f);
+        float minScale = Mathf.Clamp(config.ScaleMin, 0.3f, 2f);
+        float maxScale = Mathf.Clamp(Mathf.Max(minScale, config.ScaleMax), minScale, 2.5f);
+        float tiltChance = Mathf.Clamp(config.TiltChance, 0f, 1f);
+        float tiltDegrees = Mathf.Clamp(config.MaxTiltDegrees, 0f, 8f);
 
         for (int patch = 0; patch < patches; patch++)
         {
-            if (rng.Randf() > Mathf.Clamp(FillerSettings.PatchChance, 0f, 1f)) continue;
+            if (rng.Randf() > Mathf.Clamp(config.PatchChance, 0f, 1f)) continue;
             Vector2 center = new((key.X + rng.RandfRange(0.06f, 0.94f)) * width,
                 (key.Y + rng.RandfRange(0.06f, 0.94f)) * width);
             int members = rng.RandiRange(least, most);
@@ -475,8 +532,8 @@ public partial class StylizedGrassPlacement : Node3D
                 Vector2 point = center + offset.Rotated(heading);
                 float scale = Mathf.Clamp(rng.RandfRange(minScale, maxScale) * patchScale, 0.4f, 2.2f);
                 if (point.X < 2 || point.Y < 2 || point.X >= _worldSize - 2 || point.Y >= _worldSize - 2
-                    || IsExcluded(point, Mathf.Max(0.5f, FillerSettings.EdgeClearance) * scale)) continue;
-                if (!TryGround(point, FillerSettings.MinimumNormalY, out float height)) continue;
+                    || IsExcluded(point, Mathf.Max(0.5f, config.EdgeClearance) * scale)) continue;
+                if (!TryGround(point, config.MinimumNormalY, out float height)) continue;
 
                 Basis basis = new(Vector3.Up, rng.RandfRange(0f, Mathf.Tau));
                 if (tiltDegrees > 0f && rng.Randf() < tiltChance)
@@ -490,14 +547,19 @@ public partial class StylizedGrassPlacement : Node3D
                     new Vector3(point.X, height - 0.035f, point.Y)));
             }
         }
+        float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, end - 4f);
+        Vector3 origin = new((key.X + 0.5f) * width, 0f, (key.Y + 0.5f) * width);
         for (int i = 0; i < 3; i++)
         {
             if (bin[i].Count == 0) continue;
-            Vector3 origin = new((key.X + 0.5f) * width, 0f, (key.Y + 0.5f) * width);
-            var node = BuildBatch("BillboardFiller_" + key.X + "_" + key.Y + "_" + i,
-                _billboards[i], bin[i], origin, 0f, end);
-            chunk.Nodes.Add(node);
-            chunk.Filler += bin[i].Count;
+            string name = (billboard ? "BillboardFiller_" : "ForestGrass002_")
+                + key.X + "_" + key.Y + "_" + i;
+            chunk.Nodes.Add(BuildBatch(name + (billboard ? "" : "_Near"),
+                near[i], bin[i], origin, 0f, billboard ? end : lod));
+            if (!billboard)
+                chunk.Nodes.Add(BuildBatch(name + "_Far", far[i], bin[i], origin, lod, end));
+            if (billboard) chunk.Filler += bin[i].Count;
+            else chunk.ShortGrass += bin[i].Count;
         }
     }
 

@@ -295,6 +295,34 @@ public partial class DebugOverlay : PanelContainer
                 value => { billboard.WindMultiplier = value; placement.ApplyWind(); });
             billboardRows.AddChild(new Label { Text = "Live preview only; Copy settings for saved values." });
         }
+        // STG7: compact tuft beds have their own independent F1 controls and seed.
+        if (_stylizedGrass?.ShortGrassSettings != null)
+        {
+            var placement = _stylizedGrass;
+            var shortGrass = placement.ShortGrassSettings;
+            var bedRows = AddToggleSection(foliageRows, "Forest Grass 002 · short beds",
+                shortGrass.Enabled, value => {
+                    shortGrass.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
+                });
+            bedRows.AddChild(new Label { Text = "Compact mesh grass · dense seeded beds, not billboards" });
+            AddDeferredSlider(bedRows, "Beds / 32 m chunk", 0, 16, 1, shortGrass.PatchesPerChunk,
+                value => shortGrass.PatchesPerChunk = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(bedRows, "Bed spawn chance", 0, 1, 0.05, shortGrass.PatchChance,
+                value => shortGrass.PatchChance = value, placement.ApplySettings);
+            AddDeferredSlider(bedRows, "Minimum tufts / bed", 1, 100, 1, shortGrass.MinPerPatch,
+                value => shortGrass.MinPerPatch = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(bedRows, "Maximum tufts / bed", 1, 120, 1, shortGrass.MaxPerPatch,
+                value => shortGrass.MaxPerPatch = Mathf.RoundToInt(value), placement.ApplySettings);
+            AddDeferredSlider(bedRows, "Minimum bed radius (m)", 0.8, 10, 0.1, shortGrass.PatchRadiusMin,
+                value => shortGrass.PatchRadiusMin = value, placement.ApplySettings);
+            AddDeferredSlider(bedRows, "Maximum bed radius (m)", 0.8, 12, 0.1, shortGrass.PatchRadiusMax,
+                value => shortGrass.PatchRadiusMax = value, placement.ApplySettings);
+            AddDeferredSlider(bedRows, "Short grass scale max", 0.3, 2.5, 0.05, shortGrass.ScaleMax,
+                value => shortGrass.ScaleMax = value, placement.ApplySettings);
+            AddBoundSlider(bedRows, "Short grass wind", 0, 2, 0.05, shortGrass.WindMultiplier,
+                value => { shortGrass.WindMultiplier = value; placement.ApplyWind(); });
+            bedRows.AddChild(new Label { Text = "Changes apply on slider release; copy for persistent master values." });
+        }
         // STG5: the same controller owns data-driven plants and original grass.
         if (_stylizedGrass?.GroundCover != null)
         {
@@ -646,6 +674,22 @@ public partial class DebugOverlay : PanelContainer
             values["BillboardGrassTiltChance"] = billboard.TiltChance;
             values["BillboardGrassMaxTiltDegrees"] = billboard.MaxTiltDegrees;
             values["BillboardGrassWindMultiplier"] = billboard.WindMultiplier;
+        }
+        if (_stylizedGrass?.ShortGrassSettings != null)
+        {
+            var shortGrass = _stylizedGrass.ShortGrassSettings;
+            values["ForestGrass002Enabled"] = shortGrass.Enabled;
+            values["ForestGrass002Seed"] = shortGrass.Seed;
+            values["ForestGrass002PatchesPerChunk"] = shortGrass.PatchesPerChunk;
+            values["ForestGrass002PatchChance"] = shortGrass.PatchChance;
+            values["ForestGrass002MinPerPatch"] = shortGrass.MinPerPatch;
+            values["ForestGrass002MaxPerPatch"] = shortGrass.MaxPerPatch;
+            values["ForestGrass002PatchRadiusMin"] = shortGrass.PatchRadiusMin;
+            values["ForestGrass002PatchRadiusMax"] = shortGrass.PatchRadiusMax;
+            values["ForestGrass002ScaleMin"] = shortGrass.ScaleMin;
+            values["ForestGrass002ScaleMax"] = shortGrass.ScaleMax;
+            values["ForestGrass002WindMultiplier"] = shortGrass.WindMultiplier;
+            values["ForestGrass002ActiveTufts"] = _stylizedGrass.ActiveShortGrass;
         }
         if (_stylizedGrass?.GroundCover != null)
         {
