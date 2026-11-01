@@ -7,6 +7,11 @@ preview, selected by `EQUIPMENT/Configuration/EquipmentMaster.tres`.
 - `C/RifleMeshBuilder.cs`: original temporary procedural rifle geometry only.
 - `Configuration/RifleMaster.tres`: shared FirearmSettings resource, edited per rifle.
 - `Artwork/`: eventual imported model/texture destination.
+- `Audio/`: rifle shot cue, original WAV, import metadata and rifle-specific audio notes.
+
+## Rifle audio ownership
+
+The [rifle Audio folder](Audio/README.md) contains `RifleShot.tres` and `RifleShot_Original.wav`. `Configuration/RifleMaster.tres` references the local cue, and the cue's Stream references the colocated WAV. `FirearmController` continues using shared `AUDIO/Shared/WorldAudio.cs` and `WorldSoundEvents.cs` for pooled spatial playback and separate AI-hearing emission. No additional manager, polling, change in shot settings or runtime playback logic was added. Local Godot import/listening remains unverified.
 
 ## Defaults and controls
 

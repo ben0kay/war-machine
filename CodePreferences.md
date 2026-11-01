@@ -40,6 +40,8 @@
 `WORLD/Content/Assets/Structures/BUILDING_DESIGN_GUIDE.md` (architecture and preventable mistakes) and
 `WORLD/Content/Assets/Structures/BUILDING_AUTHORING_README.md` (Godot integration, floor/stair geometry, collision, fade, interior haze and editor preview). Check entrances, floor joins, windows, staircase headroom and player clearance before adding furnishings.
 
+**Audio asset ownership:** Keep individual weapon, player, creature and prop sound clips/cues in the feature they belong to (e.g. `EQUIPMENT/Weapons/Rifles/Rifle_001/Audio/`). `AUDIO/` owns shared pooled/spatial playback, common cue/emission types, gameplay sound events, common settings and truly cross-feature sound assets. Feature cues reuse those shared APIs.
+
 **Procedural art folder convention:**
 - `<Asset>/C/` contains **C# visual geometry generation**: mesh builders, primitive assembly, generated-visual helpers/materials. It is **not** a catch-all for gameplay C#.
 - `<Asset>/Artwork/` contains current or future imported `.glb`, `.gltf`, textures and authored art.

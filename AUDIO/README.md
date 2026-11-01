@@ -1,16 +1,18 @@
 # AUDIO — shared bounded playback
 
-**AU0 implemented, awaiting local validation. AU1 rifle playback hook now has an original synthesized WAV wired into RifleShot.tres (audible in source; local Godot validation pending).** HE0 shared action emission is implemented in source; AU2 and HE1/AU3 AI responses remain future work.
+**AU0 implemented, awaiting local validation. AU1 rifle playback hook uses the rifle-owned `EQUIPMENT/Weapons/Rifles/Rifle_001/Audio/RifleShot.tres` with its original synthesized WAV (wired in source; local Godot listening validation pending).** HE0 shared action emission is implemented in source; AU2 and HE1/AU3 AI responses remain future work.
 
 World instances `AUDIO/WorldAudio.tscn` once under SystemsRoot/Audio; FPS inherits it. Settings come from Configuration/AudioMaster.tres, duplicated at startup. Shared/WorldAudio.cs owns the pool; Shared/AudioCue.cs describes an independent stream/category/priority/spatial/range/gain/pitch cue.
 
-## Rifle shot audio (now assigned)
+## Shared audio ownership and rifle integration
 
-**RifleShot_Original.wav** is an original 0.82s 44.1kHz mono PCM16 procedural rifle report, generated and committed directly in `AUDIO/OneShots/Weapons/`. `RifleShot.tres` references it through `Stream`; `RifleMaster.tres` already references that cue. No weapon/audio C# changes were required. The source file is small (~72KB), contains no third-party audio and is reusable in both top-down and FPS.
+`AUDIO/` owns reusable `WorldAudio` pooling, shared cue/event/emission types, common settings and truly cross-feature sounds. **Weapon- and actor-specific clips and cues live beside their owning feature**, not in a centralized weapon-effects folder. The rifle WAV, cue and import metadata are now inside [`Rifle_001/Audio/`](../EQUIPMENT/Weapons/Rifles/Rifle_001/Audio/README.md).
+
+**RifleShot_Original.wav** is an original 0.82s 44.1kHz mono PCM16 procedural rifle report (~72KB). The rifle-owned cue references it through `Stream`; `RifleMaster.tres` references that cue. No weapon/audio C# change was needed; FPS and top-down use the same configuration.
 
 The existing `RifleMaster.ShotVolumeDb=-12` and cue `PitchVariation=0.025` were preserved; adjust the weapon gain after listening locally. It is a synthesized prototype (dry crack, low report and short reflected tail), not a studio or field-recorded effect. To swap it later, point the same cue `Stream` at another imported WAV/OGG without changing firing or AI noise systems.
 
-MachineGunMaster has no ShotCue or ShotSound and remains silent; later create its own cue/stream. Both guns use the same optional API without copying playback code. Legacy ShotSound fallback remains only for unmigrated weapons and is never played alongside ShotCue. RobotAudio and existing addon audio are not migrated and are outside this pool's budgets.
+MachineGunMaster has no ShotCue or ShotSound and remains silent; add any future cue/stream under that machine gun's `Audio/` folder. Both guns use the same optional API without copying playback code. Legacy ShotSound fallback remains only for unmigrated weapons and is never played alongside ShotCue. RobotAudio and existing addon audio are not migrated and are outside this pool's budgets.
 
 ## Budgets and API
 
@@ -28,7 +30,7 @@ No manager Process/PhysicsProcess callback for idle or one-shot-only use. Native
 
 ## Local validation
 
-Source/loop/resource wiring and a numeric nested-budget model were checked. **Compilation, Godot runtime, listening and visual/performance acceptance are unverified: no Godot/.NET executable here.** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `WORLD/FirstPerson/FirstPersonWorld.tscn`. At night, fire/switch both guns while moving; verify brief warm lighting, no shadows/stuck light, focus loss and reload. Assign a short **non-looping** WAV/OGG to RifleShot.tres Stream, fire/hold and move, verify exactly one sound per accepted shot and no MG sound. Check the Remote tree for one Audio service/player listener; inspect stopping/switching/unload and OFF. Stress caps with temporary cue requests; do not assume measured performance from source checks. No terrain rebake needed.
+Source/loop/resource wiring and a numeric nested-budget model were checked. **Compilation, Godot runtime, listening and visual/performance acceptance are unverified: no Godot/.NET executable here.** Run `dotnet build war-machine.csproj`, then F6 `WORLD/World.tscn` and `WORLD/FirstPerson/FirstPersonWorld.tscn`. At night, fire/switch both guns while moving; verify brief warm lighting, no shadows/stuck light, focus loss and reload. Check the assigned short **non-looping** WAV on the rifle-owned `Audio/RifleShot.tres`, fire/hold and move, verify exactly one sound per accepted shot and no MG sound. Check the Remote tree for one Audio service/player listener; inspect stopping/switching/unload and OFF. Stress caps with temporary cue requests; do not assume measured performance from source checks. No terrain rebake needed.
 
 ## HE0 — shared action sounds (2026-10-28)
 

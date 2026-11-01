@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://chbx4bddw2ntt"
-path="res://.godot/imported/RifleShot_Original.wav-5cfd1e07932cef2a3e2a7fc927888a09.sample"
+path="res://.godot/imported/RifleShot_Original.wav-361473241288ec85a67272e1fcc4b4a7.sample"
 
 [deps]
 
-source_file="res://AUDIO/OneShots/Weapons/RifleShot_Original.wav"
-dest_files=["res://.godot/imported/RifleShot_Original.wav-5cfd1e07932cef2a3e2a7fc927888a09.sample"]
+source_file="res://EQUIPMENT/Weapons/Rifles/Rifle_001/Audio/RifleShot_Original.wav"
+dest_files=["res://.godot/imported/RifleShot_Original.wav-361473241288ec85a67272e1fcc4b4a7.sample"]
 
 [params]
 

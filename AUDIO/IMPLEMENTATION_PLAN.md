@@ -14,11 +14,11 @@ Plan 3D positioning around a player-centred listener for elevated top-down camer
 
 ## AU1 — rifle-only shot sound
 
-Add or generate an authorized rifle-shot audio asset in `OneShots/Weapons/` and bind it to the reusable cue config. On accepted `FirearmController.TryFire()`, request spatial one-shot at muzzle world position. Only Rifle_001 should use it initially. Existing `FirearmSettings.ShotSound` and old `AudioStreamPlayer3D` may need a clean migration to avoid **two** rifle sounds, while preserving shared gun support, other weapons, hit logic, projectiles and cooldown. Shot audio must not fire from rejected trigger presses. Test rapidly held shots and moving player.
+**Source ownership after 2026-11-01 migration:** the authorized original rifle-shot asset and cue live in `EQUIPMENT/Weapons/Rifles/Rifle_001/Audio/`; `AUDIO/` retains shared playback and emission types. Future weapon clips/cues belong beside their weapon. On accepted `FirearmController.TryFire()`, request spatial one-shot at muzzle world position. Only Rifle_001 should use it initially. Existing `FirearmSettings.ShotSound` and old `AudioStreamPlayer3D` may need a clean migration to avoid **two** rifle sounds, while preserving shared gun support, other weapons, hit logic, projectiles and cooldown. Shot audio must not fire from rejected trigger presses. Test rapidly held shots and moving player.
 
 ## AU2 — opt-in gameplay sound sources
 
-Gradually add footsteps (actual stride events, surface/stance variations), zombie vocalizations, deer calls, robot steps/servo (preserve `RobotAudio.cs` cues), machinery loops, wind/rain/storm ambience and interaction/UI sounds. Avoid per-zombie audio nodes and 50 concurrent groans. Start/stop ambient sounds from the state owner; no permanent creature audio processing.
+Gradually add footsteps (player-owned actual stride events, surface/stance variations), zombie vocalizations, deer calls, robot steps/servo (preserve `RobotAudio.cs` cues), machinery loops, wind/rain/storm ambience and interaction/UI sounds. Keep clips and cue definitions in their feature folders; `AUDIO/` holds common runtime/event contracts and shared assets. Avoid per-zombie audio nodes and 50 concurrent groans. Start/stop ambient sounds from the state owner; no permanent creature audio processing.
 
 ## AU3 — AI hearing (separate from playback)
 

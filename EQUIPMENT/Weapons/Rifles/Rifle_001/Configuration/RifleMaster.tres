@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="FirearmSettings" load_steps=5 format=3]
 [ext_resource type="Script" path="res://EQUIPMENT/Weapons/Shared/FirearmSettings.cs" id="1"]
-[ext_resource type="Resource" path="res://AUDIO/OneShots/Weapons/RifleShot.tres" id="shot_cue"]
+[ext_resource type="Resource" path="res://EQUIPMENT/Weapons/Rifles/Rifle_001/Audio/RifleShot.tres" id="shot_cue"]
 
 [ext_resource type="Script" path="res://AUDIO/Shared/SoundEmissionSettings.cs" id="emission_script"]
 
