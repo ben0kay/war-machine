@@ -13,6 +13,8 @@ public partial class FirstPersonCamera : Camera
     private float _lookPitchDegrees, _leanTarget, _leanRendered;
     private bool LeanAnimating => Mathf.Abs(_leanTarget - _leanRendered) > 0.0005f;
     private readonly FirstPersonHeadBob _headBob = new();
+    private readonly FirstPersonCameraFeedback _feedback = new();
+    private PlayerVitals? _feedbackVitals;
 
     // =========================================================
     // The shared world calls this before the capsule is initialized; use standing height for the first placement.
@@ -25,10 +27,33 @@ public partial class FirstPersonCamera : Camera
         GlobalPosition = player.GlobalPosition + Vector3.Up * (1.8f - ViewSettings.EyeInset);
         PhysicsInterpolationMode = PhysicsInterpolationModeEnum.Off; // We interpolate translation only, never mouse rotation.
         _previousEye = _currentEye = GlobalPosition;
-        _headBob.Reset();
+        _headBob.Reset(); _feedback.Reset();
         _sampleTick = Engine.GetPhysicsFrames();
         _ready = true; Input.MouseMode = Input.MouseModeEnum.Captured;
         SetProcess(false); SetPhysicsProcess(false);
+    }
+
+    // =========================================================
+    // Vitals initialize after this camera. The FPS world binds the resolved hit event afterwards.
+    public void BindDamageFeedback(PlayerVitals vitals)
+    {
+        if (IsInstanceValid(_feedbackVitals)) _feedbackVitals!.DamageTaken -= OnPlayerDamaged;
+        _feedbackVitals = vitals;
+        vitals.DamageTaken += OnPlayerDamaged;
+    }
+
+    // =========================================================
+    private void OnPlayerDamaged(float resolvedDamage)
+    { TriggerFeedback(CameraFeedbackKind.PlayerDamaged); }
+
+    // =========================================================
+    // Shared entry point for confirmed melee impacts, damage and later camera-only cues.
+    // Never rotates persistent mouse look or the physical player capsule.
+    public void TriggerFeedback(CameraFeedbackKind kind)
+    {
+        if (!_ready || !GetWindow().HasFocus() || _actor.GameplayInputBlocked
+            || Input.MouseMode != Input.MouseModeEnum.Captured) return;
+        if (_feedback.Trigger(kind, ViewSettings)) SetProcess(true);
     }
 
     // =========================================================
@@ -113,23 +138,24 @@ public partial class FirstPersonCamera : Camera
         _previousEye = _currentEye; _currentEye = eye; _sampleTick = Engine.GetPhysicsFrames();
         float reset = Mathf.Max(1f, ViewSettings.TeleportResetDistance);
         if (_previousEye.DistanceSquaredTo(eye) > reset * reset)
-        { _previousEye = eye; _headBob.Reset(); SetEye(eye); SetProcess(LeanAnimating); return; }
+        { _previousEye = eye; _headBob.Reset(); _feedback.Reset(); SetEye(eye); SetProcess(LeanAnimating); return; }
         bool gameplay = Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus()
             && !_actor.GameplayInputBlocked && !_actor.IsDead;
         _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay,
             movingInput && gameplay, stance, ViewSettings);
         if (!ViewSettings.InterpolateTranslation || _previousEye == _currentEye)
         {
-            SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate || LeanAnimating); return;
+            SetEye(BobbedEye(eye)); SetProcess(_headBob.NeedsUpdate || LeanAnimating || _feedback.IsActive); return;
         }
         SetProcess(true);
     }
 
     // =========================================================
-    // Camera-right sway plus world-up bounce; no mouse-look, recoil or physics-body rotation.
+    // Camera-local hit feedback is a tiny temporary translation, composed with existing lean and head bob.
+    // The eye base stays authoritative; we never accumulate drift into mouse-look or recoil.
     private Vector3 BobbedEye(Vector3 baseEye)
-        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanRendered * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.5f))
-            + Vector3.Up * _headBob.Offset.Y;
+        => baseEye + GlobalBasis.X * (_headBob.Offset.X + _leanRendered * Mathf.Clamp(ViewSettings.LeanEyeShift, 0f, 0.5f) + _feedback.Offset.X)
+            + Vector3.Up * _headBob.Offset.Y + GlobalBasis.Y * _feedback.Offset.Y;
 
     // =========================================================
     private void SetEye(Vector3 eye)
@@ -140,7 +166,9 @@ public partial class FirstPersonCamera : Camera
     {
         bool wasCaptured = Input.MouseMode == Input.MouseModeEnum.Captured;
         Input.MouseMode = Input.MouseModeEnum.Visible;
-        _headBob.Stop(); if (_headBob.NeedsUpdate) SetProcess(true);
+        _headBob.Stop(); _feedback.Reset();
+        // A single render update removes any remaining feedback offset after capture is released.
+        SetProcess(true);
         _actor.SetPhysicsProcess(true);
         if (wasCaptured) MouseCaptureChanged?.Invoke(false);
     }
@@ -161,8 +189,9 @@ public partial class FirstPersonCamera : Camera
             : _currentEye;
         bool bobbing = _headBob.Advance((float)delta, ViewSettings);
         bool leaning = AdvanceVisualLean((float)delta);
+        bool shaking = _feedback.Advance((float)delta, ViewSettings);
         SetEye(BobbedEye(baseEye));
-        if (!interpolating && !bobbing && !leaning) SetProcess(false);
+        if (!interpolating && !bobbing && !leaning && !shaking) SetProcess(false);
     }
     // FPS follows at eye level, with a small allowance for translation interpolation; it has no overhead orbit.
     public override float MaximumRenderOffset => 4;
@@ -171,6 +200,9 @@ public partial class FirstPersonCamera : Camera
     // =========================================================
     public override void _ExitTree()
     {
-        _headBob.Reset(); Input.MouseMode = Input.MouseModeEnum.Visible; _ready = false;
+        if (IsInstanceValid(_feedbackVitals)) _feedbackVitals!.DamageTaken -= OnPlayerDamaged;
+        _feedbackVitals = null;
+        _headBob.Reset(); _feedback.Reset();
+        Input.MouseMode = Input.MouseModeEnum.Visible; _ready = false;
     }
 }

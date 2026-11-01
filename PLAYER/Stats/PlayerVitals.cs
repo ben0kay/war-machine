@@ -12,6 +12,9 @@ public partial class PlayerVitals : Node
     public bool IsDead => _configured && Health.IsDead;
     public bool IsConfigured => _configured;
     public event Action? Died;
+    // Resolved positive player damage, published after region and vitality are committed.
+    // FPS camera may observe this without changing health/impact ownership.
+    public event Action<float>? DamageTaken;
     private bool _configured, _changing;
     private bool CanChange => _configured && !_changing && !Body.IsNotifying && !IsDead && !IsQueuedForDeletion();
 
@@ -42,6 +45,7 @@ public partial class PlayerVitals : Node
             bool changed = Body.ApplyResolvedDamage(region, result.Amount);
             if (region == BodyRegion.Head || region == BodyRegion.Torso) Health.ApplyResolvedDamage(result);
             if (changed) Body.Publish(region);
+            DamageTaken?.Invoke(result.Amount);
         }
         finally { Body.SetUpdating(false); _changing = false; }
     }
