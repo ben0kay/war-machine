@@ -15,3 +15,5 @@ This resource contains the existing **editable child recipe resources**, rather 
 **Validation in Godot 4 .NET:** build C#, F6 FirstPersonWorld.tscn, observe near/far gradual foliage arrival, collision on rocks/trunks, forest zones and exclusions, grass001/002/ferns/shrubs, F1 live fog/foliage toggles and F2 timings. Compare same player location with fallback Enabled=false; layout and materials should match, but streaming order/timing differs. Verify chunk release/re-entry and that F2 sees no multi-family synchronized 181ms reconcile. This commit is **not a runtime benchmark**.
 
 If the 2–4ms target still misses due to `Grass.CreateChunk` running atomically, the next measured PERF1 step is to split its dense patch work; don't add another scheduler.
+
+**Resource compatibility:** FoliageSettings is a runtime [GlobalClass] resource, not an editor [Tool] script. Its child authored recipes include non-[Tool] custom resources; keeping the parent non-tool avoids the editor-time typed-resource cast failure recorded in LessonsLearned.md LL001.

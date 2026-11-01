@@ -1,7 +1,6 @@
 // One editable foliage master: generation recipes, fog visibility and chunk scheduling in one resource.
 using Godot;
 
-[Tool]
 [GlobalClass]
 public partial class FoliageSettings : Resource
 {
