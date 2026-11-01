@@ -15,8 +15,10 @@ public partial class MeleeWeaponController : Node3D
     private PlayerController? _player;
     private Transform3D _rest;
     private Vector3 _direction;
-    private bool _firstPerson;
+    private bool _firstPerson, _impactReported;
     public bool IsAttacking => _attack?.IsActive == true;
+    // Once per successfully dispatched swing, regardless of how many actors a sweep hits.
+    public event System.Action<MeleeStrikeKind>? ContactConfirmed;
 
     // =========================================================
     public override void _Ready()
@@ -56,7 +58,7 @@ public partial class MeleeWeaponController : Node3D
         if (strike == MeleeStrikeKind.Overhead && !RuntimeSettings.AlternateAttackEnabled) return false;
         MeleeSettings profile = strike == MeleeStrikeKind.Overhead ? _overheadSettings : RuntimeSettings;
         if (!_attack.TryStart(profile)) return false;
-        _activeSettings = profile; _activeStrike = strike;
+        _activeSettings = profile; _activeStrike = strike; _impactReported = false;
         _player = player; _direction = aim.Normalized(); _firstPerson = firstPerson; _rest = Transform;
         ApplyPose(0); return true;
     }
@@ -74,7 +76,12 @@ public partial class MeleeWeaponController : Node3D
                 contact.Position, contact.Direction, severPower: _activeSettings.SeverPower);
             CombatImpact impact = new(_holder, contact.Position, contact.Direction,
                 _activeSettings.ImpactKind, _activeSettings.ImpactStrength, _activeSettings.ImpactDuration);
-            HitTargetResolver.Dispatch(contact.Collider, _holder, damage, impact, contact.ShapeIndex);
+            if (HitTargetResolver.Dispatch(contact.Collider, _holder, damage, impact, contact.ShapeIndex)
+                && !_impactReported)
+            {
+                _impactReported = true;
+                ContactConfirmed?.Invoke(_activeStrike);
+            }
         }
         if (IsAttacking) ApplyPose(_attack.ElapsedSeconds); else { _attack.Cancel(); RestorePose(); }
     }

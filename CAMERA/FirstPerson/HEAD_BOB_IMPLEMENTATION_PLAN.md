@@ -47,3 +47,7 @@ This tuning adjusts both cadence and distance, not player locomotion. At 5m/s wa
 - No local compilation or in-engine motion/performance measurements were available from the authoring environment; acceptance and comfort tuning remain to be tested by the user.
 
 **Out of scope:** head tilt/roll, breathing/idle sway, camera shake, landing thud, footsteps/audio, hands, full-body IK, weapon-specific motion and changed movement physics. Do not silently start those features.
+
+## Integration note — CF0 camera feedback (2026-10-31)
+
+The later independent, event-driven `FirstPersonCameraFeedback` helper adds a small temporary **camera-local eye translation** to the existing `FirstPersonCamera.BobbedEye` composition; the original distance-based `FirstPersonHeadBob` and all previously authored head-bob settings remain unchanged. The camera's same render callback now sleeps only after interpolation, lean, bob **and feedback** have all settled. See [camera README](README.md#cf0--shared-event-driven-camera-feedback-2026-10-31) for cue parameters and event routes. CF0 source implemented; Godot build/visual acceptance pending.

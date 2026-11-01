@@ -56,10 +56,12 @@ public partial class FirstPersonWeapon : Node
     private void SwitchWeapon(int slot)
     {
         var previous = _weapon;
+        var previousMelee = _melee;
         if (!_slots.Select(slot)) return;
         _shove?.Cancel(); _melee?.Cancel(); CancelTrigger(); ResetAds(); CancelVisualRecoil();
         if (IsInstanceValid(previous))
         { previous!.ReadyToFire -= OnReadyToFire; previous.ShotAccepted -= OnShotAccepted; }
+        if (IsInstanceValid(previousMelee)) previousMelee!.ContactConfirmed -= OnMeleeContactConfirmed;
         _weapon = _slots.Current; _melee = _slots.CurrentMelee;
         _aimDebugLine?.SetWeapon(_weapon);
         // ADS1: held firearm weight is applied on selection, not each physics/render frame.
@@ -68,6 +70,7 @@ public partial class FirstPersonWeapon : Node
         _adsInitialized = false; _visualRecoil = null;
         if (_melee != null)
         {
+            _melee.ContactConfirmed += OnMeleeContactConfirmed;
             _melee.SetView(true); _melee.Position = _melee.RuntimeSettings.FirstPersonOffset;
             _query.CollisionMask = _melee.RuntimeSettings.HitMask; return;
         }
@@ -301,6 +304,12 @@ public partial class FirstPersonWeapon : Node
     }
 
     // =========================================================
+    // Only confirmed bat contacts wake camera feedback. LMB multi-hits yield one impulse.
+    private void OnMeleeContactConfirmed(MeleeStrikeKind strike)
+        => _camera.TriggerFeedback(strike == MeleeStrikeKind.Overhead
+            ? CameraFeedbackKind.MeleeOverheadHit : CameraFeedbackKind.MeleeSweepHit);
+
+    // =========================================================
     private void RequestShot() { _requested = true; SetPhysicsProcess(true); }
     private void OnReadyToFire() { if (_held && _weapon != null && _weapon.RuntimeSettings.Automatic) RequestShot(); }
     private void CancelTrigger()
@@ -382,6 +391,7 @@ public partial class FirstPersonWeapon : Node
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps)) fps.SetEquippedWeaponMovementMultiplier(1f);
         if (IsInstanceValid(_player)) { _player.GameplayInputBlockChanged -= OnInputBlocked; _player.InteractionModeChanged -= OnInputBlocked; }
         if (IsInstanceValid(_weapon)) { _weapon!.ReadyToFire -= OnReadyToFire; _weapon.ShotAccepted -= OnShotAccepted; }
+        if (IsInstanceValid(_melee)) _melee!.ContactConfirmed -= OnMeleeContactConfirmed;
         if (IsInstanceValid(_camera)) _camera.MouseCaptureChanged -= OnMouseCaptureChanged;
         if (IsInstanceValid(_aimDebugLine)) _aimDebugLine!.QueueFree();
     }
