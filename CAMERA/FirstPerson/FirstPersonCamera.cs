@@ -53,7 +53,10 @@ public partial class FirstPersonCamera : Camera
     {
         if (!_ready || !GetWindow().HasFocus() || _actor.GameplayInputBlocked
             || Input.MouseMode != Input.MouseModeEnum.Captured) return;
-        if (_feedback.Trigger(kind, ViewSettings)) SetProcess(true);
+        bool triggered = _feedback.Trigger(kind, ViewSettings);
+        if (ViewSettings.CameraFeedbackDebugLogEvents)
+            GD.Print($"[CameraFeedback] {kind}: {(triggered ? "triggered" : "disabled")}");
+        if (triggered) SetProcess(true);
     }
 
     // =========================================================
@@ -61,6 +64,15 @@ public partial class FirstPersonCamera : Camera
     public override void _UnhandledInput(InputEvent input)
     {
         if (!_ready || _actor.GameplayInputBlocked) return;
+        // Optional debug check: bypass combat events to verify the same real camera feedback path.
+        if (ViewSettings.CameraFeedbackDebugTestKeyEnabled && input is InputEventKey test
+            && test.Pressed && !test.Echo && test.PhysicalKeycode == Key.F9
+            && Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus())
+        {
+            TriggerFeedback(CameraFeedbackKind.PlayerDamaged);
+            GD.Print("[CameraFeedback] F9 direct test requested (PlayerDamaged preset)");
+            GetViewport().SetInputAsHandled(); return;
+        }
         if (input is InputEventKey key && key.Pressed && !key.Echo && key.PhysicalKeycode == Key.Escape)
         { ReleaseMouse(); GetViewport().SetInputAsHandled(); }
         else if (input is InputEventMouseButton mouse && mouse.Pressed && mouse.ButtonIndex == MouseButton.Left
@@ -121,7 +133,10 @@ public partial class FirstPersonCamera : Camera
         float seconds = Mathf.Clamp(ViewSettings.LeanRenderSmoothingSeconds, 0.01f, 0.2f);
         _leanRendered = Mathf.Lerp(_leanRendered, _leanTarget, 1f - Mathf.Exp(-dt / seconds));
         if (!LeanAnimating) _leanRendered = _leanTarget;
-        float roll = -_leanRendered * Mathf.Clamp(ViewSettings.LeanCameraDegrees, 0f, 20f);
+        // Composite after the feedback helper advances: lean is authoritative, transient roll
+        // is additive for presentation only. Neither writes mouse-look pitch/yaw.
+        float roll = -_leanRendered * Mathf.Clamp(ViewSettings.LeanCameraDegrees, 0f, 20f)
+            + _feedback.RollDegrees;
         Vector3 angle = RotationDegrees;
         if (!Mathf.IsEqualApprox(angle.Z, roll))
         { angle.Z = roll; RotationDegrees = angle; NotifyViewChanged(); }
@@ -138,7 +153,11 @@ public partial class FirstPersonCamera : Camera
         _previousEye = _currentEye; _currentEye = eye; _sampleTick = Engine.GetPhysicsFrames();
         float reset = Mathf.Max(1f, ViewSettings.TeleportResetDistance);
         if (_previousEye.DistanceSquaredTo(eye) > reset * reset)
-        { _previousEye = eye; _headBob.Reset(); _feedback.Reset(); SetEye(eye); SetProcess(LeanAnimating); return; }
+        {
+            bool hadFeedback = _feedback.IsActive || _feedback.RollDegrees != 0f;
+            _previousEye = eye; _headBob.Reset(); _feedback.Reset(); SetEye(eye);
+            SetProcess(LeanAnimating || hadFeedback); return;
+        }
         bool gameplay = Input.MouseMode == Input.MouseModeEnum.Captured && GetWindow().HasFocus()
             && !_actor.GameplayInputBlocked && !_actor.IsDead;
         _headBob.Record(horizontalDistance, physicsDelta, grounded && gameplay,
@@ -188,8 +207,9 @@ public partial class FirstPersonCamera : Camera
         Vector3 baseEye = interpolating ? _previousEye.Lerp(_currentEye, (float)Engine.GetPhysicsInterpolationFraction())
             : _currentEye;
         bool bobbing = _headBob.Advance((float)delta, ViewSettings);
-        bool leaning = AdvanceVisualLean((float)delta);
+        // Compute transient movement before the one camera-roll writer composes lean + feedback.
         bool shaking = _feedback.Advance((float)delta, ViewSettings);
+        bool leaning = AdvanceVisualLean((float)delta);
         SetEye(BobbedEye(baseEye));
         if (!interpolating && !bobbing && !leaning && !shaking) SetProcess(false);
     }

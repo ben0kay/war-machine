@@ -30,17 +30,24 @@ public partial class FirstPersonSettings : Resource
     [ExportGroup("Camera feedback (FPS only)")]
     [Export] public bool CameraFeedbackEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "0,3,0.05")] public float CameraFeedbackGlobalStrength { get; set; } = 1f;
-    [Export(PropertyHint.Range, "2,30,0.5,suffix:Hz")] public float CameraFeedbackFrequencyHz { get; set; } = 16f;
-    [Export(PropertyHint.Range, "0,0.08,0.001,suffix:m")] public float CameraFeedbackMaximumOffset { get; set; } = 0.04f;
+    [Export(PropertyHint.Range, "2,30,0.5,suffix:Hz")] public float CameraFeedbackFrequencyHz { get; set; } = 11f;
+    [Export(PropertyHint.Range, "0,0.08,0.001,suffix:m")] public float CameraFeedbackMaximumOffset { get; set; } = 0.06f;
+    [Export(PropertyHint.Range, "0,5,0.1,suffix:°")] public float CameraFeedbackMaximumRollDegrees { get; set; } = 2.5f;
+    [ExportSubgroup("Development checks")]
+    [Export] public bool CameraFeedbackDebugTestKeyEnabled { get; set; } = true;
+    [Export] public bool CameraFeedbackDebugLogEvents { get; set; }
     [ExportSubgroup("Bat sideways LMB contact")]
-    [Export(PropertyHint.Range, "0,0.05,0.001,suffix:m")] public float CameraFeedbackMeleeSweepStrength { get; set; } = 0.010f;
-    [Export(PropertyHint.Range, "0,0.5,0.01,suffix:s")] public float CameraFeedbackMeleeSweepSeconds { get; set; } = 0.11f;
+    [Export(PropertyHint.Range, "0,0.05,0.001,suffix:m")] public float CameraFeedbackMeleeSweepStrength { get; set; } = 0.014f;
+    [Export(PropertyHint.Range, "0,3,0.05,suffix:°")] public float CameraFeedbackMeleeSweepRollDegrees { get; set; } = 0.85f;
+    [Export(PropertyHint.Range, "0,0.5,0.01,suffix:s")] public float CameraFeedbackMeleeSweepSeconds { get; set; } = 0.18f;
     [ExportSubgroup("Bat overhead MMB contact")]
-    [Export(PropertyHint.Range, "0,0.05,0.001,suffix:m")] public float CameraFeedbackMeleeOverheadStrength { get; set; } = 0.018f;
-    [Export(PropertyHint.Range, "0,0.5,0.01,suffix:s")] public float CameraFeedbackMeleeOverheadSeconds { get; set; } = 0.15f;
+    [Export(PropertyHint.Range, "0,0.05,0.001,suffix:m")] public float CameraFeedbackMeleeOverheadStrength { get; set; } = 0.022f;
+    [Export(PropertyHint.Range, "0,3,0.05,suffix:°")] public float CameraFeedbackMeleeOverheadRollDegrees { get; set; } = 1.3f;
+    [Export(PropertyHint.Range, "0,0.5,0.01,suffix:s")] public float CameraFeedbackMeleeOverheadSeconds { get; set; } = 0.22f;
     [ExportSubgroup("Player received damage")]
-    [Export(PropertyHint.Range, "0,0.05,0.001,suffix:m")] public float CameraFeedbackPlayerDamagedStrength { get; set; } = 0.022f;
-    [Export(PropertyHint.Range, "0,0.5,0.01,suffix:s")] public float CameraFeedbackPlayerDamagedSeconds { get; set; } = 0.18f;
+    [Export(PropertyHint.Range, "0,0.05,0.001,suffix:m")] public float CameraFeedbackPlayerDamagedStrength { get; set; } = 0.03f;
+    [Export(PropertyHint.Range, "0,3,0.05,suffix:°")] public float CameraFeedbackPlayerDamagedRollDegrees { get; set; } = 1.8f;
+    [Export(PropertyHint.Range, "0,0.5,0.01,suffix:s")] public float CameraFeedbackPlayerDamagedSeconds { get; set; } = 0.26f;
     [ExportGroup("Fog and render distance")]
     [Export] public bool DistanceFogEnabled { get; set; } = true;
     [Export] public float FogStartDistance { get; set; } = 1;
