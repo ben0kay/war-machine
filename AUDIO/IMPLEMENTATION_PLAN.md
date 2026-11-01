@@ -18,6 +18,9 @@ Plan 3D positioning around a player-centred listener for elevated top-down camer
 
 ## AU2 — opt-in gameplay sound sources
 
+**Player footsteps PAU0–PAU4 are separately planned under [`PLAYER/Audio/FOOTSTEPS_IMPLEMENTATION_PLAN.md`](../PLAYER/Audio/FOOTSTEPS_IMPLEMENTATION_PLAN.md).** Feature-owned gait/surface/cue work belongs to `PLAYER/Audio/`; `WORLD/` classifies walked floors, and `AUDIO/` retains shared playback and event infrastructure. This entry does **not** authorize those phases. Do not duplicate the full PAU plan here.
+
+
 Gradually add footsteps (player-owned actual stride events, surface/stance variations), zombie vocalizations, deer calls, robot steps/servo (preserve `RobotAudio.cs` cues), machinery loops, wind/rain/storm ambience and interaction/UI sounds. Keep clips and cue definitions in their feature folders; `AUDIO/` holds common runtime/event contracts and shared assets. Avoid per-zombie audio nodes and 50 concurrent groans. Start/stop ambient sounds from the state owner; no permanent creature audio processing.
 
 ## AU3 — AI hearing (separate from playback)

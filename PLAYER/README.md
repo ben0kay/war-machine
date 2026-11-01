@@ -1,3 +1,5 @@
+> **Player material footsteps — future Codex plan (PAU0–PAU4, 2026-11-01):** [PLAYER/Audio footstep roadmap](Audio/FOOTSTEPS_IMPLEMENTATION_PLAN.md) defines shared gait-contact events, Terrain3D grass/rock/dirt and authored-floor tags, feature-owned sound variants and optional AI-hearing integration. **Planning only; no player audio/runtime changes authorized or implemented.** Existing shared WorldAudio remains under `AUDIO/`.
+
 > **PH2 foundation (2026-10-29):** Sprint, jumping and accepted firearm shots now use one short-term stamina reserve. Walking is free; delayed recovery and sprint exhaustion hysteresis are shared by primary FPS and secondary top-down. One temporary bottom-right stamina meter is read-only. Hunger/satiation/thirst/fatigue and injury/accuracy effects remain later work. [Current rules/settings/local validation](IMPLEMENTATION_PLAN.md#ph2--stamina-and-exertion). Source implemented; build/runtime acceptance pending.
 
 > **FPS ownership:** Active FPS presentation is promoted out of DEBUG/TEST. See the [FPS ownership guide](../WORLD/FirstPerson/README.md). Shared gameplay and current tuning are unchanged; local validation pending.
