@@ -2,6 +2,8 @@
 // Reuses the village's grass exclusion rectangles and Terrain3D height data; no particles or per-blade nodes.
 using Godot;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System;
 
 public partial class StylizedGrassPlacement : Node3D
 {
@@ -34,11 +36,21 @@ public partial class StylizedGrassPlacement : Node3D
     private int _worldSize;
     private float _focusDistance;
     private bool _initialized, _refreshQueued;
+    private PendingGrassBuild? _pending;
 
     private sealed class GrassChunk
     {
         public readonly List<MultiMeshInstance3D> Nodes = new();
         public int Clumps, Filler, ShortGrass, Plants;
+    }
+
+    private sealed class PendingGrassBuild
+    {
+        public readonly Vector2I Key;
+        public readonly GrassChunk Chunk = new();
+        public readonly IEnumerator<bool> Steps;
+        public PendingGrassBuild(Vector2I key, Func<GrassChunk, IEnumerable<bool>> stages)
+        { Key = key; Steps = stages(Chunk).GetEnumerator(); }
     }
 
     private sealed class PlantArt
@@ -65,6 +77,7 @@ public partial class StylizedGrassPlacement : Node3D
     // Rebuild on explicit setting changes, not every frame. Disabled means zero GPU batches.
     public void ApplySettings()
     {
+        CancelPendingManagedChunk();
         foreach (var chunk in _active.Values) ReleaseChunk(chunk);
         _active.Clear(); ActiveClumps = 0; ActiveFiller = 0; ActiveShortGrass = 0; ActivePlants = 0;
         _center = new Vector2I(int.MinValue, int.MinValue);
@@ -351,6 +364,7 @@ public partial class StylizedGrassPlacement : Node3D
     private void OnVisibilityChanged()
     {
         if (!_initialized) return;
+        if (ExternallyManaged) CancelPendingManagedChunk();
         UpdateView(0f, _focusDistance, true);
         if (!ExternallyManaged)
         {
@@ -360,16 +374,43 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // One shared chunk lifecycle can call these without a competing player-distance scan.
-    public void BuildManagedChunk(Vector2I key, int width)
+    // PERF1: run one part of a chunk at a time; the shared manager supplies the deadline.
+    // No partially generated grass is rendered or counted as resident.
+    public bool StepManagedChunk(Vector2I key, int width, long deadlineTicks)
     {
-        if (!ExternallyManaged || _active.ContainsKey(key)) return;
-        if (_near.Length != 3 && _shortNear.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants()) return;
-        CreateChunk(key, width);
+        if (!ExternallyManaged || _active.ContainsKey(key)) return true;
+        if (_near.Length != 3 && _shortNear.Length != 3 && _billboards.Length != 3 && !HasLoadedPlants()) return true;
+        if (_pending != null && _pending.Key != key) CancelPendingManagedChunk();
+        if (_pending == null)
+            _pending = new PendingGrassBuild(key, chunk => CreateChunkStages(key, width, chunk));
+        using var perf = WorldPerformanceProbe.Measure("Grass.BuildStep", key);
+        for (int step = 0; step < 16; step++)
+        {
+            if (!_pending.Steps.MoveNext())
+            {
+                var complete = _pending;
+                complete.Steps.Dispose(); _pending = null;
+                CommitChunk(key, complete.Chunk);
+                return true;
+            }
+            if (Stopwatch.GetTimestamp() >= deadlineTicks) break;
+        }
+        return false;
+    }
+
+    // =========================================================
+    // Discard hidden, unfinished work on player relocation, fog edits or F1 resets.
+    public void CancelPendingManagedChunk()
+    {
+        if (_pending == null) return;
+        _pending.Steps.Dispose();
+        ReleaseChunk(_pending.Chunk);
+        _pending = null;
     }
 
     public void ReleaseManagedChunk(Vector2I key)
     {
+        if (_pending?.Key == key) CancelPendingManagedChunk();
         if (!_active.TryGetValue(key, out var chunk)) return;
         ReleaseChunk(chunk);
         ActiveClumps -= chunk.Clumps; ActiveFiller -= chunk.Filler;
@@ -384,20 +425,37 @@ public partial class StylizedGrassPlacement : Node3D
     {
         using var perf = WorldPerformanceProbe.Measure("Grass.CreateChunk", key);
         var chunk = new GrassChunk();
+        foreach (var unused in CreateChunkStages(key, width, chunk)) { }
+        CommitChunk(key, chunk);
+    }
+
+    // =========================================================
+    // Legacy sync and new incremental paths consume the same placement generators,
+    // preserving RNG samples, terrain masks, density and final MultiMesh transforms.
+    private IEnumerable<bool> CreateChunkStages(Vector2I key, int width, GrassChunk chunk)
+    {
         float end = Visibility.RenderDistance + _focusDistance;
-        if (_near.Length == 3 || HasLoadedPlants()) CreatePatchClumps(key, width, end, chunk);
+        if (_near.Length == 3 || HasLoadedPlants())
+            foreach (var unused in CreatePatchClumps(key, width, end, chunk)) yield return true;
         if (_shortNear.Length == 3 && ShortGrassSettings != null)
-            CreateDensePatches(key, width, end, chunk, ShortGrassSettings, _shortNear, _shortFar, false);
+            foreach (var unused in CreateDensePatches(key, width, end, chunk,
+                ShortGrassSettings, _shortNear, _shortFar, false)) yield return true;
         if (_billboards.Length == 3 && FillerSettings != null)
-            CreateDensePatches(key, width, end, chunk, FillerSettings, _billboards, System.Array.Empty<Mesh>(), true);
+            foreach (var unused in CreateDensePatches(key, width, end, chunk,
+                FillerSettings, _billboards, System.Array.Empty<Mesh>(), true)) yield return true;
+    }
+
+    private void CommitChunk(Vector2I key, GrassChunk chunk)
+    {
         _active.Add(key, chunk);
         ActiveClumps += chunk.Clumps; ActiveFiller += chunk.Filler;
         ActiveShortGrass += chunk.ShortGrass; ActivePlants += chunk.Plants;
+        foreach (var node in chunk.Nodes) node.Visible = true;
     }
 
     // =========================================================
     // Preserve existing clustered stylized-grass scatter and its seed.
-    private void CreatePatchClumps(Vector2I key, int width, float end, GrassChunk chunk)
+    private IEnumerable<bool> CreatePatchClumps(Vector2I key, int width, float end, GrassChunk chunk)
     {
         var rng = new RandomNumberGenerator { Seed = Mix(Settings.Seed, key.X, key.Y) };
         // Independent streams leave the original grass positions and yaw intact.
@@ -430,6 +488,8 @@ public partial class StylizedGrassPlacement : Node3D
                 * patchSpreadMultiplier;
             for (int j = 0; j < members; j++)
             {
+                // Yield before the next block, even when earlier candidates were rejected.
+                if (j > 0 && j % 8 == 0) yield return true;
                 float theta = rng.RandfRange(0f, Mathf.Tau);
                 float spread = Mathf.Sqrt(rng.Randf()) * radius;
                 Vector2 point = center + new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * spread;
@@ -483,10 +543,10 @@ public partial class StylizedGrassPlacement : Node3D
             for (int i = 0; i < 3; i++)
             {
                 if (bin[i].Count == 0) continue;
-                chunk.Nodes.Add(BuildBatch("StylizedGrass_" + key.X + "_" + key.Y + "_" + i + "_Near",
-                    _near[i], bin[i], origin, 0f, lod));
-                chunk.Nodes.Add(BuildBatch("StylizedGrass_" + key.X + "_" + key.Y + "_" + i + "_Far",
-                    _far[i], bin[i], origin, lod, end));
+                foreach (var unused in AddBatchStages(chunk, "StylizedGrass_" + key.X + "_" + key.Y + "_" + i + "_Near",
+                    _near[i], bin[i], origin, 0f, lod)) yield return true;
+                foreach (var unused in AddBatchStages(chunk, "StylizedGrass_" + key.X + "_" + key.Y + "_" + i + "_Far",
+                    _far[i], bin[i], origin, lod, end)) yield return true;
                 chunk.Clumps += bin[i].Count;
             }
         for (int p = 0; p < _plants.Count; p++)
@@ -497,17 +557,17 @@ public partial class StylizedGrassPlacement : Node3D
             {
                 if (plantBins[p][i].Count == 0) continue;
                 string name = "GroundPlant_" + p + "_" + key.X + "_" + key.Y + "_" + i;
-                chunk.Nodes.Add(BuildBatch(name + "_Near", art.Lods[0][i],
-                    plantBins[p][i], origin, 0f, lod));
+                foreach (var unused in AddBatchStages(chunk, name + "_Near", art.Lods[0][i],
+                    plantBins[p][i], origin, 0f, lod)) yield return true;
                 if (art.Lods.Length == 2)
-                    chunk.Nodes.Add(BuildBatch(name + "_Far", art.Lods[1][i],
-                        plantBins[p][i], origin, lod, end));
+                    foreach (var unused in AddBatchStages(chunk, name + "_Far", art.Lods[1][i],
+                        plantBins[p][i], origin, lod, end)) yield return true;
                 else
                 {
-                    chunk.Nodes.Add(BuildBatch(name + "_Mid", art.Lods[1][i],
-                        plantBins[p][i], origin, lod, lod1));
-                    chunk.Nodes.Add(BuildBatch(name + "_Far3", art.Lods[2][i],
-                        plantBins[p][i], origin, lod1, end));
+                    foreach (var unused in AddBatchStages(chunk, name + "_Mid", art.Lods[1][i],
+                        plantBins[p][i], origin, lod, lod1)) yield return true;
+                    foreach (var unused in AddBatchStages(chunk, name + "_Far3", art.Lods[2][i],
+                        plantBins[p][i], origin, lod1, end)) yield return true;
                 }
                 chunk.Plants += plantBins[p][i].Count;
             }
@@ -518,7 +578,7 @@ public partial class StylizedGrassPlacement : Node3D
     // Irregular seeded dense patches for ForestGrass002 or optional legacy billboards.
     // Independent seeds do not touch ForestGrass001 or the plant selection stream.
     // =========================================================
-    private void CreateDensePatches(Vector2I key, int width, float end, GrassChunk chunk,
+    private IEnumerable<bool> CreateDensePatches(Vector2I key, int width, float end, GrassChunk chunk,
         BillboardGrassSettings config, Mesh[] near, Mesh[] far, bool billboard)
     {
         var rng = new RandomNumberGenerator { Seed = Mix(config.Seed, key.X, key.Y) };
@@ -549,6 +609,8 @@ public partial class StylizedGrassPlacement : Node3D
 
             for (int j = 0; j < members; j++)
             {
+                // Yield before the next block, even when earlier candidates were rejected.
+                if (j > 0 && j % 8 == 0) yield return true;
                 float theta = rng.RandfRange(0f, Mathf.Tau);
                 float wobble = 1f + 0.16f * Mathf.Sin(theta * 3f + phase)
                     + 0.09f * Mathf.Sin(theta * 5f - phase);
@@ -580,10 +642,11 @@ public partial class StylizedGrassPlacement : Node3D
             if (bin[i].Count == 0) continue;
             string name = (billboard ? "BillboardFiller_" : "ForestGrass002_")
                 + key.X + "_" + key.Y + "_" + i;
-            chunk.Nodes.Add(BuildBatch(name + (billboard ? "" : "_Near"),
-                near[i], bin[i], origin, 0f, billboard ? end : lod));
+            foreach (var unused in AddBatchStages(chunk, name + (billboard ? "" : "_Near"),
+                near[i], bin[i], origin, 0f, billboard ? end : lod)) yield return true;
             if (!billboard)
-                chunk.Nodes.Add(BuildBatch(name + "_Far", far[i], bin[i], origin, lod, end));
+                foreach (var unused in AddBatchStages(chunk, name + "_Far", far[i], bin[i], origin, lod, end))
+                    yield return true;
             if (billboard) chunk.Filler += bin[i].Count;
             else chunk.ShortGrass += bin[i].Count;
         }
@@ -612,7 +675,29 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // One near and one far GPU batch for each present grass art variant, no individual scenes.
+    // MultiMesh uploads are chunked into groups of 64 transforms in managed mode.
+    // Unfinished batches remain detached, then join the hidden chunk until commit.
+    private IEnumerable<bool> AddBatchStages(GrassChunk chunk, string name, Mesh mesh,
+        List<Transform3D> instances, Vector3 anchor, float begin, float end)
+    {
+        if (!ExternallyManaged)
+        {
+            chunk.Nodes.Add(BuildBatch(name, mesh, instances, anchor, begin, end));
+            yield return true;
+            yield break;
+        }
+        var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh };
+        multi.InstanceCount = instances.Count;
+        for (int i = 0; i < instances.Count; i++)
+        {
+            var t = instances[i]; t.Origin -= anchor;
+            multi.SetInstanceTransform(i, t);
+            if ((i & 63) == 63) yield return true;
+        }
+        chunk.Nodes.Add(AttachBatch(name, multi, anchor, begin, end, false));
+        yield return true;
+    }
+
     private MultiMeshInstance3D BuildBatch(string name, Mesh mesh, List<Transform3D> instances,
         Vector3 anchor, float begin, float end)
     {
@@ -623,12 +708,19 @@ public partial class StylizedGrassPlacement : Node3D
             var t = instances[i]; t.Origin -= anchor;
             multi.SetInstanceTransform(i, t);
         }
+        return AttachBatch(name, multi, anchor, begin, end, true);
+    }
+
+    private MultiMeshInstance3D AttachBatch(string name, MultiMesh multi, Vector3 anchor,
+        float begin, float end, bool visible)
+    {
         var node = new MultiMeshInstance3D {
             Name = name, Multimesh = multi, Position = anchor,
             VisibilityRangeBegin = begin, VisibilityRangeEnd = end,
             VisibilityRangeBeginMargin = begin > 0f ? 5f : 0f,
             VisibilityRangeEndMargin = 5f,
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Visible = visible
         };
         node.SetMeta(WorldRenderEnvelope.AuthoredEndMetadata, end);
         AddChild(node);
@@ -670,6 +762,7 @@ public partial class StylizedGrassPlacement : Node3D
     // =========================================================
     public override void _ExitTree()
     {
+        CancelPendingManagedChunk();
         Visibility.Changed -= OnVisibilityChanged;
         if (_initialized && GodotObject.IsInstanceValid(_terrain))
             _terrain.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));

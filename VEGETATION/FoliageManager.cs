@@ -88,6 +88,7 @@ public partial class FoliageManager : Node3D
     private void Reconcile()
     {
         using var perf = WorldPerformanceProbe.Measure("Foliage.Reconcile");
+        _grass?.CancelPendingManagedChunk();
         _wanted.Clear();
         int size = _settings.ChunkSize;
         float limit = _visibility.RenderDistance + size * _settings.LoadChunkMargin;
@@ -140,8 +141,8 @@ public partial class FoliageManager : Node3D
     }
 
     // =========================================================
-    // One family/chunk job at a time. The budget is soft until expensive individual
-    // Grass.CreateChunk operations are split by a later measured optimization.
+    // Shared soft deadline: grass steps pause after eight candidates or 64 transforms,
+    // and the current queued job resumes next frame instead of restarting.
     public override void _Process(double delta)
     {
         if (!_ready || _cursor >= _jobs.Count) { SetProcess(false); return; }
@@ -149,11 +150,12 @@ public partial class FoliageManager : Node3D
         long began = Stopwatch.GetTimestamp();
         int limit = Mathf.Clamp(_settings.OperationsPerFrame, 1, 6);
         double budget = Mathf.Clamp(_settings.WorkBudgetMs, 1f, 12f);
+        long deadline = began + (long)(budget * Stopwatch.Frequency / 1000.0);
         int processed = 0;
         while (_cursor < _jobs.Count && processed < limit)
         {
-            Job job = _jobs[_cursor++];
-            if (!_chunks.TryGetValue(job.Key, out var state)) continue;
+            Job job = _jobs[_cursor];
+            if (!_chunks.TryGetValue(job.Key, out var state)) { _cursor++; continue; }
             int mask = 1 << job.Family;
             if (job.Release)
             {
@@ -163,12 +165,17 @@ public partial class FoliageManager : Node3D
             }
             else
             {
-                if (!_wanted.Contains(job.Key)) continue;
-                Build(job.Family, job.Key);
+                if (!_wanted.Contains(job.Key)) { _cursor++; continue; }
+                if (job.Family == Grass && _grass != null)
+                {
+                    // Do not call this grass chunk ready until all hidden batches commit.
+                    if (!_grass.StepManagedChunk(job.Key, _settings.ChunkSize, deadline)) break;
+                }
+                else Build(job.Family, job.Key);
                 state.Ready |= mask;
             }
-            processed++;
-            if ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency >= budget) break;
+            _cursor++; processed++;
+            if (Stopwatch.GetTimestamp() >= deadline) break;
         }
         if (_cursor >= _jobs.Count) SetProcess(false);
     }
@@ -213,6 +220,7 @@ public partial class FoliageManager : Node3D
     {
         if (!_ready) return;
         _ready = false;
+        _grass?.CancelPendingManagedChunk();
         _player.PositionChanged -= OnMoved;
         _visibility.Changed -= OnVisibilityChanged;
         if (_grass != null) _grass.ChunksInvalidated -= OnGrassInvalidated;

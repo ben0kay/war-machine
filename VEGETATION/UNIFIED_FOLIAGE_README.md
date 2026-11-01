@@ -17,3 +17,12 @@ This resource contains the existing **editable child recipe resources**, rather 
 If the 2–4ms target still misses due to `Grass.CreateChunk` running atomically, the next measured PERF1 step is to split its dense patch work; don't add another scheduler.
 
 **Resource compatibility:** FoliageSettings is a runtime [GlobalClass] resource, not an editor [Tool] script. Its child authored recipes include non-[Tool] custom resources; keeping the parent non-tool avoids the editor-time typed-resource cast failure recorded in LessonsLearned.md LL001.
+
+## PERF1 — incremental grass chunk work (2026-11-01, source implemented; testing pending)
+
+In managed mode, `FoliageManager` now resumes a partially generated grass chunk on later frames instead of requiring a full `Grass.CreateChunk` call. Existing seeds, candidate ordering, terrain sampling, grass001/002, optional billboard, shrubs/ferns and MultiMesh LOD recipes remain the same.
+
+- Sampling yields every **8 placement attempts**; MultiMesh transform upload yields every **64 instances**. The manager's existing `FoliageMaster.WorkBudgetMs=3` is a **soft CPU deadline**. No new controller, threads, mesh assets or external dependencies.
+- Completed batches remain **hidden** until all chunk families' grass/plant variants for that chunk are ready. Only then does the chunk become resident. Unfinished batches are discarded on chunk-centre changes, fog changes or F1 setting rebuilds; deterministic seeds recreate them identically.
+- Managed F2 scope is now `Grass.BuildStep`, nested inside `Foliage.ProcessQueue`. The original `Grass.CreateChunk` scope remains available through `FoliageMaster.Enabled=false` fallback for comparison.
+- A single Godot API call or deferred rendering/physics action may still cause a hitch; this is not a measured or guaranteed zero-stutter result. Local check: build Godot .NET, run FPS scene with F6, walk multiple 32m chunk edges with F2, verify visual density, grass/fern/shrub placement, fog changes, F1 disable/re-enable, unload/re-entry. Compare worst frame and operations with the prior 42ms screenshot.
