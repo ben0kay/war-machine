@@ -28,6 +28,7 @@ public partial class WorldSettings : Resource
     [Export(PropertyHint.Range, "1.5,3,0.25")] public float VillageSidewalkWidth { get; set; } = 2.25f;
     [Export] public bool VillageStreetLampsEnabled { get; set; } = true;
     [Export(PropertyHint.Range, "18,40,1")] public float VillageLampSpacing { get; set; } = 28f;
+    [ExportGroup("Village layout")]
     [Export(PropertyHint.Range, "0,2,0.1")] public float VillageHillScale { get; set; } = 1;
     // VW1: broad seeded terrain relief across village/forests, independent of the three VG2 hills.
     [Export] public bool VillageOutskirtsEnabled { get; set; } = true;
