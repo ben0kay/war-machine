@@ -23,6 +23,11 @@ public partial class WorldSettings : Resource
     [Export(PropertyHint.Range, "0.5,12,0.5")] public float VillageMaxCutFill { get; set; } = 8;
     [Export(PropertyHint.Range, "6,30,1")] public float VillageBlendWidth { get; set; } = 18;
     [Export(PropertyHint.Range, "4,8,0.5")] public float VillageRoadWidth { get; set; } = 6;
+    [ExportGroup("Village roadside")]
+    [Export] public bool VillageSidewalkEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "1.5,3,0.25")] public float VillageSidewalkWidth { get; set; } = 2.25f;
+    [Export] public bool VillageStreetLampsEnabled { get; set; } = true;
+    [Export(PropertyHint.Range, "18,40,1")] public float VillageLampSpacing { get; set; } = 28f;
     [Export(PropertyHint.Range, "0,2,0.1")] public float VillageHillScale { get; set; } = 1;
     // VW1: broad seeded terrain relief across village/forests, independent of the three VG2 hills.
     [Export] public bool VillageOutskirtsEnabled { get; set; } = true;
