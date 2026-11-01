@@ -184,7 +184,7 @@ public partial class FoliageManager : Node3D
     {
         switch (family)
         {
-            case Grass: _grass?.BuildManagedChunk(key, _settings.ChunkSize); break;
+            // Grass uses the resumable StepManagedChunk path above, not this atomic dispatch.
             case Pines: _pines?.BuildManagedChunk(key); break;
             case Forest: _forest?.BuildManagedChunk(key); break;
             case Rocks: _rocks?.BuildManagedChunk(key); break;
