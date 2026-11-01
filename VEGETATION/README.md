@@ -1,5 +1,7 @@
 # VEGETATION — active-world grass
 
+> **Current active-world foliage (FG0, 2026-11-01):** The authoritative entry point is [FoliageMaster.tres](Configuration/FoliageMaster.tres), with a single [FoliageManager.cs](FoliageManager.cs) for 32m grass, pines, DF2 trees and rocks (including their generation work queue and fog-driven residency). Species still use their existing art/terrain/LOD implementations as passive builders. See [UNIFIED_FOLIAGE_README.md](UNIFIED_FOLIAGE_README.md). **Code pushed; Godot build and FPS visual/performance acceptance are pending.** The disabled-by-default TerrainGrass particle pool remains a separately implemented renderer configured through the master.\n\n
+
 The existing TerrainGrass renderer is now integrated into **WORLD/World.tscn**. Shared VegetationMaster defaults are tuned for the overhead view; no separate FPS grass variant is preserved. Legacy compatibility remains available through the existing explorer initialization method.
 
 ## Current defaults

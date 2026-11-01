@@ -1,5 +1,7 @@
 # WAR MACHINE
 
+> **Foliage FG0 (2026-11-01, source implemented / awaiting Godot validation):** [One FoliageMaster](VEGETATION/Configuration/FoliageMaster.tres) is now the entry point for settings and one [FoliageManager](VEGETATION/FoliageManager.cs) schedules the existing grass, pine, DF2 and rock output in 32m chunks. No independent per-family movement streaming in managed mode; the unchanged artist implementations remain passive builders and the pre-existing path is available as a fallback. The manager uses a soft work budget, so this is **not yet a measured fix** for the 39ms individual grass chunks. See [FG0 handoff](VEGETATION/UNIFIED_FOLIAGE_README.md).\n\n
+
 > **Working title:** Atmospheric, fully 3D sci-fi survival on a strange, inhabited Earth.  
 > **Current direction:** **First-person survival is the primary gameplay, presentation and balance reference.** Angled **top-down / isometric-style play remains a supported secondary view**, sharing the same world and gameplay foundations. Prioritize FPS feel and usability when making design tradeoffs; this does not require every future feature to receive equal presentation work in both views.
 >
