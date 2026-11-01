@@ -1,0 +1,78 @@
+{
+  "a_LOD1": {
+    "before_triangles": 75,
+    "after_triangles": 61,
+    "reduction_percent": 18.67,
+    "blades_retained": 15,
+    "simplified_blade_indices": [
+      2,
+      3,
+      4,
+      5,
+      9,
+      10,
+      12
+    ]
+  },
+  "b_LOD1": {
+    "before_triangles": 80,
+    "after_triangles": 64,
+    "reduction_percent": 20,
+    "blades_retained": 16,
+    "simplified_blade_indices": [
+      2,
+      3,
+      4,
+      7,
+      9,
+      12,
+      13,
+      15
+    ]
+  },
+  "c_LOD1": {
+    "before_triangles": 75,
+    "after_triangles": 61,
+    "reduction_percent": 18.67,
+    "blades_retained": 15,
+    "simplified_blade_indices": [
+      1,
+      4,
+      5,
+      8,
+      10,
+      11,
+      14
+    ]
+  },
+  "a_LOD2": {
+    "before_triangles": 20,
+    "after_triangles": 16,
+    "reduction_percent": 20,
+    "blades_retained": 4,
+    "simplified_blade_indices": [
+      0,
+      1
+    ]
+  },
+  "b_LOD2": {
+    "before_triangles": 25,
+    "after_triangles": 21,
+    "reduction_percent": 16,
+    "blades_retained": 5,
+    "simplified_blade_indices": [
+      0,
+      1
+    ]
+  },
+  "c_LOD2": {
+    "before_triangles": 25,
+    "after_triangles": 21,
+    "reduction_percent": 16,
+    "blades_retained": 5,
+    "simplified_blade_indices": [
+      0,
+      1
+    ]
+  }
+}

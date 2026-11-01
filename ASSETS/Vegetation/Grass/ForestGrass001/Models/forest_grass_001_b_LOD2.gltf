@@ -77,38 +77,38 @@
   "buffers": [
     {
       "uri": "forest_grass_001_b_LOD2.bin",
-      "byteLength": 3750
+      "byteLength": 3150
     }
   ],
   "bufferViews": [
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 900,
+      "byteLength": 756,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 900,
-      "byteLength": 900,
+      "byteOffset": 756,
+      "byteLength": 756,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 1800,
-      "byteLength": 600,
+      "byteOffset": 1512,
+      "byteLength": 504,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 2400,
-      "byteLength": 1200,
+      "byteOffset": 2016,
+      "byteLength": 1008,
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteOffset": 3600,
-      "byteLength": 150,
+      "byteOffset": 3024,
+      "byteLength": 126,
       "target": 34963
     }
   ],
@@ -116,11 +116,11 @@
     {
       "bufferView": 0,
       "componentType": 5126,
-      "count": 75,
+      "count": 63,
       "type": "VEC3",
       "min": [
         -0.43372321128845215,
-        0.0,
+        0,
         -0.3861916959285736
       ],
       "max": [
@@ -132,25 +132,25 @@
     {
       "bufferView": 1,
       "componentType": 5126,
-      "count": 75,
+      "count": 63,
       "type": "VEC3"
     },
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 75,
+      "count": 63,
       "type": "VEC2"
     },
     {
       "bufferView": 3,
       "componentType": 5126,
-      "count": 75,
+      "count": 63,
       "type": "VEC4"
     },
     {
       "bufferView": 4,
       "componentType": 5123,
-      "count": 75,
+      "count": 63,
       "type": "SCALAR"
     }
   ],
@@ -158,7 +158,10 @@
     "variant": "B",
     "lod": 2,
     "purpose": "UV-fixed low-poly geometric grass ribbons",
-    "triangle_count": 25,
-    "note": "Roots now sample dark atlas values; tips sample lighter atlas values."
+    "triangle_count": 21,
+    "note": "Roots now sample dark atlas values; tips sample lighter atlas values.",
+    "optimization": "Preserves all authored blades, roots, tips and UVs; flattens one lower bend segment on selected blades.",
+    "optimized_blades": 2,
+    "total_blades": 5
   }
 }
