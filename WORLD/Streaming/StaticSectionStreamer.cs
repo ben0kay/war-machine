@@ -115,16 +115,22 @@ public partial class StaticSectionStreamer : Node
                 && _resident.TryGetValue(item.InstanceId, out Node3D? node))
             {
                 if (CanUnload != null && !CanUnload(item)) { _blocked.Add(item.InstanceId); continue; }
-                _resident.Remove(item.InstanceId); _readyAt.Remove(item.InstanceId); node.Free(); budget--; UnloadCount++;
+                _resident.Remove(item.InstanceId); _readyAt.Remove(item.InstanceId);
+                using (WorldPerformanceProbe.Measure("Buildings.Unload"))
+                    node.Free();
+                budget--; UnloadCount++;
             }
         }
         foreach (Request request in _requests.Values)
         {
             if (request.Scene != null || request.Failed) continue;
-            ResourceLoader.ThreadLoadStatus status = ResourceLoader.LoadThreadedGetStatus(request.Path);
+            ResourceLoader.ThreadLoadStatus status;
+            using (WorldPerformanceProbe.Measure("Buildings.Load.Poll"))
+                status = ResourceLoader.LoadThreadedGetStatus(request.Path);
             if (status == ResourceLoader.ThreadLoadStatus.Loaded)
             {
-                request.Scene = ResourceLoader.LoadThreadedGet(request.Path) as PackedScene;
+                using (WorldPerformanceProbe.Measure("Buildings.Load.Get"))
+                    request.Scene = ResourceLoader.LoadThreadedGet(request.Path) as PackedScene;
                 request.Failed = request.Scene == null;
             }
             else if (status == ResourceLoader.ThreadLoadStatus.Failed || status == ResourceLoader.ThreadLoadStatus.InvalidResource)
@@ -139,46 +145,63 @@ public partial class StaticSectionStreamer : Node
             {
                 if (_requests.Count >= _settings.MaxInFlight) continue;
                 request = new Request { Path = path }; _requests.Add(path, request);
-                if (ResourceLoader.LoadThreadedRequest(path, "PackedScene", false) != Error.Ok) request.Failed = true;
+                Error result;
+                using (WorldPerformanceProbe.Measure("Buildings.Load.Request"))
+                    result = ResourceLoader.LoadThreadedRequest(path, "PackedScene", false);
+                if (result != Error.Ok) request.Failed = true;
             }
             if (request.Failed) { _failed.Add(item.InstanceId); GD.PushWarning($"WS2 failed resource: {path}"); continue; }
             if (request.Scene == null) continue;
             Node? instance = null;
             try
             {
-                instance = request.Scene.Instantiate();
+                using (WorldPerformanceProbe.Measure("Buildings.Instantiate"))
+                    instance = request.Scene.Instantiate();
                 if (instance is not Node3D visual) throw new InvalidOperationException("Static placement needs a Node3D root.");
-                visual.Name = _names.TryGetValue(item.InstanceId, out string? name) ? name : item.InstanceId; visual.SetMeta("world_placement_id", item.InstanceId);
-                // Set world placement before Ready, including a transformed residency root.
-                visual.Transform = _root.GlobalTransform.AffineInverse() * item.WorldTransform;
-                _root.AddChild(visual); _resident.Add(item.InstanceId, visual);
+                using (WorldPerformanceProbe.Measure("Buildings.Setup"))
+                {
+                    visual.Name = _names.TryGetValue(item.InstanceId, out string? name) ? name : item.InstanceId;
+                    visual.SetMeta("world_placement_id", item.InstanceId);
+                    // Set world placement before Ready, including a transformed residency root.
+                    visual.Transform = _root.GlobalTransform.AffineInverse() * item.WorldTransform;
+                }
+                using (WorldPerformanceProbe.Measure("Buildings.Attach"))
+                    _root.AddChild(visual);
+                _resident.Add(item.InstanceId, visual);
                 _readyAt[item.InstanceId] = Engine.GetPhysicsFrames() + 2; LoadCount++;
             }
             catch (Exception error)
             {
-                if (IsInstanceValid(instance)) instance!.Free();
+                if (IsInstanceValid(instance))
+                    using (WorldPerformanceProbe.Measure("Buildings.FailedCleanup"))
+                        instance!.Free();
                 _failed.Add(item.InstanceId); GD.PushWarning($"WS2 placement {item.InstanceId}: {error.Message}");
             }
             budget--;
         }
         // Obsolete threaded requests cannot be canceled by Godot: drain completion and drop references without instantiating.
-        _release.Clear();
-        foreach (var pair in _requests)
+        using (WorldPerformanceProbe.Measure("Buildings.QueueCleanup"))
         {
-            if (pair.Value.Scene == null && !pair.Value.Failed) continue;
-            bool needed = false;
+            _release.Clear();
+            foreach (var pair in _requests)
+            {
+                if (pair.Value.Scene == null && !pair.Value.Failed) continue;
+                bool needed = false;
+                foreach (var item in _manifest.Placements)
+                    if (_wanted.Contains(item.InstanceId) && !_resident.ContainsKey(item.InstanceId) && !_failed.Contains(item.InstanceId)
+                        && WorldAssetCatalog.TryResolve(item.AssetId, out string path) && path == pair.Key) { needed = true; break; }
+                if (!needed || _resident.Count >= _settings.MaxResident) _release.Add(pair.Key);
+            }
+            foreach (string path in _release) _requests.Remove(path);
+            bool remaining = _requests.Count > 0;
             foreach (var item in _manifest.Placements)
-                if (_wanted.Contains(item.InstanceId) && !_resident.ContainsKey(item.InstanceId) && !_failed.Contains(item.InstanceId)
-                    && WorldAssetCatalog.TryResolve(item.AssetId, out string path) && path == pair.Key) { needed = true; break; }
-            if (!needed || _resident.Count >= _settings.MaxResident) _release.Add(pair.Key);
+                if ((_resident.ContainsKey(item.InstanceId) && !_wanted.Contains(item.InstanceId) && !_blocked.Contains(item.InstanceId))
+                    || (_wanted.Contains(item.InstanceId) && !_resident.ContainsKey(item.InstanceId)
+                        && !_failed.Contains(item.InstanceId) && _resident.Count < _settings.MaxResident)) { remaining = true; break; }
+            SetProcess(remaining);
         }
-        foreach (string path in _release) _requests.Remove(path);
-        bool remaining = _requests.Count > 0;
-        foreach (var item in _manifest.Placements)
-            if ((_resident.ContainsKey(item.InstanceId) && !_wanted.Contains(item.InstanceId) && !_blocked.Contains(item.InstanceId))
-                || (_wanted.Contains(item.InstanceId) && !_resident.ContainsKey(item.InstanceId)
-                    && !_failed.Contains(item.InstanceId) && _resident.Count < _settings.MaxResident)) { remaining = true; break; }
-        SetProcess(remaining); Changed?.Invoke();
+        using (WorldPerformanceProbe.Measure("Buildings.Notify"))
+            Changed?.Invoke();
     }
 
     // =========================================================

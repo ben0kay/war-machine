@@ -10,3 +10,18 @@ This is an **opt-in in-game diagnostic**, independent of the larger F1 tuning ov
 - **Render/physics/GPU** are not isolated by these user-code scopes. Investigate Godot Debugger > Profiler, Visual Profiler, Monitors and repeated Errors alongside this panel when no C# timings explain a hitch. It does not time Terrain3D internals or Godot physics.
 - **Current known suspects** from `myownnotes.md`: multiple foliage generation owners responding to the same 32m crossing, plus optional rock collision and up to 20 extra store stress zombies. Check whether the high frame time coincides with the newly displayed measured operations, then toggle vegetation families individually using existing F1 controls as a controlled A/B check.
 - **Verification:** compile in Godot 4 .NET, F6 `WORLD/FirstPerson/FirstPersonWorld.tscn`, press F2 and walk through several foliage chunk borders. Confirm counter changes and timed calls, then close F2 and check normal gameplay. Keep F1 behaviour unchanged. In-game profiler/visual acceptance pending until locally tested.
+
+## PERF2.0 — building streaming timings (2026-11-01)
+
+**Diagnosis only:** `StaticSectionStreamer._Process` still reports inclusive `Buildings.StreamStep`, with additional F2 C# scopes:
+- `Buildings.Load.Request`: enqueue the background resource request (not background loading duration)
+- `Buildings.Load.Poll`: ask whether the background request finished
+- `Buildings.Load.Get`: collect the completed `PackedScene` on the main thread
+- `Buildings.Instantiate`: create the building's scene nodes (before entering the tree)
+- `Buildings.Setup`: set placement name, metadata and transform
+- `Buildings.Attach`: add the building to the world, including any `_EnterTree`/`_Ready` work and collision registration
+- `Buildings.Unload`: synchronous `Free()` during residency removal
+- `Buildings.QueueCleanup`, `Buildings.Notify`: streamer bookkeeping and subscriber callbacks
+- `Buildings.FailedCleanup`: free a scene after a failed attachment
+
+These scopes are active **only while F2 is recording**, use fixed string names, preserve the same order and logic, and do not modify chunk streaming distances or budgets. `Buildings.StreamStep` includes all its nested scopes; **do not add them together**. The background load happens on a separate thread and is not measured by `Load.Request` or `Load.Get`. Inspect the max and most recent operations after reproducing a hitch in the FPS world. C# compile and runtime validation remain pending.
