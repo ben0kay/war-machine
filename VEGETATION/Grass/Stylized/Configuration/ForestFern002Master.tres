@@ -15,6 +15,7 @@ Share = 0.05
 ScaleMin = 0.8
 ScaleMax = 1.1
 MinimumSpacing = 4.5
+SoilSensitivity = 0.80
 MinimumNormalY = 0.94
 EdgeClearance = 2.7
 WindMultiplier = 0.06

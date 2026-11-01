@@ -323,6 +323,25 @@ public partial class DebugOverlay : PanelContainer
                 value => { shortGrass.WindMultiplier = value; placement.ApplyWind(); });
             bedRows.AddChild(new Label { Text = "Changes apply on slider release; copy for persistent master values." });
         }
+        // DTP2: compare the original scatter with soil-aware thinning from F1.
+        if (_stylizedGrass?.GroundCover?.SoilResponse != null)
+        {
+            var placement = _stylizedGrass;
+            var soil = placement.GroundCover.SoilResponse;
+            var soilRows = AddToggleSection(foliageRows, "DTP2 · soil-aware ground cover",
+                soil.Enabled, value => {
+                    soil.Enabled = value; placement.ApplySettings(); _copy.Text = "Copy settings";
+                });
+            soilRows.AddChild(new Label { Text = "Off restores original candidates; 1 means strongest thinning" });
+            AddDeferredSlider(soilRows, "Forest Grass 001 soil sensitivity", 0, 1, 0.05,
+                soil.ForestGrass001, value => soil.ForestGrass001 = value, placement.ApplySettings);
+            AddDeferredSlider(soilRows, "Forest Grass 002 soil sensitivity", 0, 1, 0.05,
+                soil.ForestGrass002, value => soil.ForestGrass002 = value, placement.ApplySettings);
+            AddDeferredSlider(soilRows, "Billboard soil sensitivity", 0, 1, 0.05,
+                soil.BillboardGrass, value => soil.BillboardGrass = value, placement.ApplySettings);
+            AddDeferredSlider(soilRows, "Soil edge exponent", 0.5, 3, 0.1,
+                soil.EdgeExponent, value => soil.EdgeExponent = value, placement.ApplySettings);
+        }
         // STG5: the same controller owns data-driven plants and original grass.
         if (_stylizedGrass?.GroundCover != null)
         {
@@ -338,6 +357,8 @@ public partial class DebugOverlay : PanelContainer
                     plant.Share, value => plant.Share = value, placement.ApplySettings);
                 AddDeferredSlider(plantRows, plant.Label + " spacing (m)", 0, 5, 0.25,
                     plant.MinimumSpacing, value => plant.MinimumSpacing = value, placement.ApplySettings);
+                AddDeferredSlider(plantRows, plant.Label + " soil sensitivity", 0, 1, 0.05,
+                    plant.SoilSensitivity, value => plant.SoilSensitivity = value, placement.ApplySettings);
                 AddDeferredSlider(plantRows, plant.Label + " minimum size", 0.25, 2, 0.05,
                     plant.ScaleMin, value => plant.ScaleMin = value, placement.ApplySettings);
                 AddDeferredSlider(plantRows, plant.Label + " maximum size", 0.25, 2, 0.05,
@@ -691,6 +712,16 @@ public partial class DebugOverlay : PanelContainer
             values["ForestGrass002WindMultiplier"] = shortGrass.WindMultiplier;
             values["ForestGrass002ActiveTufts"] = _stylizedGrass.ActiveShortGrass;
         }
+        if (_stylizedGrass?.GroundCover?.SoilResponse != null)
+        {
+            var soil = _stylizedGrass.GroundCover.SoilResponse;
+            values["DTP2Enabled"] = soil.Enabled;
+            values["DTP2Seed"] = soil.Seed;
+            values["DTP2EdgeExponent"] = soil.EdgeExponent;
+            values["DTP2ForestGrass001"] = soil.ForestGrass001;
+            values["DTP2ForestGrass002"] = soil.ForestGrass002;
+            values["DTP2BillboardGrass"] = soil.BillboardGrass;
+        }
         if (_stylizedGrass?.GroundCover != null)
         {
             foreach (var plant in _stylizedGrass.GroundCover.Plants)
@@ -700,6 +731,7 @@ public partial class DebugOverlay : PanelContainer
                 values[key + "_Enabled"] = plant.Enabled;
                 values[key + "_Share"] = plant.Share;
                 values[key + "_Spacing"] = plant.MinimumSpacing;
+                values[key + "_SoilSensitivity"] = plant.SoilSensitivity;
                 values[key + "_ScaleMin"] = plant.ScaleMin;
                 values[key + "_ScaleMax"] = plant.ScaleMax;
                 values[key + "_WindMultiplier"] = plant.WindMultiplier;

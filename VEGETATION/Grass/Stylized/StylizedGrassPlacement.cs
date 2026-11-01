@@ -31,6 +31,7 @@ public partial class StylizedGrassPlacement : Node3D
     private Mesh[] _billboards = System.Array.Empty<Mesh>();
     private ShaderMaterial? _material, _shortMaterial, _billboardMaterial;
     private GodotObject _terrain = null!;
+    private SoilCoverageSampler? _soil;
     private Node3D _anchor = null!;
     private Vector2I _center = new(int.MinValue, int.MinValue);
     private int _worldSize;
@@ -68,6 +69,9 @@ public partial class StylizedGrassPlacement : Node3D
     {
         _terrain = terrain.Get("data").AsGodotObject(); _anchor = anchor; _worldSize = worldSize;
         _terrain.Connect("height_maps_changed", Callable.From(QueueTerrainRefresh));
+        if (_terrain.HasSignal("control_maps_changed"))
+            _terrain.Connect("control_maps_changed", Callable.From(QueueTerrainRefresh));
+        _soil = new SoilCoverageSampler(terrain);
         Visibility.Changed += OnVisibilityChanged;
         _initialized = true; SetProcess(false); SetPhysicsProcess(false);
         ApplySettings();
@@ -513,7 +517,8 @@ public partial class StylizedGrassPlacement : Node3D
                 }
                 if (selected < 0)
                 {
-                    if (_near.Length == 3)
+                    if (_near.Length == 3 && SoilAllows(point,
+                        GroundCover?.SoilResponse?.ForestGrass001 ?? 0f, 0x101))
                         bin[variant].Add(new Transform3D(
                             new Basis(Vector3.Up, yaw).Scaled(Vector3.One * scale),
                             new Vector3(point.X, height - 0.035f, point.Y)));
@@ -527,6 +532,7 @@ public partial class StylizedGrassPlacement : Node3D
                 if (art.Lods.Length == 0 || !plant.Enabled
                     || IsExcluded(point, Mathf.Max(0.5f, plant.EdgeClearance) * plantScale)
                     || !TryGround(point, plant.MinimumNormalY, out float plantHeight)) continue;
+                if (!SoilAllows(point, plant.SoilSensitivity, 0x200 + selected)) continue;
                 float spacing = Mathf.Clamp(plant.MinimumSpacing, 0f, 5f);
                 bool crowded = false;
                 foreach (Vector2 earlier in positions[selected])
@@ -633,6 +639,11 @@ public partial class StylizedGrassPlacement : Node3D
                     basis *= new Basis(axis, Mathf.DegToRad(rng.RandfRange(0f, tiltDegrees)));
                 }
                 int variant = rng.RandiRange(0, 2);
+                // Check only after original yaw/tilt/variant RNG consumption, no reshuffling.
+                float sensitivity = billboard
+                    ? GroundCover?.SoilResponse?.BillboardGrass ?? 0f
+                    : GroundCover?.SoilResponse?.ForestGrass002 ?? 0f;
+                if (!SoilAllows(point, sensitivity, billboard ? 0x103 : 0x102)) continue;
                 bin[variant].Add(new Transform3D(basis.Scaled(Vector3.One * scale),
                     new Vector3(point.X, height - 0.035f, point.Y)));
             }
@@ -652,6 +663,22 @@ public partial class StylizedGrassPlacement : Node3D
             if (billboard) chunk.Filler += bin[i].Count;
             else chunk.ShortGrass += bin[i].Count;
         }
+    }
+
+    // =========================================================
+    // Independent position hash: never advances an existing grass/plant random stream.
+    private bool SoilAllows(Vector2 point, float sensitivity, int familySalt)
+    {
+        var settings = GroundCover?.SoilResponse;
+        if (settings?.Enabled != true || _soil == null || sensitivity <= 0f) return true;
+        float dirt = _soil.Coverage(point);
+        if (dirt <= 0f) return true;
+        float keep = 1f - Mathf.Clamp(sensitivity, 0f, 1f)
+            * Mathf.Pow(dirt, Mathf.Clamp(settings.EdgeExponent, 0.5f, 3f));
+        if (keep >= 1f) return true;
+        uint hash = (uint)Mix(unchecked(settings.Seed + familySalt),
+            Mathf.FloorToInt(point.X * 32f), Mathf.FloorToInt(point.Y * 32f));
+        return hash / (float)uint.MaxValue < keep;
     }
 
     // =========================================================
@@ -747,6 +774,7 @@ public partial class StylizedGrassPlacement : Node3D
     public void RefreshTerrain()
     {
         _refreshQueued = false;
+        _soil?.Invalidate();
         if (_initialized) ApplySettings();
     }
 
@@ -767,7 +795,11 @@ public partial class StylizedGrassPlacement : Node3D
         CancelPendingManagedChunk();
         Visibility.Changed -= OnVisibilityChanged;
         if (_initialized && GodotObject.IsInstanceValid(_terrain))
+        {
             _terrain.Disconnect("height_maps_changed", Callable.From(QueueTerrainRefresh));
+            if (_terrain.HasSignal("control_maps_changed"))
+                _terrain.Disconnect("control_maps_changed", Callable.From(QueueTerrainRefresh));
+        }
         _initialized = false;
     }
 }

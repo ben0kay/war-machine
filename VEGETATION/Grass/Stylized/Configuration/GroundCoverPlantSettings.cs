@@ -21,6 +21,8 @@ public partial class GroundCoverPlantSettings : Resource
     [Export(PropertyHint.Range, "0.25,2,0.05")] public float ScaleMin { get; set; } = 0.75f;
     [Export(PropertyHint.Range, "0.25,2,0.05")] public float ScaleMax { get; set; } = 1.25f;
     [Export(PropertyHint.Range, "0,5,0.25")] public float MinimumSpacing { get; set; } = 1.5f;
+    // DTP2: per-species sensitivity; unchanged species selection probabilities.
+    [Export(PropertyHint.Range, "0,1,0.01")] public float SoilSensitivity { get; set; } = 0.8f;
     [Export(PropertyHint.Range, "0.5,1,0.01")] public float MinimumNormalY { get; set; } = 0.87f;
     [Export(PropertyHint.Range, "0.5,3,0.1")] public float EdgeClearance { get; set; } = 1.2f;
 

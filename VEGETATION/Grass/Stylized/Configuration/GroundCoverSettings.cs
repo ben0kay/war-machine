@@ -10,6 +10,9 @@ public partial class GroundCoverSettings : Resource
     [Export] public BillboardGrassSettings BillboardGrass { get; set; } = null!;
     [Export] public ForestGrass002Settings ForestGrass002 { get; set; } = null!;
 
+    [ExportGroup("Terrain3D soil response")]
+    [Export] public SoilResponseSettings SoilResponse { get; set; } = null!;
+
     [ExportGroup("Additional plant species")]
     [Export] public Godot.Collections.Array<GroundCoverPlantSettings> Plants { get; set; } = new();
 }

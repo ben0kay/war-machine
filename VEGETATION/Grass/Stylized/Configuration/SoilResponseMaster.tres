@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SoilResponseSettings" load_steps=2 format=3]
+[ext_resource type="Script" path="res://VEGETATION/Grass/Stylized/Configuration/SoilResponseSettings.cs" id="1"]
+
+[resource]
+script = ExtResource("1")
+Enabled = true
+Seed = 184213
+EdgeExponent = 1.5
+ForestGrass001 = 0.88
+ForestGrass002 = 0.90
+BillboardGrass = 0.94
