@@ -3,6 +3,7 @@ using Godot;
 
 public partial class PerformanceFrameGraph : Control
 {
+    private static readonly float[] Guides = { 16.67f, 33.33f, 50f };
     private float[]? _history;
     private int _next, _count;
 
@@ -27,7 +28,7 @@ public partial class PerformanceFrameGraph : Control
             maxMs = Mathf.Max(maxMs, _history[at] * 1.15f);
         }
         float h = Mathf.Max(1f, Size.Y - 4f), width = Mathf.Max(1f, Size.X - 4f);
-        foreach (float guide in new float[] { 16.67f, 33.33f, 50f })
+        foreach (float guide in Guides)
         {
             float y = 2f + h * (1f - Mathf.Clamp(guide / maxMs, 0f, 1f));
             DrawLine(new Vector2(2f, y), new Vector2(2f + width, y),

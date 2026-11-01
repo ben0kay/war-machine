@@ -128,7 +128,9 @@ public partial class ContentScatter : Node3D
     {
         if (_meshes.Length == 0) return;
         var center = new Vector2I(Mathf.FloorToInt(position.X / _chunkSize), Mathf.FloorToInt(position.Z / _chunkSize));
-        if (center == _center) return; _center = center;
+        if (center == _center) return;
+        using var perf = WorldPerformanceProbe.Measure("Rocks.ReconcileChunks");
+        _center = center;
         int radius = Mathf.CeilToInt(Mathf.Clamp(Settings.RenderDistance, 16, 256) / _chunkSize) + 1;
         var remove = new List<Vector2I>();
         foreach (var key in _chunks.Keys)

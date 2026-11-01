@@ -322,6 +322,7 @@ public partial class StylizedGrassPlacement : Node3D
         var next = new Vector2I(Mathf.FloorToInt(position.X / width),
             Mathf.FloorToInt(position.Z / width));
         if (next == _center) return;
+        using var perf = WorldPerformanceProbe.Measure("Grass.ReconcileChunks");
         _center = next;
         float render = Visibility.RenderDistance + _focusDistance;
         int range = Mathf.CeilToInt((render + width * 1.5f) / width);

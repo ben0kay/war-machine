@@ -271,6 +271,7 @@ public partial class PinePlacement : Node3D, ICameraOcclusionProvider
         if (_meshes.Length == 0) return;
         var next = new Vector2I(Mathf.FloorToInt(position.X / _chunkSize), Mathf.FloorToInt(position.Z / _chunkSize));
         if (next == _center) return;
+        using var perf = WorldPerformanceProbe.Measure("Pine.ReconcileChunks");
         _center = next;
         float distance = Visibility.RenderDistance + _focusDistance;
         int radius = Mathf.CeilToInt((distance + _chunkSize * 1.5f) / _chunkSize);
