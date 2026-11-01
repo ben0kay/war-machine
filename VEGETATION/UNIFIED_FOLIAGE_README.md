@@ -34,3 +34,13 @@ In managed mode, DF2 forest trees now yield to the **existing shared FoliageMana
 Grass now yields every **4** terrain-placement attempts, every **16** transform uploads, checks the deadline before resuming and performs at most 8 steps per queue call (instead of 16). `Grass.Commit` separates final batch visibility from `Grass.BuildStep` in F2. Density, art, RNG sequence and Terrain3D are unchanged. Expect `Forest.BuildStep` (rather than `Forest.CreateChunk`) in F2 when unified foliage is enabled.
 
 The work budget remains **soft**: one Godot native call, scene attachment, or rendering/physics synchronization may still exceed 3 ms. Build/test in Godot .NET; run F6 FPS world, walk and cross 32m boundaries with F2, verify trees/trunks/grass visuals, foliage fade and collision, turn fog/forest/grass off/on, release and return to a chunk, compare max step times and actual frame-time hitches with previous screenshots. Do not claim FPS gains before owner profiling.
+
+## PERF1.2 — grass native-call reduction and split diagnostics (2026-11-01)
+
+Managed grass batches now prepare **the same twelve transform floats per instance** on the C# side in small 16-instance stages, then assign the complete `MultiMesh.Buffer` once per near/far batch. This replaces one `SetInstanceTransform` Godot call for every grass/plant instance with a single bulk upload. Each batch remains hidden until its chunk is complete; the legacy non-managed path is unchanged. Godot's 3D MultiMesh buffer row order is preserved, so final positions/rotation/scaling and materials should be identical.
+
+Selecting a shrub/fern from the original grass candidate now **reuses the already computed height and slope** for the same location instead of calling Terrain3D three additional times; plant-specific minimum-slope acceptance still applies. No seeds, chance, scale or exclusion settings changed.
+
+F2 now additionally reports **`Grass.TerrainSample`**, **`Grass.BatchAllocate`**, **`Grass.BatchUpload`** and **`Grass.BatchAttach`**. These are nested in `Grass.BuildStep`, so times should **not be added together**. The budget is still soft: GPU/native allocation or an upload may cost more than 3 ms, and batching alone does not prove the bumps are gone.
+
+Local Godot 4 .NET build and FPS/visual comparison remain required: with F2 open move through several new grass chunks, check worst and recent spikes, verify 001/002/ferns/shrubs retain layout, near/far LODs and clipping, and test fog change/unload/re-entry. If a high `Grass.BatchAllocate`, `Grass.BatchUpload` or `Grass.TerrainSample` remains, target that operation next rather than changing grass density.

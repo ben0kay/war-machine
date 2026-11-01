@@ -499,7 +499,7 @@ public partial class StylizedGrassPlacement : Node3D
                     Mathf.Clamp(Mathf.Max(Settings.ScaleMin, Settings.ScaleMax), 0.3f, 2.5f));
                 if (point.X < 2 || point.Y < 2 || point.X >= _worldSize - 2 || point.Y >= _worldSize - 2
                     || IsExcluded(point, Mathf.Max(0.6f, Settings.EdgeClearance) * scale)) continue;
-                if (!TryGround(point, Settings.MinimumNormalY, out float height)) continue;
+                if (!TryGround(point, Settings.MinimumNormalY, out float height, out float groundNormalY)) continue;
                 int variant = rng.RandiRange(0, 2);
                 float yaw = rng.RandfRange(0f, Mathf.Tau);
                 // Shares partition candidates; disabled plants leave gaps instead of
@@ -524,9 +524,11 @@ public partial class StylizedGrassPlacement : Node3D
                     Mathf.Clamp(plant.ScaleMin, 0.25f, 2f),
                     Mathf.Clamp(Mathf.Max(plant.ScaleMin, plant.ScaleMax), 0.25f, 2f));
                 int plantVariant = details.RandiRange(0, plantBins[selected].Length - 1);
+                // The same point was already sampled for the grass candidate. Reuse its
+                // exact height/slope for plant acceptance instead of three more Terrain3D calls.
                 if (art.Lods.Length == 0 || !plant.Enabled
                     || IsExcluded(point, Mathf.Max(0.5f, plant.EdgeClearance) * plantScale)
-                    || !TryGround(point, plant.MinimumNormalY, out float plantHeight)) continue;
+                    || groundNormalY < Mathf.Clamp(plant.MinimumNormalY, 0.5f, 1f)) continue;
                 float spacing = Mathf.Clamp(plant.MinimumSpacing, 0f, 5f);
                 bool crowded = false;
                 foreach (Vector2 earlier in positions[selected])
@@ -535,7 +537,7 @@ public partial class StylizedGrassPlacement : Node3D
                 positions[selected].Add(point);
                 plantBins[selected][plantVariant].Add(new Transform3D(
                     new Basis(Vector3.Up, yaw).Scaled(Vector3.One * plantScale),
-                    new Vector3(point.X, plantHeight - 0.035f, point.Y)));
+                    new Vector3(point.X, height - 0.035f, point.Y)));
             }
         }
         float lod = Mathf.Clamp(Visibility.Lod0End + _focusDistance, 8f, end - 4f);
@@ -664,21 +666,26 @@ public partial class StylizedGrassPlacement : Node3D
     }
 
     // =========================================================
-    // Saved Terrain3D is authoritative. Steep/missing areas become naturally bare ground.
+    // Saved Terrain3D is authoritative. Reuse the sampled slope for a selected plant.
     private bool TryGround(Vector2 p, float minimumNormalY, out float height)
+        => TryGround(p, minimumNormalY, out height, out _);
+
+    private bool TryGround(Vector2 p, float minimumNormalY, out float height, out float normalY)
     {
+        using var perf = WorldPerformanceProbe.Measure("Grass.TerrainSample");
         height = _terrain.Call("get_height", new Vector3(p.X, 0f, p.Y)).AsSingle();
         float east = _terrain.Call("get_height", new Vector3(p.X + 1f, 0f, p.Y)).AsSingle();
         float south = _terrain.Call("get_height", new Vector3(p.X, 0f, p.Y + 1f)).AsSingle();
-        if (!float.IsFinite(height) || !float.IsFinite(east) || !float.IsFinite(south)) return false;
-        float normalY = 1f / Mathf.Sqrt(1f + (east - height) * (east - height)
+        if (!float.IsFinite(height) || !float.IsFinite(east) || !float.IsFinite(south))
+        { normalY = 0f; return false; }
+        normalY = 1f / Mathf.Sqrt(1f + (east - height) * (east - height)
             + (south - height) * (south - height));
         return normalY >= Mathf.Clamp(minimumNormalY, 0.5f, 1f);
     }
 
     // =========================================================
-    // MultiMesh uploads are chunked into groups of 64 transforms in managed mode.
-    // Unfinished batches remain detached, then join the hidden chunk until commit.
+    // PERF1.2: prepare the 3D instance buffer in short CPU slices, then upload it once.
+    // This replaces hundreds of calls into Godot's rendering API per grass batch.
     private IEnumerable<bool> AddBatchStages(GrassChunk chunk, string name, Mesh mesh,
         List<Transform3D> instances, Vector3 anchor, float begin, float end)
     {
@@ -688,16 +695,40 @@ public partial class StylizedGrassPlacement : Node3D
             yield return true;
             yield break;
         }
-        var multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh };
-        multi.InstanceCount = instances.Count;
+        // Godot MultiMesh 3D layout: three 4-float rows, with translation in column 4.
+        var buffer = new float[instances.Count * 12];
         for (int i = 0; i < instances.Count; i++)
         {
-            var t = instances[i]; t.Origin -= anchor;
-            multi.SetInstanceTransform(i, t);
+            var pose = instances[i]; pose.Origin -= anchor;
+            WritePackedTransform(buffer, i * 12, pose);
             if ((i & 15) == 15) yield return true;
         }
-        chunk.Nodes.Add(AttachBatch(name, multi, anchor, begin, end, false));
+        MultiMesh multi;
+        using (WorldPerformanceProbe.Measure("Grass.BatchAllocate"))
+        {
+            multi = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh };
+            multi.InstanceCount = instances.Count;
+        }
+        using (WorldPerformanceProbe.Measure("Grass.BatchUpload"))
+            multi.Buffer = buffer;
+        using (WorldPerformanceProbe.Measure("Grass.BatchAttach"))
+            chunk.Nodes.Add(AttachBatch(name, multi, anchor, begin, end, false));
         yield return true;
+    }
+
+    // =========================================================
+    // Exact equivalent of SetInstanceTransform for a 3D MultiMesh without per-instance
+    // native calls; preserve the existing basis, scaling, yaw, tilt and translation.
+    private static void WritePackedTransform(float[] buffer, int index, Transform3D pose)
+    {
+        Basis b = pose.Basis;
+        Vector3 p = pose.Origin;
+        buffer[index] = b.X.X; buffer[index + 1] = b.Y.X;
+        buffer[index + 2] = b.Z.X; buffer[index + 3] = p.X;
+        buffer[index + 4] = b.X.Y; buffer[index + 5] = b.Y.Y;
+        buffer[index + 6] = b.Z.Y; buffer[index + 7] = p.Y;
+        buffer[index + 8] = b.X.Z; buffer[index + 9] = b.Y.Z;
+        buffer[index + 10] = b.Z.Z; buffer[index + 11] = p.Z;
     }
 
     private MultiMeshInstance3D BuildBatch(string name, Mesh mesh, List<Transform3D> instances,
