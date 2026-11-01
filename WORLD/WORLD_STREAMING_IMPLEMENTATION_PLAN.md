@@ -8,6 +8,96 @@ Build a large **finite, expandable authored world**, centred on a fairly built-u
 
 Use deliberate town layout plus constrained procedural assistance. The owner places roads, intersections, important buildings and sites. Generators may create validated building variants, forest detail and roadside dressing. Alleyways, rear access and pedestrian connections are reserved before final building placement. Furniture uses legal sockets/clearances, not arbitrary wall positions that can put a picture over a doorway. World-layout choice and chunk streaming are independent: hand-placed scenes can stream just as procedural ones can.
 
+## WS distance-authority refinement — proposed Copilot implementation contract (2026-10-31)
+
+**Status: PLAN ONLY.** This clarifies existing owners and provides executable numeric acceptance criteria; it **does not** mean simulation tiers, unified configuration or actor unloading have been implemented. Owner request: make rendering and simulation distance-related, keep scene streaming farther out, and avoid unexplained competing distance sliders. Use the first-person gameplay world as the design reference. The older WS0–WS7 goals, previously implemented WS2 proof, 32m foliage chunks and 128m logical section identities remain intact.
+
+### A. Current authoritative files — verified against source
+
+| Concern | Current real owner | FPS current value / behavior | Important limitation |
+| --- | --- | --- | --- |
+| **Visual fog: start/full opacity** | `WORLD/FirstPerson/Configuration/FirstPersonMaster.tres → FogStartDistance / FogEndDistance`; `ENVIRONMENT/FirstPerson/FirstPersonFog.cs` applies this to `ENVIRONMENT/Fog/PlayerDistanceFog.cs` | 1m → **115m** opaque; opacity forced to 1 | Fog overlay visually obscures opaque world pixels; it **does not itself stop GPU drawing, physics or AI** |
+| **FPS camera clipping** | Same FPS master `FogCullBuffer=120`; `FirstPersonFog.Apply()` | Camera `Far = 115 + 120 = 235m` when enabled | This is a **far-clip buffer**, not proof every renderer culls at 115m |
+| **Vegetation LOD and visibility** | `VEGETATION/Configuration/VegetationVisibilityMaster.tres` → `VegetationVisibilityPolicy.cs` | **139m** nominal vegetation range = opaque fog 115 + 24m safety; LOD split **~49m / ~97m** (35% / 70%) | Applies to loaded grass/billboards, pines and DF2 trees; 32m vegetation chunk owners determine resident batches. Off/nonopaque fog uses 160m fallback in current config |
+| **WS1 static props/buildings rendering** | `WORLD/Configuration/WorldMaster.tres → RenderPolicy`; `WORLD/Rendering/WorldRenderCulling.cs` and `WorldRenderEnvelope.cs` | Enabled; hidden buffer 8m, shadow buffer 48m, AABB/object-specific margin | **Not one fixed 139m cutoff.** Native AABB/camera/light/shadow rules and authored ranges apply. FPS `GameplayEnvironmentMaster.tres → FpsSkyFogOpacity=0.08` means the sky is **not fully opaque**, so WS1 currently does **not** automatically impose a fog-derived geometry cutoff on arbitrary static props. This avoids silhouette-to-clear-sky popping |
+| **WS2 static scene residency** | `WORLD/Configuration/WorldMaster.tres → Streaming` (`WorldStreamingSettings.cs`); `WorldStaticStreaming.cs`; `StaticSectionStreamer.cs`; FPS-only `FirstPersonMaster.tres → StreamingHysteresisDistance` | **272m load / 336m unload** for the current 235m FPS clip and 64m hysteresis. Requests on movement, two in-flight reads, one scene operation/frame by default | Currently **only Building001–004** are adopted. These distances are derived from the far clip and footprint, not a 128m-square unload switch |
+| **Actor simulation distance** | **NO shared policy exists yet** | Zombies use `ZombieController` physics-on-demand and a repeating `SightIntervalSeconds` brain timer; deer use their own decision timer | No distance-based `Full/Reduced/Dormant` tiers, actor unload or persistent encounter system yet. `EntityCore.Activate/Deactivate` exists but is **not** a ready-made distance sleeper: Deactivate cancels chase/investigation, clears velocity and may alter behaviour |
+| **World identity grid** | `WORLD/Streaming/WorldSectionSettings.cs` and `SectionCoordinate.cs` | 128m logical cells, 0–1024m test bounds; F3 grid | Section is a **placement address**, not a fog distance or an instruction to unload all objects in that square |
+| **Vegetation streaming grid** | Existing grass/pine/DF2 chunk managers | Usually **32m** batch residency chunks | Controls vegetation creation/removal; separate from WS0 128m ownership. Do **not** merge sizes or create a second foliage streamer |
+
+**Interpretation:** Today you do **not** have one file that authoritatively owns all three distances. A single fog value exists for FPS presentation, but WS1 static render safety, foliage range and WS2 residency have independent policies. Simulation relevance is absent. Do **not** claim changing fog already reduces zombie AI.
+
+### B. Proposed common distance contract — one calculation, several consumers
+
+**Goal:** retain the user's existing fog-driven visual behaviour while making reduced actor simulation begin no later than the point where opaque fog plus the vegetation safety envelope has fully concealed the actor. Stream scenes farther than they are visibly useful; do not make everything unload exactly at the fog wall.
+
+**Proposed sole owner:** add one typed runtime policy at `WORLD/Relevance/WorldRelevancePolicy.cs`, with one serialized settings resource nested at **`WORLD/Configuration/WorldMaster.tres → Relevance`** (e.g. `WORLD/Relevance/WorldRelevanceSettings.cs`). These are **proposed paths, not current files**. Keep the existing **FPS fog visual setting** in `FirstPersonMaster.tres` and the source `PlayerDistanceFog` event; the new service **reads** that applied fog snapshot and existing camera reach. Keep species-specific visuals/LOD in their current owners. One policy publishes a **read-only effective distance snapshot**; consumers subscribe to `Changed` and should not recompute competing fog offsets or poll the world each frame.
+
+**Proposed start values (metres), with current FPS fog ON and opaque at 115m:**
+
+| Derived band | Example boundary | Purpose / proposed response |
+| --- | ---: | --- |
+| Fog fully opaque | **115m** | Owner-editable presentation distance in FPS master, **not** a scene unload distance |
+| **Rendering reference / full AI through** | **139m** = 115 + 24m shared visual safety | Maintain normal actor behaviour near the visible edge. Existing vegetation already uses this envelope. Native static render range and camera clip can remain longer for safety; this is a **simulation relevance reference**, not a false promise that every triangle is culled at 139 |
+| **Reduced actor simulation** | **139–203m** | Proposed zombie/deer **decision checks at most 4 Hz**, preferably only on existing decisions, with expensive perception/raycast work reduced or skipped as safe. Preserve necessary movement/physics while in motion; do not globally throttle Godot physics or make moving actors teleport. No distance-based decision system is implemented yet |
+| **Dormant actor simulation** | **beyond 203m** = 139 + 64m | Proposed stop of idle brains, optional sound/debug/pose activity, and movement/physics only when safe; keep actor state/scene resident. An active chase, attack, gunshot investigation, player interaction or physics dependency **pins/wakes** the actor even outside the normal band. No loss of health, limbs, AI target or pending interaction |
+| **Stream-in / preload** | **272m** effective current FPS static scene preload | Build/collision/actor resources must become available **before** the player reaches the simulation boundary; actual load distance is at least current camera far reach + conservative offset and 32m cushion, not simply fog end + a hardcoded constant |
+| **Stream-out / unload** | **336m** effective current FPS static scene unload | Only after hysteresis and **after WS3 state storage** for mutable objects and actor encounter IDs; no disappearing pursuers or automatic respawns. Buildings already use this band; zombie actors do **not** yet |
+
+These **example outputs must be calculated**, not copied as universal constants: for existing FPS settings, `visualEnvelope = 115 + 24 = 139`, `reducedStart = visualEnvelope`, `dormantStart = visualEnvelope + 64 = 203`, `staticPreload = 272`, and `staticUnload = 272 + 64 = 336`. The **139/203 tier thresholds are a proposal**; the 272/336 building thresholds are already in source for the current FPS profile. Static scene preload is derived using the existing `WorldStaticStreaming.Distances(settings, camera.Far, camera.MaximumRenderOffset)`; preserve the footprint-based distance check, camera/far-plane safety and per-actor pins.
+
+**Expected relationship:** `opaqueFogEnd (115) < vegetationRenderEnvelope (139) <= reducedSimStart (139) < dormantSimStart (203) < streamPreload (272) < unload (336)`. This is deliberately **not** three unrelated absolute settings; once a new fog value is applied, the snapshot must update render reference and simulation thresholds together. Adjusting fog longer means more rendering and more actor simulation; shorter means less, with measured safety margins.
+
+**Important caveat — actual visibility varies by type.** Camera frustum, imported mesh LOD, native geometry AABB bounds, shadows, Sky3D opacity, camera far plane and authored caps mean there is no one exact GPU-culling metre for **every** object. WS1 currently preserves FPS objects at longer ranges because `FpsSkyFogOpacity=0.08`; don't impose a 139m hard cutoff on static buildings and risk a visible horizon hole. Actors can be rendered under fog but obscured; confirm the visual result **before reducing animation/AI at 139m**. If a class remains truly visible farther than the selected simulation boundary (fog disabled, transparent art, long-range scope, etc.), extend its full/low-frequency threshold or exclude it from dormancy. Do not use `VisibleOnScreenNotifier3D` alone to sleep off-camera threats.
+
+**Fog OFF / translucent / extreme distances:** never keep the old 115m simulation threshold. Choose a conservative camera- and per-class-visibility-aware fallback, audit the existing vegetation's 160m fallback, and ensure the player cannot see frozen actors. Clamp/range-check inputs; enforce `full <= reduced <= dormant < preload < unload` for actors intended for streaming, while existing building load requirements may be greater. If full visibility exceeds safe streaming reach, increase residency rather than unloading visible content. Teleport/vehicle speed can require anticipatory preloading beyond the walking profile.
+
+**Direction of authority / avoid spaghetti:**
+
+```text
+FirstPersonMaster (fog visual end) -> FirstPersonFog/PlayerDistanceFog (applied profile)
+                                      |
+WorldMaster.Relevance (safety + AI offsets + update rates)
+                                      |
+                                      v
+                         WorldRelevancePolicy snapshot
+                       /          |             \
+        vegetation visibility   actor relevance  WS2/WS4 preload minimums
+        (keep native LOD owner) (future WS4A)    (keep WS2 streamer)
+                       \
+                    WS1 static render safety remains native bounds/shadow/sky aware
+
+No duplicated hardcoded 115/139/203/272/336m in every species.
+```
+
+**Distance metric:** for FPS use player horizontal X/Z distance for **actor relevance/ground footprints** with conservative camera-eye/lean/vertical and object-bound margins; keep the existing camera-spherical fog/clip metric for FPS fog and native render safety. For flying actors or large vertical separations use a documented 3D/bounds exception. For top-down, retain its separate actual fog/camera envelope during the approved later FPS-only conversion; do not silently delete support. Decide on one reference player/observer per world, not a new every-actor search.
+
+### C. How Copilot should implement it (one permission-gated PR per slice)
+
+| Slice | Work | Dependency/status | Acceptance gate |
+| --- | --- | --- | --- |
+| **WS-D0: audit + contract** | Inspect the files above and all current distance/LOD settings; identify existing consumers and conflicting definitions. Add the proposed typed `WorldRelevanceSettings` and pure snapshot calculator **only after owner requests code**. Prove numeric outputs for 115m profile, fog edits, fog off, camera far changes, shadows and invalid input; no change to runtime behaviour | **Planned; recommended FIRST Copilot task** | Single settings authority, no duplicate world manager, no new per-frame loop, no scenery/zombie changes; one concise build/test |
+| **WS-D1: diagnostics and subscriptions** | Expose F1 effective readout: `Fog opaque, Vegetation end, AI full/reduced/asleep, Static load/unload, Fog on/off, entity tier counts`. Wire to applied-settings and camera events; avoid duplicating WS1 culling and GV1 foliage work. Rendered vs resident metrics must be distinguished | Planned after WS-D0 | Fog slider changes reported distances without restart; no hidden UI cost or extra tree scans when F1 closed |
+| **WS4A: actor reduction (without unloading)** | Integrate one zombie/runner + deer or another one species using existing `EntityCore`/brain timers, motion and detection rules; event-driven cohort evaluation on player movement and threshold changes; stagger wakeups. Introduce **Normal / Reduced / Dormant** distinct from `EntityCore.Deactivate` if needed so AI memory is not destroyed. Start from full simulation inside 139m and bounded 4Hz decisions in 139–203m; dormant beyond 203m only if safe | Planned; **can precede WS3 if actors stay resident** | A distant zombie's brain/physics idle work stops or reduces while health/limbs/targets remain; damage, gunshot, movement toward player, nearby threats and ongoing chase wake/pin immediately; no frame-by-frame full-tree scans |
+| **WS3: persistent round-trip** | Existing WS3 scope: stable IDs, mutable state delta, missing/remove tombstones, atomic save/load; one movable prop proof before general adoption | Planned, separately authorized | Unload/reload/restart preserves object state and avoids duplicate IDs; no save every frame |
+| **WS4B: actor unload/reload** | After WS3, build encounter member IDs, ownership transfer and saved deaths; integrate WS4 actors with the existing static streaming scheduler or compatible bounded owner. Actors can be safely removed beyond 336m only when dormant/unpinned and state committed | Planned, depends on WS3 and WS4A | Killed actors don't respawn on boundary crossing; pursuits remain; actor roots disappear/return; no silent AI/corpse/item state loss |
+| **WS-D2: other world families** | Extend measured relevance to persistent props, shop and other remaining static content, collision activation, lights, terrain adapter and future vehicles **by owner**, without double managers or equating fog with physics | Planned after proof | Rendering, simulation, collision and residency counters separately checkable; no overlapping chunk ownership |
+
+**Do not jump from WS2 to unloading all zombies.** `ZombieController` already does a per-actor `Timer` decision at `SightIntervalSeconds` and enables physics when moving; `DeerController` has its own decision timer. A correct distance integration must suspend/reduce those owners without destroying pursuit/health/animation state and must honor sound/hearing wake events. In particular, `EntityCore.Deactivate()` clears velocity, and the zombie's `OnDeactivated()` cancels investigations/chases: it is **not** appropriate as a generic distance-sleep call without changing the lifecycle contract.
+
+### D. Fixed-cost safeguards and developer handoff
+
+- **No one-distance-to-rule-everything GPU claim:** distinguish visual fog end, native rendered bounds, logical simulation tier, 32m vegetation chunk membership, 128m world section identity and live scene residency. Keep physics blockers/collision where movement, LOS or projectiles can reach them; never remove the floor/cover just because hidden.
+- **Event-driven state changes:** update calculated thresholds on fog/visibility/clip settings events and batched player movement (existing WS2 uses 8m movement), not once per actor per frame. Tier boundaries need hysteresis (suggest **8m** exit/return buffer) and bounded/staggered activation work. When player teleports, prioritize immediate near actors and collision readiness.
+- **Pin exceptions:** chased/attacking/hearing-investigating actors, active melee/projectiles/impact reactions, occupied structures, interactive/moved props, vehicles and in-flight save transactions cannot be unloaded just by crossing a fog threshold. Wake due to sound/damage as appropriate even if previously dormant; retain deduplicated sound subscriptions or an event-facing wake proxy.
+- **Test with current 115m fog**, 80m, 200m, disabled and after several fast direction changes; check transparent sky, hillside, high roofs, tall trees and building shadow silhouettes. With current walking/running 5/8m/s the 272m load radius has significant runway, but do not assume future fast vehicles are safe without predictive prefetch.
+- **Measurements:** F1 show actual `render end / AI full / reduced / dormant / resident actor count / scene load-unload counts`. Check CPU frame time and GPU separately. Never claim merely hiding a mesh unloads it or makes physics/AI sleep.
+- **Run one build and focused F6 check per authorized slice**; Godot/.NET runtime checks not performed by drafting this contract. Report exact changed files and commit SHA. Leave `FPS_ONLY_CONVERSION_IMPLEMENTATION_PLAN.md`, source Terrain3D data, accepted art, current F1 settings and the 4-building WS2 bridge untouched until explicitly requested.
+
+### E. Copy-paste first Copilot assignment (when the owner approves implementation)
+
+> Read `AGENTS.md`, `CodePreferences.md`, root `README.md`, `LessonsLearned.md`, and `WORLD/WORLD_STREAMING_IMPLEMENTATION_PLAN.md → WS distance-authority refinement`. On branch `implement-td0-td1`, implement **only WS-D0**: audit existing FPS fog, GV1 vegetation visibility, WS1 static native culling and WS2 static streaming; create one typed, unit-tested **read-only relevance snapshot** using the current applied fog/camera, with settings nested under `WorldMaster`. No FPS visual/LOD/streaming behavior change, no new AI sleeper and no roadmap phase escalation. Verify effective current values **fog 115, vegetation 139, proposed reduced start 139, proposed dormant 203, existing FPS static load 272 and unload 336**; account for sky opacity, camera bounds, fog OFF and event cleanup. Report build/test facts and changed files, then stop for local review.
+
 ## Phase overview
 
 | Phase | Deliverable | Dependencies | Suggested executor | State |
