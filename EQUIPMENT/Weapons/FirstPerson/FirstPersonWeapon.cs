@@ -19,6 +19,7 @@ public partial class FirstPersonWeapon : Node
     private bool _adsActive, _adsInitialized;
     private float _adsAmount, _hipFov;
     private Vector2 _swayDegrees;
+    private float _movementSwayBlend;
     private Vector3 _hipPosition, _hipRotationDegrees;
     private bool AdsTransitioning => !Mathf.IsEqualApprox(_adsAmount, _adsActive ? 1f : 0f);
     private bool PhysicalSwayEnabled => IsInstanceValid(_weapon)
@@ -67,7 +68,7 @@ public partial class FirstPersonWeapon : Node
         // ADS1: held firearm weight is applied on selection, not each physics/render frame.
         if (_player is FirstPersonPlayer fps && IsInstanceValid(fps))
             fps.SetEquippedWeaponMovementMultiplier(_weapon?.RuntimeSettings.EquippedMovementMultiplier ?? 1f);
-        _adsInitialized = false; _visualRecoil = null;
+        _adsInitialized = false; _visualRecoil = null; _movementSwayBlend = 0f;
         if (_melee != null)
         {
             _melee.ContactConfirmed += OnMeleeContactConfirmed;
@@ -185,7 +186,7 @@ public partial class FirstPersonWeapon : Node
 
         AdvanceAds(dt);
         // Enabled physical sway is the only reason this existing render callback stays awake at rest.
-        UpdatePhysicalSway();
+        UpdatePhysicalSway(dt);
         _visualRecoil?.Advance(dt);
         // Sustained model pitch remains temporary; the camera's achieved rise does not recover.
         float extraRise = _weapon.RecoilOffsetDegrees.Y
@@ -248,7 +249,7 @@ public partial class FirstPersonWeapon : Node
     {
         if (!IsInstanceValid(_weapon)) return;
         _weapon!.RuntimeSettings.FpsPhysicalSwayEnabled = enabled;
-        if (!enabled) _swayDegrees = Vector2.Zero;
+        if (!enabled) { _swayDegrees = Vector2.Zero; _movementSwayBlend = 0f; }
         if (_adsInitialized)
         {
             float t = _adsAmount * _adsAmount * (3f - 2f * _adsAmount);
@@ -263,12 +264,26 @@ public partial class FirstPersonWeapon : Node
     // =========================================================
     // The authored gun root and real muzzle sway together. Camera look/recoil remain untouched.
     // One deterministic oscillator controls both visible gun motion and physical bullet aim.
-    private void UpdatePhysicalSway()
+    private void UpdatePhysicalSway(float dt)
     {
         if (!_adsInitialized || !IsInstanceValid(_weapon)) return;
         FirearmSettings settings = _weapon!.RuntimeSettings;
+        if (PhysicalSwayEnabled)
+        {
+            // Measured AFTER MoveAndSlide; sprint increases sway, blocked motion does not.
+            // The ADS blend still reduces the same amplitude, not a second visual-only oscillator.
+            float maxRunSpeed = Mathf.Max(0.1f, _camera.ViewSettings.WalkSpeed
+                * Mathf.Max(1f, _camera.ViewSettings.RunMultiplier));
+            float actualSpeed = _player is FirstPersonPlayer fps ? fps.ActualHorizontalSpeed : 0f;
+            float target = Mathf.Clamp(actualSpeed / maxRunSpeed, 0f, 1f);
+            _movementSwayBlend = Mathf.Lerp(_movementSwayBlend, target,
+                1f - Mathf.Exp(-dt / 0.14f));
+            if (target == 0f && _movementSwayBlend < 0.001f) _movementSwayBlend = 0f;
+        }
+        else _movementSwayBlend = 0f;
         _swayDegrees = PhysicalSwayEnabled
-            ? FirstPersonAimTarget.SamplePhysicalSway(settings, _adsAmount, Time.GetTicksMsec() * 0.001)
+            ? FirstPersonAimTarget.SamplePhysicalSway(settings, _adsAmount,
+                Time.GetTicksMsec() * 0.001, _movementSwayBlend)
             : Vector2.Zero;
         float t = _adsAmount * _adsAmount * (3f - 2f * _adsAmount);
         // Local +X pitches the barrel upward; local -Y yaws it to camera right.

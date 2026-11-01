@@ -92,6 +92,10 @@ public partial class FirearmSettings : Resource
     [Export(PropertyHint.Range, "0,1,0.01,suffix:°")] public float FpsSwayAmplitudeDegrees { get; set; }
     [Export(PropertyHint.Range, "0.1,3,0.05,suffix:Hz")] public float FpsSwayFrequencyHz { get; set; } = 0.85f;
     [Export(PropertyHint.Range, "0.1,1,0.05")] public float FpsAdsSwayMultiplier { get; set; } = 0.65f;
+    // Multipliers apply to the same physical gun/muzzle and real firing ray; defaults preserve old guns.
+    [Export(PropertyHint.Range, "0,2.5,0.05")] public float FpsSwayIdleMultiplier { get; set; } = 1f;
+    // Added at actual run speed; scales smoothly from zero at rest, including walk/crouch rates.
+    [Export(PropertyHint.Range, "0,2.5,0.05")] public float FpsSwayMovementBonusMultiplier { get; set; } = 0f;
     [ExportGroup("FPS camera recoil (FPS only)")]
     // The recoil offset is physically applied to the FPS camera, NOT applied again to the bullet ray.
     [Export(PropertyHint.Range, "1,90,1")] public float FpsCameraRecoilFollowDegreesPerSecond { get; set; } = 16f;

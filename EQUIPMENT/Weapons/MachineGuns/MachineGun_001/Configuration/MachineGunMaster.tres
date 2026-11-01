@@ -69,3 +69,5 @@ FpsPhysicalSwayEnabled = true
 FpsSwayAmplitudeDegrees = 0.25
 FpsSwayFrequencyHz = 0.95
 FpsAdsSwayMultiplier = 0.70
+FpsSwayIdleMultiplier = 1.25
+FpsSwayMovementBonusMultiplier = 0.75

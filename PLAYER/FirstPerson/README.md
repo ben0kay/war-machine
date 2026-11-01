@@ -27,3 +27,7 @@ The FPS equipment adapter updates `FirstPersonPlayer.SetAdsMovementMultiplier` o
 
 The FPS player now separately stores `_equippedMovementMultiplier` and `_adsMovementMultiplier`. `FirstPersonWeapon` applies the carried multiplier once after successful slot selection (rifle 0.90×, MachineGun 0.97×, bat 1.0×); the existing movement-speed hook returns their product. Each setter wakes existing physics only when the value changes; blocked input cancels ADS but the carried multiplier stays tied to the selected weapon. Tear-down restores 1.0×. Top-down movement remains unchanged. Source implemented; Godot/.NET local validation pending.
 
+
+## ADS2b — measured speed exported for physical firearm sway (2026-10-31)
+
+`FirstPersonPlayer.ActualHorizontalSpeed` is a read-only scalar sampled after the **existing** `PlayerController._PhysicsProcess → MoveAndSlide` using the actual post-collision horizontal movement per second. This replaces inferred movement key intent or attempted velocity for the FPS gun-sway modifier: pushing against an immovable wall does not mimic a sprint. It wakes no new physics/render process and creates no separate movement authority; normal movement still sleeps at rest. FPS weapon interpolation reads this latest physics snapshot and normalizes to the already-authored `FirstPersonSettings.WalkSpeed * RunMultiplier` (full run reference). Other camera/head-bob and top-down movement are untouched. Source implemented; local compilation/game feel pending.

@@ -6,6 +6,8 @@ public partial class FirstPersonPlayer : PlayerController
     private FirstPersonCamera _view = null!;
     private FirstPersonSettings _fps = null!;
     private float _adsMovementMultiplier = 1f, _equippedMovementMultiplier = 1f;
+    // Last physics-step actual horizontal travel, not input or attempted velocity against a wall.
+    public float ActualHorizontalSpeed { get; private set; }
 
     // =========================================================
     // Equipment updates only when ADS starts/stops. Wake shared locomotion for immediate speed changes.
@@ -40,6 +42,7 @@ public partial class FirstPersonPlayer : PlayerController
         movement.RunMultiplier = Mathf.Max(1, _fps.RunMultiplier);
         movement.CrouchSpeedMultiplier = Mathf.Clamp(_fps.CrouchSpeedMultiplier, 0.1f, 1);
         base.Initialize(movement, camera); VisualRoot.Hide();
+        ActualHorizontalSpeed = 0f;
         FloorSnapLength = Mathf.Clamp(_fps.FloorSnapDistance, 0.05f, 0.75f);
         FloorMaxAngle = Mathf.DegToRad(Mathf.Clamp(_fps.MaximumSlopeDegrees, 10, 60));
         FloorStopOnSlope = true; FloorConstantSpeed = true;
@@ -53,6 +56,9 @@ public partial class FirstPersonPlayer : PlayerController
         Vector3 before = GlobalPosition;
         base._PhysicsProcess(delta);
         Vector3 travel = GlobalPosition - before; travel.Y = 0;
+        float dt = (float)delta;
+        ActualHorizontalSpeed = float.IsFinite(dt) && dt > 0f
+            ? Mathf.Clamp(travel.Length() / dt, 0f, 30f) : 0f;
         bool movingInput = ReadMovementInput().LengthSquared() > 0.01f;
         _view.SetLeanAmount(LeanAmount);
         _view.RecordPhysicsPose(CapsuleHeight, travel.Length(), IsOnFloor(),
