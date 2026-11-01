@@ -23,20 +23,20 @@ collider and mask when an expected wall doesn't block it.
 
 ## Low-cost updates
 
-- `ProjectionUpdatesPerSecond = 10` by default (**one update every 0.1 seconds**).
-- Screen projection and optional physics occlusion use the same 10 Hz cadence, driven
+- `ProjectionUpdatesPerSecond = 20` by default (**one update every 0.05 seconds**).
+- Screen projection and optional physics occlusion use the same 20 Hz cadence, driven
   by the shared overlay's `_PhysicsProcess` (not a callback on every zombie).
 - Only **wounded, on-screen, in-range** actors are ray-tested, bounded by
   `MaxVisibleBars` (48 default) per update.
 - No injured actors means the overlay disables its physics callbacks entirely.
-- Health values update immediately on `HealthChanged` and are not polled at 10 Hz.
+- Health values update immediately on `HealthChanged` and are not polled at 20 Hz.
 - No new timers, ray casts per zombie per frame, or new NPC gameplay code.
 
 ## Configure
 
 `FEEDBACK/Configuration/FeedbackMaster.tres`:
 
-- `ProjectionUpdatesPerSecond = 10`
+- `ProjectionUpdatesPerSecond = 20`
 - `HealthBarMaxDistance = 50`
 - `HealthBarOcclusionEnabled = true`
 - `HealthBarOcclusionMask = 17`
