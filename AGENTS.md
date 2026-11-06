@@ -13,7 +13,7 @@ Read these **three root files first, in order**, from the active branch even if 
 2. **[README.md](README.md)** — War Machine's project identity, primary FPS / secondary top-down views, shared-world scene paths, implemented versus planned systems and current development status.
 3. **[LessonsLearned.md](LessonsLearned.md)** — verified project pitfalls, root causes, fixes and prevention checks. Apply relevant lessons before editing or suggesting a fix.
 
-**Codex review handoff (documentation only):** [CODEX_LAST_24H_REVIEW_PLAN_2026-10-31.md](CODEX_LAST_24H_REVIEW_PLAN_2026-10-31.md) contains the 2026-10-30/31 non-Codex audit, full commit ledger and review-only checklist. Read it when the owner asks Codex to audit this work; produce findings before any new implementation. Keep the three root mandatory reads above intact.
+**Codex review handoff (documentation only):** [CODEX_LAST_24H_REVIEW_PLAN_2026-10-31.md](CODEX_LAST_24H_REVIEW_PLAN_2026-10-31.md) contains the 2026-10-30/31 non-Codex audit **plus an October 31–November 1 post-cutoff addendum (§8–§9)**, complete commit ledgers and review-only checklist. Before auditing, compare its latest covered HEAD with the live branch HEAD and include any new changes. Read it when the owner asks Codex to audit this work; produce findings before any new implementation. Keep the three root mandatory reads above intact.
 
 Then read the context needed for the task:
 
